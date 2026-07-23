@@ -1,0 +1,848 @@
+@using RaahSathi.Models
+@{
+    ViewData["Title"] = "Roadside Route Tracker & Security Hub";
+    var job = ViewBag.Job as Job ?? new Job();
+    var profile = ViewBag.MechanicProfile as MechanicProfile;
+}
+
+<style>
+    .feedback-chip {
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease-in-out;
+        border: 1px solid var(--border-glass, rgba(255,255,255,0.15));
+        background: rgba(255, 255, 255, 0.05);
+        color: #d1d5db;
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 0.825rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .feedback-chip:hover {
+        border-color: #f59e0b;
+        color: #fff;
+        transform: translateY(-1px);
+    }
+    .feedback-chip.active-positive {
+        background: rgba(16, 185, 129, 0.25) !important;
+        border-color: #10b981 !important;
+        color: #10b981 !important;
+        font-weight: 600;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+    .feedback-chip.active-negative {
+        background: rgba(239, 68, 68, 0.25) !important;
+        border-color: #ef4444 !important;
+        color: #f87171 !important;
+        font-weight: 600;
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+    .cursor-pointer { cursor: pointer; }
+
+    /* Timeline Roadmap Layout */
+    .timeline-progress-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        position: relative;
+        margin: 15px 0 5px 0;
+        padding: 0 5px;
+    }
+    .timeline-progress-wrapper::before {
+        content: '';
+        position: absolute;
+        top: 16px;
+        left: 35px;
+        right: 35px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.15);
+        z-index: 1;
+    }
+    .timeline-item-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 2;
+        position: relative;
+        width: 75px;
+    }
+    .timeline-step {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #1e293b;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+        color: #94a3b8;
+    }
+    .timeline-step.completed {
+        background: #10b981 !important;
+        border-color: #10b981 !important;
+        color: #fff !important;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+    .timeline-step.active {
+        background: #f59e0b !important;
+        border-color: #f59e0b !important;
+        color: #000 !important;
+        font-weight: bold;
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+    }
+    .timeline-label {
+        margin-top: 8px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-align: center;
+        color: #94a3b8;
+        transition: color 0.3s ease;
+        position: static !important;
+        transform: none !important;
+        width: auto !important;
+    }
+    .timeline-step.active ~ .timeline-label,
+    .timeline-step.completed ~ .timeline-label {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="text-white mb-0"><i class="fa-solid fa-map-location-dot text-primary me-2"></i> Tracker & Security Hub</h4>
+    <a href="/Customer/Dashboard" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Back to Dashboard</a>
+</div>
+<div class="row">
+    <!-- Map & Route Column -->
+    <div class="col-lg-8 mb-4 mb-lg-0">
+        <!-- Tracker Map Card -->
+        <div class="glass-card p-0 mb-4 overflow-hidden" style="min-height: 400px; display:flex; flex-direction:column;">
+            <div class="p-3 bg-dark border-bottom border-secondary d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="mb-0 text-white"><i class="fa-solid fa-route text-warning me-2"></i> Live Mechanic Tracking</h5>
+                    <span class="text-muted small" id="etaText">Awaiting updates...</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-info btn-sm" id="btnShareTrip" onclick="shareTrip()"><i class="fa-solid fa-share-nodes"></i> Share Trip</button>
+                    <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#videoCallModal"><i class="fa-solid fa-video"></i> Video Call Verify</button>
+                </div>
+            </div>
+            
+            <div id="map-container" style="flex-grow:1; min-height: 350px;"></div>
+        </div>
+
+        <!-- Job Progress Checklist (Visual State Machine) -->
+        <div class="glass-card mb-4">
+            <h5 class="text-white mb-4"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Roadmap Status</h5>
+            <div class="timeline-progress-wrapper">
+                <div class="timeline-item-col">
+                    <div class="timeline-step" id="step-Accepted">1</div>
+                    <div class="timeline-label">Accepted</div>
+                </div>
+                <div class="timeline-item-col">
+                    <div class="timeline-step" id="step-Arrived">2</div>
+                    <div class="timeline-label">Arrived</div>
+                </div>
+                <div class="timeline-item-col">
+                    <div class="timeline-step" id="step-Inspecting">3</div>
+                    <div class="timeline-label">Inspecting</div>
+                </div>
+                <div class="timeline-item-col">
+                    <div class="timeline-step" id="step-Repairing">4</div>
+                    <div class="timeline-label">Repairing</div>
+                </div>
+                <div class="timeline-item-col">
+                    <div class="timeline-step" id="step-Completed">5</div>
+                    <div class="timeline-label">Finished</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Status Console, SOS Panic Hub, Approvals, & Checkout -->
+    <div class="col-lg-4">
+        <!-- Mechanic Info Card & Verification -->
+        <div class="glass-card mb-4" id="mechanicDetailsCard">
+            <h5 class="text-white mb-3">Assigned Expert</h5>
+            <div class="d-flex align-items-center mb-3">
+                <div class="position-relative me-3">
+                    <div class="rounded-circle bg-warning p-3 d-flex align-items-center justify-content-center text-dark" style="width: 55px; height: 55px; font-weight:bold; font-size:1.2rem;">
+                        @job.Mechanic?.Name[0]
+                    </div>
+                    <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success border border-white" style="font-size:0.5rem;"><i class="fa-solid fa-check"></i> Verified</span>
+                </div>
+                <div>
+                    <h6 class="text-white mb-0">@job.Mechanic?.Name</h6>
+                    <div class="text-muted small">Rating: <span class="text-warning">@(profile?.Rating ?? 5.0) ★</span> | @(profile?.ExperienceYears ?? 5) Yrs Exp</div>
+                    <div class="text-warning small"><i class="fa-solid fa-certificate me-1"></i> KYC Document Verified</div>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2 mb-2">
+                <a href="tel:@job.Mechanic?.PhoneNumber" class="btn btn-warning font-weight-bold flex-fill py-2.5 shadow-sm">
+                    <i class="fa-solid fa-phone me-1.5"></i> 📞 Call
+                </a>
+                <button type="button" class="btn btn-outline-info font-weight-bold flex-fill py-2.5 shadow-sm" data-bs-toggle="modal" data-bs-target="#liveChatModal" onclick="fetchChatMessages()">
+                    <i class="fa-solid fa-comments me-1.5"></i> 💬 Chat
+                </button>
+            </div>
+        </div>
+
+        <!-- SOS & Safety Center -->
+        <div class="glass-card mb-4 border-danger border-opacity-30">
+            <h5 class="text-danger mb-3"><i class="fa-solid fa-shield-halved text-danger me-2"></i> Safety & SOS Moat</h5>
+            <p class="text-muted small">Tap the panic button to share GPS coords with emergency contacts + police control instantly.</p>
+            <div class="sos-btn-container">
+                <button class="sos-button" onclick="triggerSOS()">
+                    <i class="fa-solid fa-triangle-exclamation mb-1"></i>
+                    <span>SOS</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Estimate / Parts Approval Panel (Dynamic depending on state) -->
+        <div class="glass-card mb-4 border-warning border-opacity-30 d-none" id="partsApprovalCard">
+            <h5 class="text-warning mb-3"><i class="fa-solid fa-screwdriver-wrench me-2"></i> Parts/Spares Estimate</h5>
+            <div class="bg-black bg-opacity-40 p-3 rounded border border-secondary mb-3">
+                <div class="font-weight-bold text-white" id="partsNameText">Clutch cable replacement</div>
+                <div class="text-muted small" id="partsDetailsText">Required for proper clutch engagement. Source: local dealer.</div>
+                <hr class="border-secondary my-2">
+                <div class="d-flex justify-content-between text-white">
+                    <span>Parts Estimate:</span>
+                    <span class="font-weight-bold text-warning" id="partsCostText">₹650.00</span>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-premium-primary flex-grow-1" onclick="submitPartsApproval(true)"><i class="fa-solid fa-check"></i> Approve & Fix</button>
+                <button class="btn btn-premium-secondary" onclick="submitPartsApproval(false)"><i class="fa-solid fa-xmark"></i> Decline</button>
+            </div>
+        </div>
+
+        <!-- Towing Option Approval Panel -->
+        <div class="glass-card mb-4 border-warning border-opacity-30 d-none" id="towingApprovalCard">
+            <h5 class="text-warning mb-3"><i class="fa-solid fa-truck-pickup me-2"></i> Towing Approval Request</h5>
+            <p class="text-muted small">Mechanic flagged that an on-spot repair is not possible. Photos uploaded as verification.</p>
+            
+            <div class="bg-black bg-opacity-40 p-3 rounded border border-secondary mb-3">
+                <div class="text-muted small">Reason: <b class="text-light" id="towingReasonText">Gearbox leak / shaft broken</b></div>
+                <div class="my-2 border border-secondary rounded overflow-hidden" style="max-height:120px;">
+                    <img src="https://images.unsplash.com/photo-1597766333608-98897e4d3e6d?auto=format&fit=crop&q=80&w=400" alt="Diagnostic Proof" class="w-100 h-100" style="object-fit:cover;">
+                </div>
+                <hr class="border-secondary my-2">
+                <div class="d-flex justify-content-between text-white">
+                    <span>Towing Cost:</span>
+                    <span class="font-weight-bold text-warning" id="towingCostText">₹750.00</span>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-premium-primary flex-grow-1" onclick="submitTowingApproval(true)"><i class="fa-solid fa-truck-monster"></i> Approve Towing</button>
+                <button class="btn btn-premium-secondary" onclick="submitTowingApproval(false)"><i class="fa-solid fa-xmark"></i> Reject</button>
+            </div>
+        </div>
+
+        <!-- Payment & Escrow Checkout Panel -->
+        <div class="glass-card mb-4 border-success border-opacity-30 d-none" id="paymentCheckoutCard">
+            <h5 class="text-success mb-3"><i class="fa-solid fa-wallet me-2"></i> Escrow Settlement Console</h5>
+            <p class="text-muted small">Job marked complete by the mechanic. Review breakdown bill and pay below. Payment will be held in Escrow.</p>
+            
+            <div class="bg-black bg-opacity-40 p-3 rounded border border-secondary mb-4">
+                <div class="d-flex justify-content-between text-muted mb-2 small">
+                    <span>Visiting Charge:</span>
+                    <span id="billVisiting">₹139.00</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted mb-2 small">
+                    <span>Parts / Spares:</span>
+                    <span id="billParts">₹0.00</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted mb-2 small">
+                    <span>Towing Charge:</span>
+                    <span id="billTowing">₹0.00</span>
+                </div>
+                <hr class="border-secondary my-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-white font-weight-bold">Final Settled Amount:</span>
+                    <h5 class="text-success font-weight-extrabold mb-0" id="billTotal">₹139.00</h5>
+                </div>
+            </div>
+
+            <button class="btn btn-premium-primary w-100 py-3" onclick="openRazorpayMock()"><i class="fa-solid fa-lock me-1"></i> Pay Now (Escrow Release)</button>
+            <button class="btn btn-premium-danger w-100 mt-2" onclick="fileDispute()"><i class="fa-solid fa-triangle-exclamation"></i> Raise Dispute / Report Fraud</button>
+        </div>
+
+        <!-- Rating & Feedback Panel (Post-Job complete) -->
+        <div class="glass-card mb-4 border-info border-opacity-30 d-none" id="ratingCard">
+            <h5 class="text-info mb-3"><i class="fa-solid fa-star me-2"></i> Rate & Review Mechanic</h5>
+            <form action="/Customer/SubmitFeedback" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="id" value="@job.Id">
+                <input type="hidden" name="rating" id="ratingInput" value="5">
+                <input type="hidden" name="positiveTags" id="positiveTagsInput" value="">
+                <input type="hidden" name="complaintReasons" id="complaintReasonsInput" value="">
+                <input type="hidden" name="complaintCategory" id="complaintCategoryInput" value="General">
+                <input type="hidden" name="isRecommended" id="isRecommendedInput" value="true">
+
+                <div class="mb-4 text-center">
+                    <label class="form-label text-muted d-block small mb-1">How was your repair experience?</label>
+                    <div class="d-flex justify-content-center gap-2 my-2 text-warning fs-2" id="starRatingContainer">
+                        <i class="fa-solid fa-star star-btn text-warning cursor-pointer" data-value="1"></i>
+                        <i class="fa-solid fa-star star-btn text-warning cursor-pointer" data-value="2"></i>
+                        <i class="fa-solid fa-star star-btn text-warning cursor-pointer" data-value="3"></i>
+                        <i class="fa-solid fa-star star-btn text-warning cursor-pointer" data-value="4"></i>
+                        <i class="fa-solid fa-star star-btn text-warning cursor-pointer" data-value="5"></i>
+                    </div>
+                    <span class="badge bg-success text-white px-3 py-1 font-weight-bold" id="ratingLabelBadge">5.0 ★ Excellent</span>
+                </div>
+
+                <!-- Positive Feedback Section (Rating >= 4) -->
+                <div id="positiveFeedbackSection" class="mb-4">
+                    <label class="form-label text-warning font-weight-bold small d-block mb-2">
+                        <i class="fa-solid fa-thumbs-up me-1"></i> What did you like? (Select options):
+                    </label>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="feedback-chip pos-chip" data-tag="Professional Behaviour"><i class="fa-solid fa-user-tie text-info"></i> Professional Behaviour</span>
+                        <span class="feedback-chip pos-chip" data-tag="Arrived on Time"><i class="fa-solid fa-clock text-warning"></i> Arrived on Time</span>
+                        <span class="feedback-chip pos-chip" data-tag="Problem Solved"><i class="fa-solid fa-check-double text-success"></i> Problem Solved</span>
+                        <span class="feedback-chip pos-chip" data-tag="Reasonable Price"><i class="fa-solid fa-tag text-primary"></i> Reasonable Price</span>
+                        <span class="feedback-chip pos-chip" data-tag="Friendly Nature"><i class="fa-solid fa-smile text-warning"></i> Friendly Nature</span>
+                        <span class="feedback-chip pos-chip" data-tag="Expert Knowledge"><i class="fa-solid fa-brain text-info"></i> Expert Knowledge</span>
+                        <span class="feedback-chip pos-chip" data-tag="Fast Service"><i class="fa-solid fa-bolt text-warning"></i> Fast Service</span>
+                        <span class="feedback-chip pos-chip" data-tag="Clean Work"><i class="fa-solid fa-sparkles text-light"></i> Clean Work</span>
+                        <span class="feedback-chip pos-chip" data-tag="Honest Mechanic"><i class="fa-solid fa-shield-halved text-success"></i> Honest Mechanic</span>
+                        <span class="feedback-chip pos-chip" data-tag="Explained the Problem Clearly"><i class="fa-solid fa-comments text-info"></i> Explained Problem Clearly</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small mb-1">Write a Review (Optional):</label>
+                        <textarea class="form-control glass-input" name="feedback" rows="2" placeholder="Write your feedback & experience here..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Negative / Complaint Section (Rating < 4) -->
+                <div id="complaintSection" class="mb-4 d-none p-3 bg-danger bg-opacity-10 border border-danger border-opacity-30 rounded">
+                    <label class="form-label text-danger font-weight-bold small d-block mb-2">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Complaint / Issue Reasons (Select reasons):
+                    </label>
+
+                    <div class="mb-3">
+                        <span class="text-muted small d-block mb-1 font-weight-bold">🛠️ Service Quality:</span>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="feedback-chip neg-chip" data-category="Service Quality" data-reason="Mechanic late aaya"><i class="fa-solid fa-hourglass-end text-danger"></i> Mechanic late aaya</span>
+                            <span class="feedback-chip neg-chip" data-category="Service Quality" data-reason="Mechanic aaya hi nahi"><i class="fa-solid fa-user-xmark text-danger"></i> Mechanic aaya hi nahi</span>
+                            <span class="feedback-chip neg-chip" data-category="Service Quality" data-reason="Problem solve nahi hui"><i class="fa-solid fa-wrench text-danger"></i> Problem solve nahi hui</span>
+                            <span class="feedback-chip neg-chip" data-category="Service Quality" data-reason="Wrong repair ki"><i class="fa-solid fa-circle-exclamation text-danger"></i> Wrong repair ki</span>
+                            <span class="feedback-chip neg-chip" data-category="Service Quality" data-reason="Vehicle ko damage kiya"><i class="fa-solid fa-car-burst text-danger"></i> Vehicle ko damage kiya</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="text-muted small d-block mb-1 font-weight-bold">⚠️ Behaviour & Safety:</span>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="feedback-chip neg-chip" data-category="Behaviour" data-reason="Bad behaviour"><i class="fa-solid fa-face-frown text-danger"></i> Bad behaviour</span>
+                            <span class="feedback-chip neg-chip" data-category="Behaviour" data-reason="Abusive language"><i class="fa-solid fa-comment-slash text-danger"></i> Abusive language</span>
+                            <span class="feedback-chip neg-chip" data-category="Behaviour" data-reason="Unprofessional behaviour"><i class="fa-solid fa-user-slash text-danger"></i> Unprofessional behaviour</span>
+                            <span class="feedback-chip neg-chip" data-category="Safety" data-reason="Safety concern"><i class="fa-solid fa-shield-virus text-danger"></i> Safety concern</span>
+                            <span class="feedback-chip neg-chip" data-category="Other" data-reason="Other / Custom Complaint"><i class="fa-solid fa-pen-to-square text-warning"></i> Other / Custom Complaint</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label text-light small mb-1">Detailed Complaint:</label>
+                        <textarea class="form-control glass-input border-danger border-opacity-40" id="complaintDetailsInput" name="complaintDetails" rows="3" placeholder="Explain complaint details for admin review..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Recommend Toggle -->
+                <div class="mb-4 text-center">
+                    <label class="form-label text-light small d-block mb-2 font-weight-bold">
+                        <i class="fa-solid fa-thumbs-up text-warning me-1"></i> Recommend this Mechanic?
+                    </label>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-outline-success active px-3 py-2 btn-recommend-toggle" id="btnRecommendYes" data-val="true">
+                            <i class="fa-solid fa-thumbs-up me-1"></i> 👍 Yes
+                        </button>
+                        <button type="button" class="btn btn-outline-danger px-3 py-2 btn-recommend-toggle" id="btnRecommendNo" data-val="false">
+                            <i class="fa-solid fa-thumbs-down me-1"></i> 👎 No
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Add Photos (Optional) -->
+                <div class="mb-4">
+                    <label class="form-label text-light small d-block mb-1 font-weight-bold">
+                        <i class="fa-solid fa-camera text-info me-1"></i> Add Service Photos (Optional):
+                    </label>
+                    <input type="file" class="form-control glass-input text-white small" name="reviewPhoto" accept="image/*">
+                </div>
+
+                <button type="submit" class="btn btn-premium-primary w-100 py-2.5 font-weight-bold" id="submitReviewBtn">
+                    <i class="fa-solid fa-paper-plane me-1"></i> Submit Review & Feedback
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Video Call Simulation Modal -->
+<div class="modal fade" id="videoCallModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-info"><i class="fa-solid fa-shield-check text-success me-2"></i> SECURE VIDEO VERIFICATION</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="video-preview-box mb-3 d-flex align-items-center justify-content-center">
+                    <div class="text-white text-opacity-50">
+                        <i class="fa-solid fa-spinner fa-spin fa-2x mb-2 text-info"></i>
+                        <div class="small">Connecting secure encrypted stream...</div>
+                    </div>
+                    <div class="video-overlay-text">
+                        <span class="pulsing-dot"></span> Noida URA Network Channel 4
+                    </div>
+                </div>
+                <p class="text-muted small">This video verification call is monitored for security & safety. Double-encryption standard active.</p>
+                <button class="btn btn-premium-danger" data-bs-dismiss="modal">End Verification</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Live Chat Modal -->
+<div class="modal fade" id="liveChatModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-warning p-2 text-dark font-weight-bold" style="width:36px; height:36px; display:flex; align-items:center; justify-content:center;">
+                        @(job.Mechanic?.Name?[0] ?? 'M')
+                    </div>
+                    <div>
+                        <h6 class="modal-title text-white font-weight-bold mb-0">@job.Mechanic?.Name</h6>
+                        <span class="text-success small" style="font-size:0.75rem;"><i class="fa-solid fa-circle me-1" style="font-size:0.5rem;"></i> Live Chat Active</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 bg-black bg-opacity-40" id="chatMessagesBox" style="height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
+                <div class="text-center text-muted small py-3" id="chatLoadingText">Loading live chat...</div>
+            </div>
+            
+            <!-- Quick Suggestion Chips -->
+            <div class="p-2 border-top border-secondary bg-dark d-flex gap-1 overflow-auto" style="white-space:nowrap;">
+                <button type="button" class="btn btn-outline-secondary btn-sm text-light font-weight-bold" onclick="sendQuickChatMessage('Where are you right now?')">📍 Current location?</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm text-light font-weight-bold" onclick="sendQuickChatMessage('How many minutes will you take?')">⏱️ How long will it take?</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm text-light font-weight-bold" onclick="sendQuickChatMessage('I am standing near the landmark.')">📍 Standing near landmark</button>
+            </div>
+
+            <div class="modal-footer border-secondary p-2 bg-dark">
+                <div class="input-group">
+                    <input type="text" id="chatInputText" class="form-control glass-input text-white" placeholder="Type a message to mechanic..." onkeypress="handleChatKeyPress(event)" />
+                    <button class="btn btn-warning font-weight-bold px-3" onclick="sendUserChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Razorpay Mock Checkout Overlay -->
+<div class="modal fade" id="razorpayModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-dark bg-white" style="border-radius:12px; overflow:hidden;">
+            <div class="p-4 bg-primary text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #0e1e38 0%, #1a335a 100%) !important;">
+                <div>
+                    <h5 class="mb-0 font-weight-bold">RaahSathi Platform Checkout</h5>
+                    <span class="small text-white-50">Secure Razorpay Gateway</span>
+                </div>
+                <i class="fa-solid fa-shield-halved fa-2x text-warning"></i>
+            </div>
+            <div class="p-4 text-dark bg-light border-bottom">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="text-muted small">ORDER ID</div>
+                        <div class="font-weight-bold text-dark">ord_raahsathi_@(job.Id)</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-muted small">AMOUNT DUE</div>
+                        <h4 class="font-weight-bold text-dark mb-0" id="modalPaymentAmount">₹139.00</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4">
+                <h6 class="text-muted mb-3 small">SELECT PAYMENT METHOD</h6>
+                <div class="d-flex flex-column gap-2 mb-4">
+                    <button class="btn btn-outline-primary text-start p-3 d-flex align-items-center justify-content-between" onclick="payWithUPI()">
+                        <div>
+                            <span class="font-weight-bold text-dark d-block">Pay via UPI (GPay, PhonePe, Paytm)</span>
+                            <span class="text-muted small">Instant escrow transfer</span>
+                        </div>
+                        <i class="fa-brands fa-google-pay fa-2x text-primary"></i>
+                    </button>
+                    <button class="btn btn-outline-primary text-start p-3 d-flex align-items-center justify-content-between" onclick="payWithCard()">
+                        <div>
+                            <span class="font-weight-bold text-dark d-block">Debit / Credit Card</span>
+                            <span class="text-muted small">Visa, MasterCard, RuPay</span>
+                        </div>
+                        <i class="fa-solid fa-credit-card fa-lg text-primary"></i>
+                    </button>
+                </div>
+                <div class="text-center text-muted small mb-3">
+                    <i class="fa-solid fa-lock me-1"></i> Funds held securely in escrow pending release approval.
+                </div>
+                <button type="button" class="btn btn-outline-danger w-100" data-bs-dismiss="modal">Cancel Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var map;
+    var customerMarker, mechanicMarker;
+    var linePath;
+    
+    var customerLat = @job.CustomerLat;
+    var customerLng = @job.CustomerLng;
+    
+    var mechanicLat = 0;
+    var mechanicLng = 0;
+
+    $(document).ready(function() {
+        // Initialize Map
+        map = L.map('map-container').setView([customerLat, customerLng], 14);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
+
+        // Add Customer Marker
+        customerMarker = L.marker([customerLat, customerLng]).addTo(map);
+        customerMarker.bindPopup("<span class='text-dark'>Your breakdown location</span>").openPopup();
+
+        // Star rating clicks & section toggles
+        $('.star-btn').click(function() {
+            var val = parseInt($(this).data('value'));
+            $('#ratingInput').val(val);
+            
+            // Highlight stars
+            $('.star-btn').each(function(index) {
+                if (index < val) {
+                    $(this).removeClass('text-muted opacity-50').addClass('text-warning');
+                } else {
+                    $(this).removeClass('text-warning').addClass('text-muted opacity-50');
+                }
+            });
+
+            // Update rating badge & toggle sections
+            if (val >= 4) {
+                $('#ratingLabelBadge')
+                    .removeClass('bg-danger bg-warning text-dark')
+                    .addClass('bg-success text-white')
+                    .html(val + '.0 ★ ' + (val === 5 ? 'Excellent Service' : 'Good Service'));
+                
+                $('#positiveFeedbackSection').removeClass('d-none');
+                $('#complaintSection').addClass('d-none');
+                $('#submitReviewBtn')
+                    .removeClass('btn-danger')
+                    .addClass('btn-premium-primary')
+                    .html('<i class="fa-solid fa-paper-plane me-1"></i> Submit Review & Feedback');
+            } else {
+                var labelText = val === 3 ? '3.0 ★ Average / Needs Improvement' : (val === 2 ? '2.0 ★ Poor Service' : '1.0 ★ Very Bad / Unacceptable');
+                $('#ratingLabelBadge')
+                    .removeClass('bg-success bg-warning text-dark')
+                    .addClass('bg-danger text-white')
+                    .html(labelText);
+                
+                $('#positiveFeedbackSection').addClass('d-none');
+                $('#complaintSection').removeClass('d-none');
+                $('#submitReviewBtn')
+                    .removeClass('btn-premium-primary')
+                    .addClass('btn-danger')
+                    .html('<i class="fa-solid fa-triangle-exclamation me-1"></i> Submit Complaint & Escalate to Admin');
+            }
+        });
+
+        // Toggle positive chips
+        $('.pos-chip').click(function() {
+            $(this).toggleClass('active-positive');
+            var selected = [];
+            $('.pos-chip.active-positive').each(function() {
+                selected.push($(this).data('tag'));
+            });
+            $('#positiveTagsInput').val(selected.join(', '));
+        });
+
+        // Toggle complaint chips
+        $('.neg-chip').click(function() {
+            $(this).toggleClass('active-negative');
+            var selected = [];
+            var category = $(this).data('category') || 'General';
+            $('#complaintCategoryInput').val(category);
+
+            $('.neg-chip.active-negative').each(function() {
+                selected.push($(this).data('reason'));
+            });
+            $('#complaintReasonsInput').val(selected.join(', '));
+
+            if ($(this).data('reason') === 'Other / Custom Complaint' && $(this).hasClass('active-negative')) {
+                $('#complaintDetailsInput').focus();
+            }
+        });
+
+        // Toggle Recommend Yes/No
+        $('.btn-recommend-toggle').click(function() {
+            $('.btn-recommend-toggle').removeClass('active');
+            $(this).addClass('active');
+            var val = $(this).data('val');
+            $('#isRecommendedInput').val(val);
+        });
+
+        // Begin polling status every 3 seconds
+        pollJobStatus();
+        setInterval(pollJobStatus, 3000);
+    });
+
+    function pollJobStatus() {
+        $.get('/Customer/GetJobStatus?id=@job.Id', function(res) {
+            // Update Timeline steps
+            updateTimelineUI(res.status);
+
+            // Update mechanic details and map
+            if (res.mechanicId) {
+                $('#mechanicDetailsCard').removeClass('d-none');
+                
+                // Draw/Update mechanic marker
+                if (res.mechanicLat && res.mechanicLng) {
+                    mechanicLat = res.mechanicLat;
+                    mechanicLng = res.mechanicLng;
+
+                    if (!mechanicMarker) {
+                        // Create mechanic marker
+                        var mechIcon = L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41]
+                        });
+                        mechanicMarker = L.marker([mechanicLat, mechanicLng], {icon: mechIcon}).addTo(map);
+                        mechanicMarker.bindPopup("<span class='text-dark'>Roadside Mechanic travelling...</span>");
+                    } else {
+                        // Move marker smoothly
+                        mechanicMarker.setLatLng([mechanicLat, mechanicLng]);
+                    }
+
+                    // Redraw path line
+                    if (linePath) {
+                        map.removeLayer(linePath);
+                    }
+                    linePath = L.polyline([
+                        [customerLat, customerLng],
+                        [mechanicLat, mechanicLng]
+                    ], {color: '#f59e0b', weight: 4, dashArray: '5, 10'}).addTo(map);
+
+                    // Re-center map to fit both
+                    var bounds = L.latLngBounds([
+                        [customerLat, customerLng],
+                        [mechanicLat, mechanicLng]
+                    ]);
+                    map.fitBounds(bounds, {padding: [50, 50]});
+                }
+            }
+
+            // Estimate ETA description
+            if (res.status === "Accepted") {
+                $('#etaText').html("<i class='fa-solid fa-spinner fa-spin text-warning me-1'></i> Mechanic travelling. ETA <b>~8 mins</b>");
+            } else if (res.status === "Arrived") {
+                $('#etaText').html("<span class='text-success font-weight-bold'><i class='fa-solid fa-check-circle me-1'></i> Mechanic has arrived on scene.</span>");
+            } else if (res.status === "Inspecting") {
+                $('#etaText').html("<span class='text-warning font-weight-bold'><i class='fa-solid fa-magnifying-glass fa-spin me-1'></i> Running full vehicle diagnostics...</span>");
+            } else if (res.status === "EstimatePending") {
+                $('#etaText').text("Awaiting your parts estimate approval.");
+            } else if (res.status === "Repairing") {
+                if (res.partsApproved === true) {
+                    $('#etaText').html("<span class='text-warning'><i class='fa-solid fa-tools fa-spin me-1'></i> Replacing clutch cable & adjusting tension...</span>");
+                } else {
+                    $('#etaText').html("<span class='text-warning'><i class='fa-solid fa-tools fa-spin me-1'></i> Re-tensioning brake pedal...</span>");
+                }
+            } else if (res.status === "Completed") {
+                $('#etaText').html("<span class='text-success'><i class='fa-solid fa-face-smile me-1'></i> Service resolved. Payment escrow released.</span>");
+            }
+
+            // Handle Parts estimate approval prompt
+            if (res.status === "EstimatePending" && res.partsApproved === null) {
+                $('#partsApprovalCard').removeClass('d-none');
+                $('#partsCostText').text('₹' + res.partsEstimateAmount);
+                $('#partsNameText').text(res.partsEstimateDetails);
+            } else {
+                $('#partsApprovalCard').addClass('d-none');
+            }
+
+            // Handle Towing estimate approval prompt
+            if (res.towingNeeded === true && res.towingApproved === null) {
+                $('#towingApprovalCard').removeClass('d-none');
+                $('#towingCostText').text('₹' + res.towingCharge);
+                $('#towingReasonText').text(res.towingReason);
+            } else {
+                $('#towingApprovalCard').addClass('d-none');
+            }
+
+            // Handle Escrow settlement panel showing
+            // Show checkout either when completed or when mechanic marked inspection done (or towing approved)
+            if ((res.status === "Completed" && res.partsApproved !== null) || (res.status === "Repairing" && res.partsApproved !== null && res.towingApproved === null) || (res.status === "Arrived" && res.partsApproved === false)) {
+                // If it is already completed in database, go straight to rating/review panel
+                if (res.status === "Completed") {
+                    $('#paymentCheckoutCard').addClass('d-none');
+                    $('#ratingCard').removeClass('d-none');
+                } else {
+                    $('#paymentCheckoutCard').removeClass('d-none');
+                    $('#billVisiting').text('₹' + res.finalBillAmount); // final bill contains visiting + approved parts
+                    $('#billParts').text('₹' + (res.partsApproved === true ? res.partsEstimateAmount : 0.0));
+                    $('#billTowing').text('₹' + (res.towingApproved === true ? res.towingCharge : 0.0));
+                    $('#billTotal').text('₹' + res.finalBillAmount);
+                }
+            } else {
+                $('#paymentCheckoutCard').addClass('d-none');
+            }
+        });
+    }
+
+    function updateTimelineUI(status) {
+        $('.timeline-step').removeClass('active completed');
+        
+        if (status === "Accepted") {
+            $('#step-Accepted').addClass('active');
+        } else if (status === "Arrived") {
+            $('#step-Accepted').addClass('completed');
+            $('#step-Arrived').addClass('active');
+        } else if (status === "Inspecting" || status === "EstimatePending") {
+            $('#step-Accepted').addClass('completed');
+            $('#step-Arrived').addClass('completed');
+            $('#step-Inspecting').addClass('active');
+        } else if (status === "Repairing") {
+            $('#step-Accepted').addClass('completed');
+            $('#step-Arrived').addClass('completed');
+            $('#step-Inspecting').addClass('completed');
+            $('#step-Repairing').addClass('active');
+        } else if (status === "Completed") {
+            $('#step-Accepted').addClass('completed');
+            $('#step-Arrived').addClass('completed');
+            $('#step-Inspecting').addClass('completed');
+            $('#step-Repairing').addClass('completed');
+            $('#step-Completed').addClass('completed');
+        }
+    }
+
+    function submitPartsApproval(approve) {
+        $.post('/Customer/ApproveParts', { id: @job.Id, approve: approve }, function(res) {
+            pollJobStatus();
+        });
+    }
+
+    function submitTowingApproval(approve) {
+        $.post('/Customer/ApproveTowing', { id: @job.Id, approve: approve }, function(res) {
+            pollJobStatus();
+        });
+    }
+
+    function triggerSOS() {
+        alert("🚨 SOS EMERGENCY TRIGGERED! 🚨\n\nLive coordinates shared with: \n1. Priya Patel (Emergency Contact 1)\n2. Amit Sharma (Emergency Contact 2)\n3. Noida Sector 62 PCR Control Room.\n\nHelpline alert sent via priority SMS channel.");
+    }
+
+    function shareTrip() {
+        alert("Trip Sharing Link copied to clipboard:\n\nhttp://localhost:5000/Customer/ShareStatus?token=track_job_@(job.Id)");
+    }
+
+    function openRazorpayMock() {
+        var totalAmount = $('#billTotal').text();
+        $('#modalPaymentAmount').text(totalAmount);
+        var rzpModal = new bootstrap.Modal(document.getElementById('razorpayModal'));
+        rzpModal.show();
+    }
+
+    function payWithUPI() {
+        var rzpModal = bootstrap.Modal.getInstance(document.getElementById('razorpayModal'));
+        rzpModal.hide();
+        
+        $.post('/Customer/ProcessPayment', { id: @job.Id, paymentId: 'pay_upi_' + Math.random().toString(36).substring(7) }, function(res) {
+            pollJobStatus();
+        });
+    }
+
+    function payWithCard() {
+        var rzpModal = bootstrap.Modal.getInstance(document.getElementById('razorpayModal'));
+        rzpModal.hide();
+
+        $.post('/Customer/ProcessPayment', { id: @job.Id, paymentId: 'pay_card_' + Math.random().toString(36).substring(7) }, function(res) {
+            pollJobStatus();
+        });
+    }
+
+    function fileDispute() {
+        var reason = prompt("Enter the reason for filing a dispute (escrow funds will be locked):");
+        if (reason) {
+            $.post('/Customer/FileDispute', { id: @job.Id, reason: reason }, function(res) {
+                alert("Escrow funds LOCKED. Admin dispute raised. Our Ops team will verify via photo logs and resolve within 24 hours SLA.");
+                pollJobStatus();
+            });
+        }
+    }
+
+    // Live Chat Functionality
+    function fetchChatMessages() {
+        $.get('/Customer/GetChatMessages?jobId=@job.Id', function(res) {
+            if (res && res.success) {
+                var html = '';
+                if (res.messages.length === 0) {
+                    html = '<div class="text-center text-muted small my-auto py-4"><i class="fa-solid fa-comments text-secondary fa-2x mb-2 d-block"></i>Start a conversation with your assigned mechanic.</div>';
+                } else {
+                    res.messages.forEach(function(m) {
+                        var isMe = m.senderRole === "Customer";
+                        html += `
+                            <div class="d-flex flex-column ${isMe ? 'align-items-end' : 'align-items-start'} mb-2">
+                                <span class="text-muted" style="font-size:0.65rem;">${m.senderName} • ${m.sentTime}</span>
+                                <div class="${isMe ? 'bg-warning text-dark font-weight-bold' : 'bg-secondary text-white'} px-3 py-2 rounded-3 shadow-sm" style="max-width:80%; font-size:0.85rem; word-break:break-word;">
+                                    ${m.messageText}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                $('#chatMessagesBox').html(html);
+                var box = document.getElementById('chatMessagesBox');
+                box.scrollTop = box.scrollHeight;
+            }
+        });
+    }
+
+    function sendUserChatMessage() {
+        var text = $('#chatInputText').val();
+        if (!text || !text.trim()) return;
+        
+        $.post('/Customer/SendChatMessage', { jobId: @job.Id, message: text, role: "Customer" }, function(res) {
+            if (res && res.success) {
+                $('#chatInputText').val('');
+                fetchChatMessages();
+            }
+        });
+    }
+
+    function sendQuickChatMessage(txt) {
+        $('#chatInputText').val(txt);
+        sendUserChatMessage();
+    }
+
+    function handleChatKeyPress(e) {
+        if (e.which === 13) {
+            sendUserChatMessage();
+        }
+    }
+
+    setInterval(function() {
+        if ($('#liveChatModal').hasClass('show')) {
+            fetchChatMessages();
+        }
+    }, 3000);
+</script>
+}

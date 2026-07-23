@@ -1,0 +1,826 @@
+@{
+    ViewData["Title"] = "Request Roadside Assistance";
+    var vehicles = ViewBag.Vehicles as List<RaahSathi.Models.Vehicle> ?? new List<RaahSathi.Models.Vehicle>();
+    var pricingRules = ViewBag.PricingRules as List<RaahSathi.Models.PricingRule> ?? new List<RaahSathi.Models.PricingRule>();
+    var carRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Car") ?? new RaahSathi.Models.PricingRule { BaseFee = 99, PerKmRate = 8 };
+    var bikeRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "2-Wheeler") ?? new RaahSathi.Models.PricingRule { BaseFee = 49, PerKmRate = 5 };
+    var commRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Commercial") ?? new RaahSathi.Models.PricingRule { BaseFee = 199, PerKmRate = 12 };
+    var heavyRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Heavy") ?? new RaahSathi.Models.PricingRule { BaseFee = 299, PerKmRate = 15 };
+
+    bool isCustLoggedIn = Context.Request.Cookies.ContainsKey("RaahSathiCustomerUserId");
+    string custName = Context.Request.Cookies["RaahSathiUserName"] ?? "Customer";
+    var preSelectedVehicle = ViewBag.PreSelectedVehicle as RaahSathi.Models.Vehicle;
+}
+
+<!-- Top Live Status Banner -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="p-3 rounded-3 border border-warning border-opacity-40 d-flex flex-column flex-md-row align-items-center justify-content-between gap-2 shadow" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.98));">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-success bg-opacity-20 p-2 me-3 d-flex align-items-center justify-content-center" style="width:42px; height:42px;">
+                    <i class="fa-solid fa-location-crosshairs text-success fa-lg animate-pulse"></i>
+                </div>
+                <div>
+                    <h6 class="text-white font-weight-bold mb-0">Auto GPS Location Detection Active</h6>
+                    <span class="text-muted small" id="detectedLocationText">Detecting your breakdown location via browser GPS...</span>
+                </div>
+            </div>
+            <div id="nearbyBadgeContainer">
+                <span class="badge bg-warning text-dark font-weight-bold px-3 py-2" style="font-size:0.85rem;" id="nearbyMechanicsBadge">
+                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Checking Nearby Mechanics...
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column: Interactive Map & Location Lock -->
+    <div class="col-lg-7 mb-4 mb-lg-0">
+        <div class="glass-card h-100 p-0 overflow-hidden d-flex flex-column" style="min-height:560px;">
+            <div class="p-3 bg-dark border-bottom border-secondary d-flex align-items-center justify-content-between">
+                <h5 class="mb-0 text-white font-weight-bold">
+                    <i class="fa-solid fa-map-location-dot text-warning me-2"></i> Breakdown Location Map
+                </h5>
+                <button class="btn btn-outline-warning btn-sm font-weight-bold" onclick="reDetectGPS()">
+                    <i class="fa-solid fa-crosshairs me-1"></i> Re-Detect GPS
+                </button>
+            </div>
+            
+            <div id="map-container" style="flex-grow:1; min-height: 440px; height:100%;"></div>
+            
+            <div class="p-3 bg-dark border-top border-secondary text-muted small d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-info-circle text-warning me-1"></i> Drag pin or click map to adjust exact breakdown location.</span>
+                <span class="text-success font-weight-bold" id="gpsAccuracyText"><i class="fa-solid fa-shield-check me-1"></i> High Accuracy</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: 30-Second Ultra-Fast Booking Form -->
+    <div class="col-lg-5">
+        <div class="glass-card">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h4 class="text-white font-weight-bold mb-0">
+                    <i class="fa-solid fa-bolt text-warning me-2 animate-pulse"></i> Instant Request
+                </h4>
+                <span class="badge bg-danger text-white px-2.5 py-1 font-weight-bold small">EXPRESS DISPATCH</span>
+            </div>
+
+            <!-- Step 1: Vehicle Category Selection -->
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label text-white small font-weight-bold mb-0">1. Select Vehicle Type</label>
+                <span class="badge bg-dark text-warning border border-warning border-opacity-40 px-2.5 py-1 font-weight-bold" id="vehicleCategoryTooltipBadge" style="font-size:0.75rem;">
+                    <i class="fa-solid fa-circle-info me-1"></i> All Cars and SUVs
+                </span>
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-sm-3">
+                    <div id="vPill-Car" class="v-pill p-2 rounded-3 text-center cursor-pointer border active-v-pill" onclick="setVehicleType('Car')" data-bs-toggle="tooltip" title="All Cars and SUVs">
+                        <i class="fa-solid fa-car text-warning me-1"></i>
+                        <div class="text-white font-weight-bold small">Car/SUV</div>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div id="vPill-2-Wheeler" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary" onclick="setVehicleType('2-Wheeler')" data-bs-toggle="tooltip" title="All Bikes, Auto, E-Rikshow">
+                        <i class="fa-solid fa-motorcycle text-warning me-1"></i>
+                        <div class="text-white font-weight-bold small">Bike/Auto</div>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div id="vPill-Commercial" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary overflow-hidden" onclick="setVehicleType('Commercial')" data-bs-toggle="tooltip" title="All Commercial Vehicles">
+                        <i class="fa-solid fa-truck text-warning me-1"></i>
+                        <div class="text-white font-weight-bold text-truncate" style="font-size:0.65rem; line-height:1.2;" title="Bus/Truck/Loader">Bus/Truck/Loader</div>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div id="vPill-Heavy" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary overflow-hidden" onclick="setVehicleType('Heavy')" data-bs-toggle="tooltip" title="All Heavy Vehicles">
+                        <i class="fa-solid fa-tractor text-warning me-1"></i>
+                        <div class="text-white font-weight-bold text-truncate" style="font-size:0.65rem; line-height:1.2;" title="Tractor/JCB/Crane">Tractor/JCB/Crane</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Brand & Model and Optional Registration Number (Under 1. Select Vehicle Type) -->
+            <div class="row g-2 mb-3">
+                <div class="col-md-7">
+                    <label class="form-label text-white small font-weight-bold mb-1">Vehicle Name &amp; Model <span class="text-warning font-weight-bold">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-car" id="vehicleModelIcon"></i></span>
+                        <input type="text" class="form-control glass-input text-white font-weight-bold" id="vehicleNameModelInput" value="@(preSelectedVehicle?.Model ?? "")" placeholder="e.g. Hyundai Creta 2022 / Swift Dzire" required />
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label text-white small font-weight-bold mb-1">Registration No. <span class="text-warning font-weight-normal" style="font-size:0.75rem;">(Optional)</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-id-card"></i></span>
+                        <input type="text" class="form-control glass-input text-white font-weight-bold text-uppercase" id="vehicleRegNumberInput" value="@(preSelectedVehicle?.RegistrationNumber ?? "")" placeholder="e.g. UP16 AB 1234" />
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Step 2: Issue / Problem Category Selection Cards -->
+            <label class="form-label text-white small font-weight-bold mb-2">2. Breakdown Problem</label>
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-warning active-prob-card cursor-pointer d-flex align-items-center" onclick="setProblemType('Battery Dead', this)">
+                        <i class="fa-solid fa-car-battery text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Battery Dead</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Jumpstart / Swap</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Flat Tyre', this)">
+                        <i class="fa-solid fa-circle-dot text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Flat Tyre</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Puncture / Change</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Engine Problem', this)">
+                        <i class="fa-solid fa-gears text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Engine Problem</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Overheating / Smoke</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Key Locked', this)">
+                        <i class="fa-solid fa-key text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Key Locked</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Lockout Unlock</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Fuel Finished', this)">
+                        <i class="fa-solid fa-gas-pump text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Fuel Delivery</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Petrol / Diesel</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Towing Needed', this)">
+                        <i class="fa-solid fa-truck-pickup text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Towing Service</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Flatbed / Tow</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Gearbox Issue', this)">
+                        <i class="fa-solid fa-cogs text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Gearbox Issue</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Clutch / Gear Stuck</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Suspension Issue', this)">
+                        <i class="fa-solid fa-sliders text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Suspension Issue</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Shockers / Axle Noise</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Problem Details Description & Vehicle Breakdown Photo Upload (Under 2. Breakdown Problem) -->
+            <div class="row g-2 mb-3">
+                <div class="col-12">
+                    <label class="form-label text-muted small font-weight-bold">Other Problem Details</label>
+                    <textarea class="form-control glass-input text-white" id="problemDescInput" rows="2" placeholder="Describe problem in detail (e.g. Engine knocking noise, side tire puncture, key broken)..."></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label text-muted small font-weight-bold">Upload Vehicle / Breakdown Photo</label>
+                    <div class="p-3 border border-secondary rounded-3 bg-dark bg-opacity-60 text-center position-relative cursor-pointer" id="photoUploadBox" style="border-style: dashed !important;">
+                        <input type="file" class="form-control opacity-0 position-absolute top-0 start-0 w-100 h-100 cursor-pointer" id="problemPhotoInput" accept="image/*" onchange="previewProblemPhoto(this)" style="z-index:10;" />
+                        <div id="photoPreviewContainer">
+                            <i class="fa-solid fa-camera text-warning fa-2x mb-1"></i>
+                            <div class="text-white font-weight-bold small">Snap Photo or Choose from Gallery</div>
+                            <span class="text-muted" style="font-size:0.75rem;">Helps mechanic understand issue instantly</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Breakdown Address & Landmark -->
+            <div class="row g-2 mb-3">
+                <div class="col-12">
+                    <label class="form-label text-muted small font-weight-bold">3. Breakdown Address</label>
+                    <input type="text" class="form-control glass-input text-white" id="addressInput" placeholder="Auto-detected address via GPS..." required />
+                </div>
+                <div class="col-12">
+                    <input type="text" class="form-control glass-input text-white" id="landmarkInput" placeholder="Nearby Landmark (e.g. Near HP Petrol Pump)" />
+                </div>
+            </div>
+
+            <!-- Transparent Upfront Cost Estimator Box -->
+            <div class="bg-dark bg-opacity-80 p-3 rounded-3 border border-secondary border-opacity-40 mb-3">
+                <div class="d-flex justify-content-between text-muted small mb-1">
+                    <span>Base Visiting Charge:</span>
+                    <span id="baseFeeText" class="text-white font-weight-bold">₹99.00</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted small mb-1">
+                    <span>Service Fix Estimate:</span>
+                    <span id="serviceRangeText" class="text-white font-weight-bold">₹150 - ₹3,500</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted small mb-1">
+                    <span>Distance to Nearest Patrol:</span>
+                    <span id="distanceText" class="text-warning font-weight-bold">3.2 km</span>
+                </div>
+                <hr class="border-secondary border-opacity-30 my-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-white font-weight-bold">Upfront Total Estimate:</span>
+                    <h4 class="text-warning font-weight-extrabold mb-0" style="font-family:'Outfit';" id="totalEstimateText">₹249 - ₹3,599</h4>
+                </div>
+            </div>
+
+            <!-- 30-Second Fast Request Trigger Button -->
+            <button type="button" class="btn btn-warning btn-lg w-100 py-3 font-weight-extrabold text-dark shadow" id="btnRequestDispatch" style="background:#f59e0b; border:none; font-size:1.1rem;">
+                <i class="fa-solid fa-paper-plane me-2"></i> Request Assistance Now 🚀
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Guest OTP Quick Authentication Modal (If user is not logged in) -->
+<div class="modal fade" id="guestAuthModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-warning border-opacity-40" style="background:#0f172a;">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-white font-weight-bold">
+                    <i class="fa-solid fa-shield-halved text-warning me-2"></i> 5-Second Quick Verification
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-3">
+                    <span class="badge bg-warning text-dark font-weight-bold mb-2">INSTANT DISPATCH</span>
+                    <p class="text-muted small">Enter your name and mobile number to dispatch the nearest verified mechanic.</p>
+                </div>
+
+                <div class="mb-3" id="guestNameContainer">
+                    <label class="form-label text-muted small font-weight-bold">Your Full Name</label>
+                    <input type="text" class="form-control glass-input text-white" id="guestFullName" placeholder="e.g. Rahul Sharma">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small font-weight-bold">10-Digit Mobile Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
+                        <input type="tel" class="form-control glass-input text-white font-weight-bold" id="guestPhoneNumber" placeholder="Enter Mobile Number" maxlength="10">
+                    </div>
+                </div>
+
+                <div class="mb-4" id="otpSection" style="display:none;">
+                    <label class="form-label text-muted small font-weight-bold">4-Digit Verification OTP <span class="text-warning">(Use 1234)</span></label>
+                    <input type="text" class="form-control glass-input text-white text-center font-weight-bold" id="guestOtpCode" placeholder="••••" maxlength="4" style="letter-spacing: 12px; font-size:1.3rem;">
+                </div>
+
+                <button type="button" class="btn btn-warning w-100 py-3 font-weight-extrabold text-dark" id="btnSubmitGuestAuth">
+                    Verify &amp; Broadcast Request 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Uber-Style Smart Dispatch & Parallel Broadcast Modal -->
+<div class="modal fade" id="dispatchModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-warning border-opacity-40" style="background:#0b1120; border-radius:18px;">
+            <div class="modal-header border-secondary border-opacity-30 py-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-warning text-dark me-2 d-flex align-items-center justify-content-center font-weight-bold" style="width:32px; height:32px;">
+                        <i class="fa-solid fa-radar animate-pulse"></i>
+                    </div>
+                    <h5 class="modal-title text-white font-weight-bold mb-0">Parallel Dispatch Engine</h5>
+                </div>
+                <span class="badge bg-warning text-dark font-weight-bold" id="liveEtaHeaderBadge">Searching...</span>
+            </div>
+            
+            <div class="modal-body text-light p-4">
+                <!-- Status Radar Pulse Animation Header -->
+                <div class="text-center p-4 rounded-3 border border-secondary border-opacity-30 mb-3" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95));">
+                    <div class="mb-3 d-inline-block position-relative">
+                        <div class="spinner-grow text-warning" style="width: 3.5rem; height: 3.5rem;" role="status"></div>
+                        <i class="fa-solid fa-car-burst text-white position-absolute top-50 start-50 translate-middle fa-lg"></i>
+                    </div>
+                    <h4 class="text-white font-weight-extrabold mb-1" id="dispatchMainTitle">Searching Nearby Mechanics...</h4>
+                    <p class="text-muted small mb-0" id="dispatchSubTitle">Broadcasting to Top 5 Skill-Matched Mechanics in your area...</p>
+                </div>
+
+                <!-- 5-Star Preferred Mechanic Alert Badge -->
+                <div id="preferredMechanicBadge" class="alert alert-warning border-warning bg-warning bg-opacity-10 text-warning p-2 rounded mb-3 text-center small font-weight-bold d-none">
+                    <i class="fa-solid fa-star text-warning me-1"></i> Priority Request Sent to your previous 5★ Mechanic (<span id="prefMechName"></span>)!
+                </div>
+
+                <!-- Live Searching Progress Bar Alert -->
+                <div class="alert alert-info border-info bg-dark bg-opacity-60 text-info p-2.5 rounded text-center small font-weight-bold mb-3">
+                    <i class="fa-solid fa-spinner fa-spin me-1 text-warning"></i> <span id="searchAlertText">Please wait, searching for nearby mechanics...</span>
+                </div>
+
+                <div class="row">
+                    <!-- Dispatch Live Log -->
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h6 class="text-muted small font-weight-bold mb-2">LIVE DISPATCH BROADCAST LOG</h6>
+                        <div class="sim-console mb-3 p-3 rounded bg-black bg-opacity-60 border border-secondary border-opacity-30 text-monospace small" id="dispatchConsole" style="height:210px; overflow-y:auto; line-height:1.6;">
+                            <div class="sim-log-line text-muted">&gt; Initializing parallel dispatch engine...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Parallel Ranked Mechanics List -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted small font-weight-bold mb-2">TOP MATCHED MECHANICS (PARALLEL DISPATCH)</h6>
+                        <div id="mechanicRankedList" class="d-flex flex-column gap-2" style="max-height:210px; overflow-y:auto;">
+                            <!-- Top 5 Scored Mechanics render here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2-Minute SLA Timeout Modal -->
+<div class="modal fade" id="timeoutModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-danger border-2 text-white shadow-lg">
+            <div class="modal-header border-danger py-3">
+                <h5 class="modal-title text-danger font-weight-bold mb-0"><i class="fa-solid fa-circle-exclamation me-2"></i> No Mechanics Currently Available</h5>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <i class="fa-solid fa-user-clock text-warning fa-4x mb-2"></i>
+                </div>
+                <h5 class="text-white font-weight-bold mb-2">Location SLA Timeout (2 Mins)</h5>
+                <p class="text-muted small mb-4">
+                    Sorry, no mechanics are currently available at your location. Please try requesting at least 3 times before contacting our support team.
+                </p>
+                <div class="d-grid gap-2">
+                    <a href="tel:+9118007224728" class="btn btn-warning btn-lg font-weight-bold text-dark shadow">
+                        <i class="fa-solid fa-headset me-2"></i> 📞 Call Support Team (+91 1800-RAAH-SATHI)
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary text-light font-weight-bold" onclick="window.location.reload()">
+                        <i class="fa-solid fa-rotate me-1"></i> Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.v-pill, .prob-card {
+    transition: all 0.2s ease-in-out;
+}
+.v-pill:hover, .prob-card:hover {
+    transform: translateY(-2px);
+    border-color: #f59e0b !important;
+}
+.active-v-pill, .active-prob-card {
+    background: rgba(245, 158, 11, 0.15) !important;
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+}
+</style>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        var currentLat = 28.6250;
+        var currentLng = 77.3100;
+        var selectedVehicleType = "Car";
+        var selectedProblemType = "Battery Dead";
+        var isCustLoggedIn = @(isCustLoggedIn.ToString().ToLower());
+        
+        @if (preSelectedVehicle != null)
+        {
+            <text>
+            setVehicleType("@preSelectedVehicle.VehicleType");
+            </text>
+        }
+        
+        // Initialize Map
+        var map = L.map('map-container').setView([currentLat, currentLng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        var customerMarker = L.marker([currentLat, currentLng], { draggable: true }).addTo(map);
+        customerMarker.bindPopup("<b class='text-dark'>Breakdown Spot</b>").openPopup();
+
+        // 1. Auto GPS Location Detection Engine (Live GPS + IP Fallback)
+        function autoDetectGPS() {
+            $('#detectedLocationText').html('<i class="fa-solid fa-spinner fa-spin me-1 text-warning"></i> Detecting your live location via GPS...');
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    currentLat = pos.coords.latitude;
+                    currentLng = pos.coords.longitude;
+                    
+                    customerMarker.setLatLng([currentLat, currentLng]);
+                    map.setView([currentLat, currentLng], 15);
+
+                    // Reverse geocode to get live street address & city
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLat}&lon=${currentLng}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            var addr = data.display_name || `Live GPS Spot: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+                            $('#addressInput').val(addr);
+                            $('#detectedLocationText').html(`<i class="fa-solid fa-circle-check text-success me-1"></i> ${addr}`);
+                        })
+                        .catch(() => {
+                            var addr = `Live GPS Spot: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+                            $('#addressInput').val(addr);
+                            $('#detectedLocationText').html(`<i class="fa-solid fa-circle-check text-success me-1"></i> ${addr}`);
+                        });
+
+                    fetchNearbyMechanicsInfo();
+                }, function(err) {
+                    fallbackIPLocation();
+                }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+            } else {
+                fallbackIPLocation();
+            }
+        }
+
+        function fallbackIPLocation() {
+            fetch('https://ipapi.co/json/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.latitude && data.longitude) {
+                        currentLat = data.latitude;
+                        currentLng = data.longitude;
+                        customerMarker.setLatLng([currentLat, currentLng]);
+                        map.setView([currentLat, currentLng], 14);
+
+                        var cityAddr = `${data.city || ''}, ${data.region || ''}, ${data.country_name || ''}`.trim().replace(/^,\s*/, '');
+                        var fullAddr = cityAddr ? `Live Spot: ${cityAddr}` : `GPS Spot: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+                        $('#addressInput').val(fullAddr);
+                        $('#detectedLocationText').html(`<i class="fa-solid fa-location-dot text-info me-1"></i> ${fullAddr}`);
+                    } else {
+                        $('#detectedLocationText').html(`<i class="fa-solid fa-location-arrow text-warning me-1"></i> Live location undetected. Please allow browser location access or type address.`);
+                    }
+                    fetchNearbyMechanicsInfo();
+                })
+                .catch(() => {
+                    $('#detectedLocationText').html(`<i class="fa-solid fa-location-arrow text-warning me-1"></i> Live location undetected. Please allow browser location access or type address.`);
+                    fetchNearbyMechanicsInfo();
+                });
+        }
+
+        window.reDetectGPS = function() {
+            $('#detectedLocationText').html("<i class='fa-solid fa-spinner fa-spin me-1 text-warning'></i> Re-detecting live GPS location...");
+            autoDetectGPS();
+        };
+
+        function fetchNearbyMechanicsInfo() {
+            $.get(`/Customer/GetNearbyMechanicsInfo?lat=${currentLat}&lng=${currentLng}&vehicleType=${selectedVehicleType}`, function(res) {
+                if (res && res.success) {
+                    $('#nearbyMechanicsBadge').html(`<i class="fa-solid fa-bolt me-1 text-dark"></i> ${res.count} Verified Mechanics Nearby • Avg ETA ${res.minEta} mins`);
+                    $('#distanceText').text((res.count > 0 ? res.topMechanics[0].distance.toFixed(1) : "3.2") + " km");
+                }
+            });
+        }
+
+        autoDetectGPS();
+
+        // 2. Selection Handlers
+        window.setVehicleType = function(type) {
+            selectedVehicleType = type;
+            $('.v-pill').removeClass('active-v-pill border-warning').addClass('border-secondary');
+            $(`#vPill-${type.replace(' ', '')}`).addClass('active-v-pill border-warning').removeClass('border-secondary');
+
+            var tooltipMap = {
+                "Car": "All Cars and SUVs",
+                "2-Wheeler": "All Bikes, Auto, E-Rikshow",
+                "Commercial": "All Commercial Vehicles",
+                "Heavy": "All Heavy Vehicles"
+            };
+
+            var iconMap = {
+                "Car": "fa-car",
+                "2-Wheeler": "fa-motorcycle",
+                "Commercial": "fa-truck",
+                "Heavy": "fa-tractor"
+            };
+            var selectedIcon = iconMap[type] || "fa-car";
+            $('#vehicleModelIcon').attr('class', 'fa-solid ' + selectedIcon);
+
+            var tooltipText = tooltipMap[type] || "All Cars and SUVs";
+            $('#vehicleCategoryTooltipBadge').html(`<i class="fa-solid fa-circle-info me-1"></i> ${tooltipText}`);
+
+            updatePricing();
+            fetchNearbyMechanicsInfo();
+        };
+
+        window.setProblemType = function(prob, el) {
+            selectedProblemType = prob;
+            $('.prob-card').removeClass('active-prob-card border-warning').addClass('border-secondary');
+            $(el).addClass('active-prob-card border-warning').removeClass('border-secondary');
+            updatePricing();
+        };
+
+        window.autoFillVehicleModel = function(selectEl) {
+            var selectedOption = $(selectEl).find('option:selected');
+            var model = selectedOption.data('model');
+            var reg = selectedOption.data('reg');
+            var type = selectedOption.data('type');
+            if (model) {
+                $('#vehicleNameModelInput').val(model);
+            }
+            if (reg) {
+                $('#vehicleRegNumberInput').val(reg);
+            }
+            if (type) {
+                setVehicleType(type);
+            }
+        };
+
+        window.previewProblemPhoto = function(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#photoPreviewContainer').html(`
+                        <img src="${e.target.result}" style="max-height:120px; border-radius:8px; border:2px solid #f59e0b;" class="mb-2" />
+                        <div class="text-success font-weight-bold small"><i class="fa-solid fa-check-circle me-1"></i> Photo Attached</div>
+                        <span class="text-muted" style="font-size:0.75rem;">Click box to change photo</span>
+                    `);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        function updatePricing() {
+            var ratesMap = {
+                "Car": { base: @carRule.BaseFee, perKm: @carRule.PerKmRate },
+                "2-Wheeler": { base: @bikeRule.BaseFee, perKm: @bikeRule.PerKmRate },
+                "Commercial": { base: @commRule.BaseFee, perKm: @commRule.PerKmRate },
+                "Heavy": { base: @heavyRule.BaseFee, perKm: @heavyRule.PerKmRate }
+            };
+
+            var selectedRule = ratesMap[selectedVehicleType] || ratesMap["Car"];
+            var baseFee = selectedRule.base;
+            var perKm = selectedRule.perKm;
+            var dist = 3.2;
+
+            var visitingCharge = baseFee + (dist * perKm);
+            $('#baseFeeText').text('₹' + visitingCharge.toFixed(2));
+
+            var serviceMin = 150;
+            var serviceMax = 1000;
+            
+            if (selectedProblemType === "Battery Dead") { serviceMin = 150; serviceMax = 3500; }
+            else if (selectedProblemType === "Flat Tyre") { serviceMin = 100; serviceMax = 400; }
+            else if (selectedProblemType === "Fuel Finished") { serviceMin = 100; serviceMax = 1100; }
+            else if (selectedProblemType === "Key Locked") { serviceMin = 200; serviceMax = 500; }
+            else if (selectedProblemType === "Towing Needed") { serviceMin = 500; serviceMax = 3500; }
+            else if (selectedProblemType === "Engine Problem") { serviceMin = 300; serviceMax = 3000; }
+            else if (selectedProblemType === "Gearbox Issue") { serviceMin = 400; serviceMax = 2500; }
+            else if (selectedProblemType === "Suspension Issue") { serviceMin = 350; serviceMax = 2200; }
+
+            $('#serviceRangeText').text('₹' + serviceMin + ' - ₹' + serviceMax.toLocaleString());
+            
+            var totalMin = visitingCharge + serviceMin;
+            var totalMax = visitingCharge + serviceMax;
+            $('#totalEstimateText').text('₹' + totalMin.toFixed(0) + ' - ₹' + totalMax.toFixed(0));
+        }
+
+        customerMarker.on('dragend', function() {
+            var pos = customerMarker.getLatLng();
+            currentLat = pos.lat;
+            currentLng = pos.lng;
+            updatePricing();
+            fetchNearbyMechanicsInfo();
+        });
+
+        // 3. 30-Second Booking Request Trigger
+        $('#btnRequestDispatch').click(function() {
+            var address = $('#addressInput').val().trim();
+            if (!address) {
+                alert("Please enter or detect your breakdown address.");
+                $('#addressInput').focus();
+                return;
+            }
+
+            var vehicleNameModel = $('#vehicleNameModelInput').val().trim();
+            if (!vehicleNameModel) {
+                alert("Please enter your Vehicle Name & Model.");
+                $('#vehicleNameModelInput').focus();
+                return;
+            }
+
+            // If user is not logged in, trigger Guest Verification Modal
+            if (!isCustLoggedIn) {
+                var guestModal = new bootstrap.Modal(document.getElementById('guestAuthModal'));
+                guestModal.show();
+                return;
+            }
+
+            // Logged in: Submit directly
+            submitDispatch();
+        });
+
+        // Guest Verification Submission
+        $('#btnSubmitGuestAuth').click(function() {
+            var fullName = $('#guestFullName').val().trim();
+            var phone = $('#guestPhoneNumber').val().trim();
+            var otp = $('#guestOtpCode').val().trim();
+
+            if (!fullName) {
+                alert("Please enter your full name.");
+                return;
+            }
+            if (phone.length < 10) {
+                alert("Please enter a valid 10-digit mobile number.");
+                return;
+            }
+
+            if ($('#otpSection').is(':hidden')) {
+                // Show OTP section
+                $('#otpSection').slideDown();
+                $('#btnSubmitGuestAuth').html('Verify OTP &amp; Submit Request 🚀');
+                alert(" Verification OTP sent to +91 " + phone + ". (Use 1234 for testing)");
+                return;
+            }
+
+            if (otp !== "1234") {
+                alert("⚠️ Invalid OTP code. Please use 1234 for testing.");
+                return;
+            }
+
+            // Close guest modal & submit request
+            bootstrap.Modal.getInstance(document.getElementById('guestAuthModal')).hide();
+            submitDispatch(fullName, phone, otp);
+        });
+
+        function submitDispatch(fullName, phone, otp) {
+            var address = $('#addressInput').val().trim();
+            var landmark = $('#landmarkInput').val().trim();
+            var vehicleId = $('#vehicleSelect').val() || null;
+            var vehicleNameModel = $('#vehicleNameModelInput').val().trim();
+            var registrationNumber = $('#vehicleRegNumberInput').val().trim();
+            var problemDescription = $('#problemDescInput').val().trim();
+
+            if (!vehicleNameModel) {
+                alert("Please enter your Vehicle Name & Model.");
+                $('#vehicleNameModelInput').focus();
+                return;
+            }
+
+            // Open Uber-Style Dispatch Modal
+            var dispatchModal = new bootstrap.Modal(document.getElementById('dispatchModal'));
+            dispatchModal.show();
+
+            var formData = new FormData();
+            formData.append("vehicleType", selectedVehicleType);
+            formData.append("vehicleNameModel", vehicleNameModel);
+            formData.append("registrationNumber", registrationNumber);
+            formData.append("problemType", selectedProblemType);
+            formData.append("problemDescription", problemDescription);
+            formData.append("lat", currentLat);
+            formData.append("lng", currentLng);
+            formData.append("address", address);
+            formData.append("landmark", landmark);
+            if (fullName) formData.append("fullName", fullName);
+            if (phone) formData.append("phoneNumber", phone);
+            if (otp) formData.append("otpCode", otp);
+            if (vehicleId) formData.append("vehicleId", vehicleId);
+
+            var photoInput = $('#problemPhotoInput')[0];
+            if (photoInput && photoInput.files && photoInput.files[0]) {
+                formData.append("problemPhoto", photoInput.files[0]);
+            }
+
+            $.ajax({
+                url: '/Customer/QuickRequest',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if (res.success) {
+                        simulateParallelDispatch(res.jobId, res.hasPreferred, res.preferredName);
+                    } else {
+                        alert("Error: " + res.message);
+                        bootstrap.Modal.getInstance(document.getElementById('dispatchModal')).hide();
+                    }
+                },
+                error: function() {
+                    alert("Error submitting request. Please try again.");
+                    bootstrap.Modal.getInstance(document.getElementById('dispatchModal')).hide();
+                }
+            });
+        }
+
+        // 4. Uber-Style Parallel Dispatch & Real-Time Transitions
+        var searchTimeoutTimer = null;
+        function simulateParallelDispatch(jobId, hasPreferred, preferredName) {
+            var consoleEl = $('#dispatchConsole');
+            function log(txt, colorClass = '') {
+                consoleEl.append("<div class='sim-log-line " + colorClass + "'>&gt; " + txt + "</div>");
+                consoleEl.scrollTop(consoleEl[0].scrollHeight);
+            }
+
+            if (hasPreferred && preferredName) {
+                $('#prefMechName').text(preferredName);
+                $('#preferredMechanicBadge').removeClass('d-none');
+                log("⭐ Priority Dispatch to your previous 5★ Mechanic (" + preferredName + ") within 30km!", "text-warning font-weight-bold");
+            } else {
+                $('#preferredMechanicBadge').addClass('d-none');
+            }
+
+            log("Job #" + jobId + " created. Scoring nearby mechanics...", "text-warning");
+
+            // Setup 2-Minute (120 seconds) SLA Timeout
+            searchTimeoutTimer = setTimeout(function() {
+                var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
+                if (dModal) dModal.hide();
+
+                var tModal = new bootstrap.Modal(document.getElementById('timeoutModal'));
+                tModal.show();
+            }, 120000); // 2 minutes timeout
+
+            $.get('/Customer/GetDispatchOptions?jobId=' + jobId, function(data) {
+                if (!data || data.length === 0) {
+                    clearTimeout(searchTimeoutTimer);
+                    var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
+                    if (dModal) dModal.hide();
+
+                    var tModal = new bootstrap.Modal(document.getElementById('timeoutModal'));
+                    tModal.show();
+                    return;
+                }
+
+                setTimeout(function() {
+                    log("Found " + data.length + " skill-matched certified mechanics in 15-30 km.", "text-info");
+                    
+                    var html = '';
+                    data.forEach(function(mech, index) {
+                        var prefBadge = mech.isPreferred ? ' ⭐ 5★ PREFERRED' : '';
+                        html += `
+                            <div class="p-2.5 bg-black bg-opacity-50 border ${mech.isPreferred ? 'border-warning' : 'border-secondary'} rounded d-flex justify-content-between align-items-center mb-1">
+                                <div>
+                                    <div class="font-weight-bold text-white small">${mech.name} (${mech.rating} ★) ${prefBadge}</div>
+                                    <div class="text-muted" style="font-size:0.75rem;">Dist: ${mech.distanceKm} km | ETA: ${mech.etaMinutes} mins</div>
+                                    <div class="text-warning font-weight-bold" style="font-size:0.7rem;">
+                                        Score: ${mech.matchScore}% (Skill ${mech.skillWeight}%, Dist ${mech.distanceWeight}%)
+                                    </div>
+                                </div>
+                                <span class="badge ${mech.isPreferred ? 'bg-warning text-dark' : 'bg-secondary text-white'} font-weight-bold">Rank #${index+1}</span>
+                            </div>
+                        `;
+                    });
+                    $('#mechanicRankedList').html(html);
+                }, 1200);
+
+                // Phase 1 (0-20 sec): Top 5 Verified Mechanics
+                setTimeout(function() {
+                    log("Broadcasting request to Top 5 verified mechanics in area...", "text-warning");
+                    $('#searchAlertText').text("Request sent to Top 5 verified mechanics. Whichever mechanic accepts first will be assigned...");
+                }, 1200);
+
+                // Phase 2 (15-30 sec): Nearby Workshops & Additional Mechanics
+                setTimeout(function() {
+                    log("Expanding search to nearby workshops & additional mechanics...", "text-info");
+                    $('#searchAlertText').text("We're expanding the search to nearby service partners to get you help as quickly as possible.");
+                }, 15000);
+
+                // Phase 3 (30-60 sec): Highway Partners & Regional Towing Network
+                setTimeout(function() {
+                    log("Broadcasting to regional highway partners & towing network...", "text-info");
+                    $('#searchAlertText').text("Connecting with regional highway partners, towing network & nearby town workshops...");
+                }, 30000);
+
+                var chosen = data[0]; // Top matched mechanic (or 5-star preferred)
+                setTimeout(function() {
+                    clearTimeout(searchTimeoutTimer);
+                    log("Mechanic '" + chosen.name + "' accepted the dispatch request!", "text-success");
+                    
+                    $('#dispatchMainTitle').html('<i class="fa-solid fa-circle-check text-success me-2"></i> Mechanic Found!');
+                    $('#dispatchSubTitle').text(chosen.name + " (" + chosen.rating + " ★) is arriving in " + Math.round(chosen.etaMinutes) + " minutes.");
+                    $('#liveEtaHeaderBadge').removeClass('bg-warning').addClass('bg-success text-white').text("Arriving in " + Math.round(chosen.etaMinutes) + " Mins");
+                }, 3800);
+
+                setTimeout(function() {
+                    $.post('/Customer/SimulateAcceptJob', { jobId: jobId, mechanicId: chosen.id }, function(res) {
+                        window.location.href = '/Customer/Tracker?id=' + jobId;
+                    });
+                }, 5200);
+            });
+        }
+    });
+</script>
+}

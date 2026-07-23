@@ -1,0 +1,154 @@
+@{
+    ViewData["Title"] = "Frequently Asked Questions (FAQs)";
+}
+
+<div class="container py-4 py-md-5">
+    <!-- Header Section -->
+    <div class="text-center mb-5">
+        <span class="badge bg-warning text-dark px-3 py-2 font-weight-bold mb-3 rounded-pill" style="font-size: 0.85rem; letter-spacing: 1px;">
+            <i class="fa-solid fa-circle-question me-1"></i> HELP &amp; KNOWLEDGEBASE
+        </span>
+        <h1 class="display-4 font-weight-bold text-white mb-3" style="font-family: 'Outfit', sans-serif;">
+            Frequently Asked Questions
+        </h1>
+        <p class="lead text-muted max-w-700 mx-auto" style="font-size: 1.15rem; line-height: 1.6;">
+            Everything you need to know about requesting roadside assistance, transparent pricing, mechanic verification, and escrow payments.
+        </p>
+    </div>
+
+    <!-- Category Tabs / Search Bar -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-8">
+            <div class="glass-card p-3 d-flex align-items-center gap-3 border-secondary border-opacity-30">
+                <i class="fa-solid fa-magnifying-glass text-warning fa-lg ms-2"></i>
+                <input type="text" id="faqSearchInput" class="form-control bg-transparent text-white border-0 shadow-none" placeholder="Search any question (e.g. pricing, towing, battery, ETA)...">
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Accordion Container -->
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="accordion custom-faq-accordion" id="faqAccordion">
+
+                <!-- Q1 -->
+                <div class="accordion-item glass-card mb-3 border border-secondary border-opacity-30 overflow-hidden">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button bg-dark bg-opacity-70 text-white font-weight-bold collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne" style="font-size: 1.1rem;">
+                            <i class="fa-solid fa-bolt text-warning me-3"></i> How fast will a mechanic arrive after I request assistance?
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" style="line-height: 1.7; font-size: 0.98rem;">
+                            Our real-time dispatch algorithm immediately alerts verified partner mechanics within your breakdown radius. Average arrival time across 20+ cities and highways is <strong>under 25 minutes</strong>. You can track your assigned mechanic's live GPS route on your active dashboard map.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="accordion-item glass-card mb-3 border border-secondary border-opacity-30 overflow-hidden">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button bg-dark bg-opacity-70 text-white font-weight-bold collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo" style="font-size: 1.1rem;">
+                            <i class="fa-solid fa-calculator text-warning me-3"></i> How is the service price calculated? Is there any hidden cost?
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" style="line-height: 1.7; font-size: 0.98rem;">
+                            RaahSathi uses a <strong>weighted 4-layer pricing engine</strong>. You get an exact upfront cost estimate before confirming:
+                            <ul class="mt-2 mb-2">
+                                <li><strong>Base Visiting Fee:</strong> Categorized by vehicle type (2-Wheeler, Car, Commercial, Heavy).</li>
+                                <li><strong>Distance Charge:</strong> Calculated per-km from mechanic location to breakdown point.</li>
+                                <li><strong>Service Charge:</strong> Standardized diagnostic &amp; labor rate based on breakdown type.</li>
+                            </ul>
+                            Zero verbal negotiation or hidden surge prices. Any additional spare part costs require your explicit in-app approval beforehand.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="accordion-item glass-card mb-3 border border-secondary border-opacity-30 overflow-hidden">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button bg-dark bg-opacity-70 text-white font-weight-bold collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree" style="font-size: 1.1rem;">
+                            <i class="fa-solid fa-lock text-warning me-3"></i> How does Escrow Payment Protection work?
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" style="line-height: 1.7; font-size: 0.98rem;">
+                            When you request assistance, your payment is safely held in RaahSathi's protected Escrow system. Funds are released to the mechanic <strong>only after you confirm job completion</strong> via OTP or digital verification. If an emergency job is cancelled or unresolved, 100% refund is processed instantly back to your payment mode.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="accordion-item glass-card mb-3 border border-secondary border-opacity-30 overflow-hidden">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button bg-dark bg-opacity-70 text-white font-weight-bold collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour" style="font-size: 1.1rem;">
+                            <i class="fa-solid fa-shield-halved text-warning me-3"></i> Are all partner mechanics background-checked and verified?
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" style="line-height: 1.7; font-size: 0.98rem;">
+                            Yes, <strong>100% of mechanics on RaahSathi undergo mandatory KYC audit</strong>, including Aadhaar/DL verification, workshop location audit, and criminal background checks. Each mechanic carries an official RaahSathi Digital ID badge visible on your tracking screen.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div class="accordion-item glass-card mb-3 border border-secondary border-opacity-30 overflow-hidden">
+                    <h2 class="accordion-header" id="headingFive">
+                        <button class="accordion-button bg-dark bg-opacity-70 text-white font-weight-bold collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive" style="font-size: 1.1rem;">
+                            <i class="fa-solid fa-truck-pickup text-warning me-3"></i> What if my vehicle cannot be fixed on the spot?
+                        </button>
+                    </h2>
+                    <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" style="line-height: 1.7; font-size: 0.98rem;">
+                            If on-site repair is not possible (e.g. major engine failure, severe collision, or gearbox failure), the mechanic will initiate <strong>Layer 4 Towing Assistance</strong>. A flatbed tow truck or hydraulic winch will be dispatched to transport your vehicle to your chosen workshop or nearest authorized brand service center.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q6 -->
+                <div class="accordion-item glass-card mb-3 border border-secondary border-opacity-30 overflow-hidden">
+                    <h2 class="accordion-header" id="headingSix">
+                        <button class="accordion-button bg-dark bg-opacity-70 text-white font-weight-bold collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix" style="font-size: 1.1rem;">
+                            <i class="fa-solid fa-phone-volume text-warning me-3"></i> How can I contact Emergency Support on highways?
+                        </button>
+                    </h2>
+                    <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" style="line-height: 1.7; font-size: 0.98rem;">
+                            You can call our 24×7 Toll-Free Emergency Hotline at <strong>1800-102-7224</strong> or tap the <strong>Emergency SOS button</strong> on our app/website. Our dispatch desk automatically receives your exact GPS coordinates and alerts highway patrol and nearest breakdown teams.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Need More Help Card -->
+    <div class="row justify-content-center mt-5">
+        <div class="col-lg-8 text-center">
+            <div class="glass-card p-4 border border-warning border-opacity-40" style="background: linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(15,23,42,0.9) 100%);">
+                <h4 class="text-white font-weight-bold mb-2">Still have questions?</h4>
+                <p class="text-muted mb-3">Our 24×7 emergency support desk is always ready to assist you on any highway or city road.</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="/Home/ContactUs" class="btn btn-warning font-weight-bold text-dark px-4 py-2"><i class="fa-solid fa-headset me-2"></i> Contact Support Desk</a>
+                    <a href="tel:18001027224" class="btn btn-outline-light px-4 py-2"><i class="fa-solid fa-phone-volume me-2 text-warning"></i> Call Hotline: 1800-102-7224</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        $('#faqSearchInput').on('keyup', function() {
+            var value = $(this).val().toLowerCase();
+            $('#faqAccordion .accordion-item').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+    });
+</script>
+}

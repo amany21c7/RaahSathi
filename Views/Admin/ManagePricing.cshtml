@@ -1,0 +1,83 @@
+@using RaahSathi.Models
+@{
+    ViewData["Title"] = "Manage Pricing Rules (Admin)";
+    var rules = ViewBag.PricingRules as List<PricingRule> ?? new List<PricingRule>();
+}
+
+<div class="glass-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="text-white mb-0"><i class="fa-solid fa-tags text-warning me-2"></i> Global Pricing Engine</h4>
+        <a href="/Admin/Dashboard" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Back to Dashboard</a>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded">
+                <h6 class="text-white mb-3">Add New Pricing Rule</h6>
+                <form action="/Admin/AddPricingRule" method="POST" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small">Vehicle Category</label>
+                        <select class="form-select glass-input text-white" name="vehicleCategory" required>
+                            <option value="Car">Car / SUV / Van</option>
+                            <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
+                            <option value="Commercial">Commercial (Truck/Bus/Loader/Pickup)</option>
+                            <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Base Fee (₹)</label>
+                        <input type="number" step="0.01" class="form-control glass-input" name="baseFee" placeholder="99.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Per Km (₹)</label>
+                        <input type="number" step="0.01" class="form-control glass-input" name="perKmRate" placeholder="8.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Base Tow (₹)</label>
+                        <input type="number" step="0.01" class="form-control glass-input" name="baseTowingFee" placeholder="500.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Tow / Km (₹)</label>
+                        <input type="number" step="0.01" class="form-control glass-input" name="perKmTowingRate" placeholder="20.00" required>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="submit" class="btn btn-premium-primary w-100"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-dark table-striped table-hover align-middle">
+            <thead>
+                <tr class="text-muted">
+                    <th>Category</th>
+                    <th>Base Fee</th>
+                    <th>Per Km</th>
+                    <th>Base Towing</th>
+                    <th>Towing / Km</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in rules)
+                {
+                    <tr>
+                        <td class="font-weight-bold text-white">@r.VehicleCategory</td>
+                        <td class="text-warning">₹@r.BaseFee</td>
+                        <td>₹@r.PerKmRate</td>
+                        <td class="text-danger">₹@r.BaseTowingFee</td>
+                        <td>₹@r.PerKmTowingRate</td>
+                        <td class="text-end">
+                            <form action="/Admin/DeletePricingRule" method="POST" class="d-inline" onsubmit="return confirm('Delete pricing rule for @r.VehicleCategory?');">
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

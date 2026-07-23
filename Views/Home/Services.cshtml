@@ -1,0 +1,97 @@
+@{
+    ViewData["Title"] = "Services - One platform, every vehicle, every breakdown";
+    var pricingRules = ViewBag.PricingRules as List<RaahSathi.Models.PricingRule> ?? new List<RaahSathi.Models.PricingRule>();
+}
+
+<div class="container py-4 py-md-5">
+    <!-- Header Section (Exact text from screenshot) -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 font-weight-bold text-white mb-3" style="font-family: 'Outfit', sans-serif; letter-spacing: -0.5px;">
+            One platform, every vehicle, every breakdown
+        </h1>
+        <p class="lead text-muted max-w-700 mx-auto" style="font-size: 1.2rem; line-height: 1.6;">
+            From a two-wheeler in the city to a truck on the highway — here's exactly what we help with.
+        </p>
+    </div>
+
+    <!-- 6 Feature Cards Grid (Exact text and icon styling from screenshot) -->
+    <div class="row g-4 mb-5">
+        <!-- Card 1: On-the-spot repair -->
+        <div class="col-md-6 col-lg-4">
+            <div class="glass-card h-100 p-4 border-secondary border-opacity-30 d-flex flex-column hover-lift">
+                <div class="rounded-3 bg-dark bg-opacity-70 border border-secondary p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
+                    <i class="fa-solid fa-bolt text-warning fa-lg"></i>
+                </div>
+                <h4 class="text-white font-weight-bold mb-3" style="font-family: 'Outfit', sans-serif;">On-the-spot repair</h4>
+                <p class="text-muted small mb-0" style="line-height: 1.65; font-size: 0.95rem;">
+                    Battery, puncture, fuel delivery, minor electrical, lockout, and brake or clutch fixes — done right where you're stranded.
+                </p>
+            </div>
+        </div>
+
+        <!-- Card 2: Towing assistance -->
+        <div class="col-md-6 col-lg-4">
+            <div class="glass-card h-100 p-4 border-secondary border-opacity-30 d-flex flex-column hover-lift">
+                <div class="rounded-3 bg-dark bg-opacity-70 border border-secondary p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
+                    <i class="fa-solid fa-truck-pickup text-warning fa-lg"></i>
+                </div>
+                <h4 class="text-white font-weight-bold mb-3" style="font-family: 'Outfit', sans-serif;">Towing assistance</h4>
+                <p class="text-muted small mb-0" style="line-height: 1.65; font-size: 0.95rem;">
+                    When a repair can't happen on the spot, we tow you to the nearest garage — price shown upfront, no surprises.
+                </p>
+            </div>
+        </div>
+
+        <!-- Card 3: Every vehicle type -->
+        <div class="col-md-6 col-lg-4">
+            <div class="glass-card h-100 p-4 border-secondary border-opacity-30 d-flex flex-column hover-lift">
+                <div class="rounded-3 bg-dark bg-opacity-70 border border-secondary p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
+                    <i class="fa-solid fa-car text-warning fa-lg"></i>
+                </div>
+                <h4 class="text-white font-weight-bold mb-3" style="font-family: 'Outfit', sans-serif;">Every vehicle type</h4>
+                <p class="text-muted small mb-0" style="line-height: 1.65; font-size: 0.95rem;">
+                    Bicycles to buses, tractors to JCBs — two-wheelers, cars, commercial and heavy vehicles all covered.
+                </p>
+            </div>
+        </div>
+
+        <!-- Card 4: Transparent pricing -->
+        <div class="col-md-6 col-lg-4">
+            <div class="glass-card h-100 p-4 border-secondary border-opacity-30 d-flex flex-column hover-lift">
+                <div class="rounded-3 bg-dark bg-opacity-70 border border-secondary p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
+                    <i class="fa-solid fa-indian-rupee-sign text-warning fa-lg"></i>
+                </div>
+                <h4 class="text-white font-weight-bold mb-3" style="font-family: 'Outfit', sans-serif;">Transparent pricing</h4>
+                <p class="text-muted small mb-0" style="line-height: 1.65; font-size: 0.95rem;">
+                    See the visiting charge and estimated cost before a mechanic is sent. Parts are only charged after you approve them.
+                </p>
+            </div>
+        </div>
+
+        <!-- Card 5: Verified mechanics -->
+        <div class="col-md-6 col-lg-4">
+            <div class="glass-card h-100 p-4 border-secondary border-opacity-30 d-flex flex-column hover-lift">
+                <div class="rounded-3 bg-dark bg-opacity-70 border border-secondary p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
+                    <i class="fa-solid fa-check text-warning fa-lg"></i>
+                </div>
+                <h4 class="text-white font-weight-bold mb-3" style="font-family: 'Outfit', sans-serif;">Verified mechanics</h4>
+                <p class="text-muted small mb-0" style="line-height: 1.65; font-size: 0.95rem;">
+                    Every mechanic is KYC-checked. Track their live location on the map as they head your way.
+                </p>
+            </div>
+        </div>
+
+        <!-- Card 6: 24x7 support -->
+        <div class="col-md-6 col-lg-4">
+            <div class="glass-card h-100 p-4 border-secondary border-opacity-30 d-flex flex-column hover-lift">
+                <div class="rounded-3 bg-dark bg-opacity-70 border border-secondary p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
+                    <i class="fa-solid fa-phone text-warning fa-lg"></i>
+                </div>
+                <h4 class="text-white font-weight-bold mb-3" style="font-family: 'Outfit', sans-serif;">24x7 support</h4>
+                <p class="text-muted small mb-0" style="line-height: 1.65; font-size: 0.95rem;">
+                    Day or night, city street or highway — request help anytime, anywhere.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

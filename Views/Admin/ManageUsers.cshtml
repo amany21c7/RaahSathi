@@ -1,0 +1,740 @@
+@using RaahSathi.Models
+@{
+    ViewData["Title"] = "Manage Users (Admin)";
+    var users = ViewBag.Users as List<User> ?? new List<User>();
+    var vehicles = ViewBag.Vehicles as List<Vehicle> ?? new List<Vehicle>();
+    var profiles = ViewBag.MechanicProfiles as List<MechanicProfile> ?? new List<MechanicProfile>();
+    var jobs = ViewBag.Jobs as List<Job> ?? new List<Job>();
+    var complaints = ViewBag.Complaints as List<MechanicComplaint> ?? new List<MechanicComplaint>();
+    var warnings = ViewBag.Warnings as List<MechanicWarning> ?? new List<MechanicWarning>();
+}
+
+<style>
+    .btn-tab-pill {
+        color: var(--text-muted) !important;
+        border: 1px solid var(--border-glass) !important;
+        border-radius: 30px !important;
+        background: transparent !important;
+        padding: 0.5rem 1.5rem !important;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-tab-pill:hover {
+        color: #f59e0b !important;
+        border-color: #f59e0b !important;
+    }
+    .btn-tab-pill.active {
+        color: #000 !important;
+        background-color: #f59e0b !important;
+        border-color: #f59e0b !important;
+        font-weight: bold;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+    .search-input-glass {
+        border-radius: 30px !important;
+        padding-left: 2.5rem !important;
+        background: rgba(0, 0, 0, 0.4) !important;
+        border-color: var(--border-glass) !important;
+        color: white !important;
+    }
+    .search-input-glass:focus {
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 8px rgba(245, 158, 11, 0.25) !important;
+    }
+</style>
+
+<div class="glass-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="text-white mb-0"><i class="fa-solid fa-users text-info me-2"></i> User Directory & Detail Analyzer</h4>
+        <a href="/Admin/Dashboard" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Back to Dashboard</a>
+    </div>
+    
+    <!-- User Registration Form -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded">
+                <h6 class="text-white mb-3">Register New User</h6>
+                <form action="/Admin/AddUser" method="POST" class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control glass-input" name="name" placeholder="Full Name" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control glass-input" name="phoneNumber" placeholder="Phone Number (10 digit)" required>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select glass-input text-white" name="role" required>
+                            <option value="Customer">Customer</option>
+                            <option value="Mechanic">Mechanic</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-premium-primary w-100"><i class="fa-solid fa-user-plus"></i> Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Nav Selection -->
+    <ul class="nav nav-pills gap-2 mb-4 border-bottom border-secondary pb-3" id="userDirectoryTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active btn-tab-pill" id="customers-tab" data-bs-toggle="pill" data-bs-target="#customers-panel" type="button" role="tab">
+                <i class="fa-solid fa-car me-1"></i> Customers (@users.Count(u => u.Role == "Customer"))
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link btn-tab-pill" id="mechanics-tab" data-bs-toggle="pill" data-bs-target="#mechanics-panel" type="button" role="tab">
+                <i class="fa-solid fa-wrench me-1"></i> Mechanics (@users.Count(u => u.Role == "Mechanic"))
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link btn-tab-pill position-relative" id="complaints-tab" data-bs-toggle="pill" data-bs-target="#complaints-panel" type="button" role="tab">
+                <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> Complaints & Warnings (@complaints.Count(c => c.Status == "Pending"))
+                @if (complaints.Any(c => c.Status == "Pending"))
+                {
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link btn-tab-pill" id="admins-tab" data-bs-toggle="pill" data-bs-target="#admins-panel" type="button" role="tab">
+                <i class="fa-solid fa-shield-halved me-1"></i> Admins (@users.Count(u => u.Role == "Admin"))
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="userDirectoryTabContent">
+        
+        <!-- ------------------------------------------------------------- -->
+        <!-- CUSTOMERS PANEL -->
+        <!-- ------------------------------------------------------------- -->
+        <div class="tab-pane fade show active" id="customers-panel" role="tabpanel" aria-labelledby="customers-tab">
+            <!-- Filter Bar -->
+            <div class="row g-2 mb-3">
+                <div class="col-md-6 position-relative">
+                    <i class="fa-solid fa-magnifying-glass text-muted position-absolute" style="left: 1.2rem; top: 0.95rem;"></i>
+                    <input type="text" class="form-control search-input-glass" id="customerSearchInput" placeholder="Search by Name or unique ID (e.g. URA-5 or Rahul)...">
+                </div>
+            </div>
+
+            <!-- Customer Table -->
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover align-middle mb-0" id="customerTable">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone Number</th>
+                            <th>Joined</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in users.Where(u => u.Role == "Customer"))
+                        {
+                            <tr class="user-row" data-id="@u.DisplayId" data-name="@u.Name.ToLower()">
+                                <td><span class="badge bg-info bg-opacity-20 text-info border border-info px-2.5 py-1">@u.DisplayId</span></td>
+                                <td class="font-weight-bold text-white">@u.Name</td>
+                                <td>@u.PhoneNumber</td>
+                                <td>@u.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="collapse" data-bs-target="#user-details-@u.Id">
+                                            <i class="fa-solid fa-eye me-1"></i> View Details
+                                        </button>
+                                        <form action="/Admin/DeleteUser" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@u.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this customer?');"><i class="fa-solid fa-trash"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- Collapsible Row for Customer Details -->
+                            <tr class="collapse detail-row" id="user-details-@u.Id">
+                                <td colspan="5" class="p-3 bg-black bg-opacity-40 border border-secondary border-opacity-40" style="border-radius: 8px;">
+                                    @{
+                                        var custVehicles = vehicles.Where(v => v.UserId == u.Id).ToList();
+                                        var custJobs = jobs.Where(j => j.CustomerId == u.Id).ToList();
+                                    }
+                                    <div class="row g-3">
+                                        <div class="col-md-4 border-end border-secondary border-opacity-30">
+                                            <h6 class="text-warning mb-2"><i class="fa-solid fa-car me-1"></i> Registered Vehicles (@custVehicles.Count)</h6>
+                                            @if (!custVehicles.Any())
+                                            {
+                                                <span class="text-muted small">No vehicles registered yet.</span>
+                                            }
+                                            else
+                                            {
+                                                <ul class="list-group list-group-flush bg-transparent">
+                                                    @foreach (var v in custVehicles)
+                                                    {
+                                                        <li class="list-group-item bg-transparent text-light border-secondary border-opacity-20 px-0 py-1 small">
+                                                            <strong class="text-white">@v.Model</strong> <span class="text-muted">(@v.RegistrationNumber)</span> 
+                                                            <span class="badge bg-secondary ms-1">@v.VehicleType</span>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h6 class="text-warning mb-2"><i class="fa-solid fa-clock-history me-1"></i> Booking & Repair History (@custJobs.Count)</h6>
+                                            @if (!custJobs.Any())
+                                            {
+                                                <span class="text-muted small">No bookings created yet.</span>
+                                            }
+                                            else
+                                            {
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-dark table-borderless mb-0" style="font-size: 0.75rem;">
+                                                        <thead>
+                                                            <tr class="text-muted border-bottom border-secondary border-opacity-20">
+                                                                <th>Date</th>
+                                                                <th>Vehicle</th>
+                                                                <th>Problem Category</th>
+                                                                <th>Status</th>
+                                                                <th>Visiting Chrg</th>
+                                                                <th>Total Bill</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var j in custJobs)
+                                                            {
+                                                                <tr>
+                                                                    <td class="text-muted">@j.CreatedAt.ToString("dd MMM hh:mm tt")</td>
+                                                                    <td class="text-white">@j.Vehicle?.Model</td>
+                                                                    <td>@j.ProblemType</td>
+                                                                    <td>
+                                                                        <span class="badge bg-opacity-20 text-@((j.Status == "Completed") ? "success" : (j.Status == "Cancelled" ? "danger" : "info")) bg-@((j.Status == "Completed") ? "success" : (j.Status == "Cancelled" ? "danger" : "info")) border border-@((j.Status == "Completed") ? "success" : (j.Status == "Cancelled" ? "danger" : "info"))" style="font-size:0.65rem;">@j.Status</span>
+                                                                    </td>
+                                                                    <td>₹@j.VisitingCharge.ToString("F2")</td>
+                                                                    <td class="font-weight-bold text-warning">₹@j.FinalBillAmount.ToString("F2")</td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- MECHANICS PANEL -->
+        <!-- ------------------------------------------------------------- -->
+        <div class="tab-pane fade" id="mechanics-panel" role="tabpanel" aria-labelledby="mechanics-tab">
+            <!-- Filter Bar -->
+            <div class="row g-2 mb-3">
+                <div class="col-md-6 position-relative">
+                    <i class="fa-solid fa-magnifying-glass text-muted position-absolute" style="left: 1.2rem; top: 0.95rem;"></i>
+                    <input type="text" class="form-control search-input-glass" id="mechanicSearchInput" placeholder="Search by Name or unique ID (e.g. URA-8 or Amit)...">
+                </div>
+            </div>
+
+            <!-- Mechanic Table -->
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover align-middle mb-0" id="mechanicTable">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone Number</th>
+                            <th>KYC Status</th>
+                            <th>Rating</th>
+                            <th>Joined</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in users.Where(u => u.Role == "Mechanic"))
+                        {
+                            var profile = profiles.FirstOrDefault(p => p.UserId == u.Id) ?? new MechanicProfile();
+                            <tr class="user-row" data-id="@u.DisplayId" data-name="@u.Name.ToLower()">
+                                <td><span class="badge bg-warning bg-opacity-20 text-warning border border-warning px-2.5 py-1">@u.DisplayId</span></td>
+                                <td class="font-weight-bold text-white">@u.Name</td>
+                                <td>@u.PhoneNumber</td>
+                                <td>
+                                    <span class="badge bg-@((profile.KycStatus == "Approved") ? "success" : (profile.KycStatus == "Pending" ? "warning text-dark" : "danger"))">@profile.KycStatus</span>
+                                </td>
+                                <td><span class="text-warning font-weight-bold">@profile.Rating ★</span></td>
+                                <td>@u.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="collapse" data-bs-target="#user-details-@u.Id">
+                                            <i class="fa-solid fa-eye me-1"></i> View Details
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-info open-kyc-modal" data-id="@u.Id"><i class="fa-solid fa-id-card"></i> KYC Panel</button>
+                                        <form action="/Admin/DeleteUser" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@u.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this mechanic?');"><i class="fa-solid fa-trash"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- Collapsible Row for Mechanic Details -->
+                            <tr class="collapse detail-row" id="user-details-@u.Id">
+                                <td colspan="7" class="p-3 bg-black bg-opacity-40 border border-secondary border-opacity-40" style="border-radius: 8px;">
+                                    @{
+                                        var mechProfile = profiles.FirstOrDefault(p => p.UserId == u.Id) ?? new MechanicProfile();
+                                        var mechJobs = jobs.Where(j => j.MechanicId == u.Id).ToList();
+                                    }
+                                    <div class="row g-3">
+                                        <div class="col-md-5 border-end border-secondary border-opacity-30">
+                                            <h6 class="text-warning mb-2"><i class="fa-solid fa-wrench me-1"></i> Mechanic Profile Details</h6>
+                                            <div class="row g-2 text-muted small">
+                                                <div class="col-6">
+                                                    <span>KYC Status: <strong class="text-@((mechProfile.KycStatus == "Approved") ? "success" : (mechProfile.KycStatus == "Pending" ? "warning" : "danger"))">@mechProfile.KycStatus</strong></span><br>
+                                                    <span>Rating: <strong class="text-white">@mechProfile.Rating ★</strong></span><br>
+                                                    <span>Experience: <strong class="text-white">@mechProfile.ExperienceYears Years</strong></span>
+                                                </div>
+                                                <div class="col-6">
+                                                    <span>Commission: <strong class="text-warning">@(mechProfile.CommissionRate * 100)%</strong></span><br>
+                                                    <span>Service Radius: <strong class="text-white">@mechProfile.ServiceRadiusKm KM</strong></span><br>
+                                                    <span>Availability: <strong class="text-@((mechProfile.IsOnline) ? "success" : "muted")">@((mechProfile.IsOnline) ? "Online" : "Offline")</strong></span>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-2 p-2 bg-dark bg-opacity-40 rounded border border-secondary">
+                                                <span class="text-warning small font-weight-bold d-block mb-1"><i class="fa-solid fa-trophy me-1"></i> Badges & Trust Metrics:</span>
+                                                @{
+                                                    var mBadges = mechProfile.GetBadges();
+                                                }
+                                                @if (mBadges.Any())
+                                                {
+                                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                                        @foreach (var b in mBadges)
+                                                        {
+                                                            <span class="badge @b.CssClass" style="font-size:0.65rem;"><i class="@b.Icon me-1"></i> @b.Name</span>
+                                                        }
+                                                    </div>
+                                                }
+                                                <div class="text-muted" style="font-size:0.75rem;">
+                                                    <span>👍 <strong>@mechProfile.RecommendationPercentage%</strong> Recommended | <strong>@mechProfile.TotalReviewsCount</strong> Reviews</span><br>
+                                                    <span>⏱️ <strong>@mechProfile.AvgArrivalTimeMins Mins</strong> Avg Arrival | <strong>@mechProfile.SuccessRatePercentage%</strong> Job Success</span>
+                                                </div>
+                                            </div>
+
+                                            <h6 class="text-warning mt-3 mb-2"><i class="fa-solid fa-address-card me-1"></i> Verification Documents</h6>
+                                            <div class="row g-2 text-muted small">
+                                                <div class="col-12">
+                                                    <span>Aadhaar: <strong class="text-white">@mechProfile.AadhaarNumber</strong></span><br>
+                                                    <span>Shop Name: <strong class="text-white">@(mechProfile.ShopName ?? "N/A")</strong></span><br>
+                                                    <span>Garage Address: <strong class="text-white">@(mechProfile.ShopAddress ?? "N/A")</strong></span><br>
+                                                    <span>Specializations: <strong class="text-info text-decoration-underline">@(mechProfile.Specialization ?? "None")</strong></span>
+                                                </div>
+                                                <div class="col-12 d-flex flex-wrap gap-2 mt-2">
+                                                    @if (!string.IsNullOrEmpty(mechProfile.AadhaarFrontUrl))
+                                                    {
+                                                        <a href="@mechProfile.AadhaarFrontUrl" target="_blank" class="badge bg-secondary text-decoration-none py-1.5"><i class="fa-solid fa-image me-1"></i> Aadhaar Front</a>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(mechProfile.AadhaarBackUrl))
+                                                    {
+                                                        <a href="@mechProfile.AadhaarBackUrl" target="_blank" class="badge bg-secondary text-decoration-none py-1.5"><i class="fa-solid fa-image me-1"></i> Aadhaar Back</a>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(mechProfile.PanCardUrl))
+                                                    {
+                                                        <a href="@mechProfile.PanCardUrl" target="_blank" class="badge bg-secondary text-decoration-none py-1.5"><i class="fa-solid fa-image me-1"></i> PAN Card</a>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(mechProfile.SelfieUrl))
+                                                    {
+                                                        <a href="@mechProfile.SelfieUrl" target="_blank" class="badge bg-secondary text-decoration-none py-1.5"><i class="fa-solid fa-camera me-1"></i> Selfie Photo</a>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(mechProfile.ShopPhotoUrl))
+                                                    {
+                                                        <a href="@mechProfile.ShopPhotoUrl" target="_blank" class="badge bg-secondary text-decoration-none py-1.5"><i class="fa-solid fa-store me-1"></i> Shop Photo</a>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-7">
+                                            <h6 class="text-warning mb-2"><i class="fa-solid fa-truck-ramp-box me-1"></i> Jobs Serviced (@mechJobs.Count)</h6>
+                                            @if (!mechJobs.Any())
+                                            {
+                                                <span class="text-muted small">No jobs accepted/completed yet.</span>
+                                            }
+                                            else
+                                            {
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-dark table-borderless mb-0" style="font-size: 0.75rem;">
+                                                        <thead>
+                                                            <tr class="text-muted border-bottom border-secondary border-opacity-20">
+                                                                <th>Date</th>
+                                                                <th>Customer</th>
+                                                                <th>Vehicle</th>
+                                                                <th>Problem Category</th>
+                                                                <th>Status</th>
+                                                                <th>Escrow Earned</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var j in mechJobs)
+                                                            {
+                                                                var customerName = users.FirstOrDefault(u2 => u2.Id == j.CustomerId)?.Name ?? "Customer";
+                                                                var escrowEarned = j.Status == "Completed" ? (j.FinalBillAmount * (1 - mechProfile.CommissionRate)) : 0;
+                                                                <tr>
+                                                                    <td class="text-muted">@j.CreatedAt.ToString("dd MMM hh:mm tt")</td>
+                                                                    <td class="text-white font-weight-bold">@customerName</td>
+                                                                    <td>@j.Vehicle?.Model</td>
+                                                                    <td>@j.ProblemType</td>
+                                                                    <td>
+                                                                        <span class="badge bg-opacity-20 text-@((j.Status == "Completed") ? "success" : (j.Status == "Cancelled" ? "danger" : "info")) bg-@((j.Status == "Completed") ? "success" : (j.Status == "Cancelled" ? "danger" : "info")) border border-@((j.Status == "Completed") ? "success" : (j.Status == "Cancelled" ? "danger" : "info"))" style="font-size:0.65rem;">@j.Status</span>
+                                                                    </td>
+                                                                    <td class="text-success font-weight-bold">₹@escrowEarned.ToString("F2")</td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- ADMINS PANEL -->
+        <!-- ------------------------------------------------------------- -->
+        <div class="tab-pane fade" id="admins-panel" role="tabpanel" aria-labelledby="admins-tab">
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone Number</th>
+                            <th>Joined</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in users.Where(u => u.Role == "Admin"))
+                        {
+                            <tr>
+                                <td><span class="badge bg-danger bg-opacity-20 text-danger border border-danger px-2.5 py-1">URA-@u.Id</span></td>
+                                <td class="font-weight-bold text-white">@u.Name</td>
+                                <td>@u.PhoneNumber</td>
+                                <td>@u.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="text-end">
+                                    @if (u.PhoneNumber != "9999999999") // Protect super admin
+                                    {
+                                        <form action="/Admin/DeleteUser" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@u.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this administrator?');"><i class="fa-solid fa-trash"></i></button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Super Admin</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- COMPLAINTS & WARNINGS PANEL -->
+        <!-- ------------------------------------------------------------- -->
+        <div class="tab-pane fade" id="complaints-panel" role="tabpanel" aria-labelledby="complaints-tab">
+            <h5 class="text-white mb-3"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Mechanic Complaints & Warning Management Console</h5>
+            
+            @if (!complaints.Any())
+            {
+                <div class="p-4 text-center text-muted bg-dark bg-opacity-30 border border-secondary rounded">
+                    <i class="fa-solid fa-circle-check text-success fa-2x mb-2"></i>
+                    <p class="mb-0">No complaints logged yet. All mechanic ratings are satisfactory.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive mb-4">
+                    <table class="table table-dark table-striped table-hover align-middle mb-0" id="complaintsTable">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>CMP ID</th>
+                                <th>Mechanic (ID & Name)</th>
+                                <th>Customer</th>
+                                <th>Rating</th>
+                                <th>Category & Selected Reasons</th>
+                                <th>Customer Details</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in complaints)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">#CMP-@c.Id</span></td>
+                                    <td>
+                                        <div class="font-weight-bold text-white">@(c.Mechanic?.Name ?? "Mechanic")</div>
+                                        <span class="badge bg-warning text-dark font-weight-bold">URA-@c.MechanicId</span>
+                                        <span class="text-muted small d-block">@(c.Mechanic?.PhoneNumber)</span>
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold text-light">@(c.Customer?.Name ?? "Customer")</div>
+                                        <span class="text-muted small">Job #@c.JobId</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger text-white px-2 py-1"><i class="fa-solid fa-star me-1"></i>@c.Rating ★</span>
+                                    </td>
+                                    <td style="max-width: 250px;">
+                                        <span class="badge bg-info text-dark mb-1">@c.Category</span><br>
+                                        @if (!string.IsNullOrEmpty(c.SelectedReasons))
+                                        {
+                                            @foreach (var r in c.SelectedReasons.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                                            {
+                                                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger me-1 mb-1" style="font-size: 0.7rem;">@r.Trim()</span>
+                                            }
+                                        }
+                                    </td>
+                                    <td style="max-width: 250px;" class="small text-light">
+                                        @(string.IsNullOrEmpty(c.CustomerDetails) ? "No additional text provided." : c.CustomerDetails)
+                                    </td>
+                                    <td>
+                                        @if (c.Status == "Pending")
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Pending Action</span>
+                                        }
+                                        else if (c.Status == "WarningSent")
+                                        {
+                                            <span class="badge bg-danger text-white"><i class="fa-solid fa-triangle-exclamation me-1"></i> Warning Issued</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary"><i class="fa-solid fa-xmark me-1"></i> Dismissed</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            @if (c.Status == "Pending")
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-danger open-warning-modal"
+                                                        data-complaint-id="@c.Id"
+                                                        data-mechanic-id="@c.MechanicId"
+                                                        data-mechanic-name="@(c.Mechanic?.Name ?? "Mechanic")"
+                                                        data-mechanic-uid="URA-@c.MechanicId"
+                                                        data-reasons="@c.SelectedReasons">
+                                                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Issue Warning
+                                                </button>
+                                                <form action="/Admin/DismissComplaint" method="post" class="d-inline">
+                                                    <input type="hidden" name="complaintId" value="@c.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Dismiss this complaint?');">Dismiss</button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-secondary open-warning-modal"
+                                                        data-complaint-id="@c.Id"
+                                                        data-mechanic-id="@c.MechanicId"
+                                                        data-mechanic-name="@(c.Mechanic?.Name ?? "Mechanic")"
+                                                        data-mechanic-uid="URA-@c.MechanicId"
+                                                        data-reasons="@c.SelectedReasons">
+                                                    Send Another Warning
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <h6 class="text-warning mt-4 mb-3"><i class="fa-solid fa-clock-history me-1"></i> Active Issued Warnings History (@warnings.Count)</h6>
+            @if (warnings.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm table-striped align-middle mb-0" style="font-size: 0.8rem;">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>Date</th>
+                                <th>Mechanic</th>
+                                <th>Severity</th>
+                                <th>Message</th>
+                                <th>Acknowledgment Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var w in warnings)
+                            {
+                                <tr>
+                                    <td class="text-muted">@w.CreatedAt.ToString("dd MMM hh:mm tt")</td>
+                                    <td><strong class="text-white">@(w.Mechanic?.Name ?? "Mechanic")</strong> <span class="badge bg-warning text-dark">URA-@w.MechanicId</span></td>
+                                    <td><span class="badge bg-danger">@w.WarningType</span></td>
+                                    <td class="text-light">@w.Message</td>
+                                    <td>
+                                        @if (w.IsAcknowledged)
+                                        {
+                                            <span class="badge bg-success text-white"><i class="fa-solid fa-circle-check me-1"></i> Acknowledged by Mechanic</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-bell fa-bounce me-1"></i> Pending Acknowledgment (Red Alert Active)</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Issue Warning Modal -->
+<div class="modal fade" id="sendWarningModal" tabindex="-1" aria-labelledby="sendWarningModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-danger text-light shadow-lg">
+            <div class="modal-header border-danger bg-danger bg-opacity-20 text-danger">
+                <h5 class="modal-title font-weight-bold" id="sendWarningModalLabel">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> Send Red Alert Warning to Mechanic
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/Admin/SendMechanicWarning" method="post">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="complaintId" id="warnComplaintId" value="0">
+                    <input type="hidden" name="mechanicId" id="warnMechanicId" value="0">
+
+                    <div class="p-3 bg-danger bg-opacity-10 border border-danger rounded mb-3">
+                        <span class="d-block small text-muted">TARGET MECHANIC:</span>
+                        <h5 class="text-white mb-0" id="warnMechanicDisplay">Mechanic Name (URA-X)</h5>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small">Warning Severity / Level</label>
+                        <select class="form-select glass-input text-white" name="warningType" required>
+                            <option value="Official Warning" selected>Official Warning</option>
+                            <option value="Notice">Notice / First Reminder</option>
+                            <option value="Final Warning">Final Warning (Pre-Suspension)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small">Warning Message (Will trigger Red Alert Popup on Mechanic Dashboard):</label>
+                        <textarea class="form-control glass-input" name="message" id="warnMessageInput" rows="4" required placeholder="Type warning instructions for mechanic..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger font-weight-bold px-4">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Send Red Alert Warning
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- KYC Review Modal -->
+<div class="modal fade" id="kycReviewModal" tabindex="-1" aria-labelledby="kycReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning" id="kycReviewModalLabel"><i class="fa-solid fa-id-card me-2"></i> KYC Audit & Review Panel</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="kycReviewModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(document).ready(function() {
+    // Handle opening of Issue Warning Modal
+    $('.open-warning-modal').on('click', function() {
+        var cid = $(this).data('complaint-id');
+        var mid = $(this).data('mechanic-id');
+        var mname = $(this).data('mechanic-name');
+        var muid = $(this).data('mechanic-uid');
+        var reasons = $(this).data('reasons');
+
+        $('#warnComplaintId').val(cid);
+        $('#warnMechanicId').val(mid);
+        $('#warnMechanicDisplay').text(mname + ' (' + muid + ')');
+
+        var defaultMsg = "Aapki customer complaint aayi hai: '" + (reasons || "Unsatisfactory Service") + "'. Kripya time par pahunche aur professional tarike se service dein. Agli baar aisi shikayat milne par aapki ID suspend kar di jayegi.";
+        $('#warnMessageInput').val(defaultMsg);
+
+        var modal = new bootstrap.Modal(document.getElementById('sendWarningModal'));
+        modal.show();
+    });
+
+    // Handle opening of KYC Modal
+    $('.open-kyc-modal').on('click', function() {
+        var id = $(this).data('id');
+        // Reset modal body loading spinner
+        $('#kycReviewModalBody').html('<div class="text-center py-5"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+        
+        // Show modal
+        var myModal = new bootstrap.Modal(document.getElementById('kycReviewModal'));
+        myModal.show();
+        
+        // Load partial content
+        $('#kycReviewModalBody').load('/Admin/ReviewKyc/' + id + '?partial=true');
+    });
+
+    // Live search for Customers
+    $('#customerSearchInput').on('keyup', function() {
+        var query = $(this).val().toLowerCase().trim();
+        $('#customerTable tbody tr.user-row').each(function() {
+            var rowId = $(this).data('id').toLowerCase();
+            var rowName = $(this).data('name').toLowerCase();
+            
+            // Match ID or Name
+            if (rowId.includes(query) || rowName.includes(query)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+                var collapseId = $(this).next('tr.detail-row');
+                collapseId.removeClass('show');
+            }
+        });
+    });
+
+    // Live search for Mechanics
+    $('#mechanicSearchInput').on('keyup', function() {
+        var query = $(this).val().toLowerCase().trim();
+        $('#mechanicTable tbody tr.user-row').each(function() {
+            var rowId = $(this).data('id').toLowerCase();
+            var rowName = $(this).data('name').toLowerCase();
+            
+            // Match ID or Name
+            if (rowId.includes(query) || rowName.includes(query)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+                var collapseId = $(this).next('tr.detail-row');
+                collapseId.removeClass('show');
+            }
+        });
+    });
+});
+</script>
+}

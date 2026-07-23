@@ -1,0 +1,228 @@
+@{
+    ViewData["Title"] = "Customer Operations Dashboard";
+    var vehicles = ViewBag.Vehicles as List<RaahSathi.Models.Vehicle> ?? new List<RaahSathi.Models.Vehicle>();
+    var activeJobs = ViewBag.ActiveJobs as List<RaahSathi.Models.Job> ?? new List<RaahSathi.Models.Job>();
+    var pastJobs = ViewBag.PastJobs as List<RaahSathi.Models.Job> ?? new List<RaahSathi.Models.Job>();
+}
+
+<div class="row">
+        <!-- Quick Emergency Request for Registered Vehicles Card -->
+        <div class="glass-card mb-4 border border-warning border-opacity-40" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div>
+                    <h5 class="text-white font-weight-bold mb-1">
+                        <i class="fa-solid fa-bolt text-warning me-2 animate-pulse"></i> Registered Vehicle Quick Request
+                    </h5>
+                    <p class="text-muted small mb-0">Select your registered vehicle to send an instant roadside assistance request.</p>
+                </div>
+                <div>
+                    @if (vehicles.Count > 0)
+                    {
+                        <div class="d-flex align-items-center gap-2">
+                            <select class="form-select glass-input text-white font-weight-bold" id="dashboardVehicleSelect" style="min-width: 210px;">
+                                @foreach (var v in vehicles)
+                                {
+                                    <option value="@v.Id">@v.Model (@v.RegistrationNumber)</option>
+                                }
+                            </select>
+                            <button class="btn btn-warning font-weight-bold text-dark text-nowrap shadow" onclick="submitQuickVehicleRequest()">
+                                <i class="fa-solid fa-paper-plane me-1"></i> Send Request
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <a href="/Customer/Book" class="btn btn-warning font-weight-bold text-dark text-nowrap shadow">
+                            <i class="fa-solid fa-location-crosshairs me-1"></i> Request Emergency Assistance
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Request Section -->
+        <div class="glass-card mb-4">
+            <h4 class="text-white mb-4 d-flex align-items-center justify-content-between">
+                <span><i class="fa-solid fa-bell text-warning me-2 animate-pulse"></i> Active Roadside Requests</span>
+                <span class="badge bg-danger">@activeJobs.Count Active</span>
+            </h4>
+            
+            @if (activeJobs.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <div class="rounded-circle bg-dark p-4 mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:70px; height:70px;">
+                        <i class="fa-solid fa-shield text-muted" style="font-size: 2rem;"></i>
+                    </div>
+                    <h5 class="text-white">Your vehicle is safe.</h5>
+                    <p class="text-muted">No active breakdown requests at the moment.</p>
+                    <a href="/Customer/Book" class="btn btn-premium-primary mt-2">
+                        <i class="fa-solid fa-location-crosshairs me-1"></i> Request Emergency Assistance
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var job in activeJobs)
+                    {
+                        <div class="col-12">
+                            <div class="p-3 rounded border border-warning border-opacity-30 bg-dark bg-opacity-40">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <span class="badge bg-warning text-dark mb-2">@job.Status</span>
+                                        <h5 class="text-white mb-1">@job.Vehicle?.Model (@job.ProblemType Issue)</h5>
+                                        <p class="text-muted small mb-0"><i class="fa-solid fa-map-marker-alt me-1"></i> @job.Address</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="text-muted small">Upfront Bill</div>
+                                        <h5 class="text-warning">₹@job.FinalBillAmount</h5>
+                                    </div>
+                                </div>
+                                <hr class="border-secondary my-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted small">Created: @job.CreatedAt.ToLocalTime().ToString("hh:mm tt")</span>
+                                    <a href="/Customer/Tracker?id=@job.Id" class="btn btn-premium-primary btn-sm">
+                                        <i class="fa-solid fa-compass me-1"></i> Open Live Route Tracker
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Past Request History -->
+        <div class="glass-card">
+            <h4 class="text-white mb-4"><i class="fa-solid fa-history text-muted me-2"></i> Breakdown History</h4>
+            
+            @if (pastJobs.Count == 0)
+            {
+                <p class="text-muted text-center py-4">No past services recorded.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>Date</th>
+                                <th>Vehicle</th>
+                                <th>Problem</th>
+                                <th>Mechanic</th>
+                                <th>Bill Paid</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var job in pastJobs)
+                            {
+                                <tr>
+                                    <td>@job.CompletedAt?.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                    <td>@job.Vehicle?.Model</td>
+                                    <td>@job.ProblemType</td>
+                                    <td>@(job.Mechanic?.Name ?? "Unassigned")</td>
+                                    <td class="text-warning">₹@job.FinalBillAmount</td>
+                                    <td>
+                                        @if (job.RatingFromCustomer.HasValue)
+                                        {
+                                            @for (int i = 0; i < 5; i++)
+                                            {
+                                                if (i < job.RatingFromCustomer.Value)
+                                                {
+                                                    <i class="fa-solid fa-star text-warning small"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="fa-regular fa-star text-muted small"></i>
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Not Rated</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Right Column: Vehicle Profiles & Quick Add -->
+    <div class="col-lg-4">
+        <!-- Saved Vehicles Card -->
+        <div class="glass-card mb-4">
+            <h4 class="text-white mb-3 d-flex align-items-center justify-content-between">
+                <span><i class="fa-solid fa-car-side text-info me-2"></i> My Vehicle</span>
+                <span class="badge bg-info">@vehicles.Count Vehicles</span>
+            </h4>
+            
+            @if (vehicles.Count == 0)
+            {
+                <p class="text-muted text-center py-3">No saved vehicles found. Add one below to enable quick bookings.</p>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-2 mb-4">
+                    @foreach (var v in vehicles)
+                    {
+                        <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0 text-white font-weight-bold">@v.Model</h6>
+                                <span class="badge bg-secondary mt-1" style="font-size:0.7rem;">@v.VehicleType</span>
+                                <div class="text-warning font-weight-bold small mt-1">@v.RegistrationNumber</div>
+                            </div>
+                            <a href="/Customer/Book?selectedVehicleId=@v.Id" class="btn btn-warning btn-sm font-weight-bold text-dark shadow-sm">
+                                <i class="fa-solid fa-bolt me-1"></i> Send Request
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+
+            <hr class="border-secondary my-3">
+
+            <!-- Add Vehicle Form -->
+            <h6 class="text-white mb-3">Add New Vehicle</h6>
+            <form action="/Customer/AddVehicle" method="POST">
+                <div class="mb-3">
+                    <label class="form-label text-muted small">Vehicle Type</label>
+                    <select class="form-select glass-input text-white" name="vehicleType">
+                        <option value="Car">Car / SUV / Van</option>
+                        <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
+                        <option value="Commercial">Commercial (Truck/Bus/Loader/Pickup)</option>
+                        <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small">Model Name</label>
+                    <input type="text" class="form-control glass-input" name="model" placeholder="e.g. Maruti Swift, Honda Activa" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small">Registration Number</label>
+                    <input type="text" class="form-control glass-input" name="registrationNumber" placeholder="e.g. DL-3C-AB-1234" required />
+                </div>
+                <button type="submit" class="btn btn-premium-primary w-100 mt-2">
+                    <i class="fa-solid fa-plus-circle me-1"></i> Register Vehicle
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function submitQuickVehicleRequest() {
+        var vehicleId = $('#dashboardVehicleSelect').val();
+        if (vehicleId) {
+            window.location.href = '/Customer/Book?selectedVehicleId=' + vehicleId;
+        } else {
+            window.location.href = '/Customer/Book';
+        }
+    }
+</script>
+}

@@ -1,0 +1,20 @@
+## Visual Studio & .NET build artifacts
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Database & local sqlite files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+rahi.db
+
+## OS / IDE generated files
+.DS_Store
+Thumbs.db

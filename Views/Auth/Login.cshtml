@@ -1,0 +1,721 @@
+@{
+    ViewData["Title"] = "Login / Register";
+    string targetRole = ViewBag.TargetRole as string ?? Context.Request.Query["role"].ToString();
+}
+
+<div class="row justify-content-center align-items-center min-vh-75 py-3 py-md-5">
+    <div class="col-12 col-md-8 col-lg-5">
+        <div class="glass-card p-4 p-md-5 mx-2 mx-md-0">
+            <div class="text-center mb-4">
+                <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi Logo" style="height: 64px; border-radius: 12px; object-fit: contain; border: 1.5px solid #ff6b00;" class="mb-3 shadow" />
+                <h3 class="text-white font-weight-bold" style="font-family: 'Outfit';" id="titleText">Welcome to <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span></h3>
+                <p class="text-muted small" id="subtitleText">Login with your credentials or register a new account</p>
+            </div>
+
+            <!-- ------------------------------------------------------------- -->
+            <!-- PANEL 1: PASSWORD LOGIN -->
+            <!-- ------------------------------------------------------------- -->
+            <div id="panelLogin">
+                <!-- Role Selection -->
+                <div class="mb-4 d-flex justify-content-center gap-2">
+                    <input type="radio" class="btn-check" name="loginRole" id="loginRoleCustomer" value="Customer" @(targetRole == "Customer" ? "checked" : "") autocomplete="off">
+                    <label class="btn btn-outline-warning rounded-pill px-4" for="loginRoleCustomer">
+                        <i class="fa-solid fa-car me-1"></i> Customer
+                    </label>
+
+                    <input type="radio" class="btn-check" name="loginRole" id="loginRoleMechanic" value="Mechanic" @(targetRole == "Mechanic" ? "checked" : "") autocomplete="off">
+                    <label class="btn btn-outline-warning rounded-pill px-4" for="loginRoleMechanic">
+                        <i class="fa-solid fa-wrench me-1"></i> Mechanic
+                    </label>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small">10-Digit Mobile Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
+                        <input type="tel" class="form-control glass-input text-white" id="loginPhone" placeholder="Enter Mobile Number" maxlength="10">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small">Password</label>
+                    <input type="password" class="form-control glass-input text-white" id="loginPassword" placeholder="••••••••">
+                </div>
+
+                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3" id="btnLoginSubmit">
+                    Secure Login <i class="fa-solid fa-unlock ms-1"></i>
+                </button>
+
+                <div class="d-flex justify-content-between">
+                    <a href="#" id="lnkShowRegister" class="text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-user-plus me-1"></i> Create Account</a>
+                    <a href="#" id="lnkShowForgot" class="text-muted small" style="text-decoration:none;"><i class="fa-solid fa-circle-question me-1"></i> Forgot Password?</a>
+                </div>
+            </div>
+
+            <!-- ------------------------------------------------------------- -->
+            <!-- PANEL 2: REGISTRATION DETAILS -->
+            <!-- ------------------------------------------------------------- -->
+            <div id="panelRegisterDetails" style="display:none;">
+                <!-- Role Selection -->
+                <div class="mb-4 d-flex justify-content-center gap-2">
+                    <input type="radio" class="btn-check" name="registerRole" id="registerRoleCustomer" value="Customer" @(targetRole == "Customer" ? "checked" : "") autocomplete="off">
+                    <label class="btn btn-outline-warning rounded-pill px-4" for="registerRoleCustomer">
+                        <i class="fa-solid fa-car me-1"></i> Customer
+                    </label>
+
+                    <input type="radio" class="btn-check" name="registerRole" id="registerRoleMechanic" value="Mechanic" @(targetRole == "Mechanic" ? "checked" : "") autocomplete="off">
+                    <label class="btn btn-outline-warning rounded-pill px-4" for="registerRoleMechanic">
+                        <i class="fa-solid fa-wrench me-1"></i> Mechanic
+                    </label>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small">Full Name</label>
+                    <input type="text" class="form-control glass-input text-white" id="registerName" placeholder="Rahul Sharma">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small">10-Digit Mobile Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
+                        <input type="tel" class="form-control glass-input text-white" id="registerPhone" placeholder="9876543210" maxlength="10">
+                    </div>
+                </div>
+
+                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3" id="btnRegisterSendOtp">
+                    Send Verification OTP <i class="fa-solid fa-arrow-right ms-1"></i>
+                </button>
+
+                <div class="text-center">
+                    <a href="#" class="btnBackToLogin text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-arrow-left me-1"></i> Back to Login</a>
+                </div>
+            </div>
+
+            <!-- ------------------------------------------------------------- -->
+            <!-- PANEL 3: REGISTRATION OTP -->
+            <!-- ------------------------------------------------------------- -->
+            <div id="panelRegisterOtp" style="display:none;">
+                <div class="text-center mb-4">
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2">
+                        <i class="fa-solid fa-check-circle me-1"></i> OTP Sent to <span id="lblSentRegisterPhone"></span>
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted small">Enter 4-Digit OTP <span class="text-warning">(Use 1234 for testing)</span></label>
+                    <input type="text" class="form-control glass-input text-white text-center font-weight-bold" id="registerOtpCode" placeholder="••••" maxlength="4" style="letter-spacing: 15px; font-size: 1.5rem;">
+                </div>
+                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3" id="btnRegisterVerifyOtp">
+                    Verify OTP & Continue <i class="fa-solid fa-arrow-right ms-1"></i>
+                </button>
+                <div class="text-center">
+                    <a href="#" id="btnBackToRegisterDetails" class="text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-arrow-left me-1"></i> Back to Details</a>
+                </div>
+            </div>
+
+            <!-- ------------------------------------------------------------- -->
+            <!-- PANEL 4: REGISTRATION GENERATE PASSWORD -->
+            <!-- ------------------------------------------------------------- -->
+            <div id="panelRegisterPassword" style="display:none;">
+                <div class="alert alert-success border-success bg-dark text-success small py-2 mb-3">
+                    <i class="fa-solid fa-circle-check me-1"></i> Mobile number verified! Now set your login password.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small">Create Password</label>
+                    <input type="password" class="form-control glass-input text-white" id="registerNewPassword" placeholder="••••••••">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted small">Confirm Password</label>
+                    <input type="password" class="form-control glass-input text-white" id="registerConfirmPassword" placeholder="••••••••">
+                </div>
+                <button class="btn btn-success w-100 py-2 font-weight-bold mb-3" id="btnRegisterComplete">
+                    Create Account & Login <i class="fa-solid fa-circle-check ms-1"></i>
+                </button>
+            </div>
+
+            <!-- ------------------------------------------------------------- -->
+            <!-- PANEL 5: FORGOT PASSWORD PHONE -->
+            <!-- ------------------------------------------------------------- -->
+            <div id="panelForgotPhone" style="display:none;">
+                <!-- Role Selection -->
+                <div class="mb-4 d-flex justify-content-center gap-2">
+                    <input type="radio" class="btn-check" name="forgotRole" id="forgotRoleCustomer" value="Customer" @(targetRole == "Customer" ? "checked" : "") autocomplete="off">
+                    <label class="btn btn-outline-warning rounded-pill px-4" for="forgotRoleCustomer">
+                        <i class="fa-solid fa-car me-1"></i> Customer
+                    </label>
+
+                    <input type="radio" class="btn-check" name="forgotRole" id="forgotRoleMechanic" value="Mechanic" @(targetRole == "Mechanic" ? "checked" : "") autocomplete="off">
+                    <label class="btn btn-outline-warning rounded-pill px-4" for="forgotRoleMechanic">
+                        <i class="fa-solid fa-wrench me-1"></i> Mechanic
+                    </label>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small">10-Digit Mobile Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
+                        <input type="tel" class="form-control glass-input text-white" id="forgotPhone" placeholder="9876543210" maxlength="10">
+                    </div>
+                </div>
+
+                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3" id="btnForgotSendOtp">
+                    Send Reset OTP <i class="fa-solid fa-arrow-right ms-1"></i>
+                </button>
+
+                <div class="text-center">
+                    <a href="#" class="btnBackToLogin text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-arrow-left me-1"></i> Back to Login</a>
+                </div>
+            </div>
+
+            <!-- ------------------------------------------------------------- -->
+            <!-- PANEL 6: FORGOT PASSWORD OTP -->
+            <!-- ------------------------------------------------------------- -->
+            <div id="panelForgotOtp" style="display:none;">
+                <div class="text-center mb-4">
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2">
+                        <i class="fa-solid fa-check-circle me-1"></i> OTP Sent to <span id="lblSentForgotPhone"></span>
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted small">Enter 4-Digit OTP <span class="text-warning">(Use 1234 for testing)</span></label>
+                    <input type="text" class="form-control glass-input text-white text-center font-weight-bold" id="forgotOtpCode" placeholder="••••" maxlength="4" style="letter-spacing: 15px; font-size: 1.5rem;">
+                </div>
+                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3" id="btnForgotVerifyOtp">
+                    Verify Reset OTP <i class="fa-solid fa-arrow-right ms-1"></i>
+                </button>
+                <div class="text-center">
+                    <a href="#" id="btnBackToForgotPhone" class="text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-arrow-left me-1"></i> Back</a>
+                </div>
+            </div>
+
+            <!-- ------------------------------------------------------------- -->
+            <!-- PANEL 7: FORGOT PASSWORD RESET -->
+            <!-- ------------------------------------------------------------- -->
+            <div id="panelForgotReset" style="display:none;">
+                <div class="alert alert-success border-success bg-dark text-success small py-2 mb-3">
+                    <i class="fa-solid fa-circle-check me-1"></i> Identity verified! Set your new login password.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small">New Password</label>
+                    <input type="password" class="form-control glass-input text-white" id="forgotNewPassword" placeholder="••••••••">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted small">Confirm New Password</label>
+                    <input type="password" class="form-control glass-input text-white" id="forgotConfirmPassword" placeholder="••••••••">
+                </div>
+                <button class="btn btn-success w-100 py-2 font-weight-bold mb-3" id="btnForgotComplete">
+                    Reset Password & Login <i class="fa-solid fa-circle-check ms-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Only for Admin Modal Popup -->
+<div class="modal fade" id="adminLoginModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-warning border-opacity-40" style="border-radius: 16px;">
+            <div class="modal-header border-secondary py-3">
+                <h5 class="modal-title font-weight-bold text-warning d-flex align-items-center" id="adminModalHeaderTitle">
+                    <i class="fa-solid fa-shield-halved me-2 fs-4"></i> Only for Admin
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-danger d-none py-2 px-3 small mb-3" id="adminModalError"></div>
+
+                <!-- 1. ADMIN LOGIN PANEL -->
+                <div id="adminPanelLogin">
+                    <div class="text-center mb-4">
+                        <span class="badge bg-warning text-dark px-3 py-1 font-weight-bold rounded-pill mb-2">RESTRICTED ACCESS</span>
+                        <p class="text-muted small mb-0">Enter your Administrator mobile number & password to access the system console.</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Admin Mobile Number / ID</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
+                            <input type="tel" class="form-control glass-input text-white font-weight-bold" id="adminPhoneInput" placeholder="Enter Mobile Number" maxlength="10">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Admin Password</label>
+                        <input type="password" class="form-control glass-input text-white" id="adminPasswordInput" placeholder="••••••••">
+                    </div>
+
+                    <button type="button" class="btn btn-warning w-100 py-2.5 font-weight-bold text-dark mb-3" id="btnAdminModalLogin" style="border-radius: 25px;">
+                        <i class="fa-solid fa-unlock me-1"></i> Admin Login
+                    </button>
+
+                    <div class="text-center">
+                        <a href="#" id="btnShowAdminForgot" class="text-warning small font-weight-bold" style="text-decoration:none;">
+                            <i class="fa-solid fa-key me-1"></i> Forgot Admin Password?
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 2. ADMIN FORGOT PASSWORD - PHONE & OTP -->
+                <div id="adminPanelForgotPhone" style="display:none;">
+                    <div class="text-center mb-4">
+                        <span class="badge bg-info text-dark px-3 py-1 font-weight-bold rounded-pill mb-2">SECURITY RESET</span>
+                        <p class="text-muted small mb-0">Enter your registered Admin mobile number to receive verification OTP.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted small font-weight-bold">Registered Admin Mobile Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
+                            <input type="tel" class="form-control glass-input text-white font-weight-bold" id="adminForgotPhoneInput" placeholder="9876543210" maxlength="10">
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-warning w-100 py-2.5 font-weight-bold text-dark mb-3" id="btnAdminSendForgotOtp" style="border-radius: 25px;">
+                        Send Reset OTP <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </button>
+
+                    <div class="text-center">
+                        <a href="#" class="btnBackToAdminLogin text-warning small font-weight-bold" style="text-decoration:none;">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Back to Admin Login
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 3. ADMIN FORGOT PASSWORD - VERIFY & RESET -->
+                <div id="adminPanelForgotReset" style="display:none;">
+                    <div class="text-center mb-3">
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-1 small">
+                            <i class="fa-solid fa-check-circle me-1"></i> OTP Sent to <span id="lblSentAdminPhone"></span>
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Enter 4-Digit OTP <span class="text-warning">(Use 1234)</span></label>
+                        <input type="text" class="form-control glass-input text-white text-center font-weight-bold" id="adminForgotOtpCode" placeholder="••••" maxlength="4" style="letter-spacing: 12px; font-size: 1.3rem;">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Create New Password</label>
+                        <input type="password" class="form-control glass-input text-white" id="adminForgotNewPassword" placeholder="••••••••">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted small font-weight-bold">Confirm New Password</label>
+                        <input type="password" class="form-control glass-input text-white" id="adminForgotConfirmPassword" placeholder="••••••••">
+                    </div>
+
+                    <button type="button" class="btn btn-success w-100 py-2.5 font-weight-bold text-white mb-3" id="btnAdminCompleteReset" style="border-radius: 25px;">
+                        Reset Password & Login <i class="fa-solid fa-circle-check ms-1"></i>
+                    </button>
+
+                    <div class="text-center">
+                        <a href="#" class="btnBackToAdminLogin text-warning small font-weight-bold" style="text-decoration:none;">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Back to Admin Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(document).ready(function() {
+    // Sync initial targetRole on load
+    var initialRole = "@targetRole" || "Customer";
+    if (initialRole !== "Admin") {
+        $('input[name="loginRole"][value="' + initialRole + '"]').prop('checked', true);
+        $('input[name="registerRole"][value="' + initialRole + '"]').prop('checked', true);
+        $('input[name="forgotRole"][value="' + initialRole + '"]').prop('checked', true);
+    }
+
+    // Dynamic role sync on user selection change
+    $('input[name="loginRole"], input[name="registerRole"], input[name="forgotRole"]').change(function() {
+        var val = $(this).val();
+        if (val !== "Admin") {
+            $('input[name="loginRole"][value="' + val + '"]').prop('checked', true);
+            $('input[name="registerRole"][value="' + val + '"]').prop('checked', true);
+            $('input[name="forgotRole"][value="' + val + '"]').prop('checked', true);
+        }
+    });
+
+    // Open Only for Admin Modal Popup
+    function openAdminModal() {
+        var modalEl = document.getElementById('adminLoginModal');
+        if (modalEl) {
+            showAdminModalPanel('adminPanelLogin', 'Only for Admin');
+            var adminModal = new bootstrap.Modal(modalEl);
+            adminModal.show();
+        }
+    }
+
+    // Admin Modal Panel Switcher
+    function showAdminModalPanel(panelId, title) {
+        $('#adminPanelLogin, #adminPanelForgotPhone, #adminPanelForgotReset').hide();
+        $('#' + panelId).show();
+        $('#adminModalError').addClass('d-none');
+        if (title) {
+            $('#adminModalHeaderTitle').html('<i class="fa-solid fa-shield-halved me-2 fs-4"></i> ' + title);
+        }
+    }
+
+    $('#btnShowAdminForgot').click(function(e) {
+        e.preventDefault();
+        showAdminModalPanel('adminPanelForgotPhone', 'Reset Admin Password');
+    });
+
+    $('.btnBackToAdminLogin').click(function(e) {
+        e.preventDefault();
+        showAdminModalPanel('adminPanelLogin', 'Only for Admin');
+    });
+
+    $('#loginRoleAdmin, #adminBackdoor').click(function(e) {
+        e.preventDefault();
+        openAdminModal();
+    });
+
+    // Auto open modal if user requested Admin portal (/Auth/Login?role=Admin)
+    if ("@targetRole" === "Admin") {
+        openAdminModal();
+    }
+
+    $('#btnAdminModalLogin').click(function() {
+        var phone = $('#adminPhoneInput').val().trim();
+        var password = $('#adminPasswordInput').val().trim();
+        
+        if (phone.length < 10) {
+            alert('⚠️ Please enter a valid 10-digit Admin mobile number / ID.');
+            $('#adminModalError').removeClass('d-none').text('Please enter a valid 10-digit Admin mobile number / ID.');
+            return;
+        }
+        if (!password) {
+            alert('⚠️ Please enter your Admin password.');
+            $('#adminModalError').removeClass('d-none').text('Please enter your Admin password.');
+            return;
+        }
+
+        $('#adminModalError').addClass('d-none');
+        $(this).html('<i class="fa-solid fa-circle-notch fa-spin"></i> Authenticating...').prop('disabled', true);
+
+        $.post('/Auth/PasswordLogin', { phoneNumber: phone, password: password, role: 'Admin' }, function(res) {
+            if (res.success) {
+                window.location.href = res.redirect;
+            } else {
+                alert('⚠️ Admin login failed: ' + res.message);
+                $('#adminModalError').removeClass('d-none').text(res.message);
+                $('#btnAdminModalLogin').html('<i class="fa-solid fa-unlock me-1"></i> Admin Login').prop('disabled', false);
+            }
+        });
+    });
+
+    // Admin Forgot Password - Send OTP
+    var adminForgotPhone = "";
+
+    $('#btnAdminSendForgotOtp').click(function() {
+        adminForgotPhone = $('#adminForgotPhoneInput').val().trim();
+        if (adminForgotPhone.length < 10) {
+            alert('⚠️ Please enter a valid 10-digit Admin mobile number.');
+            $('#adminModalError').removeClass('d-none').text('Please enter a valid 10-digit Admin mobile number.');
+            return;
+        }
+
+        $('#adminModalError').addClass('d-none');
+        $(this).html('<i class="fa-solid fa-circle-notch fa-spin"></i> Sending OTP...').prop('disabled', true);
+
+        $.post('/Auth/SendOtpForForgotPassword', { phoneNumber: adminForgotPhone, role: 'Admin' }, function(res) {
+            $('#btnAdminSendForgotOtp').html('Send Reset OTP <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
+            if (res.success) {
+                $('#lblSentAdminPhone').text('+91 ' + adminForgotPhone);
+                showAdminModalPanel('adminPanelForgotReset', 'Admin OTP Verification');
+            } else {
+                alert('⚠️ ' + res.message);
+                $('#adminModalError').removeClass('d-none').text(res.message);
+            }
+        });
+    });
+
+    // Admin Forgot Password - Complete Reset
+    $('#btnAdminCompleteReset').click(function() {
+        var otp = $('#adminForgotOtpCode').val().trim();
+        var password = $('#adminForgotNewPassword').val().trim();
+        var confirm = $('#adminForgotConfirmPassword').val().trim();
+
+        if (otp.length !== 4) {
+            alert('⚠️ Please enter 4-digit OTP code.');
+            $('#adminModalError').removeClass('d-none').text('Please enter 4-digit OTP code.');
+            return;
+        }
+        if (otp !== "1234") {
+            alert('⚠️ Invalid OTP code. Use 1234 for testing.');
+            $('#adminModalError').removeClass('d-none').text('Invalid OTP code. Use 1234 for testing.');
+            return;
+        }
+        if (password.length < 4) {
+            alert('⚠️ Password must be at least 4 characters long.');
+            $('#adminModalError').removeClass('d-none').text('Password must be at least 4 characters long.');
+            return;
+        }
+        if (password !== confirm) {
+            alert('⚠️ Passwords do not match.');
+            $('#adminModalError').removeClass('d-none').text('Passwords do not match.');
+            return;
+        }
+
+        $('#adminModalError').addClass('d-none');
+        $(this).html('<i class="fa-solid fa-circle-notch fa-spin"></i> Resetting Password...').prop('disabled', true);
+
+        $.post('/Auth/ResetPassword', {
+            phoneNumber: adminForgotPhone,
+            role: 'Admin',
+            password: password
+        }, function(res) {
+            if (res.success) {
+                window.location.href = res.redirect;
+            } else {
+                alert('⚠️ ' + res.message);
+                $('#adminModalError').removeClass('d-none').text(res.message);
+                $('#btnAdminCompleteReset').html('Reset Password & Login <i class="fa-solid fa-circle-check ms-1"></i>').prop('disabled', false);
+            }
+        });
+    });
+    // Switch Panels
+    function showPanel(panelId, title, iconClass, subtitle) {
+        var activeRole = $('input[name="loginRole"]:checked').val() || 
+                         $('input[name="registerRole"]:checked').val() || 
+                         $('input[name="forgotRole"]:checked').val() || 
+                         "@targetRole" || 
+                         "Customer";
+                         
+        if (activeRole !== "Admin") {
+            $('input[name="loginRole"][value="' + activeRole + '"]').prop('checked', true);
+            $('input[name="registerRole"][value="' + activeRole + '"]').prop('checked', true);
+            $('input[name="forgotRole"][value="' + activeRole + '"]').prop('checked', true);
+        }
+
+        $('#panelLogin, #panelRegisterDetails, #panelRegisterOtp, #panelRegisterPassword, #panelForgotPhone, #panelForgotOtp, #panelForgotReset').hide();
+        $('#' + panelId).show();
+        
+        if (title) $('#titleText').html(title);
+        if (iconClass) $('#titleIcon').attr('class', 'fa-solid ' + iconClass + ' text-warning mb-2');
+        if (subtitle) $('#subtitleText').text(subtitle);
+    }
+
+    // Nav Links
+    $('#lnkShowRegister').click(function(e) {
+        e.preventDefault();
+        showPanel('panelRegisterDetails', 'Register Account', 'fa-user-plus', 'Join RaahSathi roadside assistance network');
+    });
+
+    $('#lnkShowForgot').click(function(e) {
+        e.preventDefault();
+        showPanel('panelForgotPhone', 'Reset Password', 'fa-key', 'Recover your login credentials securely');
+    });
+
+    $('.btnBackToLogin').click(function(e) {
+        e.preventDefault();
+        showPanel('panelLogin', 'Welcome to <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span>', 'fa-shield-halved', 'Login with your credentials or register a new account');
+    });
+
+    // 1. Password Login
+    $('#btnLoginSubmit').click(function() {
+        var role = $('input[name="loginRole"]:checked').val();
+        if (!role) {
+            alert('⚠️ Please select your account type: Customer, Mechanic, or Admin!');
+            return;
+        }
+
+        var phone = $('#loginPhone').val().trim();
+        var password = $('#loginPassword').val().trim();
+
+        if (phone.length < 10) {
+            alert('Please enter a valid 10-digit mobile number.');
+            return;
+        }
+        if (!password) {
+            alert('Please enter your password.');
+            return;
+        }
+
+        $(this).html('<i class="fa-solid fa-circle-notch fa-spin"></i>').prop('disabled', true);
+
+        $.post('/Auth/PasswordLogin', { phoneNumber: phone, password: password, role: role }, function(res) {
+            if (res.success) {
+                window.location.href = res.redirect;
+            } else {
+                alert(res.message);
+                $('#btnLoginSubmit').html('Secure Login <i class="fa-solid fa-unlock ms-1"></i>').prop('disabled', false);
+            }
+        });
+    });
+
+    // 2. Register - Send OTP
+    var regPhone = "";
+    var regRole = "";
+    var regName = "";
+
+    $('#btnRegisterSendOtp').click(function() {
+        regRole = $('input[name="registerRole"]:checked').val();
+        if (!regRole) {
+            alert('⚠️ Please select your account type: Customer or Mechanic!');
+            return;
+        }
+
+        regPhone = $('#registerPhone').val().trim();
+        regName = $('#registerName').val().trim();
+
+        if (!regName) {
+            alert('Please enter your full name.');
+            return;
+        }
+        if (regPhone.length < 10) {
+            alert('Please enter a valid 10-digit mobile number.');
+            return;
+        }
+
+        $(this).html('<i class="fa-solid fa-circle-notch fa-spin"></i>').prop('disabled', true);
+
+        $.post('/Auth/SendOtpForRegistration', { phoneNumber: regPhone, role: regRole, name: regName }, function(res) {
+            $('#btnRegisterSendOtp').html('Send Verification OTP <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
+            if (res.success) {
+                $('#lblSentRegisterPhone').text('+91 ' + regPhone);
+                showPanel('panelRegisterOtp', 'OTP Verification', 'fa-envelope-open-text', 'Enter verification code to register');
+            } else {
+                alert(res.message);
+            }
+        });
+    });
+
+    $('#btnBackToRegisterDetails').click(function(e) {
+        e.preventDefault();
+        showPanel('panelRegisterDetails', 'Register Account', 'fa-user-plus', 'Join RaahSathi roadside assistance network');
+    });
+
+    // 3. Register - Verify OTP
+    $('#btnRegisterVerifyOtp').click(function() {
+        var otp = $('#registerOtpCode').val().trim();
+        if (otp.length !== 4) {
+            alert('Please enter 4-digit OTP.');
+            return;
+        }
+        if (otp !== "1234") {
+            alert('Invalid OTP. Use 1234 for testing.');
+            return;
+        }
+
+        showPanel('panelRegisterPassword', 'Set Password', 'fa-lock', 'Choose a strong password for login');
+    });
+
+    // 4. Register - Complete (Submit Password)
+    $('#btnRegisterComplete').click(function() {
+        var password = $('#registerNewPassword').val().trim();
+        var confirm = $('#registerConfirmPassword').val().trim();
+
+        if (password.length < 4) {
+            alert('Password must be at least 4 characters long.');
+            return;
+        }
+        if (password !== confirm) {
+            alert('Passwords do not match.');
+            return;
+        }
+
+        $(this).html('<i class="fa-solid fa-circle-notch fa-spin"></i>').prop('disabled', true);
+
+        $.post('/Auth/CompleteRegistration', {
+            name: regName,
+            phoneNumber: regPhone,
+            role: regRole,
+            password: password
+        }, function(res) {
+            if (res.success) {
+                window.location.href = res.redirect;
+            } else {
+                alert(res.message);
+                $('#btnRegisterComplete').html('Create Account & Login <i class="fa-solid fa-circle-check ms-1"></i>').prop('disabled', false);
+            }
+        });
+    });
+
+    // 5. Forgot Password - Send OTP
+    var forgotPhoneNum = "";
+    var forgotRoleVal = "";
+
+    $('#btnForgotSendOtp').click(function() {
+        forgotRoleVal = $('input[name="forgotRole"]:checked').val();
+        if (!forgotRoleVal) {
+            alert('⚠️ Please select your account type: Customer or Mechanic!');
+            return;
+        }
+
+        forgotPhoneNum = $('#forgotPhone').val().trim();
+
+        if (forgotPhoneNum.length < 10) {
+            alert('Please enter a valid 10-digit mobile number.');
+            return;
+        }
+
+        $(this).html('<i class="fa-solid fa-circle-notch fa-spin"></i>').prop('disabled', true);
+
+        $.post('/Auth/SendOtpForForgotPassword', { phoneNumber: forgotPhoneNum, role: forgotRoleVal }, function(res) {
+            $('#btnForgotSendOtp').html('Send Reset OTP <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
+            if (res.success) {
+                $('#lblSentForgotPhone').text('+91 ' + forgotPhoneNum);
+                showPanel('panelForgotOtp', 'Reset OTP Verification', 'fa-envelope-open-text', 'Verify identity to reset password');
+            } else {
+                alert(res.message);
+            }
+        });
+    });
+
+    $('#btnBackToForgotPhone').click(function(e) {
+        e.preventDefault();
+        showPanel('panelForgotPhone', 'Reset Password', 'fa-key', 'Recover your login credentials securely');
+    });
+
+    // 6. Forgot Password - Verify OTP
+    $('#btnForgotVerifyOtp').click(function() {
+        var otp = $('#forgotOtpCode').val().trim();
+        if (otp.length !== 4) {
+            alert('Please enter 4-digit OTP.');
+            return;
+        }
+        if (otp !== "1234") {
+            alert('Invalid OTP. Use 1234 for testing.');
+            return;
+        }
+
+        showPanel('panelForgotReset', 'Choose New Password', 'fa-lock', 'Reset your account security keys');
+    });
+
+    // 7. Forgot Password - Complete Reset
+    $('#btnForgotComplete').click(function() {
+        var password = $('#forgotNewPassword').val().trim();
+        var confirm = $('#forgotConfirmPassword').val().trim();
+
+        if (password.length < 4) {
+            alert('Password must be at least 4 characters long.');
+            return;
+        }
+        if (password !== confirm) {
+            alert('Passwords do not match.');
+            return;
+        }
+
+        $(this).html('<i class="fa-solid fa-circle-notch fa-spin"></i>').prop('disabled', true);
+
+        $.post('/Auth/ResetPassword', {
+            phoneNumber: forgotPhoneNum,
+            role: forgotRoleVal,
+            password: password
+        }, function(res) {
+            if (res.success) {
+                window.location.href = res.redirect;
+            } else {
+                alert(res.message);
+                $('#btnForgotComplete').html('Reset Password & Login <i class="fa-solid fa-circle-check ms-1"></i>').prop('disabled', false);
+            }
+        });
+    });
+});
+</script>
+}
