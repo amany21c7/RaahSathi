@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <title>RaahSathi - Complete Platform Manual & Testing Guide</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #ffffff;
+        }
+        .header {
+            border-bottom: 3px solid #ff6b00;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .logo-orange { color: #ff6b00; }
+        .badge-pdf {
+            background: #ff6b00;
+            color: #ffffff;
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            color: #0f172a;
+            font-size: 24px;
+            margin-top: 0;
+        }
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            color: #ff6b00;
+            font-size: 18px;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 6px;
+            margin-top: 25px;
+        }
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            color: #1e293b;
+            font-size: 15px;
+            margin-top: 15px;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 6px;
+        }
+        .card-box {
+            background: #f8fafc;
+            border-left: 4px solid #ff6b00;
+            padding: 12px 18px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+        .table-custom th, .table-custom td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .table-custom th {
+            background: #0f172a;
+            color: #ffffff;
+        }
+        .flag-badge {
+            display: inline-block;
+            font-weight: bold;
+            background: #0f172a;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .saffron { color: #FF9933; }
+        .white { color: #FFFFFF; }
+        .green { color: #00E676; }
+        .footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo-title"><span class="logo-orange">Raah</span>Sathi</div>
+        <div class="badge-pdf">Full Working & Testing Guide</div>
+    </div>
+
+    <h1>🚗 RaahSathi - System Manual & Testing Manual</h1>
+    <p>Yeh document <strong>RaahSathi Roadside Assistance Network</strong> ke har ek feature, tool, page, aur option ka detailed working and testing guide hai.</p>
+
+    <div class="card-box">
+        <strong>Core Tech Stack & Architecture:</strong> ASP.NET Core MVC (.NET 9.0), Entity Framework Core (SQL Server), Leaflet JS Maps, Haversine Distance Engine, Dynamic Pricing Engine, Zero-Flash 10-Language Switcher, Emergency SOS Handler.
+    </div>
+
+    <h2>🏠 1. Home Page & Global Header Options</h2>
+    <ul>
+        <li><strong>Brand Logo & Name:</strong> Top left logo par click karke hamesha Home Page (`/Home/Index`) par navigate kar sakte hain.</li>
+        <li><strong>Portal Navigation Pills:</strong>
+            <ul>
+                <li><code>Home</code>: Main Hero Banner, Emergency Request CTA, Live System Status.</li>
+                <li><code>Services</code>: 2-Wheeler, Car, Commercial & Heavy vehicle breakdown categories.</li>
+                <li><code>How It Works</code>: 3-Step automated workflow (Request ➔ Auto Dispatch ➔ Repair).</li>
+                <li><code>About Us</code>: Network statistics, verified patrol mechanic count, escrow security.</li>
+                <li><code>Contact Us</code>: Support helpline (`1800-102-7224`), office address, and contact form.</li>
+            </ul>
+        </li>
+        <li><strong>Zero-Flash Multi-Language Engine:</strong>
+            <ul>
+                <li>Header dropdown se 10 bhashayein (<em>English, Hindi, Marathi, Gujarati, Punjabi, Bengali, Tamil, Telugu, Kannada, Malayalam</em>) select ki ja sakti hain.</li>
+                <li>Zero-flash mechanism bina page refresh kiye instant content translate karta hai.</li>
+            </ul>
+        </li>
+        <li><strong>Footer & Tricolor Badge:</strong>
+            <ul>
+                <li>Footer me <code>&copy; 2026 RaahSathi Roadside Assistance Network. All rights reserved.</code> ke saath <span class="flag-badge"><span class="saffron">Make</span> <span class="white">In</span> <span class="green">India</span></span> tri-color badge hai.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>🚨 2. Emergency SOS Button & AI Chatbot Widget</h2>
+    <h3>2.1 Emergency SOS Functionality (`#emergencySupportModal`)</h3>
+    <ul>
+        <li><strong>Kahan Milega:</strong> Top Header me Red SOS button, Footer SOS Button, aur Dashboard Cards me.</li>
+        <li><strong>Kaise Work Karta Hai:</strong>
+            <ol>
+                <li>Click karte hi high-priority Glassmorphism Emergency Modal open hota hai.</li>
+                <li><strong>Option 1 (Toll-Free Call):</strong> Direct `1800-102-7224` par Call lagane ka button.</li>
+                <li><strong>Option 2 (Instant Dispatch):</strong> 30-Second Express Booking Form opens.</li>
+                <li><strong>Option 3 (WhatsApp Support):</strong> Emergency Control Desk WhatsApp link.</li>
+            </ol>
+        </li>
+    </ul>
+
+    <h3>2.2 Floating AI Chatbot Widget</h3>
+    <ul>
+        <li><strong>Kahan Milega:</strong> Screen ke bottom-right corner me <code>Chat</code> button.</li>
+        <li><strong>Kaise Work Karta Hai:</strong> Instant breakdown guidance, visiting charge query, aur mechanic booking instructions deta hai.</li>
+    </ul>
+
+    <h2>👤 3. Customer Operations Portal (`/Customer/...`)</h2>
+    <ul>
+        <li><strong>Dashboard (`/Customer/Dashboard`):</strong> Vehicle registration, Active ongoing breakdown dispatch cards, and Past service history.</li>
+        <li><strong>Instant Request (`/Customer/Book`):</strong> Browser GPS Geolocation auto-detect karta hai. Guest users ke liye Instant Verification code (`1234`) se 10-second auto-account creation.</li>
+        <li><strong>Live Dispatch Tracker (`/Customer/Tracker`):</strong> Customer live ETA, mechanic location map, status timeline (<em>Requested ➔ Accepted ➔ In Progress ➔ Completed</em>), aur mechanic contact phone/photo dekh sakta hai.</li>
+    </ul>
+
+    <h2>🔧 4. Mechanic Operations Portal (`/Mechanic/...`)</h2>
+    <ul>
+        <li><strong>Duty Toggle:</strong> Mechanic <code>Online / Offline</code> status switch kar sakta hai. System sirf Online mechanics ko hi nearby job alerts bhejta hai.</li>
+        <li><strong>Broadcast Alert:</strong> Nearby breakdown hone par customer distance, visiting fee, aur problem type ka pop-up alert milta hai.</li>
+        <li><strong>Job Execution:</strong> Mechanic <em>Accept Job</em> ➔ <em>Start Journey</em> ➔ <em>Submit Custom Parts Estimate</em> (if any) ➔ <em>Complete Work</em> mark kar sakta hai.</li>
+    </ul>
+
+    <h2>🛡️ 5. Admin Command Center (`/Admin/...`)</h2>
+    <ul>
+        <li><strong>Live Dispatch Radar Map:</strong> Entire city/highway ke active breakdown requests aur mechanics ko real-time Leaflet map par plot karta hai.</li>
+        <li><strong>KYC Verification Portal:</strong> Patrol mechanics ke Aadhaar Card, Driving License, aur Workshop photos review karke <code>Approve</code> ya <code>Reject</code> karne ka control.</li>
+        <li><strong>Dynamic Pricing Rules (`/Admin/PricingRules`):</strong> Base visiting charges aur per-km rate manage karne ka module.</li>
+    </ul>
+
+    <h2>🧪 6. Step-by-Step Testing Checklist</h2>
+    <table class="table-custom">
+        <thead>
+            <tr>
+                <th>Test Case ID</th>
+                <th>Testing Flow / Scenario</th>
+                <th>Expected Outcome</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>TC-01</td>
+                <td>Click Red <strong>SOS</strong> Button on Header/Footer</td>
+                <td>Emergency Modal opens with 1800 Hotline & Instant Dispatch button.</td>
+            </tr>
+            <tr>
+                <td>TC-02</td>
+                <td>Submit 30-Second Quick Breakdown Request</td>
+                <td>GPS location captured, auto-verification done, redirected to Live Tracker.</td>
+            </tr>
+            <tr>
+                <td>TC-03</td>
+                <td>Toggle Mechanic Duty to <strong>Online</strong></td>
+                <td>Mechanic receives incoming job broadcast with customer distance & fee.</td>
+            </tr>
+            <tr>
+                <td>TC-04</td>
+                <td>Accept & Complete Job as Mechanic</td>
+                <td>Status progresses: Assigned ➔ Accepted ➔ In Progress ➔ Completed.</td>
+            </tr>
+            <tr>
+                <td>TC-05</td>
+                <td>Open Admin Dashboard (`/Admin/Dashboard`)</td>
+                <td>Live Dispatch Radar map displays customer & mechanic markers in real time.</td>
+            </tr>
+            <tr>
+                <td>TC-06</td>
+                <td>Switch Language from Header Dropdown</td>
+                <td>Page translates to selected language without page reload.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Generated automatically by RaahSathi AI System Engine &bull; Version 2.4 &bull; July 2026
+    </div>
+
+</body>
+</html>

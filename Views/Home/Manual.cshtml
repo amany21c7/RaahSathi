@@ -1,0 +1,186 @@
+@{
+    ViewData["Title"] = "Testing Manual & System Documentation - RaahSathi";
+}
+
+<div class="container py-4">
+    <!-- Header Banner -->
+    <div class="glass-card mb-4 p-4 text-white border-warning border-opacity-40" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="badge bg-warning text-dark font-weight-bold mb-2">COMPLETE TESTING MANUAL & SYSTEM GUIDE</div>
+                <h2 class="text-white font-weight-extrabold mb-1" style="font-family:'Outfit';">
+                    <span style="color:#ff6b00;">Raah</span>Sathi System Documentation
+                </h2>
+                <p class="text-muted mb-0">Point-to-point guide for testing every tool, option, and workflow across Customer, Mechanic & Admin portals.</p>
+            </div>
+            <div>
+                <button onclick="window.print()" class="btn btn-warning text-dark font-weight-bold px-4 py-2 shadow">
+                    <i class="fa-solid fa-print me-2"></i> Print / Save as PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Architecture Box -->
+    <div class="p-3 bg-dark bg-opacity-60 border border-secondary border-opacity-30 rounded-3 mb-4 text-light">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="fa-solid fa-layer-group text-warning"></i>
+            <strong class="text-white">Core Technology Stack:</strong>
+        </div>
+        <span class="text-muted small">ASP.NET Core MVC (.NET 9.0) &bull; Entity Framework Core (SQL Server) &bull; Leaflet JS Maps &bull; Haversine Distance Engine &bull; Zero-Flash 10-Language Switcher &bull; Emergency SOS Engine</span>
+    </div>
+
+    <!-- Main Content Accordion / Sections -->
+    <div class="row g-4">
+        
+        <!-- Section 1: Public Home & Global Navigation -->
+        <div class="col-12">
+            <div class="glass-card border-secondary border-opacity-30">
+                <h4 class="text-warning font-weight-bold mb-3">
+                    <i class="fa-solid fa-house me-2"></i> 1. Public Home Page & Global Header Options
+                </h4>
+                <ul class="text-light mb-0" style="line-height: 1.8;">
+                    <li><strong>Brand Logo:</strong> Header top-left logo par click karke aap hamesha Home page (`/Home/Index`) par navigate kar sakte hain.</li>
+                    <li><strong>Navigation Pills:</strong>
+                        <ul class="text-muted">
+                            <li><strong class="text-white">Home:</strong> Main Hero Banner, Emergency Request CTA, Live System Status card.</li>
+                            <li><strong class="text-white">Services:</strong> 2-Wheeler, Car, Commercial, aur Heavy Vehicle categories ke rates aur info.</li>
+                            <li><strong class="text-white">How It Works:</strong> 3-Step automated workflow (Request ➔ Auto Dispatch ➔ Repair).</li>
+                            <li><strong class="text-white">About Us:</strong> Network stats, KYC safety protocols, aur escrow rules.</li>
+                            <li><strong class="text-white">Contact Us:</strong> Support helpline (`1800-102-7224`), office location, and contact form.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Zero-Flash Multi-Language Engine:</strong> Header dropdown se 10 Indian Languages (*English, Hindi, Marathi, Gujarati, Punjabi, Bengali, Tamil, Telugu, Kannada, Malayalam*) bina page reload kiye instant translate hoti hain.</li>
+                    <li><strong>Footer & Tricolor Badge:</strong> Copyright text ke sath <span class="badge bg-dark border border-secondary"><span style="color:#FF9933;">Make</span> <span style="color:#FFFFFF;">In</span> <span style="color:#00E676;">India</span></span> tri-color badge.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 2: Emergency SOS & AI Chatbot -->
+        <div class="col-12">
+            <div class="glass-card border-danger border-opacity-40">
+                <h4 class="text-danger font-weight-bold mb-3">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> 2. Emergency SOS & AI Chatbot Options
+                </h4>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-30 rounded-3">
+                            <h6 class="text-white font-weight-bold"><i class="fa-solid fa-phone-volume text-danger me-2"></i> SOS Emergency Trigger</h6>
+                            <p class="text-muted small mb-2">Top Navbar SOS, Footer SOS, ya Dashboard SOS button dabane par instant 24x7 Support Modal khulta hai jisme 3 options milte hain:</p>
+                            <ul class="text-light small mb-0">
+                                <li><strong>Toll-Free Helpline:</strong> Direct <code>1800-102-7224</code> call link.</li>
+                                <li><strong>Instant Dispatch:</strong> 30-Second Express Breakdown Request.</li>
+                                <li><strong>WhatsApp Control Desk:</strong> WhatsApp support desk.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-dark border border-warning border-opacity-30 rounded-3">
+                            <h6 class="text-white font-weight-bold"><i class="fa-solid fa-robot text-warning me-2"></i> Floating AI Chatbot Widget</h6>
+                            <p class="text-muted small mb-2">Screen ke bottom-right corner me <code>Chat</code> button par click karne par popup AI Assistant khulta hai.</p>
+                            <ul class="text-light small mb-0">
+                                <li>Quick suggestion buttons: *Book Mechanic*, *Visiting Charges*, *Emergency Helpline*.</li>
+                                <li>Real-time AI response generator with animated thinking loader.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Customer Operations Portal -->
+        <div class="col-12">
+            <div class="glass-card border-secondary border-opacity-30">
+                <h4 class="text-info font-weight-bold mb-3">
+                    <i class="fa-solid fa-user me-2"></i> 3. Customer Operations Portal (`/Customer/...`)
+                </h4>
+                <ul class="text-light mb-0" style="line-height: 1.8;">
+                    <li><strong>Dashboard (`/Customer/Dashboard`):</strong> Saved vehicles list, 1-click Quick Request button, Active ongoing breakdown dispatch cards, and Past service history.</li>
+                    <li><strong>Instant Request (`/Customer/Book`):</strong> Browser GPS Geolocation location auto-detect karta hai. Unauthenticated guest users ke liye verification code (`1234`) se 10-second instant account creation.</li>
+                    <li><strong>Live Dispatch Tracker (`/Customer/Tracker`):</strong> Customer live ETA countdown, mechanic location map radar, status timeline (*Requested ➔ Accepted ➔ In Progress ➔ Completed*), aur mechanic contact phone/photo dekh sakta hai.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 4: Mechanic Operations Portal -->
+        <div class="col-12">
+            <div class="glass-card border-secondary border-opacity-30">
+                <h4 class="text-warning font-weight-bold mb-3">
+                    <i class="fa-solid fa-wrench me-2"></i> 4. Mechanic Field Operations Portal (`/Mechanic/...`)
+                </h4>
+                <ul class="text-light mb-0" style="line-height: 1.8;">
+                    <li><strong>Duty Toggle:</strong> Mechanic <code>Online / Offline</code> status switch kar sakta hai. System sirf Online mechanics ko hi nearby job broadcast bhejta hai.</li>
+                    <li><strong>Incoming Broadcast:</strong> Nearby breakdown hone par customer distance (km), visiting fee, aur problem type ka live popup alert milta hai.</li>
+                    <li><strong>Job Execution:</strong> Mechanic *Accept Job* ➔ *Start Journey* ➔ *Submit Custom Parts Estimate* (if required) ➔ *Complete Work* mark kar sakta hai.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 5: Admin Command Center -->
+        <div class="col-12">
+            <div class="glass-card border-primary border-opacity-40">
+                <h4 class="text-primary font-weight-bold mb-3">
+                    <i class="fa-solid fa-shield-halved me-2"></i> 5. Admin Command & Operations Console (`/Admin/...`)
+                </h4>
+                <ul class="text-light mb-0" style="line-height: 1.8;">
+                    <li><strong>Global Live Dispatch Radar:</strong> Entire city/highway ke active breakdown requests aur mechanics ko real-time Leaflet map par plot karta hai.</li>
+                    <li><strong>KYC Verification Module:</strong> Mechanics ke Aadhaar, Driving License, aur Workshop photos review karke `Approve` ya `Reject` karne ka control.</li>
+                    <li><strong>Dynamic Pricing Rules (`/Admin/PricingRules`):</strong> Vehicle-wise Base Visiting Fee aur Per-Km Rate manage karne ka portal.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 6: Testing Matrix Table -->
+        <div class="col-12">
+            <div class="glass-card border-success border-opacity-40">
+                <h4 class="text-success font-weight-bold mb-3">
+                    <i class="fa-solid fa-list-check me-2"></i> 6. Step-by-Step Testing Checklist Table
+                </h4>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped border-secondary">
+                        <thead>
+                            <tr class="text-warning">
+                                <th>Test Case ID</th>
+                                <th>Testing Flow / Action</th>
+                                <th>Expected UI Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark font-weight-bold">TC-01</span></td>
+                                <td>Click Red <strong>SOS</strong> Button in Header / Footer</td>
+                                <td>High-priority Emergency Modal opens with 1800 Hotline & Instant Dispatch CTA.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark font-weight-bold">TC-02</span></td>
+                                <td>Submit 30-Sec Quick Request</td>
+                                <td>GPS location captured, auto-verification code `1234` verifies user, redirects to Live Tracker.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark font-weight-bold">TC-03</span></td>
+                                <td>Toggle Mechanic Duty to <strong>Online</strong></td>
+                                <td>Incoming job alert appears with customer distance & fee details.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark font-weight-bold">TC-04</span></td>
+                                <td>Accept & Complete Job as Mechanic</td>
+                                <td>Status updates: Assigned ➔ Accepted ➔ In Progress ➔ Completed.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark font-weight-bold">TC-05</span></td>
+                                <td>Open Admin Dashboard (`/Admin/Dashboard`)</td>
+                                <td>Live Dispatch Radar map displays active breakdown and mechanic pins in real time.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark font-weight-bold">TC-06</span></td>
+                                <td>Select Language from Header Dropdown</td>
+                                <td>Page content translates smoothly without full reload.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

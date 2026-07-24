@@ -57,6 +57,12 @@ namespace RaahSathi.Controllers
             return View();
         }
 
+        public IActionResult Manual()
+        {
+            ViewData["Title"] = "Testing Manual & System Documentation - RaahSathi";
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> SubmitContactForm(string fullName, string phone, string email, string subject, string message)
         {

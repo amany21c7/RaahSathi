@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function() {
+            function getCookie(name) {
+                let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+                return match ? match[2] : null;
+            }
+            const isAdmin = getCookie('RaahSathiAdminUserId') || getCookie('RaahSathiUserRole') === 'Admin';
+            if (!isAdmin) {
+                alert('Access Restricted: Testing Manual is available for Admin users only.');
+                window.location.href = '/Auth/Login?role=Admin';
+            }
+        })();
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a1324;
+            color: #f8fafc;
+            margin: 0;
+            padding: 24px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .glass-card {
+            background: #121f35;
+            border: 1px solid #243552;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .border-warning-custom {
+            border-color: rgba(255, 107, 0, 0.4) !important;
+        }
+
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .badge-tag {
+            background: #ff6b00;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            margin: 0 0 10px 0;
+        }
+
+        h2 {
+            color: #ffffff;
+            font-size: 26px;
+        }
+
+        h4 {
+            color: #ff6b00;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #ff6b00 0%, #e05d00 100%);
+            color: #ffffff;
+            font-weight: 700;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 4px 14px rgba(255, 107, 0, 0.4);
+            transition: transform 0.2s ease;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+        }
+
+        .text-muted { color: #94a3b8; }
+        .text-warning { color: #ff6b00; }
+        .text-danger { color: #ef4444; }
+        .text-success { color: #10b981; }
+        .text-info { color: #38bdf8; }
+
+        ul, ol {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        .table-custom th, .table-custom td {
+            border: 1px solid #243552;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .table-custom th {
+            background: #070d18;
+            color: #ff6b00;
+        }
+
+        .table-custom tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .flag-badge {
+            background: #070d18;
+            border: 1px solid #243552;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 12px;
+        }
+
+        .saffron { color: #FF9933; }
+        .white { color: #FFFFFF; }
+        .green { color: #00E676; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #38bdf8;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to RaahSathi Home</a>
+
+    <!-- Header Banner -->
+    <div class="glass-card border-warning-custom">
+        <div class="header-flex">
+            <div>
+                <span class="badge-tag">COMPLETE SYSTEM & TESTING MANUAL</span>
+                <h2><span style="color:#ff6b00;">Raah</span>Sathi Operational Guide</h2>
+                <p class="text-muted" style="margin:0;">Point-to-point guide for testing every tool, option, and workflow across Customer, Mechanic & Admin portals.</p>
+            </div>
+            <div>
+                <button onclick="window.print()" class="btn-print">
+                    <i class="fa-solid fa-print me-2"></i> Print / Save as PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tech Stack -->
+    <div class="glass-card" style="padding: 16px;">
+        <i class="fa-solid fa-layer-group text-warning" style="margin-right: 8px;"></i>
+        <strong style="color: #fff;">Core Technology Stack:</strong>
+        <span class="text-muted" style="font-size: 13px;">ASP.NET Core MVC (.NET 9.0) &bull; Entity Framework Core (SQL Server) &bull; Leaflet JS Maps &bull; Haversine Distance Engine &bull; Zero-Flash 10-Language Switcher &bull; Emergency SOS Engine</span>
+    </div>
+
+    <!-- Section 1 -->
+    <div class="glass-card">
+        <h4><i class="fa-solid fa-house text-warning"></i> 1. Public Home Page & Global Header Options</h4>
+        <ul>
+            <li><strong>Brand Logo:</strong> Header top-left logo par click karke aap hamesha Home page (`/`) par navigate kar sakte hain.</li>
+            <li><strong>Navigation Pills:</strong>
+                <ul>
+                    <li><strong style="color:#fff;">Home:</strong> Main Hero Banner, Emergency Request CTA, Live System Status card.</li>
+                    <li><strong style="color:#fff;">Services:</strong> 2-Wheeler, Car, Commercial, aur Heavy Vehicle categories ke rates aur info.</li>
+                    <li><strong style="color:#fff;">How It Works:</strong> 3-Step automated workflow (Request ➔ Auto Dispatch ➔ Repair).</li>
+                    <li><strong style="color:#fff;">About Us:</strong> Network stats, KYC safety protocols, aur escrow rules.</li>
+                    <li><strong style="color:#fff;">Contact Us:</strong> Support helpline (`1800-102-7224`), office location, and contact form.</li>
+                </ul>
+            </li>
+            <li><strong>Zero-Flash Multi-Language Engine:</strong> Header dropdown se 10 Indian Languages (*English, Hindi, Marathi, Gujarati, Punjabi, Bengali, Tamil, Telugu, Kannada, Malayalam*) bina page reload kiye instant translate hoti hain.</li>
+            <li><strong>Footer & Tricolor Badge:</strong> Copyright text ke sath <span class="flag-badge"><span class="saffron">Make</span> <span class="white">In</span> <span class="green">India</span></span> tri-color badge.</li>
+        </ul>
+    </div>
+
+    <!-- Section 2 -->
+    <div class="glass-card">
+        <h4><i class="fa-solid fa-triangle-exclamation text-danger"></i> 2. Emergency SOS & AI Chatbot Options</h4>
+        <ul>
+            <li><strong>Red SOS Button Trigger:</strong> Top Navbar SOS, Footer SOS, ya Dashboard SOS button dabane par instant 24x7 Support Modal khulta hai jisme 3 options milte hain:
+                <ol>
+                    <li><strong>Toll-Free Helpline:</strong> Direct <code>1800-102-7224</code> call link.</li>
+                    <li><strong>Instant Dispatch:</strong> 30-Second Express Breakdown Request.</li>
+                    <li><strong>WhatsApp Control Desk:</strong> WhatsApp support desk.</li>
+                </ol>
+            </li>
+            <li><strong>Floating AI Chatbot Widget:</strong> Screen ke bottom-right corner me <code>Chat</code> button par click karne par popup AI Assistant khulta hai jo booking aur charges ki instant help karta hai.</li>
+        </ul>
+    </div>
+
+    <!-- Section 3 -->
+    <div class="glass-card">
+        <h4><i class="fa-solid fa-user text-info"></i> 3. Customer Operations Portal (`/Customer/...`)</h4>
+        <ul>
+            <li><strong>Dashboard (`/Customer/Dashboard`):</strong> Saved vehicles list, 1-click Quick Request button, Active ongoing breakdown dispatch cards, and Past service history.</li>
+            <li><strong>Instant Request (`/Customer/Book`):</strong> Browser GPS Geolocation location auto-detect karta hai. Unauthenticated guest users ke liye verification code (`1234`) se 10-second instant account creation.</li>
+            <li><strong>Live Dispatch Tracker (`/Customer/Tracker`):</strong> Customer live ETA countdown, mechanic location map radar, status timeline (*Requested ➔ Accepted ➔ In Progress ➔ Completed*), aur mechanic contact phone/photo dekh sakta hai.</li>
+        </ul>
+    </div>
+
+    <!-- Section 4 -->
+    <div class="glass-card">
+        <h4><i class="fa-solid fa-wrench text-warning"></i> 4. Mechanic Field Operations Portal (`/Mechanic/...`)</h4>
+        <ul>
+            <li><strong>Duty Toggle:</strong> Mechanic <code>Online / Offline</code> status switch kar sakta hai. System sirf Online mechanics ko hi nearby job broadcast bhejta hai.</li>
+            <li><strong>Incoming Broadcast:</strong> Nearby breakdown hone par customer distance (km), visiting fee, aur problem type ka live popup alert milta hai.</li>
+            <li><strong>Job Execution:</strong> Mechanic *Accept Job* ➔ *Start Journey* ➔ *Submit Custom Parts Estimate* (if required) ➔ *Complete Work* mark kar sakta hai.</li>
+        </ul>
+    </div>
+
+    <!-- Section 5 -->
+    <div class="glass-card">
+        <h4><i class="fa-solid fa-shield-halved text-success"></i> 5. Admin Command & Operations Console (`/Admin/...`)</h4>
+        <ul>
+            <li><strong>Global Live Dispatch Radar:</strong> Entire city/highway ke active breakdown requests aur mechanics ko real-time Leaflet map par plot karta hai.</li>
+            <li><strong>KYC Verification Module:</strong> Mechanics ke Aadhaar, Driving License, aur Workshop photos review karke `Approve` ya `Reject` karne ka control.</li>
+            <li><strong>Dynamic Pricing Rules (`/Admin/PricingRules`):</strong> Vehicle-wise Base Visiting Fee aur Per-Km Rate manage karne ka portal.</li>
+        </ul>
+    </div>
+
+    <!-- Section 6: Table -->
+    <div class="glass-card">
+        <h4><i class="fa-solid fa-list-check text-success"></i> 6. Step-by-Step Testing Checklist Table</h4>
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Test Case ID</th>
+                    <th>Testing Flow / Action</th>
+                    <th>Expected UI Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong class="text-warning">TC-01</strong></td>
+                    <td>Click Red <strong>SOS</strong> Button in Header / Footer</td>
+                    <td>High-priority Emergency Modal opens with 1800 Hotline & Instant Dispatch CTA.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-02</strong></td>
+                    <td>Submit 30-Sec Quick Request</td>
+                    <td>GPS location captured, auto-verification code `1234` verifies user, redirects to Live Tracker.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-03</strong></td>
+                    <td>Toggle Mechanic Duty to <strong>Online</strong></td>
+                    <td>Incoming job alert appears with customer distance & fee details.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-04</strong></td>
+                    <td>Accept & Complete Job as Mechanic</td>
+                    <td>Status updates: Assigned ➔ Accepted ➔ In Progress ➔ Completed.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-05</strong></td>
+                    <td>Open Admin Dashboard (`/Admin/Dashboard`)</td>
+                    <td>Live Dispatch Radar map displays active breakdown and mechanic pins in real time.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-06</strong></td>
+                    <td>Select Language from Header Dropdown</td>
+                    <td>Page content translates smoothly without full reload.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>
