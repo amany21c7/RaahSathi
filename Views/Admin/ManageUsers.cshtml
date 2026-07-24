@@ -114,7 +114,7 @@
             <div class="row g-2 mb-3">
                 <div class="col-md-6 position-relative">
                     <i class="fa-solid fa-magnifying-glass text-muted position-absolute" style="left: 1.2rem; top: 0.95rem;"></i>
-                    <input type="text" class="form-control search-input-glass" id="customerSearchInput" placeholder="Search by Name or unique ID (e.g. URA-5 or Rahul)...">
+                    <input type="text" class="form-control search-input-glass" id="customerSearchInput" placeholder="Search by Name or unique ID (e.g. RS01C or Rahul)...">
                 </div>
             </div>
 
@@ -134,7 +134,7 @@
                         @foreach (var u in users.Where(u => u.Role == "Customer"))
                         {
                             <tr class="user-row" data-id="@u.DisplayId" data-name="@u.Name.ToLower()">
-                                <td><span class="badge bg-info bg-opacity-20 text-info border border-info px-2.5 py-1">@u.DisplayId</span></td>
+                                <td><span class="badge bg-info bg-opacity-20 text-info border border-info px-2.5 py-1 font-monospace fw-bold">@u.DisplayId</span></td>
                                 <td class="font-weight-bold text-white">@u.Name</td>
                                 <td>@u.PhoneNumber</td>
                                 <td>@u.CreatedAt.ToString("MMM dd, yyyy")</td>
@@ -234,7 +234,7 @@
             <div class="row g-2 mb-3">
                 <div class="col-md-6 position-relative">
                     <i class="fa-solid fa-magnifying-glass text-muted position-absolute" style="left: 1.2rem; top: 0.95rem;"></i>
-                    <input type="text" class="form-control search-input-glass" id="mechanicSearchInput" placeholder="Search by Name or unique ID (e.g. URA-8 or Amit)...">
+                    <input type="text" class="form-control search-input-glass" id="mechanicSearchInput" placeholder="Search by Name or unique ID (e.g. RS01M or Amit)...">
                 </div>
             </div>
 
@@ -257,7 +257,7 @@
                         {
                             var profile = profiles.FirstOrDefault(p => p.UserId == u.Id) ?? new MechanicProfile();
                             <tr class="user-row" data-id="@u.DisplayId" data-name="@u.Name.ToLower()">
-                                <td><span class="badge bg-warning bg-opacity-20 text-warning border border-warning px-2.5 py-1">@u.DisplayId</span></td>
+                                <td><span class="badge bg-warning bg-opacity-20 text-warning border border-warning px-2.5 py-1 font-monospace fw-bold">@u.DisplayId</span></td>
                                 <td class="font-weight-bold text-white">@u.Name</td>
                                 <td>@u.PhoneNumber</td>
                                 <td>
@@ -424,7 +424,7 @@
                         @foreach (var u in users.Where(u => u.Role == "Admin"))
                         {
                             <tr>
-                                <td><span class="badge bg-danger bg-opacity-20 text-danger border border-danger px-2.5 py-1">URA-@u.Id</span></td>
+                                <td><span class="badge bg-danger bg-opacity-20 text-danger border border-danger px-2.5 py-1 font-monospace fw-bold">@u.DisplayId</span></td>
                                 <td class="font-weight-bold text-white">@u.Name</td>
                                 <td>@u.PhoneNumber</td>
                                 <td>@u.CreatedAt.ToString("MMM dd, yyyy")</td>

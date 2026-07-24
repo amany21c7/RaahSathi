@@ -23,6 +23,28 @@
 .text-white { color: #ffffff !important; }
 .text-warning { color: var(--primary) !important; }
 
+/* Opacity and spacing utility fixes */
+.bg-opacity-20 {
+    --bs-bg-opacity: 0.2 !important;
+    background-color: rgba(var(--bs-info-rgb), 0.2) !important;
+}
+.bg-warning.bg-opacity-20 {
+    background-color: rgba(var(--bs-warning-rgb), 0.2) !important;
+}
+.bg-danger.bg-opacity-20 {
+    background-color: rgba(var(--bs-danger-rgb), 0.2) !important;
+}
+.bg-success.bg-opacity-20 {
+    background-color: rgba(var(--bs-success-rgb), 0.2) !important;
+}
+.bg-primary.bg-opacity-20 {
+    background-color: rgba(var(--bs-primary-rgb), 0.2) !important;
+}
+.px-2.5 {
+    padding-left: 0.625rem !important;
+    padding-right: 0.625rem !important;
+}
+
 /* Premium Luxury Modern Navbar System */
 .portal-switcher-navbar {
     background: linear-gradient(135deg, #070d18 0%, #101c33 50%, #081122 100%) !important;
