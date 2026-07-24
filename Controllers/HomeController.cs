@@ -28,6 +28,7 @@ namespace RaahSathi.Controllers
             // Seed base pricing stats for the upfront calculator
             var pricingRules = await _dbContext.PricingRules.ToListAsync();
             ViewBag.PricingRules = pricingRules;
+            ViewBag.ProblemTypes = await _dbContext.ProblemTypePricings.Where(p => p.IsActive).OrderBy(p => p.VehicleCategory).ThenBy(p => p.ProblemName).ToListAsync();
             return View();
         }
 

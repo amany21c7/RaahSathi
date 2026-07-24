@@ -296,6 +296,7 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
             ViewBag.PricingRules = await _dbContext.PricingRules.ToListAsync();
+            ViewBag.ProblemTypes = await _dbContext.ProblemTypePricings.OrderBy(p => p.VehicleCategory).ThenBy(p => p.ProblemName).ToListAsync();
             return View();
         }
 
@@ -328,6 +329,69 @@ namespace RaahSathi.Controllers
                 await _dbContext.SaveChangesAsync();
                 TempData["Success"] = "Pricing Rule deleted successfully.";
             }
+            return RedirectToAction("ManagePricing");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddProblemType(string problemName, string vehicleCategory, double minServiceCharge, double maxServiceCharge)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            if (string.IsNullOrWhiteSpace(problemName))
+            {
+                TempData["Error"] = "Please enter a valid problem name.";
+                return RedirectToAction("ManagePricing");
+            }
+
+            var item = new ProblemTypePricing
+            {
+                ProblemName = problemName.Trim(),
+                VehicleCategory = string.IsNullOrWhiteSpace(vehicleCategory) ? "Car" : vehicleCategory,
+                MinServiceCharge = minServiceCharge,
+                MaxServiceCharge = maxServiceCharge,
+                IsActive = true
+            };
+
+            _dbContext.ProblemTypePricings.Add(item);
+            await _dbContext.SaveChangesAsync();
+
+            TempData["Success"] = $"Vehicle Problem Type '{problemName}' added successfully.";
+            return RedirectToAction("ManagePricing");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateProblemType(int id, string problemName, string vehicleCategory, double minServiceCharge, double maxServiceCharge)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var item = await _dbContext.ProblemTypePricings.FindAsync(id);
+            if (item != null)
+            {
+                if (!string.IsNullOrWhiteSpace(problemName)) item.ProblemName = problemName.Trim();
+                if (!string.IsNullOrWhiteSpace(vehicleCategory)) item.VehicleCategory = vehicleCategory;
+                item.MinServiceCharge = minServiceCharge;
+                item.MaxServiceCharge = maxServiceCharge;
+
+                await _dbContext.SaveChangesAsync();
+                TempData["Success"] = $"Price range updated for '{item.ProblemName}'.";
+            }
+
+            return RedirectToAction("ManagePricing");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteProblemType(int id)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var item = await _dbContext.ProblemTypePricings.FindAsync(id);
+            if (item != null)
+            {
+                _dbContext.ProblemTypePricings.Remove(item);
+                await _dbContext.SaveChangesAsync();
+                TempData["Success"] = "Problem Type deleted successfully.";
+            }
+
             return RedirectToAction("ManagePricing");
         }
 

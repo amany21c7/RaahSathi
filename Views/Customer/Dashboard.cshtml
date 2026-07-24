@@ -6,7 +6,8 @@
 }
 
 <div class="row">
-        <!-- Quick Emergency Request for Registered Vehicles Card -->
+    <!-- Quick Emergency Request for Registered Vehicles Card -->
+    <div class="col-12">
         <div class="glass-card mb-4 border border-warning border-opacity-40" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));">
             <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                 <div>
@@ -37,6 +38,93 @@
                         </a>
                     }
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Column (col-lg-8): Vehicle Registration (Conditional) + Active Requests + Breakdown History -->
+    <div class="col-lg-8">
+
+        <!-- Vehicle Registration Section (Left Side - Shown ONLY on button click via action=addVehicle) -->
+        <div id="leftVehicleRegistrationSection" class="glass-card mb-4 border border-warning border-opacity-40" style="display: none; background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-40 pb-2">
+                <h4 class="text-white font-weight-bold mb-0">
+                    <i class="fa-solid fa-car text-warning me-2"></i> My Vehicle &amp; Registration
+                </h4>
+                <span class="badge bg-warning text-dark font-weight-bold">@vehicles.Count Vehicles</span>
+            </div>
+
+            @if (vehicles.Count > 0)
+            {
+                <div class="row g-2 mb-4">
+                    @foreach (var v in vehicles)
+                    {
+                        <div class="col-md-6">
+                            <div class="p-3 rounded bg-dark bg-opacity-60 border border-secondary d-flex justify-content-between align-items-center h-100">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    @if (!string.IsNullOrEmpty(v.VehiclePhotoUrl))
+                                    {
+                                        <img src="@v.VehiclePhotoUrl" style="width:48px; height:48px; object-fit:cover; border-radius:8px; border:1px solid #f59e0b;" alt="@v.Model" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-dark border border-secondary d-flex align-items-center justify-content-center text-warning" style="width:40px; height:40px;">
+                                            <i class="fa-solid fa-car"></i>
+                                        </div>
+                                    }
+                                    <div>
+                                        <h6 class="mb-0 text-white font-weight-bold">@v.Model</h6>
+                                        <span class="badge bg-secondary mt-1" style="font-size:0.7rem;">@v.VehicleType</span>
+                                        <div class="text-warning font-weight-bold small mt-0.5">@v.RegistrationNumber</div>
+                                    </div>
+                                </div>
+                                <a href="/Customer/Book?selectedVehicleId=@v.Id" class="btn btn-warning btn-sm font-weight-bold text-dark shadow-sm text-nowrap">
+                                    <i class="fa-solid fa-bolt me-1"></i> Request
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-3"><i class="fa-solid fa-circle-info text-warning me-1"></i> No saved vehicles found. Register your vehicle below to enable instant 1-click bookings.</p>
+            }
+
+            <!-- Add Vehicle Form Card -->
+            <div id="addVehicleCard" class="p-3.5 rounded-3 border border-warning border-opacity-40 bg-dark bg-opacity-70">
+                <h5 class="text-white font-weight-bold mb-3 d-flex align-items-center">
+                    <i class="fa-solid fa-car-on text-warning me-2"></i> Register New Vehicle
+                </h5>
+                <form action="/Customer/AddVehicle" method="POST" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small font-weight-bold">Vehicle Type <span class="text-warning">*</span></label>
+                            <select class="form-select glass-input text-white bg-dark border-secondary" name="vehicleType" required>
+                                <option value="Car">Car / SUV / Van</option>
+                                <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
+                                <option value="Commercial">Commercial (Truck/Bus/Loader/Pickup)</option>
+                                <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small font-weight-bold">Vehicle Name &amp; Model <span class="text-warning">*</span></label>
+                            <input type="text" class="form-control glass-input text-white bg-dark border-secondary" name="model" placeholder="e.g. Maruti Swift 2022 / Honda Activa 6G" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small font-weight-bold">Registration Number <span class="text-warning font-weight-normal">(Optional)</span></label>
+                            <input type="text" class="form-control glass-input text-white bg-dark border-secondary text-uppercase" name="registrationNumber" placeholder="e.g. DL-3C-AB-1234 (Optional)" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small font-weight-bold">Vehicle Photo <span class="text-warning font-weight-normal">(Optional)</span></label>
+                            <input type="file" class="form-control glass-input text-white bg-dark border-secondary" name="vehiclePhoto" accept="image/*" />
+                            <span class="text-muted" style="font-size:0.75rem;">Upload photo for easy identification by mechanics</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 mt-3 font-weight-extrabold text-dark py-2.5 shadow" style="background:#f59e0b;">
+                        <i class="fa-solid fa-plus-circle me-1"></i> Register Vehicle Now
+                    </button>
+                </form>
             </div>
         </div>
 
@@ -93,7 +181,7 @@
         </div>
 
         <!-- Past Request History -->
-        <div class="glass-card">
+        <div class="glass-card mb-4">
             <h4 class="text-white mb-4"><i class="fa-solid fa-history text-muted me-2"></i> Breakdown History</h4>
             
             @if (pastJobs.Count == 0)
@@ -163,67 +251,95 @@
         </div>
     </div>
 
-    <!-- Right Column: Vehicle Profiles & Quick Add -->
+    <!-- Right Column (col-lg-4): Customer Quick Profile & Support Card -->
     <div class="col-lg-4">
-        <!-- Saved Vehicles Card -->
         <div class="glass-card mb-4">
             <h4 class="text-white mb-3 d-flex align-items-center justify-content-between">
-                <span><i class="fa-solid fa-car-side text-info me-2"></i> My Vehicle</span>
-                <span class="badge bg-info">@vehicles.Count Vehicles</span>
+                <span><i class="fa-solid fa-shield-halved text-warning me-2"></i> Safety &amp; Support</span>
+                <span class="badge bg-success text-white font-weight-bold">Active 24x7</span>
             </h4>
             
-            @if (vehicles.Count == 0)
-            {
-                <p class="text-muted text-center py-3">No saved vehicles found. Add one below to enable quick bookings.</p>
-            }
-            else
-            {
-                <div class="d-flex flex-column gap-2 mb-4">
-                    @foreach (var v in vehicles)
-                    {
-                        <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-0 text-white font-weight-bold">@v.Model</h6>
-                                <span class="badge bg-secondary mt-1" style="font-size:0.7rem;">@v.VehicleType</span>
-                                <div class="text-warning font-weight-bold small mt-1">@v.RegistrationNumber</div>
-                            </div>
-                            <a href="/Customer/Book?selectedVehicleId=@v.Id" class="btn btn-warning btn-sm font-weight-bold text-dark shadow-sm">
-                                <i class="fa-solid fa-bolt me-1"></i> Send Request
-                            </a>
-                        </div>
-                    }
+            <div class="p-3 bg-dark bg-opacity-60 border border-secondary rounded-3 mb-3">
+                <div class="d-flex align-items-center me-2 mb-2">
+                    <div class="rounded-circle bg-warning text-dark font-weight-bold me-2 d-flex align-items-center justify-content-center" style="width:36px; height:36px;">
+                        <i class="fa-solid fa-user text-dark"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-white font-weight-bold mb-0">@(Context.Request.Cookies["RaahSathiUserName"] ?? "Customer")</h6>
+                        <span class="text-muted small">RaahSathi Verified User</span>
+                    </div>
                 </div>
-            }
+                <div class="text-muted small mb-0">
+                    <i class="fa-solid fa-phone text-warning me-1"></i> Toll-Free Hotline: <strong>1800-102-7224</strong>
+                </div>
+            </div>
 
-            <hr class="border-secondary my-3">
-
-            <!-- Add Vehicle Form -->
-            <h6 class="text-white mb-3">Add New Vehicle</h6>
-            <form action="/Customer/AddVehicle" method="POST">
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Vehicle Type</label>
-                    <select class="form-select glass-input text-white" name="vehicleType">
-                        <option value="Car">Car / SUV / Van</option>
-                        <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
-                        <option value="Commercial">Commercial (Truck/Bus/Loader/Pickup)</option>
-                        <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Model Name</label>
-                    <input type="text" class="form-control glass-input" name="model" placeholder="e.g. Maruti Swift, Honda Activa" required />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Registration Number</label>
-                    <input type="text" class="form-control glass-input" name="registrationNumber" placeholder="e.g. DL-3C-AB-1234" required />
-                </div>
-                <button type="submit" class="btn btn-premium-primary w-100 mt-2">
-                    <i class="fa-solid fa-plus-circle me-1"></i> Register Vehicle
-                </button>
-            </form>
+            <div class="d-grid gap-2">
+                <a href="/Customer/Book" class="btn btn-warning font-weight-bold text-dark shadow" style="background:#f59e0b;">
+                    <i class="fa-solid fa-location-crosshairs me-1"></i> Emergency Assistance
+                </a>
+                <a href="/Customer/Dashboard?action=addVehicle" class="btn btn-outline-warning btn-sm font-weight-bold">
+                    <i class="fa-solid fa-car-plus me-1"></i> Add / Manage Vehicles
+                </a>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const leftVehicleSec = document.getElementById('leftVehicleRegistrationSection');
+        if (urlParams.get('action') === 'addVehicle') {
+            if (leftVehicleSec) {
+                leftVehicleSec.style.display = 'block';
+                leftVehicleSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                leftVehicleSec.style.boxShadow = '0 0 25px rgba(245, 158, 11, 0.35)';
+            }
+        } else {
+            if (leftVehicleSec) {
+                leftVehicleSec.style.display = 'none';
+            }
+        }
+    });
+
+    function submitQuickVehicleRequest() {
+        var vehicleId = $('#dashboardVehicleSelect').val();
+        if (vehicleId) {
+            window.location.href = '/Customer/Book?selectedVehicleId=' + vehicleId;
+        } else {
+            window.location.href = '/Customer/Book';
+        }
+    }
+
+    function openDashboardRatingModal(jobId, mechName) {
+        $('#modalRatingJobId').val(jobId);
+        $('#modalMechanicName').text("Rate service by " + mechName);
+        setModalRating(5);
+        var ratingModal = new bootstrap.Modal(document.getElementById('dashboardRatingModal'));
+        ratingModal.show();
+    }
+
+    function setModalRating(val) {
+        $('#modalRatingScore').val(val);
+        const labels = {
+            1: "1.0 ★ Poor Service",
+            2: "2.0 ★ Below Average",
+            3: "3.0 ★ Average Service",
+            4: "4.0 ★ Good Service",
+            5: "5.0 ★ Excellent Service"
+        };
+        $('#modalRatingLabel').text(labels[val] || (val + ".0 ★"));
+        
+        $('#modalStarsContainer i').each(function(idx) {
+            if (idx < val) {
+                $(this).removeClass('fa-regular text-muted').addClass('fa-solid text-warning');
+            } else {
+                $(this).removeClass('fa-solid text-warning').addClass('fa-regular text-muted');
+            }
+        });
+    }
+</script>
 
 <!-- Interactive Rating Modal for Breakdown History -->
 <div class="modal fade" id="dashboardRatingModal" tabindex="-1" aria-hidden="true">
@@ -243,7 +359,6 @@
                     <h6 class="text-white mb-2" id="modalMechanicName">Rate your service</h6>
                     <p class="text-muted small mb-3">How was your roadside breakdown resolution experience?</p>
 
-                    <!-- Interactive Star Rating selection -->
                     <div class="d-flex justify-content-center gap-2 mb-3 cursor-pointer text-warning fs-2" id="modalStarsContainer">
                         <i class="fa-solid fa-star" onclick="setModalRating(1)"></i>
                         <i class="fa-solid fa-star" onclick="setModalRating(2)"></i>
@@ -258,59 +373,14 @@
 
                     <div class="mb-3 text-start">
                         <label class="form-label text-muted small font-weight-bold">Feedback / Review (Optional)</label>
-                        <textarea class="form-control glass-input text-white" name="feedback" rows="2" placeholder="Write feedback about the mechanic's service..."></textarea>
+                        <textarea name="feedback" class="form-control glass-input text-white bg-dark border-secondary" rows="3" placeholder="Share your experience..."></textarea>
                     </div>
                 </div>
-
-                <div class="modal-footer border-secondary py-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm text-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark px-4 shadow">
-                        <i class="fa-solid fa-check-circle me-1"></i> Submit Rating
-                    </button>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark" style="background:#f59e0b;">Submit Rating &amp; Review</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-@section Scripts {
-<script>
-    function submitQuickVehicleRequest() {
-        var vehicleId = $('#dashboardVehicleSelect').val();
-        if (vehicleId) {
-            window.location.href = '/Customer/Book?selectedVehicleId=' + vehicleId;
-        } else {
-            window.location.href = '/Customer/Book';
-        }
-    }
-
-    function openDashboardRatingModal(jobId, mechanicName) {
-        $('#modalRatingJobId').val(jobId);
-        $('#modalMechanicName').text("Rate service by " + mechanicName);
-        setModalRating(5);
-        var rModal = new bootstrap.Modal(document.getElementById('dashboardRatingModal'));
-        rModal.show();
-    }
-
-    function setModalRating(val) {
-        $('#modalRatingScore').val(val);
-        var stars = $('#modalStarsContainer i');
-        stars.each(function(index) {
-            if (index < val) {
-                $(this).attr('class', 'fa-solid fa-star text-warning');
-            } else {
-                $(this).attr('class', 'fa-regular fa-star text-muted');
-            }
-        });
-
-        var labelText = "5.0 ★ Excellent Service";
-        var bgClass = "bg-success";
-        if (val === 4) { labelText = "4.0 ★ Good Service"; bgClass = "bg-info"; }
-        else if (val === 3) { labelText = "3.0 ★ Average Service"; bgClass = "bg-warning text-dark"; }
-        else if (val === 2) { labelText = "2.0 ★ Below Expectations"; bgClass = "bg-danger text-white"; }
-        else if (val === 1) { labelText = "1.0 ★ Poor Service"; bgClass = "bg-danger text-white"; }
-
-        $('#modalRatingLabel').attr('class', 'badge px-3 py-1.5 font-weight-bold ' + bgClass).text(labelText);
-    }
-</script>
-}

@@ -39,6 +39,25 @@ namespace RaahSathi.Services
 
         public (double min, double max) GetServiceChargeRange(string problemType)
         {
+            if (!string.IsNullOrWhiteSpace(problemType))
+            {
+                string cleanType = problemType.Trim().ToLower();
+                
+                var exactMatch = _dbContext.ProblemTypePricings
+                    .FirstOrDefault(p => p.IsActive && p.ProblemName.ToLower() == cleanType);
+                if (exactMatch != null)
+                {
+                    return (exactMatch.MinServiceCharge, exactMatch.MaxServiceCharge);
+                }
+
+                var partialMatch = _dbContext.ProblemTypePricings
+                    .FirstOrDefault(p => p.IsActive && (p.ProblemName.ToLower().Contains(cleanType) || cleanType.Contains(p.ProblemName.ToLower())));
+                if (partialMatch != null)
+                {
+                    return (partialMatch.MinServiceCharge, partialMatch.MaxServiceCharge);
+                }
+            }
+
             return problemType.ToLower() switch
             {
                 "battery dead" or "battery" => (150, 3500),

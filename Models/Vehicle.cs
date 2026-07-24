@@ -22,6 +22,9 @@ namespace RaahSathi.Models
         [StringLength(50)]
         public string RegistrationNumber { get; set; } = string.Empty;
 
+        [StringLength(500)]
+        public string VehiclePhotoUrl { get; set; } = string.Empty;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation property

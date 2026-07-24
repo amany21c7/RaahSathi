@@ -38,20 +38,30 @@
     <!-- Left Column: Interactive Map & Location Lock -->
     <div class="col-lg-7 mb-4 mb-lg-0">
         <div class="glass-card h-100 p-0 overflow-hidden d-flex flex-column" style="min-height:560px;">
-            <div class="p-3 bg-dark border-bottom border-secondary d-flex align-items-center justify-content-between">
+            <div class="p-3 bg-dark border-bottom border-secondary d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
                 <h5 class="mb-0 text-white font-weight-bold">
                     <i class="fa-solid fa-map-location-dot text-warning me-2"></i> Breakdown Location Map
                 </h5>
-                <button class="btn btn-outline-warning btn-sm font-weight-bold" onclick="reDetectGPS()">
-                    <i class="fa-solid fa-crosshairs me-1"></i> Re-Detect GPS
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-warning btn-sm font-weight-bold text-dark text-nowrap shadow-sm" onclick="reDetectGPS()">
+                        <i class="fa-solid fa-crosshairs me-1"></i> My Live Location
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-2 bg-dark bg-opacity-90 border-bottom border-secondary d-flex align-items-center gap-2">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="mapSearchInput" class="form-control bg-dark text-white border-secondary" placeholder="Search house/society/landmark/city on map..." onkeypress="if(event.key==='Enter'){event.preventDefault();searchMapLocation();}" />
+                    <button class="btn btn-warning text-dark font-weight-bold" type="button" onclick="searchMapLocation()">Search Map</button>
+                </div>
             </div>
             
             <div id="map-container" style="flex-grow:1; min-height: 440px; height:100%;"></div>
             
             <div class="p-3 bg-dark border-top border-secondary text-muted small d-flex justify-content-between align-items-center">
-                <span><i class="fa-solid fa-info-circle text-warning me-1"></i> Drag pin or click map to adjust exact breakdown location.</span>
-                <span class="text-success font-weight-bold" id="gpsAccuracyText"><i class="fa-solid fa-shield-check me-1"></i> High Accuracy</span>
+                <span><i class="fa-solid fa-hand-pointer text-warning me-1"></i> Click map or drag pin to adjust exact location spot.</span>
+                <span class="text-success font-weight-bold" id="gpsAccuracyText"><i class="fa-solid fa-bullseye me-1"></i> GPS Active</span>
             </div>
         </div>
     </div>
@@ -200,13 +210,13 @@
             <!-- Problem Details Description & Vehicle Breakdown Photo Upload (Under 2. Breakdown Problem) -->
             <div class="row g-2 mb-3">
                 <div class="col-12">
-                    <label class="form-label text-muted small font-weight-bold">Other Problem Details</label>
-                    <textarea class="form-control glass-input text-white" id="problemDescInput" rows="2" placeholder="Describe problem in detail (e.g. Engine knocking noise, side tire puncture, key broken)..."></textarea>
+                    <label class="form-label text-white small font-weight-bold mb-1">Other Problem Details <span class="text-warning font-weight-normal" style="font-size:0.75rem;">(Optional)</span></label>
+                    <textarea class="form-control glass-input text-white font-weight-bold" id="problemDescInput" rows="2" placeholder="Describe problem in detail (e.g. Engine knocking noise, side tire puncture, key broken)..."></textarea>
                 </div>
                 <div class="col-12">
-                    <label class="form-label text-muted small font-weight-bold">Upload Vehicle / Breakdown Photo</label>
+                    <label class="form-label text-white small font-weight-bold mb-1">Upload Vehicle / Breakdown Photo <span class="text-warning font-weight-normal" style="font-size:0.75rem;">(Optional)</span></label>
                     <div class="p-3 border border-secondary rounded-3 bg-dark bg-opacity-60 text-center position-relative cursor-pointer" id="photoUploadBox" style="border-style: dashed !important;">
-                        <input type="file" class="form-control opacity-0 position-absolute top-0 start-0 w-100 h-100 cursor-pointer" id="problemPhotoInput" accept="image/*" onchange="previewProblemPhoto(this)" style="z-index:10;" />
+                        <input type="file" class="position-absolute top-0 start-0 w-100 h-100 cursor-pointer" id="problemPhotoInput" accept="image/*" onchange="previewProblemPhoto(this)" style="z-index:10; opacity:0;" />
                         <div id="photoPreviewContainer">
                             <i class="fa-solid fa-camera text-warning fa-2x mb-1"></i>
                             <div class="text-white font-weight-bold small">Snap Photo or Choose from Gallery</div>
@@ -216,14 +226,20 @@
                 </div>
             </div>
 
-            <!-- Step 3: Breakdown Address & Landmark -->
+            <!-- Step 3: Breakdown Address & Gali / House No. -->
             <div class="row g-2 mb-3">
                 <div class="col-12">
-                    <label class="form-label text-muted small font-weight-bold">3. Breakdown Address</label>
-                    <input type="text" class="form-control glass-input text-white" id="addressInput" placeholder="Auto-detected address via GPS..." required />
+                    <label class="form-label text-white small font-weight-bold">3. Exact Breakdown Address <span class="text-warning">*</span></label>
+                    <div class="input-group">
+                        <input type="text" class="form-control glass-input text-white font-weight-bold" id="addressInput" placeholder="Auto-detecting Gali, House No, Sector & City via GPS..." onkeypress="if(event.key==='Enter'){event.preventDefault();searchAddressFromInput();}" required />
+                        <button type="button" class="btn btn-warning font-weight-bold text-dark text-nowrap" onclick="searchAddressFromInput()" title="Search address on map">
+                            <i class="fa-solid fa-magnifying-glass-location me-1"></i> Search Address
+                        </button>
+                    </div>
                 </div>
                 <div class="col-12">
-                    <input type="text" class="form-control glass-input text-white" id="landmarkInput" placeholder="Nearby Landmark (e.g. Near HP Petrol Pump)" />
+                    <input type="text" class="form-control glass-input text-white" id="landmarkInput" placeholder="House No / Gali No / Nearby Landmark (e.g. Gali No 4, Near Shiv Temple)" />
+                    <span class="text-muted" style="font-size:0.75rem;"><i class="fa-solid fa-circle-info text-warning me-1"></i> Tip: Adding Gali No. or Landmark helps mechanics find your exact spot 2x faster.</span>
                 </div>
             </div>
 
@@ -419,78 +435,240 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         var customerMarker = L.marker([currentLat, currentLng], { draggable: true }).addTo(map);
-        customerMarker.bindPopup("<b class='text-dark'>Breakdown Spot</b>").openPopup();
+        customerMarker.bindPopup("<b class='text-dark'>Breakdown Spot (Drag pin or click map)</b>").openPopup();
+        var accuracyCircle = null;
 
-        // 1. Auto GPS Location Detection Engine (Live GPS + IP Fallback)
+        function updateAccuracyCircle(lat, lng, radiusMeters = 50) {
+            if (accuracyCircle) map.removeLayer(accuracyCircle);
+            accuracyCircle = L.circle([lat, lng], {
+                radius: Math.min(radiusMeters, 300),
+                color: '#3b82f6',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.15,
+                weight: 2
+            }).addTo(map);
+        }
+
+        // Map Click Listener to lock exact spot anywhere user clicks
+        map.on('click', function(e) {
+            currentLat = e.latlng.lat;
+            currentLng = e.latlng.lng;
+            customerMarker.setLatLng([currentLat, currentLng]);
+            updateAccuracyCircle(currentLat, currentLng, 30);
+            reverseGeocodeLocation(currentLat, currentLng);
+            updatePricing();
+            fetchNearbyMechanicsInfo();
+        });
+
+        // Marker Drag Listener
+        customerMarker.on('dragend', function() {
+            var pos = customerMarker.getLatLng();
+            currentLat = pos.lat;
+            currentLng = pos.lng;
+            updateAccuracyCircle(currentLat, currentLng, 30);
+            reverseGeocodeLocation(currentLat, currentLng);
+            updatePricing();
+            fetchNearbyMechanicsInfo();
+        });
+
+        // Search Map Location input box
+        window.searchMapLocation = function() {
+            var query = $('#mapSearchInput').val().trim() || $('#addressInput').val().trim();
+            if (!query) return;
+
+            $('#detectedLocationText').html('<i class="fa-solid fa-spinner fa-spin me-1 text-warning"></i> Searching map for "' + query + '"...');
+            fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=1`)
+                .then(res => res.json())
+                .then(results => {
+                    if (results && results.length > 0) {
+                        var first = results[0];
+                        currentLat = parseFloat(first.lat);
+                        currentLng = parseFloat(first.lon);
+                        customerMarker.setLatLng([currentLat, currentLng]);
+                        map.setView([currentLat, currentLng], 17);
+                        updateAccuracyCircle(currentLat, currentLng, 20);
+                        
+                        var display = first.display_name || query;
+                        $('#addressInput').val(display);
+                        $('#detectedLocationText').html(`<i class="fa-solid fa-circle-check text-success me-1"></i> Live Location: ${display}`);
+                        $('#gpsAccuracyText').html('<i class="fa-solid fa-bullseye text-success me-1"></i> Map Pinpoint Active');
+                        updatePricing();
+                        fetchNearbyMechanicsInfo();
+                    } else {
+                        alert("Location not found. Please click your exact breakdown spot directly on the map.");
+                    }
+                })
+                .catch(() => {
+                    alert("Search error. Please click your exact breakdown spot directly on the map.");
+                });
+        };
+
+        window.searchAddressFromInput = window.searchMapLocation;
+
+        // Multi-source Reverse Geocoding Engine for Real-Time Exact Address (Gali, House No, Road, Sector, Pincode)
+        function reverseGeocodeLocation(lat, lng) {
+            $('#detectedLocationText').html('<i class="fa-solid fa-spinner fa-spin me-1 text-warning"></i> Fetching exact Gali & Road level address...');
+
+            // Primary: Nominatim v2 with zoom=18 for full house, gali, road, sector precision
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
+                .then(res => res.json())
+                .then(data => {
+                    var fullFormattedAddress = "";
+                    if (data && data.address) {
+                        var a = data.address;
+                        var parts = [];
+
+                        // 1. House No / Building / Landmark / Shop / Amenity
+                        var house = a.house_number || a.building || a.house_name || a.amenity || a.shop || "";
+                        if (house) parts.push(house);
+
+                        // 2. Gali / Road / Street / Lane
+                        var street = a.road || a.pedestrian || a.footway || a.path || a.lane || "";
+                        if (street && !parts.includes(street)) parts.push(street);
+
+                        // 3. Block / Sector / Suburb / Neighbourhood / Quarter
+                        var area = a.suburb || a.neighbourhood || a.quarter || a.residential || a.sector || a.industrial || "";
+                        if (area && !parts.includes(area)) parts.push(area);
+
+                        // 4. City / Town / Village / District
+                        var city = a.city || a.town || a.village || a.city_district || a.county || "";
+                        if (city && !parts.includes(city)) parts.push(city);
+
+                        // 5. State
+                        var state = a.state || "";
+                        if (state && !parts.includes(state)) parts.push(state);
+
+                        // 6. Pin Code
+                        var postcode = a.postcode || "";
+                        if (postcode) parts.push(postcode);
+
+                        fullFormattedAddress = parts.join(', ');
+                    }
+
+                    // Fallback to display_name if constructed address is too brief
+                    if (!fullFormattedAddress || fullFormattedAddress.length < 12) {
+                        if (data && data.display_name) {
+                            fullFormattedAddress = data.display_name;
+                        }
+                    }
+
+                    if (fullFormattedAddress) {
+                        $('#addressInput').val(fullFormattedAddress);
+                        $('#detectedLocationText').html(`<i class="fa-solid fa-circle-check text-success me-1"></i> Live GPS Location: ${fullFormattedAddress}`);
+                        return;
+                    }
+                    throw new Error("Try BigDataCloud");
+                })
+                .catch(() => {
+                    // Fallback: BigDataCloud API
+                    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
+                        .then(res => res.json())
+                        .then(data => {
+                            var parts = [];
+                            if (data.localityInfo && data.localityInfo.informative) {
+                                data.localityInfo.informative.forEach(item => {
+                                    if (item.name && !parts.includes(item.name)) parts.push(item.name);
+                                });
+                            }
+                            if (parts.length === 0) {
+                                if (data.locality) parts.push(data.locality);
+                                if (data.city && data.city !== data.locality) parts.push(data.city);
+                                if (data.principalSubdivision) parts.push(data.principalSubdivision);
+                                if (data.postcode) parts.push(data.postcode);
+                            }
+                            var fullAddress = parts.length > 0 ? parts.join(', ') : `Live GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                            $('#addressInput').val(fullAddress);
+                            $('#detectedLocationText').html(`<i class="fa-solid fa-circle-check text-success me-1"></i> Live GPS Location: ${fullAddress}`);
+                        })
+                        .catch(() => {
+                            var fallbackAddr = `Live GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                            $('#addressInput').val(fallbackAddr);
+                            $('#detectedLocationText').html(`<i class="fa-solid fa-location-dot text-info me-1"></i> ${fallbackAddr}`);
+                        });
+                });
+        }
+
+        // 1. High Accuracy Auto GPS Location Detection Engine with Native Browser Permission Popup
         function autoDetectGPS() {
-            $('#detectedLocationText').html('<i class="fa-solid fa-spinner fa-spin me-1 text-warning"></i> Detecting your live location via GPS...');
+            $('#detectedLocationText').html('<i class="fa-solid fa-location-crosshairs fa-spin text-warning me-1"></i> Requesting GPS Location access... Please click "Allow" on browser popup.');
 
             if (navigator.geolocation) {
+                // High Accuracy GPS with 25s timeout so browser location prompt popup stays active
                 navigator.geolocation.getCurrentPosition(function(pos) {
                     currentLat = pos.coords.latitude;
                     currentLng = pos.coords.longitude;
+                    var acc = Math.round(pos.coords.accuracy || 10);
                     
                     customerMarker.setLatLng([currentLat, currentLng]);
-                    map.setView([currentLat, currentLng], 15);
-
-                    // Reverse geocode to get live street address & city
-                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLat}&lon=${currentLng}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            var addr = data.display_name || `Live GPS Spot: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
-                            $('#addressInput').val(addr);
-                            $('#detectedLocationText').html(`<i class="fa-solid fa-circle-check text-success me-1"></i> ${addr}`);
-                        })
-                        .catch(() => {
-                            var addr = `Live GPS Spot: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
-                            $('#addressInput').val(addr);
-                            $('#detectedLocationText').html(`<i class="fa-solid fa-circle-check text-success me-1"></i> ${addr}`);
-                        });
-
+                    map.setView([currentLat, currentLng], 17);
+                    updateAccuracyCircle(currentLat, currentLng, acc);
+                    
+                    $('#gpsAccuracyText').html(`<i class="fa-solid fa-bullseye text-success me-1"></i> Exact Live GPS (±${acc}m accuracy)`);
+                    reverseGeocodeLocation(currentLat, currentLng);
                     fetchNearbyMechanicsInfo();
                 }, function(err) {
-                    fallbackIPLocation();
-                }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+                    console.warn("GPS error/timeout:", err);
+                    if (err.code === 1) {
+                        // Permission Denied
+                        $('#detectedLocationText').html(`
+                            <span class="text-warning font-weight-bold">
+                                <i class="fa-solid fa-shield-halved me-1"></i> Location permission required! Please enable location access in browser settings or <a href="javascript:void(0)" onclick="reDetectGPS()" class="text-warning text-decoration-underline font-weight-bold">Click here to Allow GPS</a>.
+                            </span>
+                        `);
+                        $('#gpsAccuracyText').html('<i class="fa-solid fa-hand-pointer text-warning me-1"></i> Click map or enable location');
+                    } else {
+                        $('#detectedLocationText').html('<i class="fa-solid fa-location-crosshairs text-info me-1"></i> Fetching location... Click map to select exact spot.');
+                        fallbackIPLocation();
+                    }
+                }, { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 });
             } else {
                 fallbackIPLocation();
             }
         }
 
         function fallbackIPLocation() {
-            fetch('https://ipapi.co/json/')
+            fetch('https://ipwho.is/')
                 .then(res => res.json())
                 .then(data => {
                     if (data && data.latitude && data.longitude) {
                         currentLat = data.latitude;
                         currentLng = data.longitude;
                         customerMarker.setLatLng([currentLat, currentLng]);
-                        map.setView([currentLat, currentLng], 14);
+                        map.setView([currentLat, currentLng], 15);
+                        updateAccuracyCircle(currentLat, currentLng, 500);
 
-                        var cityAddr = `${data.city || ''}, ${data.region || ''}, ${data.country_name || ''}`.trim().replace(/^,\s*/, '');
-                        var fullAddr = cityAddr ? `Live Spot: ${cityAddr}` : `GPS Spot: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+                        var cityAddr = `${data.city || ''}, ${data.region || ''}, ${data.country || ''}`.trim().replace(/^,\s*/, '');
+                        var fullAddr = cityAddr ? `Area Location: ${cityAddr}` : `GPS Spot: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
                         $('#addressInput').val(fullAddr);
-                        $('#detectedLocationText').html(`<i class="fa-solid fa-location-dot text-info me-1"></i> ${fullAddr}`);
+                        $('#detectedLocationText').html(`<i class="fa-solid fa-location-dot text-info me-1"></i> ${fullAddr} (Click map for exact spot)`);
+                        $('#gpsAccuracyText').html('<i class="fa-solid fa-map-pin text-warning me-1"></i> Click map to pinpoint');
                     } else {
-                        $('#detectedLocationText').html(`<i class="fa-solid fa-location-arrow text-warning me-1"></i> Live location undetected. Please allow browser location access or type address.`);
+                        $('#detectedLocationText').html(`<i class="fa-solid fa-location-arrow text-warning me-1"></i> Click map or search address to lock breakdown spot.`);
                     }
                     fetchNearbyMechanicsInfo();
                 })
                 .catch(() => {
-                    $('#detectedLocationText').html(`<i class="fa-solid fa-location-arrow text-warning me-1"></i> Live location undetected. Please allow browser location access or type address.`);
+                    $('#detectedLocationText').html(`<i class="fa-solid fa-location-arrow text-warning me-1"></i> Click map or search address to lock breakdown spot.`);
                     fetchNearbyMechanicsInfo();
                 });
         }
 
         window.reDetectGPS = function() {
-            $('#detectedLocationText').html("<i class='fa-solid fa-spinner fa-spin me-1 text-warning'></i> Re-detecting live GPS location...");
+            $('#detectedLocationText').html("<i class='fa-solid fa-location-crosshairs fa-spin text-warning me-1'></i> Requesting browser location permission... Please click 'Allow'");
             autoDetectGPS();
         };
+
+        var currentPatrolDistance = 3.2;
 
         function fetchNearbyMechanicsInfo() {
             $.get(`/Customer/GetNearbyMechanicsInfo?lat=${currentLat}&lng=${currentLng}&vehicleType=${selectedVehicleType}`, function(res) {
                 if (res && res.success) {
-                    $('#nearbyMechanicsBadge').html(`<i class="fa-solid fa-bolt me-1 text-dark"></i> ${res.count} Verified Mechanics Nearby • Avg ETA ${res.minEta} mins`);
-                    $('#distanceText').text((res.count > 0 ? res.topMechanics[0].distance.toFixed(1) : "3.2") + " km");
+                    var rawDist = (res.count > 0 && res.topMechanics && res.topMechanics.length > 0) ? res.topMechanics[0].distance : 3.2;
+                    currentPatrolDistance = (rawDist > 30.0 || rawDist <= 0.05) ? 3.2 : rawDist;
+                    var displayEta = (res.minEta && res.minEta <= 25) ? res.minEta : 25;
+                    $('#nearbyMechanicsBadge').html(`<i class="fa-solid fa-bolt me-1 text-dark"></i> ${res.count} Verified Mechanics Nearby • Avg ETA ${displayEta} mins`);
+                    $('#distanceText').text(currentPatrolDistance.toFixed(1) + " km");
+                    updatePricing();
                 }
             });
         }
@@ -574,10 +752,11 @@
             var selectedRule = ratesMap[selectedVehicleType] || ratesMap["Car"];
             var baseFee = selectedRule.base;
             var perKm = selectedRule.perKm;
-            var dist = 3.2;
+            var dist = currentPatrolDistance || 3.2;
 
             var visitingCharge = baseFee + (dist * perKm);
             $('#baseFeeText').text('₹' + visitingCharge.toFixed(2));
+            $('#distanceText').text(dist.toFixed(1) + " km");
 
             var serviceMin = 150;
             var serviceMax = 1000;

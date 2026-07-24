@@ -5,6 +5,9 @@
     var bikeRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "2-Wheeler") ?? new RaahSathi.Models.PricingRule { BaseFee = 49, PerKmRate = 5 };
     var commRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Commercial") ?? new RaahSathi.Models.PricingRule { BaseFee = 199, PerKmRate = 12 };
     var heavyRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Heavy") ?? new RaahSathi.Models.PricingRule { BaseFee = 299, PerKmRate = 15 };
+    var problemTypes = ViewBag.ProblemTypes as List<RaahSathi.Models.ProblemTypePricing> ?? new List<RaahSathi.Models.ProblemTypePricing>();
+    bool isCustLoggedIn = Context.Request.Cookies.ContainsKey("RaahSathiCustomerUserId");
+    string targetVehicleUrl = isCustLoggedIn ? "/Customer/Dashboard?action=addVehicle" : "/Auth/Login?role=Customer&returnUrl=/Customer/Dashboard?action=addVehicle";
 }
 
 <!-- Top Full-Width Highlighted Tagline Banner -->
@@ -120,11 +123,20 @@
             <div class="mb-4">
                 <label class="form-label text-muted small font-weight-bold mb-2">3. Select Problem Type</label>
                 <select id="calcProblem" class="form-select bg-dark text-white border-secondary" onchange="updateEstPrice()">
-                    <option value="150-3500">Battery jump-start/replacement (₹150 - ₹3,500)</option>
-                    <option value="200-800">Flat Tyre / Puncture Repair (₹200 - ₹800)</option>
-                    <option value="250-500">Emergency Fuel Delivery (₹250 + Fuel Cost)</option>
-                    <option value="300-1500">Towing Assistance (₹300 - ₹1,500)</option>
-                    <option value="180-1200">General Engine / Mechanical Checkup (₹180 - ₹1,200)</option>
+                    @if (problemTypes != null && problemTypes.Any())
+                    {
+                        foreach (var pt in problemTypes)
+                        {
+                            <option value="@pt.MinServiceCharge-@pt.MaxServiceCharge" data-category="@pt.VehicleCategory">@pt.ProblemName (₹@pt.MinServiceCharge - ₹@pt.MaxServiceCharge)</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="150-3500">Battery jump-start/replacement (₹150 - ₹3,500)</option>
+                        <option value="200-800">Flat Tyre / Puncture Repair (₹200 - ₹800)</option>
+                        <option value="250-1200">Emergency Fuel Delivery (₹250 - ₹1,200)</option>
+                        <option value="300-1500">Towing Assistance (₹300 - ₹1,500)</option>
+                    }
                 </select>
             </div>
 
@@ -145,8 +157,8 @@
                 </div>
             </div>
 
-            <a href="/Customer/Book" class="btn btn-warning w-100 py-3 font-weight-bold text-dark shadow" style="background: #f59e0b; border: none; border-radius: 10px; font-size: 1.1rem;">
-                <i class="fa-solid fa-car me-2"></i> Request Assistance Now
+            <a href="@targetVehicleUrl" class="btn btn-warning w-100 py-3 font-weight-bold text-dark shadow" style="background: #f59e0b; border: none; border-radius: 10px; font-size: 1.1rem;">
+                <i class="fa-solid fa-car me-2"></i> Register Your Vehicle
             </a>
         </div>
     </div>

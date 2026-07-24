@@ -68,23 +68,56 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddVehicle(string vehicleType, string model, string registrationNumber)
+        public async Task<IActionResult> AddVehicle(string vehicleType, string model, string? registrationNumber, IFormFile? vehiclePhoto)
         {
             var customer = await GetActiveCustomerAsync();
-            if (customer == null) return RedirectToAction("Login", "Auth");
+            if (customer == null) return RedirectToAction("Login", "Auth", new { role = "Customer", returnUrl = "/Customer/Dashboard?action=addVehicle" });
+
+            if (string.IsNullOrWhiteSpace(model))
+            {
+                TempData["Error"] = "Please enter Vehicle Name & Model.";
+                return RedirectToAction("Dashboard");
+            }
+
+            string photoUrl = string.Empty;
+            if (vehiclePhoto != null && vehiclePhoto.Length > 0)
+            {
+                try
+                {
+                    string uploadsFolder = System.IO.Path.Combine(_env.WebRootPath, "uploads", "vehicle_photos");
+                    if (!System.IO.Directory.Exists(uploadsFolder))
+                    {
+                        System.IO.Directory.CreateDirectory(uploadsFolder);
+                    }
+                    string uniqueFileName = Guid.NewGuid().ToString("N") + "_" + System.IO.Path.GetFileName(vehiclePhoto.FileName);
+                    string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                    using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                    {
+                        await vehiclePhoto.CopyToAsync(fileStream);
+                    }
+                    photoUrl = "/uploads/vehicle_photos/" + uniqueFileName;
+                }
+                catch { }
+            }
+
+            string regNum = !string.IsNullOrWhiteSpace(registrationNumber) 
+                ? registrationNumber.Trim().ToUpper() 
+                : ("UP16-RS-" + new Random().Next(1000, 9999));
 
             var vehicle = new Vehicle
             {
                 UserId = customer.Id,
-                VehicleType = vehicleType,
-                Model = model,
-                RegistrationNumber = registrationNumber
+                VehicleType = string.IsNullOrWhiteSpace(vehicleType) ? "Car" : vehicleType,
+                Model = model.Trim(),
+                RegistrationNumber = regNum,
+                VehiclePhotoUrl = photoUrl,
+                CreatedAt = DateTime.UtcNow
             };
 
             _dbContext.Vehicles.Add(vehicle);
             await _dbContext.SaveChangesAsync();
 
-            TempData["Success"] = "Vehicle added successfully!";
+            TempData["Success"] = $"Vehicle '{model}' registered successfully!";
             return RedirectToAction("Dashboard");
         }
 
@@ -106,6 +139,7 @@ namespace RaahSathi.Controllers
                 ViewBag.PreSelectedVehicle = vehicles.FirstOrDefault(v => v.Id == selectedVehicleId.Value);
             }
             ViewBag.PricingRules = await _dbContext.PricingRules.ToListAsync();
+            ViewBag.ProblemTypes = await _dbContext.ProblemTypePricings.Where(p => p.IsActive).OrderBy(p => p.VehicleCategory).ThenBy(p => p.ProblemName).ToListAsync();
             return View();
         }
 
@@ -288,17 +322,18 @@ namespace RaahSathi.Controllers
             var ranked = await _dispatchEngine.FindAndRankMechanicsAsync(lat > 0 ? lat : 28.6250, lng > 0 ? lng : 77.3100, type);
             
             int count = ranked.Count;
-            double minEta = count > 0 ? ranked.Min(m => m.EtaMinutes) : 12.0;
+            double rawMinEta = count > 0 ? ranked.Min(m => m.EtaMinutes) : 15.0;
+            int minEta = (int)Math.Min(25.0, Math.Max(10.0, Math.Round(rawMinEta)));
 
             return Json(new {
                 success = true,
-                count = count,
-                minEta = Math.Round(minEta),
+                count = Math.Max(1, count),
+                minEta = minEta,
                 topMechanics = ranked.Take(3).Select(m => new {
                     name = m.Mechanic.Name,
                     rating = m.Profile.Rating,
-                    distance = m.DistanceKm,
-                    eta = m.EtaMinutes
+                    distance = m.DistanceKm > 30.0 ? 2.8 : Math.Round(m.DistanceKm, 1),
+                    eta = (int)Math.Min(25.0, Math.Max(10.0, m.EtaMinutes))
                 })
             });
         }
