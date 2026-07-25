@@ -20,42 +20,48 @@
     </div>
 </div>
 
-<!-- 🟢 Live Telemetry Status Row -->
+<!-- 🟢 Live Telemetry Status Row (Clickable Categories with Live Filter Grid) -->
 <div class="row g-3 mb-4">
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-30 text-center shadow-sm">
+        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('onlineMechanics', 'Online Mechanics Network')">
             <span class="text-muted small d-block mb-1"><i class="fa-solid fa-circle text-success me-1" style="font-size:0.6rem;"></i> Online Mechanics</span>
             <h3 class="text-success font-weight-extrabold mb-0" id="lblOnlineMechanics">@(ViewBag.OnlineMechanics > 0 ? ViewBag.OnlineMechanics : "8,245")</h3>
+            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-info border-opacity-30 text-center shadow-sm">
+        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-info border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('liveRequests', 'Live Assistance Requests')">
             <span class="text-muted small d-block mb-1"><i class="fa-solid fa-tower-broadcast text-info me-1"></i> Live Requests</span>
             <h3 class="text-info font-weight-extrabold mb-0" id="lblLiveRequests">312</h3>
+            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-warning border-opacity-30 text-center shadow-sm">
+        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-warning border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('activeJobs', 'Active Jobs in Progress')">
             <span class="text-muted small d-block mb-1"><i class="fa-solid fa-bolt text-warning me-1"></i> Active Jobs</span>
             <h3 class="text-warning font-weight-extrabold mb-0" id="lblActiveJobs">@(ViewBag.ActiveRequests > 0 ? ViewBag.ActiveRequests : "186")</h3>
+            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-secondary border-opacity-30 text-center shadow-sm">
+        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-secondary border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('pendingRequests', 'Unassigned Pending Requests')">
             <span class="text-muted small d-block mb-1"><i class="fa-solid fa-hourglass-half text-light me-1"></i> Pending Requests</span>
             <h3 class="text-light font-weight-extrabold mb-0" id="lblPendingRequests">41</h3>
+            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-30 text-center shadow-sm">
+        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('completedToday', 'Jobs Completed Today')">
             <span class="text-muted small d-block mb-1"><i class="fa-solid fa-circle-check text-success me-1"></i> Completed Today</span>
             <h3 class="text-success font-weight-extrabold mb-0" id="lblCompletedToday">@(ViewBag.TotalJobs > 0 ? ViewBag.TotalJobs : "742")</h3>
+            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-danger border-opacity-30 text-center shadow-sm">
+        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-danger border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('cancelledToday', 'Jobs Cancelled Today')">
             <span class="text-muted small d-block mb-1"><i class="fa-solid fa-circle-xmark text-danger me-1"></i> Cancelled Today</span>
             <h3 class="text-danger font-weight-extrabold mb-0" id="lblCancelledToday">18</h3>
+            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
         </div>
     </div>
 </div>
@@ -413,8 +419,190 @@
     </div>
 </div>
 
+<!-- 📊 Live Telemetry Category Details Grid Modal -->
+<div class="modal fade" id="mdlTelemetryDetails" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-sm-down modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content bg-dark text-light border border-secondary shadow-lg">
+            <div class="modal-header border-secondary py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark font-weight-bold" id="lblTelemetryCategoryBadge">LIVE TELEMETRY</span>
+                    <h5 class="modal-title font-weight-bold text-white mb-0" id="lblTelemetryModalTitle">Telemetry Details</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Search & Filter Bar -->
+                <div class="row g-2 mb-3 align-items-center">
+                    <div class="col-md-7 col-12">
+                        <div class="input-group">
+                            <span class="input-group-text bg-black bg-opacity-50 border-secondary text-warning"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" class="form-control bg-black bg-opacity-50 border-secondary text-white" id="txtTelemetrySearch" placeholder="Filter by Job ID (#RS-...), Name, Phone, Vehicle, Issue..." onkeyup="filterTelemetryGrid()">
+                        </div>
+                    </div>
+                    <div class="col-md-5 col-12 text-md-end text-muted small">
+                        Showing <strong class="text-warning fs-6" id="lblTelemetryItemCount">0</strong> records
+                    </div>
+                </div>
+
+                <!-- Grid Table -->
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle border-secondary mb-0" id="tblTelemetryGrid">
+                        <thead class="table-black text-warning small text-uppercase">
+                            <tr>
+                                <th>ID</th>
+                                <th>Customer / Mechanic</th>
+                                <th>Vehicle & Issue</th>
+                                <th>Status</th>
+                                <th>Amount / Rating</th>
+                                <th>Time / Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblTelemetryBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Loading real-time records...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
+    var currentTelemetryData = [];
+
+    function openTelemetryModal(category, title) {
+        $('#lblTelemetryModalTitle').text(title);
+        $('#lblTelemetryCategoryBadge').text(category.toUpperCase());
+        $('#txtTelemetrySearch').val('');
+        $('#tblTelemetryBody').html('<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-spinner fa-spin text-warning me-2 fs-5"></i> Fetching live telemetry records...</td></tr>');
+        
+        var modal = new bootstrap.Modal(document.getElementById('mdlTelemetryDetails'));
+        modal.show();
+
+        $.get('/Admin/GetTelemetryCategoryDetails?category=' + category, function (res) {
+            if (res && res.success) {
+                currentTelemetryData = res.items || [];
+                renderTelemetryGrid(currentTelemetryData);
+            } else {
+                $('#tblTelemetryBody').html('<tr><td colspan="6" class="text-center text-danger py-4">Failed to load telemetry records.</td></tr>');
+            }
+        });
+    }
+
+    function renderTelemetryGrid(items) {
+        $('#lblTelemetryItemCount').text(items.length);
+        if (items.length === 0) {
+            $('#tblTelemetryBody').html('<tr><td colspan="6" class="text-center text-muted py-4">No matching telemetry records found.</td></tr>');
+            return;
+        }
+
+        var html = '';
+        items.forEach(function (item) {
+            var itemType = item.type || item.Type || '';
+            var displayId = item.displayId || item.DisplayId || '';
+
+            if (itemType === "Mechanic") {
+                var name = item.name || item.Name || 'Mechanic';
+                var phone = item.phone || item.Phone || 'N/A';
+                var subDetail = item.subDetail || item.SubDetail || 'Individual Mechanic';
+                var skill = item.skill || item.Skill || 'General';
+                var status = item.status || item.Status || '🟢 Online';
+                var rating = item.rating || item.Rating || '5.0 ★';
+                var extra = item.extra || item.Extra || '';
+
+                html += '<tr>' +
+                    '<td><span class="badge bg-dark border border-warning text-warning font-weight-bold">' + displayId + '</span></td>' +
+                    '<td><div class="font-weight-bold text-white">' + name + '</div><div class="text-muted small"><i class="fa-solid fa-phone me-1"></i> ' + phone + '</div></td>' +
+                    '<td><div class="text-light font-weight-bold">' + subDetail + '</div><div class="text-muted small"><i class="fa-solid fa-screwdriver-wrench me-1"></i> ' + skill + '</div></td>' +
+                    '<td><span class="badge bg-success text-white font-weight-bold">' + status + '</span></td>' +
+                    '<td><span class="text-warning font-weight-extrabold">' + rating + '</span></td>' +
+                    '<td class="small text-muted">' + extra + '</td>' +
+                '</tr>';
+            } else {
+                var customerName = item.customerName || item.CustomerName || 'Customer';
+                var customerPhone = item.customerPhone || item.CustomerPhone || '';
+                var mechanicName = item.mechanicName || item.MechanicName || 'Unassigned / Auto-Matching';
+                var mechanicPhone = item.mechanicPhone || item.MechanicPhone || '';
+                var vehicleModel = item.vehicleModel || item.VehicleModel || 'Vehicle';
+                var regNo = item.regNo || item.RegNo || '';
+                var problemType = item.problemType || item.ProblemType || 'Roadside Assistance';
+                var status = item.status || item.Status || 'Requested';
+                var amount = item.amount || item.Amount || '₹350';
+                var createdAt = item.createdAt || item.CreatedAt || '';
+                var address = item.address || item.Address || '';
+
+                var statusBadge = 'bg-info text-dark';
+                if (status === 'Completed') statusBadge = 'bg-success text-white';
+                if (status === 'Cancelled') statusBadge = 'bg-danger text-white';
+                if (status === 'Requested') statusBadge = 'bg-warning text-dark';
+
+                html += '<tr>' +
+                    '<td><span class="badge bg-dark border border-secondary text-warning font-weight-bold">' + displayId + '</span></td>' +
+                    '<td><div class="font-weight-bold text-white">' + customerName + (customerPhone ? ' <span class="text-muted small">(' + customerPhone + ')</span>' : '') + '</div><div class="text-info small"><i class="fa-solid fa-wrench me-1"></i> ' + mechanicName + (mechanicPhone ? ' (' + mechanicPhone + ')' : '') + '</div></td>' +
+                    '<td><div class="text-light font-weight-bold">' + vehicleModel + ' <span class="badge bg-secondary">' + regNo + '</span></div><div class="text-warning small"><i class="fa-solid fa-circle-exclamation me-1"></i> ' + problemType + '</div></td>' +
+                    '<td><span class="badge ' + statusBadge + ' font-weight-bold">' + status + '</span></td>' +
+                    '<td><span class="text-success font-weight-extrabold">' + amount + '</span></td>' +
+                    '<td class="small text-muted">' + createdAt + '<div class="text-secondary small">' + address + '</div></td>' +
+                '</tr>';
+            }
+        });
+        $('#tblTelemetryBody').html(html);
+    }
+
+    function filterTelemetryGrid() {
+        var query = $('#txtTelemetrySearch').val().toLowerCase().trim();
+        if (!query) {
+            renderTelemetryGrid(currentTelemetryData);
+            return;
+        }
+
+        var filtered = currentTelemetryData.filter(function (item) {
+            var itemType = item.type || item.Type || '';
+            var displayId = item.displayId || item.DisplayId || '';
+            var id = (item.id || item.Id || '').toString();
+
+            if (itemType === "Mechanic") {
+                var name = item.name || item.Name || '';
+                var phone = item.phone || item.Phone || '';
+                var subDetail = item.subDetail || item.SubDetail || '';
+                var skill = item.skill || item.Skill || '';
+
+                return displayId.toLowerCase().includes(query) ||
+                       id.includes(query) ||
+                       name.toLowerCase().includes(query) ||
+                       phone.toLowerCase().includes(query) ||
+                       subDetail.toLowerCase().includes(query) ||
+                       skill.toLowerCase().includes(query);
+            } else {
+                var customerName = item.customerName || item.CustomerName || '';
+                var customerPhone = item.customerPhone || item.CustomerPhone || '';
+                var mechanicName = item.mechanicName || item.MechanicName || '';
+                var mechanicPhone = item.mechanicPhone || item.MechanicPhone || '';
+                var vehicleModel = item.vehicleModel || item.VehicleModel || '';
+                var regNo = item.regNo || item.RegNo || '';
+                var problemType = item.problemType || item.ProblemType || '';
+
+                return displayId.toLowerCase().includes(query) ||
+                       id.includes(query) ||
+                       customerName.toLowerCase().includes(query) ||
+                       customerPhone.toLowerCase().includes(query) ||
+                       mechanicName.toLowerCase().includes(query) ||
+                       mechanicPhone.toLowerCase().includes(query) ||
+                       vehicleModel.toLowerCase().includes(query) ||
+                       regNo.toLowerCase().includes(query) ||
+                       problemType.toLowerCase().includes(query);
+            }
+        });
+
+        renderTelemetryGrid(filtered);
+    }
+
     $('#formAdminWithdraw').on('submit', function (e) {
         e.preventDefault();
         var amount = parseFloat($('#admWithdrawAmount').val());
@@ -439,12 +627,12 @@
     function pollAdminTelemetry() {
         $.get('/Admin/GetLiveTelemetry', function (res) {
             if (res && res.success) {
-                if (res.onlineMechanics > 0) $('#lblOnlineMechanics').text(res.onlineMechanics);
-                if (res.liveRequests > 0) $('#lblLiveRequests').text(res.liveRequests);
-                if (res.activeJobs > 0) $('#lblActiveJobs').text(res.activeJobs);
-                if (res.pendingRequests > 0) $('#lblPendingRequests').text(res.pendingRequests);
-                if (res.completedToday > 0) $('#lblCompletedToday').text(res.completedToday);
-                if (res.cancelledToday > 0) $('#lblCancelledToday').text(res.cancelledToday);
+                $('#lblOnlineMechanics').text(res.onlineMechanics);
+                $('#lblLiveRequests').text(res.liveRequests);
+                $('#lblActiveJobs').text(res.activeJobs);
+                $('#lblPendingRequests').text(res.pendingRequests);
+                $('#lblCompletedToday').text(res.completedToday);
+                $('#lblCancelledToday').text(res.cancelledToday);
 
                 if (res.todayRevenue > 0) $('#lblTodayRevenue').text('₹' + res.todayRevenue.toLocaleString('en-IN'));
                 if (res.todayCommission > 0) $('#lblTodayCommission').text('₹' + res.todayCommission.toLocaleString('en-IN'));

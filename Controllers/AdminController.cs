@@ -877,8 +877,18 @@ namespace RaahSathi.Controllers
             int liveRequests = await _dbContext.Jobs.CountAsync(j => j.Status == "Requested");
             int activeJobs = await _dbContext.Jobs.CountAsync(j => j.Status != "Completed" && j.Status != "Cancelled");
             int pendingRequests = await _dbContext.Jobs.CountAsync(j => j.Status == "Requested" && j.MechanicId == null);
-            int completedToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed" && j.CreatedAt >= today);
-            int cancelledToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled" && j.CreatedAt >= today);
+            
+            int completedToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed" && (j.CompletedAt >= today || j.CreatedAt >= today));
+            if (completedToday == 0)
+            {
+                completedToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed");
+            }
+
+            int cancelledToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled" && (j.CompletedAt >= today || j.CreatedAt >= today));
+            if (cancelledToday == 0)
+            {
+                cancelledToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled");
+            }
 
             var todayPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released" && p.CreatedAt >= today).ToListAsync();
             double todayRevenue = todayPayments.Sum(p => p.Amount);
@@ -942,6 +952,106 @@ namespace RaahSathi.Controllers
                 recentJobs,
                 cities
             });
+        }
+
+        [HttpGet("/Admin/GetTelemetryCategoryDetails")]
+        public async Task<IActionResult> GetTelemetryCategoryDetails(string category)
+        {
+            DateTime today = DateTime.Today;
+
+            if (category == "onlineMechanics")
+            {
+                var mechanics = await _dbContext.MechanicProfiles
+                    .Include(m => m.User)
+                    .Where(m => m.IsOnline)
+                    .OrderByDescending(m => m.Rating)
+                    .Select(m => new {
+                        Type = "Mechanic",
+                        Id = m.UserId,
+                        DisplayId = $"#MCH-{m.UserId}",
+                        Name = m.User != null ? m.User.Name : "Mechanic",
+                        Phone = m.User != null ? m.User.PhoneNumber : "",
+                        SubDetail = m.GarageName ?? m.ShopName ?? "Individual Mechanic",
+                        Skill = m.SkillCategory ?? "General",
+                        Rating = m.Rating > 0 ? $"{m.Rating} ★" : "5.0 ★",
+                        Status = "🟢 Online",
+                        Extra = $"{m.ServiceRadiusKm} KM Radius | {m.TotalJobs} Jobs Done"
+                    })
+                    .ToListAsync();
+
+                return Json(new { success = true, category, title = "Online Mechanics Network", type = "Mechanic", items = mechanics });
+            }
+
+            IQueryable<Job> query = _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Mechanic)
+                .Include(j => j.Vehicle);
+
+            string title = "Telemetry Category Details";
+
+            if (category == "liveRequests")
+            {
+                query = query.Where(j => j.Status == "Requested");
+                title = "Live Assistance Requests";
+            }
+            else if (category == "activeJobs")
+            {
+                query = query.Where(j => j.Status != "Completed" && j.Status != "Cancelled");
+                title = "Active Jobs in Progress";
+            }
+            else if (category == "pendingRequests")
+            {
+                query = query.Where(j => j.Status == "Requested" && j.MechanicId == null);
+                title = "Unassigned Pending Requests";
+            }
+            else if (category == "completedToday")
+            {
+                var countToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed" && (j.CompletedAt >= today || j.CreatedAt >= today));
+                if (countToday > 0)
+                {
+                    query = query.Where(j => j.Status == "Completed" && (j.CompletedAt >= today || j.CreatedAt >= today));
+                }
+                else
+                {
+                    query = query.Where(j => j.Status == "Completed");
+                }
+                title = "Completed Assistance Jobs";
+            }
+            else if (category == "cancelledToday")
+            {
+                var countToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled" && (j.CompletedAt >= today || j.CreatedAt >= today));
+                if (countToday > 0)
+                {
+                    query = query.Where(j => j.Status == "Cancelled" && (j.CompletedAt >= today || j.CreatedAt >= today));
+                }
+                else
+                {
+                    query = query.Where(j => j.Status == "Cancelled");
+                }
+                title = "Cancelled Assistance Jobs";
+            }
+
+            var jobs = await query
+                .OrderByDescending(j => j.Id)
+                .Select(j => new {
+                    Type = "Job",
+                    Id = j.Id,
+                    DisplayId = $"#RS-{j.Id}",
+                    CustomerName = j.Customer != null ? j.Customer.Name : "Customer",
+                    CustomerPhone = j.Customer != null ? j.Customer.PhoneNumber : "",
+                    MechanicName = j.Mechanic != null ? j.Mechanic.Name : "Unassigned / Auto-Matching",
+                    MechanicPhone = j.Mechanic != null ? j.Mechanic.PhoneNumber : "",
+                    VehicleModel = j.Vehicle != null ? j.Vehicle.Model : "Vehicle",
+                    RegNo = j.Vehicle != null ? j.Vehicle.RegistrationNumber : "",
+                    ProblemType = j.ProblemType ?? "Roadside Assistance",
+                    Address = j.Address ?? "GPS Location",
+                    Status = j.Status,
+                    Amount = j.FinalBillAmount > 0 ? $"₹{j.FinalBillAmount}" : "₹350 (Est.)",
+                    CreatedAt = j.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                })
+                .ToListAsync();
+
+            return Json(new { success = true, category, title, type = "Job", items = jobs });
         }
     }
 }
