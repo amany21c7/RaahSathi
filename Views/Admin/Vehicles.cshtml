@@ -1,0 +1,53 @@
+@using RaahSathi.Models
+@Model List<Vehicle>
+@{
+    ViewData["Title"] = "Vehicle Registry";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-car-side text-warning me-2"></i> Vehicle Types & Registry</h4>
+        <p class="text-muted small mb-0">Registered customer vehicles, categories (Car, TwoWheeler, Commercial), registration numbers, and photo logs.</p>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Vehicle ID</th>
+                        <th>Owner / Customer</th>
+                        <th>Type / Category</th>
+                        <th>Make & Model</th>
+                        <th class="text-end pe-3">Registration Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No registered vehicles found in system.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var v in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3"><span class="badge bg-secondary text-light">#V-@v.Id</span></td>
+                                <td class="text-light">@(v.User?.Name ?? "Customer")</td>
+                                <td><span class="badge bg-info text-dark font-weight-bold">@v.VehicleType</span></td>
+                                <td class="font-weight-bold text-white fs-6">@v.Model</td>
+                                <td class="text-end pe-3">
+                                    <span class="badge bg-warning text-dark font-weight-bold">@v.RegistrationNumber</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

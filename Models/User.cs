@@ -26,6 +26,10 @@ namespace RaahSathi.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public bool IsBlocked { get; set; } = false;
+
+        public string AdminRole { get; set; } = "Super Admin"; // "Super Admin", "Finance", "Support", "Operations", "Marketing", "Moderator"
+
         // Custom Formatted Unique ID (e.g., RS01C for Customer, RS01M for Mechanic, RS01A for Admin)
         [NotMapped]
         public string DisplayId => Role == "Mechanic" 

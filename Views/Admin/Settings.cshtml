@@ -1,0 +1,69 @@
+@using RaahSathi.Models
+@{
+    ViewData["Title"] = "System Settings & API Gateways";
+    var settings = ViewBag.Settings as List<AdminSystemSetting> ?? new List<AdminSystemSetting>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-sliders text-warning me-2"></i> System Settings & API Integrations</h4>
+        <p class="text-muted small mb-0">Tiered commission settings (&lt;1k: 10%, 1k-3k: 8%, &gt;3k: 5%), SMS, Email, WhatsApp, Google Maps, OTP, and Payment Gateway credentials.</p>
+    </div>
+</div>
+
+<form action="/Admin/SaveSystemSettings" method="POST">
+    <div class="row g-4">
+        <!-- Tiered Commission Rules Settings -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary shadow-sm">
+                <div class="card-header border-secondary bg-transparent">
+                    <h5 class="text-warning mb-0"><i class="fa-solid fa-percent me-2"></i> Tiered Commission Rules</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Tier 1: Jobs under ₹1,000</label>
+                        <input type="text" class="form-control glass-input text-warning font-weight-bold" value="10% Commission Rate" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Tier 2: Jobs ₹1,000 to ₹3,000</label>
+                        <input type="text" class="form-control glass-input text-warning font-weight-bold" value="8% Commission Rate" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Tier 3: Jobs above ₹3,000</label>
+                        <input type="text" class="form-control glass-input text-warning font-weight-bold" value="5% Commission Rate" readonly>
+                    </div>
+                    <span class="text-muted small"><i class="fa-solid fa-circle-info text-info me-1"></i> Tiered rates apply automatically during payment escrow settlement.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Gateway Credentials -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary shadow-sm">
+                <div class="card-header border-secondary bg-transparent">
+                    <h5 class="text-info mb-0"><i class="fa-solid fa-key me-2"></i> SMS, WhatsApp & Map API Keys</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Fast2SMS / Twilio SMS API Key</label>
+                        <input type="password" name="smsApiKey" class="form-control glass-input text-white" value="F2SMS_LIVE_SEC_882190012">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">WhatsApp Business API Phone</label>
+                        <input type="text" name="whatsappNo" class="form-control glass-input text-white" value="+91 9876543210">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Google Maps JavaScript API Key</label>
+                        <input type="password" name="googleMapsKey" class="form-control glass-input text-white" value="AIzaSyA88921_RS_MAPS_KEY">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 text-end">
+        <button type="submit" class="btn btn-warning text-dark font-weight-bold px-5 py-2.5">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Save All System Settings
+        </button>
+    </div>
+</form>

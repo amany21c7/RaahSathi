@@ -1,0 +1,91 @@
+@using RaahSathi.Models
+@model List<CmsBanner>
+@{
+    ViewData["Title"] = "CMS Banner Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-images text-warning me-2"></i> Homepage Banner Management</h4>
+        <p class="text-muted small mb-0">Update customer homepage banners, promotional sliders, and announcements without developer assistance.</p>
+    </div>
+    <button type="button" class="btn btn-warning text-dark font-weight-bold" data-bs-toggle="modal" data-bs-target="#addBannerModal">
+        <i class="fa-solid fa-plus me-1"></i> Add New Banner
+    </button>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Banner Title</th>
+                        <th>Target Page</th>
+                        <th>Image URL</th>
+                        <th>Created Time</th>
+                        <th class="text-end pe-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No custom homepage banners added yet.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var b in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3 font-weight-bold text-white fs-6">@b.Title</td>
+                                <td><span class="badge bg-info text-dark">@b.TargetPage</span></td>
+                                <td class="text-muted small">@b.ImageUrl</td>
+                                <td class="text-muted small">@b.CreatedAt.ToString("dd MMM yyyy")</td>
+                                <td class="text-end pe-3">
+                                    <span class="badge bg-success text-white">ACTIVE</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add CMS Banner -->
+<div class="modal fade" id="addBannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold">Add Homepage Banner</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/Admin/AddCmsBanner" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Banner Title</label>
+                        <input type="text" name="title" class="form-control glass-input text-white" placeholder="e.g. 24/7 National Highway Assistance Banner" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Image URL / File Path</label>
+                        <input type="text" name="imageUrl" class="form-control glass-input text-white" value="/images/hero-banner.jpg" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Target Page</label>
+                        <select name="targetPage" class="form-select glass-input text-white">
+                            <option value="Homepage">Homepage Slider</option>
+                            <option value="Customer Dashboard">Customer Dashboard Banner</option>
+                            <option value="Emergency Page">Emergency Assistance Page</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100">Add Banner</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

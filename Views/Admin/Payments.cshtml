@@ -1,0 +1,59 @@
+@using RaahSathi.Models
+@model List<Payment>
+@{
+    ViewData["Title"] = "Payments & Escrow Vault";
+    var withdrawals = ViewBag.Withdrawals as List<AdminWithdrawal> ?? new List<AdminWithdrawal>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-credit-card text-warning me-2"></i> Payments & Escrow Ledger</h4>
+        <p class="text-muted small mb-0">Customer escrow payments, admin commissions earned, mechanic earnings, and bank withdrawals.</p>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm mb-4">
+    <div class="card-header border-secondary bg-transparent">
+        <h5 class="text-white mb-0"><i class="fa-solid fa-receipt text-warning me-2"></i> Escrow Transactions</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Payment Ref</th>
+                        <th>Job ID</th>
+                        <th>Amount Processed</th>
+                        <th>Admin Commission</th>
+                        <th>Mechanic Net Credit</th>
+                        <th class="text-end pe-3">Escrow Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No escrow payments logged yet.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var p in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3"><span class="badge bg-secondary text-light">@p.RazorpayPaymentId</span></td>
+                                <td class="font-weight-bold text-white">#RS-@p.JobId</td>
+                                <td class="text-primary font-weight-bold">₹@p.Amount.ToString("N2")</td>
+                                <td class="text-warning font-weight-bold">₹@p.AdminCommissionAmount.ToString("N2")</td>
+                                <td class="text-success font-weight-bold">₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                <td class="text-end pe-3">
+                                    <span class="badge bg-success text-white">@p.PaymentStatus</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

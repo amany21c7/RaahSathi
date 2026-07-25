@@ -244,6 +244,87 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [Payments] ADD [CommissionRateUsed] float NOT NULL DEFAULT 0.08;
                 END;
 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Users]') AND name = N'IsBlocked')
+                BEGIN
+                    ALTER TABLE [Users] ADD [IsBlocked] bit NOT NULL DEFAULT 0;
+                    ALTER TABLE [Users] ADD [AdminRole] nvarchar(100) NOT NULL DEFAULT 'Super Admin';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[CityServiceAreas]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [CityServiceAreas] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [State] nvarchar(100) NOT NULL DEFAULT 'Uttar Pradesh',
+                        [CityName] nvarchar(100) NOT NULL DEFAULT 'Noida',
+                        [AreaName] nvarchar(150) NOT NULL DEFAULT 'Sector 62',
+                        [ServiceRadiusKm] float NOT NULL DEFAULT 15.0,
+                        [IsActive] bit NOT NULL DEFAULT 1
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[CustomServices]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [CustomServices] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [ServiceName] nvarchar(150) NOT NULL,
+                        [IconClass] nvarchar(100) NOT NULL DEFAULT 'fa-screwdriver-wrench',
+                        [Category] nvarchar(100) NOT NULL DEFAULT 'Breakdown',
+                        [BasePrice] float NOT NULL DEFAULT 199.0,
+                        [MaxPrice] float NOT NULL DEFAULT 499.0,
+                        [Description] nvarchar(500) NOT NULL DEFAULT '',
+                        [IsActive] bit NOT NULL DEFAULT 1
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[CmsBanners]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [CmsBanners] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [Title] nvarchar(200) NOT NULL,
+                        [ImageUrl] nvarchar(500) NOT NULL,
+                        [TargetPage] nvarchar(100) NOT NULL DEFAULT 'Homepage',
+                        [IsActive] bit NOT NULL DEFAULT 1,
+                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[PushNotificationLogs]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [PushNotificationLogs] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [TargetAudience] nvarchar(100) NOT NULL DEFAULT 'All Users',
+                        [SelectedCity] nvarchar(100) NOT NULL DEFAULT 'All',
+                        [Title] nvarchar(200) NOT NULL,
+                        [Message] nvarchar(max) NOT NULL,
+                        [SentCount] int NOT NULL DEFAULT 1,
+                        [SentAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[AuditLogs]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [AuditLogs] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [AdminName] nvarchar(100) NOT NULL DEFAULT 'Super Admin',
+                        [ActionType] nvarchar(100) NOT NULL DEFAULT 'UPDATE',
+                        [Details] nvarchar(max) NOT NULL,
+                        [TimeStamp] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [IpAddress] nvarchar(50) NOT NULL DEFAULT '127.0.0.1',
+                        [UserAgent] nvarchar(200) NOT NULL DEFAULT 'Chrome Browser'
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[AdminSystemSettings]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [AdminSystemSettings] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [SettingKey] nvarchar(100) NOT NULL,
+                        [SettingValue] nvarchar(max) NOT NULL,
+                        [Category] nvarchar(100) NOT NULL DEFAULT 'General',
+                        [Description] nvarchar(500) NOT NULL DEFAULT ''
+                    );
+                END;
+
                 -- Stored Procedure: rs_payments_process_escrow
                 IF OBJECT_ID(N'[dbo].[rs_payments_process_escrow]', N'P') IS NOT NULL
                     DROP PROCEDURE [dbo].[rs_payments_process_escrow];

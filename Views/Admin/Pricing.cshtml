@@ -1,0 +1,143 @@
+@using RaahSathi.Models
+@{
+    ViewData["Title"] = "Pricing Engine Controls";
+    var pricingRules = ViewBag.PricingRules as List<PricingRule> ?? new List<PricingRule>();
+    var problemTypes = ViewBag.ProblemTypes as List<ProblemTypePricing> ?? new List<ProblemTypePricing>();
+    var cities = ViewBag.Cities as List<CityServiceArea> ?? new List<CityServiceArea>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-tags text-warning me-2"></i> City-Wise Pricing Engine Controls</h4>
+        <p class="text-muted small mb-0">Configure base rates, per-KM rates, towing fees, and breakdown problem prices city by city.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Problem Types Price Registry -->
+    <div class="col-lg-7">
+        <div class="card bg-dark border-secondary shadow-sm">
+            <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center">
+                <h5 class="text-white mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Problem Types Price Overrides</h5>
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold" data-bs-toggle="modal" data-bs-target="#addProblemModal">
+                    <i class="fa-solid fa-plus me-1"></i> Add Problem Rate
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0 align-middle">
+                        <thead>
+                            <tr class="border-secondary text-muted small">
+                                <th class="ps-3">Problem Name</th>
+                                <th>Category</th>
+                                <th>Min Service Charge</th>
+                                <th>Max Service Charge</th>
+                                <th class="text-end pe-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (problemTypes.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">No problem types defined.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var p in problemTypes)
+                                {
+                                    <tr class="border-secondary">
+                                        <td class="ps-3 font-weight-bold text-white">@p.ProblemName</td>
+                                        <td><span class="badge bg-secondary text-light">@p.VehicleCategory</span></td>
+                                        <td class="text-warning font-weight-bold">₹@p.MinServiceCharge.ToString("N0")</td>
+                                        <td class="text-success font-weight-bold">₹@p.MaxServiceCharge.ToString("N0")</td>
+                                        <td class="text-end pe-3">
+                                            <form action="/Admin/DeleteProblemType" method="POST" class="d-inline">
+                                                <input type="hidden" name="id" value="@p.Id">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete price rate?')"><i class="fa-solid fa-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Base Distance & Towing Pricing Coefficients -->
+    <div class="col-lg-5">
+        <div class="card bg-dark border-secondary shadow-sm">
+            <div class="card-header border-secondary bg-transparent">
+                <h5 class="text-white mb-0"><i class="fa-solid fa-sliders text-warning me-2"></i> Base Coefficients</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var r in pricingRules)
+                    {
+                        <div class="p-3 bg-black bg-opacity-40 rounded border border-secondary">
+                            <h6 class="text-warning font-weight-bold mb-2">@r.VehicleCategory Base Rates</h6>
+                            <form action="/Admin/UpdatePricingRule" method="POST">
+                                <input type="hidden" name="ruleId" value="@r.Id">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label text-muted small">Base Visiting (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white" name="baseFee" value="@r.BaseFee">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label text-muted small">Per KM Rate (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white" name="perKmRate" value="@r.PerKmRate">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-outline-warning btn-sm w-100 font-weight-bold">Save Rates</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Problem Rate -->
+<div class="modal fade" id="addProblemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold">Add Problem Type Pricing</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/Admin/AddProblemType" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Problem Name</label>
+                        <input type="text" name="problemName" class="form-control glass-input text-white" placeholder="e.g. Battery Jumpstart" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Vehicle Category</label>
+                        <select name="vehicleCategory" class="form-select glass-input text-white">
+                            <option value="Car">Car</option>
+                            <option value="TwoWheeler">TwoWheeler (Bike/Scooter)</option>
+                            <option value="Commercial">Commercial / Truck</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Min Service Charge (₹)</label>
+                            <input type="number" name="minServiceCharge" class="form-control glass-input text-warning" value="199" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Max Service Charge (₹)</label>
+                            <input type="number" name="maxServiceCharge" class="form-control glass-input text-success" value="499" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100">Add Rate Override</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

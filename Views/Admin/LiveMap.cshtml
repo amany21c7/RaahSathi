@@ -1,0 +1,45 @@
+@using RaahSathi.Models
+@{
+    ViewData["Title"] = "National Live Map Telemetry";
+    var mechanics = ViewBag.Mechanics as List<MechanicProfile> ?? new List<MechanicProfile>();
+    var activeJobs = ViewBag.ActiveJobs as List<Job> ?? new List<Job>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-map-location-dot text-warning me-2"></i> All-India Live Map Telemetry</h4>
+        <p class="text-muted small mb-0">Real-time GPS dispatch tracking: 🟢 Mechanics, 🔵 Customers, 🟠 Live Jobs, 🚚 Tow Trucks</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-success text-white px-3 py-2 font-weight-bold"><i class="fa-solid fa-circle text-white me-1" style="font-size:0.6rem;"></i> 🟢 Mechanics (@mechanics.Count)</span>
+        <span class="badge bg-primary text-white px-3 py-2 font-weight-bold"><i class="fa-solid fa-circle text-white me-1" style="font-size:0.6rem;"></i> 🔵 Customers (Active)</span>
+        <span class="badge bg-warning text-dark px-3 py-2 font-weight-bold"><i class="fa-solid fa-circle text-dark me-1" style="font-size:0.6rem;"></i> 🟠 Live Jobs (@activeJobs.Count)</span>
+        <span class="badge bg-danger text-white px-3 py-2 font-weight-bold"><i class="fa-solid fa-truck me-1"></i> 🚚 Tow Trucks</span>
+    </div>
+</div>
+
+<!-- Map Container & Command Overlay -->
+<div class="card bg-dark border-secondary shadow-lg overflow-hidden" style="min-height: 520px;">
+    <div class="card-body p-0 position-relative d-flex align-items-center justify-content-center" style="background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);">
+        <!-- Interactive Mock India Telemetry Radar -->
+        <div class="text-center p-5">
+            <div class="spinner-grow text-warning mb-3" style="width: 4rem; height: 4rem;" role="status">
+                <span class="visually-hidden">Live Radar Active...</span>
+            </div>
+            <h4 class="text-white font-weight-bold mb-2">National GPS Radar Telemetry Active</h4>
+            <p class="text-muted small mb-4" style="max-width: 500px; margin: 0 auto;">
+                Live India Roadside Assistance map feeds synced across Delhi NCR, Uttar Pradesh, Rajasthan, Maharashtra, and highway corridors.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <div class="p-3 rounded bg-black bg-opacity-60 border border-success text-start">
+                    <div class="text-success font-weight-bold small"><i class="fa-solid fa-satellite-dish me-1"></i> GPS Feed</div>
+                    <span class="text-light fs-6">99.8% Online Signal</span>
+                </div>
+                <div class="p-3 rounded bg-black bg-opacity-60 border border-warning text-start">
+                    <div class="text-warning font-weight-bold small"><i class="fa-solid fa-bolt me-1"></i> Avg Dispatch Time</div>
+                    <span class="text-light fs-6">1.4 Seconds</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,103 @@
+@using RaahSathi.Models
+@model List<PushNotificationLog>
+@{
+    ViewData["Title"] = "Push Notifications";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-bell text-warning me-2"></i> Push Broadcast System</h4>
+        <p class="text-muted small mb-0">Broadcast instant targeted notifications to Customers, Mechanics, specific Cities, or All Users.</p>
+    </div>
+    <button type="button" class="btn btn-warning text-dark font-weight-bold" data-bs-toggle="modal" data-bs-target="#sendNotifModal">
+        <i class="fa-solid fa-paper-plane me-1"></i> Send Push Notification
+    </button>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Sent Time</th>
+                        <th>Target Audience</th>
+                        <th>City Filter</th>
+                        <th>Title</th>
+                        <th>Message Content</th>
+                        <th class="text-end pe-3">Devices Reached</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No push notifications broadcasted yet.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var n in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3 text-muted small">@n.SentAt.ToString("dd MMM yyyy, HH:mm")</td>
+                                <td><span class="badge bg-info text-dark">@n.TargetAudience</span></td>
+                                <td><span class="badge bg-secondary text-light">@n.SelectedCity</span></td>
+                                <td class="font-weight-bold text-white">@n.Title</td>
+                                <td class="text-muted small">@n.Message</td>
+                                <td class="text-end pe-3">
+                                    <span class="badge bg-success text-white">@n.SentCount Devices</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Send Push Notification -->
+<div class="modal fade" id="sendNotifModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold">Broadcast Push Notification</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/Admin/SendPushNotification" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Target Audience</label>
+                        <select name="targetAudience" class="form-select glass-input text-white">
+                            <option value="All Users">All Users (Customers & Partners)</option>
+                            <option value="Customers">Customers Only</option>
+                            <option value="Mechanics">Mechanics / Partners Only</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">City Filter</label>
+                        <select name="selectedCity" class="form-select glass-input text-white">
+                            <option value="All">All India Cities</option>
+                            <option value="Delhi NCR">Delhi NCR</option>
+                            <option value="Lucknow">Lucknow</option>
+                            <option value="Jaipur">Jaipur</option>
+                            <option value="Mumbai">Mumbai</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Notification Title</label>
+                        <input type="text" name="title" class="form-control glass-input text-white" placeholder="e.g. Rainy Weather Surge Warning / 20% Discount" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Message Text</label>
+                        <textarea name="message" class="form-control glass-input text-white" rows="3" placeholder="Enter message text..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100">Broadcast Push Now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

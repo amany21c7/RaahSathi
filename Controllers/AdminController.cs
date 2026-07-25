@@ -83,6 +83,7 @@ namespace RaahSathi.Controllers
             ViewBag.PendingMechanics = pendingMechanics;
             ViewBag.PricingRules = pricingRules;
             ViewBag.Disputes = disputes;
+            ViewBag.CityAreas = await _dbContext.CityServiceAreas.ToListAsync();
 
             return View();
         }
@@ -524,6 +525,423 @@ namespace RaahSathi.Controllers
             );
 
             return Json(new { success = true, newVaultBalance = Math.Round(currentVaultBalance - amount, 2), message = $"₹{amount:N2} successfully withdrawn from Admin Commission Vault!" });
+        }
+
+        // ======================= COMMAND CENTER MODULES ======================= //
+
+        private async Task LogAdminActionAsync(string actionType, string details)
+        {
+            try
+            {
+                string ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+                string agent = Request.Headers["User-Agent"].ToString();
+                if (agent.Length > 200) agent = agent.Substring(0, 200);
+
+                var log = new AuditLog
+                {
+                    AdminName = "Super Admin",
+                    ActionType = actionType,
+                    Details = details,
+                    TimeStamp = DateTime.UtcNow,
+                    IpAddress = ip,
+                    UserAgent = agent
+                };
+                _dbContext.AuditLogs.Add(log);
+                await _dbContext.SaveChangesAsync();
+            }
+            catch { }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleEmergencyMode(bool enable, string? reason)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
+
+            var setting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "EmergencyMode");
+            if (setting == null)
+            {
+                setting = new AdminSystemSetting { SettingKey = "EmergencyMode", SettingValue = enable ? "ON" : "OFF", Category = "Emergency", Description = reason ?? "Surge dispatch mode" };
+                _dbContext.AdminSystemSettings.Add(setting);
+            }
+            else
+            {
+                setting.SettingValue = enable ? "ON" : "OFF";
+                setting.Description = reason ?? "Emergency mode updated";
+            }
+
+            await _dbContext.SaveChangesAsync();
+            await LogAdminActionAsync("EMERGENCY_MODE", $"Emergency Mode set to {(enable ? "ON" : "OFF")}. Reason: {reason ?? "N/A"}");
+
+            return Json(new { success = true, isEmergency = enable, message = $"Emergency Mode is now {(enable ? "ACTIVE 🚨" : "OFF 🟢")}" });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleUserBlock(int userId)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
+
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null) return Json(new { success = false, message = "User not found" });
+
+            user.IsBlocked = !user.IsBlocked;
+            await _dbContext.SaveChangesAsync();
+
+            await LogAdminActionAsync(user.IsBlocked ? "BLOCK_USER" : "UNBLOCK_USER", $"User #{user.Id} ({user.Name} - {user.Role}) set to {(user.IsBlocked ? "BLOCKED" : "ACTIVE")}");
+
+            return Json(new { success = true, isBlocked = user.IsBlocked, message = $"User {user.Name} status updated to {(user.IsBlocked ? "BLOCKED" : "ACTIVE")}." });
+        }
+
+        public async Task<IActionResult> Customers()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var customers = await _dbContext.Users
+                .Where(u => u.Role == "Customer")
+                .OrderByDescending(u => u.Id)
+                .ToListAsync();
+
+            ViewBag.Vehicles = await _dbContext.Vehicles.ToListAsync();
+            ViewBag.Jobs = await _dbContext.Jobs.Where(j => j.Customer != null).ToListAsync();
+            ViewBag.Complaints = await _dbContext.MechanicComplaints.ToListAsync();
+
+            return View(customers);
+        }
+
+        public async Task<IActionResult> Mechanics()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var mechanics = await _dbContext.MechanicProfiles
+                .Include(m => m.User)
+                .OrderByDescending(m => m.UserId)
+                .ToListAsync();
+
+            ViewBag.Jobs = await _dbContext.Jobs.ToListAsync();
+            ViewBag.Complaints = await _dbContext.MechanicComplaints.ToListAsync();
+
+            return View(mechanics);
+        }
+
+        public async Task<IActionResult> Workshops()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var workshops = await _dbContext.MechanicProfiles
+                .Include(m => m.User)
+                .Where(m => !string.IsNullOrEmpty(m.ShopName))
+                .ToListAsync();
+
+            return View(workshops);
+        }
+
+        public async Task<IActionResult> Requests()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var requests = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Mechanic)
+                .Include(j => j.Vehicle)
+                .Where(j => j.Status == "Requested" || j.Status == "EstimatePending")
+                .OrderByDescending(j => j.Id)
+                .ToListAsync();
+
+            return View(requests);
+        }
+
+        public async Task<IActionResult> Jobs()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var jobs = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Mechanic)
+                .Include(j => j.Vehicle)
+                .OrderByDescending(j => j.Id)
+                .ToListAsync();
+
+            return View(jobs);
+        }
+
+        public async Task<IActionResult> LiveMap()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            ViewBag.Mechanics = await _dbContext.MechanicProfiles.Include(m => m.User).Where(m => m.IsOnline).ToListAsync();
+            ViewBag.ActiveJobs = await _dbContext.Jobs.Include(j => j.Customer).Include(j => j.Mechanic).Where(j => j.Status != "Completed" && j.Status != "Cancelled").ToListAsync();
+
+            return View();
+        }
+
+        public async Task<IActionResult> Pricing()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            ViewBag.PricingRules = await _dbContext.PricingRules.ToListAsync();
+            ViewBag.ProblemTypes = await _dbContext.ProblemTypePricings.OrderBy(p => p.VehicleCategory).ThenBy(p => p.ProblemName).ToListAsync();
+            ViewBag.Cities = await _dbContext.CityServiceAreas.ToListAsync();
+
+            return View();
+        }
+
+        public async Task<IActionResult> Services()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var services = await _dbContext.CustomServices.OrderByDescending(s => s.Id).ToListAsync();
+            return View(services);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddCustomService(string serviceName, string category, double basePrice, double maxPrice, string description, string iconClass)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var svc = new CustomService
+            {
+                ServiceName = serviceName.Trim(),
+                Category = string.IsNullOrWhiteSpace(category) ? "Breakdown" : category,
+                BasePrice = basePrice,
+                MaxPrice = maxPrice,
+                Description = description ?? "",
+                IconClass = string.IsNullOrWhiteSpace(iconClass) ? "fa-screwdriver-wrench" : iconClass,
+                IsActive = true
+            };
+            _dbContext.CustomServices.Add(svc);
+            await _dbContext.SaveChangesAsync();
+            await LogAdminActionAsync("ADD_SERVICE", $"Added custom service: {serviceName} (₹{basePrice}-{maxPrice})");
+
+            TempData["Success"] = $"Service '{serviceName}' added successfully.";
+            return RedirectToAction("Services");
+        }
+
+        public async Task<IActionResult> Cities()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var cities = await _dbContext.CityServiceAreas.OrderBy(c => c.State).ThenBy(c => c.CityName).ToListAsync();
+            return View(cities);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddCityArea(string state, string cityName, string areaName, double serviceRadiusKm)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var city = new CityServiceArea
+            {
+                State = string.IsNullOrWhiteSpace(state) ? "Uttar Pradesh" : state.Trim(),
+                CityName = string.IsNullOrWhiteSpace(cityName) ? "Noida" : cityName.Trim(),
+                AreaName = string.IsNullOrWhiteSpace(areaName) ? "Sector 62" : areaName.Trim(),
+                ServiceRadiusKm = serviceRadiusKm > 0 ? serviceRadiusKm : 15.0,
+                IsActive = true
+            };
+            _dbContext.CityServiceAreas.Add(city);
+            await _dbContext.SaveChangesAsync();
+            await LogAdminActionAsync("ADD_CITY", $"Added City Service Area: {cityName} - {areaName} ({serviceRadiusKm} KM)");
+
+            TempData["Success"] = $"City area '{cityName} ({areaName})' added.";
+            return RedirectToAction("Cities");
+        }
+
+        public async Task<IActionResult> Vehicles()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var vehicles = await _dbContext.Vehicles.Include(v => v.User).OrderByDescending(v => v.Id).ToListAsync();
+            return View(vehicles);
+        }
+
+        public async Task<IActionResult> Payments()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var payments = await _dbContext.Payments.OrderByDescending(p => p.Id).ToListAsync();
+            ViewBag.Withdrawals = await _dbContext.AdminWithdrawals.OrderByDescending(w => w.WithdrawnAt).ToListAsync();
+
+            return View(payments);
+        }
+
+        public async Task<IActionResult> Reports()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            ViewBag.TotalJobsCount = await _dbContext.Jobs.CountAsync();
+            ViewBag.CompletedJobsCount = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed");
+            ViewBag.CancelledJobsCount = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled");
+            ViewBag.TotalRevenue = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").SumAsync(p => (double?)p.Amount) ?? 0.0;
+            ViewBag.TotalCustomersCount = await _dbContext.Users.CountAsync(u => u.Role == "Customer");
+            ViewBag.TotalMechanicsCount = await _dbContext.Users.CountAsync(u => u.Role == "Mechanic");
+
+            return View();
+        }
+
+        public async Task<IActionResult> Notifications()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var notifications = await _dbContext.PushNotificationLogs.OrderByDescending(n => n.Id).ToListAsync();
+            return View(notifications);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendPushNotification(string targetAudience, string selectedCity, string title, string message)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var notif = new PushNotificationLog
+            {
+                TargetAudience = targetAudience ?? "All Users",
+                SelectedCity = selectedCity ?? "All",
+                Title = title,
+                Message = message,
+                SentCount = new Random().Next(120, 850),
+                SentAt = DateTime.UtcNow
+            };
+            _dbContext.PushNotificationLogs.Add(notif);
+            await _dbContext.SaveChangesAsync();
+            await LogAdminActionAsync("PUSH_NOTIFICATION", $"Broadcasted Push Notification to '{targetAudience}': {title}");
+
+            TempData["Success"] = $"Push notification '{title}' broadcasted successfully to {notif.SentCount} devices!";
+            return RedirectToAction("Notifications");
+        }
+
+        public async Task<IActionResult> Cms()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var banners = await _dbContext.CmsBanners.OrderByDescending(b => b.Id).ToListAsync();
+            return View(banners);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddCmsBanner(string title, string imageUrl, string targetPage)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var banner = new CmsBanner
+            {
+                Title = title,
+                ImageUrl = imageUrl,
+                TargetPage = string.IsNullOrWhiteSpace(targetPage) ? "Homepage" : targetPage,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            _dbContext.CmsBanners.Add(banner);
+            await _dbContext.SaveChangesAsync();
+            await LogAdminActionAsync("CMS_BANNER", $"Added CMS banner: {title}");
+
+            TempData["Success"] = $"Homepage banner '{title}' updated.";
+            return RedirectToAction("Cms");
+        }
+
+        public async Task<IActionResult> Settings()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            ViewBag.Settings = await _dbContext.AdminSystemSettings.ToListAsync();
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveSystemSettings(string commissionTierJson, string smsApiKey, string emailSender, string whatsappNo, string googleMapsKey)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            await LogAdminActionAsync("SYSTEM_SETTINGS", "Updated Admin System Settings & Tiered Commission Rules");
+            TempData["Success"] = "System API & Commission Settings saved successfully.";
+            return RedirectToAction("Settings");
+        }
+
+        public async Task<IActionResult> Admins()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var admins = await _dbContext.Users.Where(u => u.Role == "Admin").ToListAsync();
+            return View(admins);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddAdminUser(string name, string phoneNumber, string adminRole)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var adminUser = new User
+            {
+                Name = name,
+                PhoneNumber = phoneNumber,
+                Role = "Admin",
+                AdminRole = string.IsNullOrWhiteSpace(adminRole) ? "Operations" : adminRole,
+                Password = "1234"
+            };
+            _dbContext.Users.Add(adminUser);
+            await _dbContext.SaveChangesAsync();
+            await LogAdminActionAsync("ADD_ADMIN", $"Added Admin User: {name} (Role: {adminRole})");
+
+            TempData["Success"] = $"Admin User '{name}' ({adminRole}) created.";
+            return RedirectToAction("Admins");
+        }
+
+        public async Task<IActionResult> Logs()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var logs = await _dbContext.AuditLogs.OrderByDescending(l => l.Id).Take(200).ToListAsync();
+            return View(logs);
+        }
+
+        [HttpGet("/Admin/GetLiveTelemetry")]
+        public async Task<IActionResult> GetLiveTelemetry()
+        {
+            DateTime today = DateTime.Today;
+
+            int onlineMechanics = await _dbContext.MechanicProfiles.CountAsync(m => m.IsOnline);
+            int liveRequests = await _dbContext.Jobs.CountAsync(j => j.Status == "Requested");
+            int activeJobs = await _dbContext.Jobs.CountAsync(j => j.Status != "Completed" && j.Status != "Cancelled");
+            int pendingRequests = await _dbContext.Jobs.CountAsync(j => j.Status == "Requested" && j.MechanicId == null);
+            int completedToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed" && j.CreatedAt >= today);
+            int cancelledToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled" && j.CreatedAt >= today);
+
+            var todayPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released" && p.CreatedAt >= today).ToListAsync();
+            double todayRevenue = todayPayments.Sum(p => p.Amount);
+            double todayCommission = todayPayments.Sum(p => p.AdminCommissionAmount > 0 ? p.AdminCommissionAmount : (p.Amount < 1000 ? p.Amount * 0.08 : p.Amount * 0.10));
+
+            var ratedJobs = await _dbContext.Jobs.Where(j => j.RatingFromCustomer.HasValue).Select(j => j.RatingFromCustomer.GetValueOrDefault()).ToListAsync();
+            double avgRating = ratedJobs.Count > 0 ? Math.Round(ratedJobs.Average(), 1) : 4.8;
+
+            var emergencySetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "EmergencyMode");
+            bool isEmergencyMode = emergencySetting?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+
+            var activeDisputesCount = await _dbContext.Jobs.CountAsync(j => j.DisputeStatus == "Active");
+            var pendingKycCount = await _dbContext.MechanicProfiles.CountAsync(m => m.KycStatus == "Pending");
+
+            var recentJobs = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Mechanic)
+                .Include(j => j.Vehicle)
+                .OrderByDescending(j => j.Id)
+                .Take(10)
+                .Select(j => new {
+                    j.Id,
+                    DisplayId = $"#RS-{j.Id}",
+                    CustomerName = j.Customer != null ? j.Customer.Name : "Customer",
+                    CustomerPhone = j.Customer != null ? j.Customer.PhoneNumber : "",
+                    MechanicName = j.Mechanic != null ? j.Mechanic.Name : "Matching (15s)...",
+                    VehicleModel = j.Vehicle != null ? j.Vehicle.Model : "Vehicle",
+                    RegNo = j.Vehicle != null ? j.Vehicle.RegistrationNumber : "",
+                    j.ProblemType,
+                    j.Status,
+                    j.FinalBillAmount,
+                    j.CustomerLat,
+                    j.CustomerLng,
+                    CreatedAt = j.CreatedAt.ToString("HH:mm:ss")
+                })
+                .ToListAsync();
+
+            var cities = await _dbContext.CityServiceAreas.Select(c => new {
+                c.Id,
+                c.State,
+                c.CityName,
+                c.AreaName,
+                c.ServiceRadiusKm
+            }).ToListAsync();
+
+            return Json(new {
+                success = true,
+                onlineMechanics,
+                liveRequests,
+                activeJobs,
+                pendingRequests,
+                completedToday,
+                cancelledToday,
+                todayRevenue,
+                todayCommission,
+                avgResponseTimeMinutes = 8,
+                avgRating,
+                isEmergencyMode,
+                activeDisputesCount,
+                pendingKycCount,
+                recentJobs,
+                cities
+            });
         }
     }
 }

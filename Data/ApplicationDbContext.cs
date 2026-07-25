@@ -23,6 +23,12 @@ namespace RaahSathi.Data
         public DbSet<MechanicSupportMessage> MechanicSupportMessages { get; set; }
         public DbSet<ProblemTypePricing> ProblemTypePricings { get; set; }
         public DbSet<AdminWithdrawal> AdminWithdrawals { get; set; }
+        public DbSet<CityServiceArea> CityServiceAreas { get; set; }
+        public DbSet<CustomService> CustomServices { get; set; }
+        public DbSet<CmsBanner> CmsBanners { get; set; }
+        public DbSet<PushNotificationLog> PushNotificationLogs { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<AdminSystemSetting> AdminSystemSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

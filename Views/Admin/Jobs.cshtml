@@ -1,0 +1,73 @@
+@using RaahSathi.Models
+@model List<Job>
+@{
+    ViewData["Title"] = "All Jobs Master Ledger";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-briefcase text-warning me-2"></i> All Jobs Master Ledger</h4>
+        <p class="text-muted small mb-0">Master breakdown assistance job registry: Job ID, Customer, Mechanic, Vehicle, Price, Duration, Status, and Ratings.</p>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Job ID</th>
+                        <th>Customer</th>
+                        <th>Mechanic</th>
+                        <th>Vehicle & Problem</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th class="text-end pe-3">Rating</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No jobs recorded in master ledger.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var j in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3"><span class="badge bg-warning text-dark font-weight-bold">#RS-@j.Id</span></td>
+                                <td class="text-light">@(j.Customer?.Name ?? "Customer")</td>
+                                <td class="text-light">@(j.Mechanic?.Name ?? "Unassigned")</td>
+                                <td>
+                                    <div class="text-white font-weight-bold">@j.ProblemType</div>
+                                    <div class="text-muted small">@(j.Vehicle?.Model ?? "Car") (@(j.Vehicle?.RegistrationNumber ?? ""))</div>
+                                </td>
+                                <td class="text-success font-weight-bold">₹@j.FinalBillAmount.ToString("N2")</td>
+                                <td>
+                                    @if (j.Status == "Completed")
+                                    {
+                                        <span class="badge bg-success text-white">Completed</span>
+                                    }
+                                    else if (j.Status == "Cancelled")
+                                    {
+                                        <span class="badge bg-danger text-white">Cancelled</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">@j.Status</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3 text-warning font-weight-bold">
+                                    @(j.RatingFromCustomer.HasValue ? $"{j.RatingFromCustomer:0.0} ★" : "-")
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

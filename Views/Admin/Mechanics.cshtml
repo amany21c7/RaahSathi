@@ -1,0 +1,104 @@
+@using RaahSathi.Models
+@model List<MechanicProfile>
+@{
+    ViewData["Title"] = "Mechanic Network Fleet";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-wrench text-warning me-2"></i> Mechanic Network Fleet</h4>
+        <p class="text-muted small mb-0">Partner onboarding, KYC document verification, skills, rating, wallet, and live online status.</p>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Mechanic & ID</th>
+                        <th>Phone</th>
+                        <th>Category & Skills</th>
+                        <th>KYC Status</th>
+                        <th>Online / Status</th>
+                        <th>Rating & Wallet</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No mechanics registered yet.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var m in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3">
+                                    <div class="font-weight-bold text-white">@(m.User?.Name ?? "Partner")</div>
+                                    <span class="badge bg-warning text-dark font-weight-bold" style="font-size:0.68rem;">@m.DisplayId</span>
+                                </td>
+                                <td class="text-light">@(m.User?.PhoneNumber ?? "N/A")</td>
+                                <td>
+                                    <span class="badge bg-secondary text-light">@m.SkillCategory</span>
+                                    <div class="text-muted" style="font-size:0.75rem;">Exp: @m.ExperienceYears Years</div>
+                                </td>
+                                <td>
+                                    @if (m.KycStatus == "Approved")
+                                    {
+                                        <span class="badge bg-success text-white"><i class="fa-solid fa-check me-1"></i> Verified</span>
+                                    }
+                                    else if (m.KycStatus == "Pending")
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Pending KYC</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger text-white">@m.KycStatus</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (m.IsOnline)
+                                    {
+                                        <span class="badge bg-success text-white">🟢 ONLINE</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary text-light">OFFLINE</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="text-warning font-weight-bold">@m.Rating.ToString("0.0") ★</div>
+                                    <span class="text-info small font-weight-bold">@m.TotalJobs Jobs Completed</span>
+                                </td>
+                                <td class="text-end pe-3">
+                                    <a href="/Admin/ReviewKyc/@m.UserId" class="btn btn-sm btn-outline-info me-1"><i class="fa-solid fa-eye me-1"></i> KYC</a>
+                                    <button class="btn btn-sm @(m.User?.IsBlocked == true ? "btn-outline-success" : "btn-outline-danger")" onclick="toggleUserBlock(@m.UserId)">
+                                        <i class="fa-solid @(m.User?.IsBlocked == true ? "fa-unlock" : "fa-ban")"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function toggleUserBlock(userId) {
+        $.post('/Admin/ToggleUserBlock', { userId: userId }, function(res) {
+            if (res && res.success) {
+                alert(res.message);
+                location.reload();
+            }
+        });
+    }
+</script>
+}

@@ -1,0 +1,98 @@
+@using RaahSathi.Models
+@model List<User>
+@{
+    ViewData["Title"] = "Customer Management";
+    var vehicles = ViewBag.Vehicles as List<Vehicle> ?? new List<Vehicle>();
+    var jobs = ViewBag.Jobs as List<Job> ?? new List<Job>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-users text-warning me-2"></i> Customer Management</h4>
+        <p class="text-muted small mb-0">View registered customers, vehicles, booking history, ratings, and block/unblock status.</p>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">ID & Customer</th>
+                        <th>Phone Number</th>
+                        <th>Registered Vehicles</th>
+                        <th>Total Jobs</th>
+                        <th>Status</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No customers registered yet.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var c in Model)
+                        {
+                            var custVehicles = vehicles.Where(v => v.UserId == c.Id).ToList();
+                            var custJobs = jobs.Where(j => j.CustomerId == c.Id).ToList();
+                            <tr class="border-secondary">
+                                <td class="ps-3">
+                                    <div class="font-weight-bold text-white">@c.Name</div>
+                                    <span class="badge bg-warning text-dark font-weight-bold" style="font-size:0.68rem;">@c.DisplayId</span>
+                                </td>
+                                <td class="text-light">@c.PhoneNumber</td>
+                                <td>
+                                    @if (custVehicles.Count > 0)
+                                    {
+                                        @foreach (var v in custVehicles)
+                                        {
+                                            <span class="badge bg-secondary text-light me-1 mb-1">@v.Model (@v.RegistrationNumber)</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">No vehicles</span>
+                                    }
+                                </td>
+                                <td><span class="badge bg-info text-dark font-weight-bold">@custJobs.Count Jobs</span></td>
+                                <td>
+                                    @if (c.IsBlocked)
+                                    {
+                                        <span class="badge bg-danger text-white">BLOCKED</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success text-white">ACTIVE</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3">
+                                    <button class="btn btn-sm @(c.IsBlocked ? "btn-outline-success" : "btn-outline-danger") font-weight-bold" onclick="toggleUserBlock(@c.Id)">
+                                        <i class="fa-solid @(c.IsBlocked ? "fa-unlock" : "fa-ban") me-1"></i> @(c.IsBlocked ? "Unblock" : "Block User")
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function toggleUserBlock(userId) {
+        $.post('/Admin/ToggleUserBlock', { userId: userId }, function(res) {
+            if (res && res.success) {
+                alert(res.message);
+                location.reload();
+            }
+        });
+    }
+</script>
+}
