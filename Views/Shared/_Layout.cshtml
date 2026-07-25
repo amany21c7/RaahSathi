@@ -215,24 +215,46 @@
     {
         <style>
             body { background-color: #0F172A !important; color: #F8FAFC !important; font-family: 'Inter', 'Outfit', sans-serif; margin: 0; }
-            .noc-sidebar { width: 260px; background-color: #111827; border-right: 1px solid #1E293B; position: fixed; top: 0; bottom: 0; left: 0; z-index: 1040; overflow-y: auto; display: flex; flex-direction: column; }
+            .noc-sidebar { width: 260px; background-color: #111827; border-right: 1px solid #1E293B; position: fixed; top: 0; bottom: 0; left: 0; z-index: 1045; overflow-y: auto; display: flex; flex-direction: column; }
             .noc-sidebar-brand { padding: 1.25rem 1.25rem; border-bottom: 1px solid #1E293B; background: linear-gradient(180deg, #111827 0%, #0F172A 100%); }
             .noc-nav-item { display: flex; align-items: center; padding: 0.65rem 1rem; color: #94A3B8; text-decoration: none; font-weight: 500; font-size: 0.88rem; border-radius: 8px; margin: 2px 10px; transition: all 0.2s ease; }
             .noc-nav-item:hover, .noc-nav-item.active { background-color: rgba(245, 158, 11, 0.15); color: #F59E0B; font-weight: 600; }
             .noc-nav-item i { width: 22px; font-size: 1.05rem; margin-right: 10px; text-align: center; }
             .noc-main { margin-left: 260px; flex-grow: 1; min-height: 100vh; display: flex; flex-direction: column; background-color: #0F172A; }
             .noc-topbar { height: 65px; background-color: #111827; border-bottom: 1px solid #1E293B; display: flex; align-items: center; justify-content: space-between; padding: 0 1.75rem; position: sticky; top: 0; z-index: 1030; }
+            .noc-sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); z-index: 1040; }
+            
+            /* 📱 Mobile & Tablet Responsive Media Queries */
+            @@media (max-width: 991.98px) {
+                .noc-sidebar { transform: translateX(-100%); transition: transform 0.3s ease-in-out; box-shadow: 0 0 25px rgba(0,0,0,0.8); }
+                .noc-sidebar.show { transform: translateX(0); }
+                .noc-main { margin-left: 0 !important; }
+                .noc-topbar { padding: 0 1rem; }
+                .noc-topbar-search { width: 160px !important; }
+                .noc-sidebar-overlay.show { display: block !important; }
+            }
+            @@media (max-width: 575.98px) {
+                .noc-topbar-search { display: none !important; }
+                .noc-topbar-clock { display: none !important; }
+                .noc-topbar { padding: 0 0.75rem; }
+            }
         </style>
 
-        <div class="d-flex min-vh-100">
+        <div class="d-flex min-vh-100 position-relative">
+            <!-- Mobile Sidebar Overlay Backdrop -->
+            <div class="noc-sidebar-overlay d-lg-none" onclick="toggleAdminSidebar()"></div>
+
             <!-- Left Command Sidebar (19 Modules) -->
             <aside class="noc-sidebar">
-                <div class="noc-sidebar-brand d-flex align-items-center gap-2">
-                    <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi NOC" style="height: 38px; border-radius: 8px; object-fit: contain; border: 1.5px solid #F59E0B;" class="shadow" />
-                    <div>
-                        <h6 class="font-weight-extrabold mb-0" style="font-family:'Outfit', sans-serif; letter-spacing:0.5px;"><span style="color: #F59E0B;">Raah</span><span class="text-white">Sathi</span></h6>
-                        <span class="badge bg-warning text-dark font-weight-bold" style="font-size: 0.62rem; letter-spacing: 0.5px;">COMMAND CENTER</span>
+                <div class="noc-sidebar-brand d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi NOC" style="height: 38px; border-radius: 8px; object-fit: contain; border: 1.5px solid #F59E0B;" class="shadow" />
+                        <div>
+                            <h6 class="font-weight-extrabold mb-0" style="font-family:'Outfit', sans-serif; letter-spacing:0.5px;"><span style="color: #F59E0B;">Raah</span><span class="text-white">Sathi</span></h6>
+                            <span class="badge bg-warning text-dark font-weight-bold" style="font-size: 0.62rem; letter-spacing: 0.5px;">COMMAND CENTER</span>
+                        </div>
                     </div>
+                    <button type="button" class="btn-close btn-close-white d-lg-none" onclick="toggleAdminSidebar()"></button>
                 </div>
 
                 <div class="py-2 flex-grow-1">
@@ -306,26 +328,30 @@
             <!-- Main Content Container -->
             <div class="noc-main">
                 <header class="noc-topbar">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="input-group input-group-sm" style="width: 280px;">
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Mobile Sidebar Hamburger Toggle Button -->
+                        <button type="button" class="btn btn-outline-warning btn-sm d-lg-none px-2 py-1 me-1" onclick="toggleAdminSidebar()">
+                            <i class="fa-solid fa-bars fs-6"></i>
+                        </button>
+                        <div class="input-group input-group-sm noc-topbar-search" style="width: 260px;">
                             <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                            <input type="text" class="form-control bg-dark border-secondary text-white small" placeholder="Search mechanics, jobs, cities...">
+                            <input type="text" class="form-control bg-dark border-secondary text-white small" placeholder="Search mechanics, jobs...">
                         </div>
                     </div>
 
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2 gap-sm-3">
                         <!-- Emergency Mode Toggle Button -->
-                        <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold px-3 py-1.5" id="btnNocEmergencyToggle" onclick="toggleNocEmergency()">
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Emergency Mode: OFF
+                        <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold px-2.5 px-sm-3 py-1.5" id="btnNocEmergencyToggle" onclick="toggleNocEmergency()" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span class="d-none d-sm-inline">Emergency Mode: </span>OFF
                         </button>
 
-                        <span class="badge bg-dark border border-secondary text-warning px-3 py-2 font-weight-bold">
+                        <span class="badge bg-dark border border-secondary text-warning px-2.5 py-2 font-weight-bold noc-topbar-clock">
                             <i class="fa-regular fa-clock me-1"></i> IST NOC Live
                         </span>
 
                         <div class="dropdown">
-                            <button class="btn btn-outline-warning btn-sm dropdown-toggle font-weight-bold px-3 py-1.5" type="button" data-bs-toggle="dropdown">
-                                <i class="fa-solid fa-user-shield me-1"></i> RS01A Super Admin
+                            <button class="btn btn-outline-warning btn-sm dropdown-toggle font-weight-bold px-2.5 py-1.5" type="button" data-bs-toggle="dropdown" style="font-size: 0.8rem;">
+                                <i class="fa-solid fa-user-shield me-1"></i> <span class="d-none d-sm-inline">RS01A </span>Admin
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg py-2">
                                 <li><a class="dropdown-item text-light py-2" href="/Admin/Settings"><i class="fa-solid fa-gear me-2 text-warning"></i> Settings</a></li>
@@ -338,10 +364,30 @@
                 <main class="p-4 flex-grow-1">
                     @RenderBody()
                 </main>
+
+                <!-- Admin NOC Footer -->
+                <footer class="p-3 border-top border-secondary border-opacity-30 bg-dark bg-opacity-50 text-muted small mt-auto">
+                    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between">
+                        <div class="d-flex align-items-center flex-wrap gap-2 mb-2 mb-md-0">
+                            <span>&copy; 2026 - <span class="notranslate" translate="no"><span style="color: #F59E0B; font-weight: 700;">Raah</span><span class="text-white font-weight-700">Sathi</span></span> Roadside Assistance Network. All rights reserved.</span>
+                            <span class="text-secondary opacity-50 d-none d-sm-inline">•</span>
+                            <span class="notranslate font-weight-bold d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2 shadow-sm" translate="no" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.82rem;">
+                                <span style="color: #FF9933; font-weight: 800; letter-spacing: 0.3px;">Make</span>
+                                <span style="color: #FFFFFF; font-weight: 800; letter-spacing: 0.3px;">In</span>
+                                <span style="color: #00E676; font-weight: 800; letter-spacing: 0.3px;">India</span>
+                            </span>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </div>
 
         <script>
+            function toggleAdminSidebar() {
+                $('.noc-sidebar').toggleClass('show');
+                $('.noc-sidebar-overlay').toggleClass('show');
+            }
+
             function toggleNocEmergency() {
                 var btn = $('#btnNocEmergencyToggle');
                 var isCurrentlyOff = btn.hasClass('btn-outline-danger');
