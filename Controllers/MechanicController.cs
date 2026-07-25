@@ -167,7 +167,7 @@ namespace RaahSathi.Controllers
         [HttpPost]
         public async Task<IActionResult> SubmitKycForm(
             string Email, DateTime? DateOfBirth, string Gender, IFormFile ProfilePhoto,
-            string AadhaarNumber, IFormFile AadhaarFrontPhoto, IFormFile AadhaarBackPhoto, IFormFile PanCardPhoto, IFormFile SelfiePhoto,
+            string AadhaarNumber, IFormFile AadhaarFrontPhoto, IFormFile AadhaarBackPhoto, IFormFile DrivingLicencePhoto, IFormFile PanCardPhoto, IFormFile SelfiePhoto,
             string ShopName, string ShopAddress, string Pincode, string ShopTiming, IFormFile ShopPhoto,
             int ExperienceYears, bool IsCertified, string GarageName,
             string[] VehicleExpertise, string[] Specialization, int ServiceRadiusKm)
@@ -218,6 +218,7 @@ namespace RaahSathi.Controllers
             if (ProfilePhoto != null) profile.ProfilePhotoUrl = await SaveFileAsync(ProfilePhoto);
             if (AadhaarFrontPhoto != null) profile.AadhaarFrontUrl = await SaveFileAsync(AadhaarFrontPhoto);
             if (AadhaarBackPhoto != null) profile.AadhaarBackUrl = await SaveFileAsync(AadhaarBackPhoto);
+            if (DrivingLicencePhoto != null) profile.DrivingLicenceUrl = await SaveFileAsync(DrivingLicencePhoto);
             if (PanCardPhoto != null) profile.PanCardUrl = await SaveFileAsync(PanCardPhoto);
             if (SelfiePhoto != null) profile.SelfieUrl = await SaveFileAsync(SelfiePhoto);
             if (ShopPhoto != null) profile.ShopPhotoUrl = await SaveFileAsync(ShopPhoto);
@@ -226,6 +227,7 @@ namespace RaahSathi.Controllers
             profile.ProfilePhotoUrl ??= "";
             profile.AadhaarFrontUrl ??= "";
             profile.AadhaarBackUrl ??= "";
+            profile.DrivingLicenceUrl ??= "";
             profile.PanCardUrl ??= "";
             profile.SelfieUrl ??= "";
             profile.ShopPhotoUrl ??= "";
@@ -383,8 +385,8 @@ namespace RaahSathi.Controllers
                         approxLocation = approxLoc,
                         distanceKm = Math.Round(distanceKm, 1),
                         etaMinutes = etaMins,
-                        estEarningsMin = (int)(job.VisitingCharge + job.ServiceChargeMin),
-                        estEarningsMax = (int)(job.VisitingCharge + job.ServiceChargeMax + 150),
+                        estEarningsMin = (int)Math.Round((job.VisitingCharge + job.ServiceChargeMin) * (1 - profile.CommissionRate)),
+                        estEarningsMax = (int)Math.Round((job.VisitingCharge + job.ServiceChargeMax) * (1 - profile.CommissionRate)),
                         smartScore = 5,
                         smartMatchTag = $"{job.ProblemType} Expert Match",
                         acceptanceChance = "High"
@@ -424,6 +426,143 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> CollectPaymentWithQr(int jobId, string paymentMode = "UPI_QR")
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated." });
+
+            var job = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Vehicle)
+                .FirstOrDefaultAsync(j => j.Id == jobId);
+
+            if (job == null) return Json(new { success = false, message = "Job not found." });
+            if (job.MechanicId != user.Id) return Json(new { success = false, message = "Unauthorized access to job." });
+
+            var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (mechProfile == null) return Json(new { success = false, message = "Mechanic profile not found." });
+
+            // Calculate current total bill
+            double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
+            double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
+            job.FinalBillAmount = totalBill;
+
+            // Tiered Commission: < ₹1,000 => 8%, >= ₹1,000 => 10%
+            double commRate = totalBill < 1000 ? 0.08 : 0.10;
+            double adminCommission = Math.Round(totalBill * commRate, 2);
+            double mechanicNetEarning = Math.Round(totalBill - adminCommission, 2);
+
+            // Record / Update payment
+            var existingPayment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
+            if (existingPayment == null)
+            {
+                existingPayment = new Payment
+                {
+                    JobId = jobId,
+                    Amount = totalBill,
+                    PaymentStatus = "Released",
+                    RazorpayPaymentId = "pay_qr_" + Guid.NewGuid().ToString().Substring(0, 12),
+                    AdminCommissionAmount = adminCommission,
+                    MechanicEarningAmount = mechanicNetEarning,
+                    CommissionRateUsed = commRate,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _dbContext.Payments.Add(existingPayment);
+            }
+            else
+            {
+                existingPayment.Amount = totalBill;
+                existingPayment.PaymentStatus = "Released";
+                existingPayment.AdminCommissionAmount = adminCommission;
+                existingPayment.MechanicEarningAmount = mechanicNetEarning;
+                existingPayment.CommissionRateUsed = commRate;
+            }
+
+            // Save net earnings directly into Mechanic Wallet (CurrentEarnings)
+            mechProfile.CurrentEarnings += mechanicNetEarning;
+            mechProfile.TotalJobs += 1;
+            mechProfile.CommissionRate = commRate;
+
+            job.Status = "Completed";
+            job.CompletedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new
+            {
+                success = true,
+                message = $"Payment of ₹{totalBill:N2} collected via QR! Net ₹{mechanicNetEarning:N2} credited to your wallet after {commRate * 100:F0}% commission deduction.",
+                jobId = job.Id,
+                finalBillAmount = totalBill,
+                adminCommission = adminCommission,
+                mechanicNetEarning = mechanicNetEarning,
+                commissionPercent = commRate * 100,
+                newWalletBalance = mechProfile.CurrentEarnings
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetJobInvoiceDetails(int jobId)
+        {
+            var job = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Vehicle)
+                .Include(j => j.Mechanic)
+                .FirstOrDefaultAsync(j => j.Id == jobId);
+
+            if (job == null) return Json(new { success = false, message = "Job not found." });
+
+            var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == job.MechanicId);
+            var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
+
+            double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
+            double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
+            double commRate = totalBill < 1000 ? 0.08 : 0.10;
+
+            double adminCommission = payment != null && payment.AdminCommissionAmount > 0 ? payment.AdminCommissionAmount : Math.Round(totalBill * commRate, 2);
+            double mechanicNetEarning = payment != null && payment.MechanicEarningAmount > 0 ? payment.MechanicEarningAmount : Math.Round(totalBill - adminCommission, 2);
+            double effectiveCommRatePct = (payment?.CommissionRateUsed ?? commRate) * 100;
+
+            return Json(new
+            {
+                success = true,
+                invoiceNo = $"RS-INV-{job.Id:D4}-{DateTime.Now.Year}",
+                jobId = job.Id,
+                date = (job.CompletedAt ?? job.CreatedAt).ToString("dd MMM yyyy, hh:mm tt"),
+                status = job.Status,
+                customerName = job.Customer?.Name ?? "Customer",
+                customerPhone = job.Customer?.PhoneNumber ?? "N/A",
+                customerAddress = job.Address,
+                vehicleModel = job.Vehicle?.Model ?? "Vehicle",
+                vehicleType = job.Vehicle?.VehicleType ?? "Car",
+                vehicleRegNumber = job.Vehicle?.RegistrationNumber ?? "UP32 AB 1234",
+                fuelType = job.FuelType,
+                mechanicName = job.Mechanic?.Name ?? "Verified Technician",
+                mechanicPhone = job.Mechanic?.PhoneNumber ?? "N/A",
+                shopName = mechProfile?.ShopName ?? "RaahSathi Partner Garage",
+                shopAddress = mechProfile?.ShopAddress ?? "Sector 62 Noida",
+                problemType = job.ProblemType,
+                
+                // Itemized Breakdown
+                visitingCharge = job.VisitingCharge,
+                serviceChargeMin = job.ServiceChargeMin,
+                customEstimateAmount = job.CustomEstimateApproved == true ? job.CustomEstimateAmount : 0.0,
+                customEstimateDetails = job.CustomEstimateDetails,
+                partsEstimateAmount = job.PartsApproved == true ? job.PartsEstimateAmount : 0.0,
+                partsMrp = job.PartsApproved == true ? (job.PartsMrp > 0 ? job.PartsMrp : job.PartsEstimateAmount) : 0.0,
+                extraLabourCharge = job.PartsApproved == true ? job.ExtraLabourCharge : 0.0,
+                partsDetails = job.ExtraPartsName,
+                towingCharge = job.TowingApproved == true ? job.TowingCharge : 0.0,
+                
+                // Totals & Commission
+                totalBillAmount = totalBill,
+                adminCommission = adminCommission,
+                mechanicNetEarning = mechanicNetEarning,
+                commissionPercent = effectiveCommRatePct
+            });
+        }
+
+        [HttpPost]
         public async Task<IActionResult> AdvanceJobStatus(int jobId, string newStatus)
         {
             var job = await _dbContext.Jobs.FindAsync(jobId);
@@ -449,15 +588,20 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SubmitSparesQuote(int jobId, string partName, double partPrice, double labourPrice)
+        public async Task<IActionResult> SubmitSparesQuote(int jobId, string partName, double partPrice, double labourPrice, double partsMrp = 0)
         {
             var job = await _dbContext.Jobs.FindAsync(jobId);
             if (job == null) return NotFound();
 
+            if (partsMrp <= 0) partsMrp = partPrice;
+
             job.ExtraPartsName = partName;
+            job.PartsMrp = partsMrp;
             job.PartsEstimateAmount = partPrice;
             job.ExtraLabourCharge = labourPrice;
-            job.PartsEstimateDetails = $"{partName} (₹{partPrice}) + Labour (₹{labourPrice})";
+            job.PartsEstimateDetails = partsMrp > partPrice 
+                ? $"{partName} (MRP: ₹{partsMrp:N0}, Billed: ₹{partPrice:N0}) + Labour (₹{labourPrice:N0})"
+                : $"{partName} (₹{partPrice:N0}) + Labour (₹{labourPrice:N0})";
             job.PartsApproved = null; // Reset to pending customer approval
             await _dbContext.SaveChangesAsync();
 

@@ -46,8 +46,15 @@ namespace RaahSathi.Controllers
             int onlineMechanics = await _dbContext.MechanicProfiles.CountAsync(m => m.IsOnline);
             int activeRequests = await _dbContext.Jobs.CountAsync(j => j.Status != "Completed" && j.Status != "Cancelled");
             int totalJobs = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed");
-            double totalRevenue = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").SumAsync(p => p.Amount);
+            double totalRevenue = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").SumAsync(p => (double?)p.Amount) ?? 0.0;
             
+            // Tiered Admin Commission Vault Calculation (8% < 1000, 10% >= 1000)
+            var releasedPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").ToListAsync();
+            double totalCommissionEarned = releasedPayments.Sum(p => p.AdminCommissionAmount > 0 ? p.AdminCommissionAmount : (p.Amount < 1000 ? p.Amount * 0.08 : p.Amount * 0.10));
+            double totalWithdrawn = await _dbContext.AdminWithdrawals.SumAsync(w => (double?)w.Amount) ?? 0.0;
+            double adminVaultBalance = Math.Max(0.0, Math.Round(totalCommissionEarned - totalWithdrawn, 2));
+            var withdrawalHistory = await _dbContext.AdminWithdrawals.OrderByDescending(w => w.WithdrawnAt).Take(10).ToListAsync();
+
             // Pending KYC Mechanics
             var pendingMechanics = await _dbContext.MechanicProfiles
                 .Include(m => m.User)
@@ -69,6 +76,10 @@ namespace RaahSathi.Controllers
             ViewBag.ActiveRequests = activeRequests;
             ViewBag.TotalJobs = totalJobs;
             ViewBag.TotalRevenue = totalRevenue;
+            ViewBag.TotalCommissionEarned = totalCommissionEarned;
+            ViewBag.TotalWithdrawn = totalWithdrawn;
+            ViewBag.AdminVaultBalance = adminVaultBalance;
+            ViewBag.WithdrawalHistory = withdrawalHistory;
             ViewBag.PendingMechanics = pendingMechanics;
             ViewBag.PricingRules = pricingRules;
             ViewBag.Disputes = disputes;
@@ -484,6 +495,37 @@ namespace RaahSathi.Controllers
             await _dbContext.SaveChangesAsync();
 
             return Json(new { success = true, message = "Support message sent to mechanic inbox successfully!" });
+        }
+
+        [HttpPost("/Admin/WithdrawAdminCommission")]
+        public async Task<IActionResult> WithdrawAdminCommission(double amount, string payoutMethod = "Bank Transfer", string referenceNumber = "")
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Not authenticated" });
+
+            if (amount <= 0) return Json(new { success = false, message = "Please enter a valid withdrawal amount." });
+
+            var releasedPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").ToListAsync();
+            double totalCommissionEarned = releasedPayments.Sum(p => p.AdminCommissionAmount > 0 ? p.AdminCommissionAmount : (p.Amount < 1000 ? p.Amount * 0.08 : p.Amount * 0.10));
+            double totalWithdrawn = await _dbContext.AdminWithdrawals.SumAsync(w => (double?)w.Amount) ?? 0.0;
+            double currentVaultBalance = Math.Max(0.0, Math.Round(totalCommissionEarned - totalWithdrawn, 2));
+
+            if (amount > currentVaultBalance)
+            {
+                return Json(new { success = false, message = $"Requested amount (₹{amount}) exceeds current available commission vault balance (₹{currentVaultBalance:N2})." });
+            }
+
+            var withdrawal = new AdminWithdrawal
+            {
+                Amount = amount,
+                PayoutMethod = string.IsNullOrWhiteSpace(payoutMethod) ? "Bank Transfer" : payoutMethod,
+                ReferenceNumber = string.IsNullOrWhiteSpace(referenceNumber) ? "ADM_" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper() : referenceNumber,
+                WithdrawnAt = DateTime.UtcNow
+            };
+
+            _dbContext.AdminWithdrawals.Add(withdrawal);
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { success = true, newVaultBalance = Math.Round(currentVaultBalance - amount, 2), message = $"₹{amount:N2} successfully withdrawn from Admin Commission Vault!" });
         }
     }
 }

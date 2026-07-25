@@ -228,8 +228,16 @@
                         <p class="text-muted small mb-0"><i class="fa-solid fa-wrench text-warning me-1"></i> Issue: <b class="text-light">@activeJob.ProblemType</b></p>
                     </div>
                     <div class="text-md-end">
-                        <span class="text-muted small d-block">Estimated Earnings</span>
-                        <h3 class="text-success font-weight-bold mb-0">₹@((activeJob.FinalBillAmount * (1 - profile.CommissionRate)).ToString("F2"))</h3>
+                        <span class="text-muted small d-block font-weight-bold text-light">Estimated Earnings</span>
+                        @{
+                            double baseEstBill = activeJob.VisitingCharge + activeJob.ServiceChargeMin;
+                            double currentBill = activeJob.FinalBillAmount > baseEstBill ? activeJob.FinalBillAmount : baseEstBill;
+                            double mechEarnings = Math.Round(currentBill * (1 - profile.CommissionRate), 2);
+                        }
+                        <h3 class="text-success font-weight-extrabold mb-0" style="font-family: 'Outfit';">₹@mechEarnings.ToString("N2")</h3>
+                        <span class="text-muted extra-small d-block mt-1" style="font-size: 0.76rem;" title="Includes Basic Visiting Charge + Per KM Distance + Vehicle Problem Service Charge">
+                            Job Total: ₹@currentBill.ToString("N0") <i class="fa-solid fa-circle-info text-info ms-1" data-bs-toggle="tooltip" title="Basic Visiting Charge + Distance Fee (Per KM) + Vehicle Problem Service Charge"></i>
+                        </span>
                     </div>
                 </div>
 
@@ -358,42 +366,87 @@
                                     <i class="fa-solid fa-circle-xmark me-1"></i> Customer Rejected Estimate. Please renegotiate or cancel.
                                 </div>
                             }
+                            else if (activeJob.CustomEstimateApproved == null && activeJob.CustomEstimateAmount > 0)
+                            {
+                                <div class="alert alert-warning bg-dark border-warning text-warning small mt-3 mb-0">
+                                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Estimate ₹@activeJob.CustomEstimateAmount sent to customer! Awaiting live approval...
+                                </div>
+                            }
                         </div>
 
                         <!-- Extra Parts Quote Input -->
                         <div class="glass-card p-3 border-secondary mb-3">
                             <h6 class="text-warning font-weight-bold mb-2"><i class="fa-solid fa-box-open me-1"></i> Add Extra Spare Parts (Optional)</h6>
+                            <p class="text-muted small mb-3">Specify the part name, original MRP, offered bill price, and fitting labour charge.</p>
+
                             <div class="row g-2 mb-3">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label text-muted small">Part Name</label>
-                                    <input type="text" id="txtExtraPartName" class="form-control glass-input" value="Exide 12V Battery" placeholder="e.g. Battery">
+                                    <input type="text" id="txtExtraPartName" class="form-control glass-input text-white font-weight-bold" value="@(string.IsNullOrEmpty(activeJob.ExtraPartsName) ? "Exide 12V Battery" : activeJob.ExtraPartsName)" placeholder="e.g. Battery">
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label text-muted small">Part Price (₹)</label>
-                                    <input type="number" id="txtExtraPartPrice" class="form-control glass-input text-warning" value="3200" placeholder="e.g. 3200">
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small">Part MRP (₹)</label>
+                                    <input type="number" id="txtExtraPartMrp" class="form-control glass-input text-info font-weight-bold" value="@(activeJob.PartsMrp > 0 ? activeJob.PartsMrp : 3500)" placeholder="e.g. 3500">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small">Offered Part Price (₹)</label>
+                                    <input type="number" id="txtExtraPartPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.PartsEstimateAmount > 0 ? activeJob.PartsEstimateAmount : 3200)" placeholder="e.g. 3200">
+                                </div>
+                                <div class="col-md-3">
                                     <label class="form-label text-muted small">Labour Charge (₹)</label>
-                                    <input type="number" id="txtExtraLabourPrice" class="form-control glass-input text-warning" value="400" placeholder="e.g. 400">
+                                    <input type="number" id="txtExtraLabourPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.ExtraLabourCharge > 0 ? activeJob.ExtraLabourCharge : 400)" placeholder="e.g. 400">
                                 </div>
                             </div>
                             <button class="btn btn-outline-warning font-weight-bold w-100 py-2" onclick="submitSparesQuote()">
                                 <i class="fa-solid fa-plus me-1"></i> Send Extra Parts Quote to Customer
                             </button>
+
+                            @if (activeJob.PartsApproved == true)
+                            {
+                                <div class="alert alert-success bg-dark border-success text-success small mt-2 mb-0">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Customer Approved Extra Parts Quote! Added to bill.
+                                </div>
+                            }
+                            else if (activeJob.PartsApproved == false)
+                            {
+                                <div class="alert alert-danger bg-dark border-danger text-danger small mt-2 mb-0">
+                                    <i class="fa-solid fa-circle-xmark me-1"></i> Customer Rejected Extra Parts Quote.
+                                </div>
+                            }
+                            else if (activeJob.PartsApproved == null && activeJob.PartsEstimateAmount > 0)
+                            {
+                                <div class="alert alert-warning bg-dark border-warning text-warning small mt-2 mb-0">
+                                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Extra Parts quote sent! Awaiting live customer approval...
+                                </div>
+                            }
                         </div>
 
                         <button class="btn btn-success w-100 py-3 font-weight-bold fs-5 shadow-lg" onclick="advanceStatus('Repairing')">
                             <i class="fa-solid fa-play me-2"></i> Start Repair Work
                         </button>
                     }
-                    else if (activeJob.Status == "Repairing")
+                    else if (activeJob.Status == "Repairing" || activeJob.Status == "Completed")
                     {
                         <div class="alert alert-success bg-dark border-success text-success small mb-3">
-                            <i class="fa-solid fa-wrench me-2"></i> Repair work is currently in progress. Complete work and request payment release.
+                            <i class="fa-solid fa-qrcode me-2"></i> Repair in progress. Show QR code to customer to collect total bill payment.
                         </div>
-                        <button class="btn btn-success w-100 py-3 font-weight-bold fs-5 shadow-lg" onclick="advanceStatus('Completed')">
-                            <i class="fa-solid fa-circle-check me-2"></i> Mark Repair Completed
-                        </button>
+
+                        <div class="d-flex flex-column gap-2">
+                            <button type="button" class="btn btn-warning text-dark btn-lg w-100 py-3 font-weight-bold shadow" onclick="openPaymentQrModal(@activeJob.Id)">
+                                <i class="fa-solid fa-qrcode me-2"></i> Collect Payment (Show Customer QR Code)
+                            </button>
+                            
+                            @if (activeJob.Status != "Completed")
+                            {
+                                <button type="button" class="btn btn-success btn-lg w-100 py-3 font-weight-bold shadow" onclick="advanceStatus('Completed')">
+                                    <i class="fa-solid fa-circle-check me-2"></i> Mark Repair Completed
+                                </button>
+                            }
+
+                            <button type="button" class="btn btn-outline-info w-100 py-2.5 font-weight-bold" onclick="showJobInvoiceModal(@activeJob.Id)">
+                                <i class="fa-solid fa-receipt me-2"></i> View Itemized Tax Invoice / Receipt
+                            </button>
+                        </div>
                     }
                 </div>
             </div>
@@ -1019,13 +1072,14 @@
     function submitSparesQuote() {
         var activeJobId = "@(activeJob?.Id ?? 0)";
         var partName = $('#txtExtraPartName').val();
+        var partsMrp = $('#txtExtraPartMrp').val() || 0;
         var partPrice = $('#txtExtraPartPrice').val();
-        var labourPrice = $('#txtExtraLabourPrice').val();
+        var labourPrice = $('#txtExtraLabourPrice').val() || 0;
 
         if (activeJobId > 0 && partPrice > 0) {
-            $.post('/Mechanic/SubmitSparesQuote', { jobId: activeJobId, partName: partName, partPrice: partPrice, labourPrice: labourPrice }, function(res) {
+            $.post('/Mechanic/SubmitSparesQuote', { jobId: activeJobId, partName: partName, partPrice: partPrice, labourPrice: labourPrice, partsMrp: partsMrp }, function(res) {
                 if (res.success) {
-                    alert('✅ Extra Parts quote (Part ₹' + partPrice + ' + Labour ₹' + labourPrice + ') sent for customer approval!');
+                    alert('✅ Extra Parts quote (MRP ₹' + (partsMrp > 0 ? partsMrp : partPrice) + ' -> Billed ₹' + partPrice + ' + Labour ₹' + labourPrice + ') sent for customer approval!');
                     location.reload();
                 }
             });
@@ -1203,5 +1257,247 @@
             if (res.success) location.reload();
         });
     }
+
+    // Dynamic Payment QR & Invoice Modal Functions
+    var currentQrJobId = 0;
+
+    function openPaymentQrModal(jobId) {
+        currentQrJobId = jobId;
+        $.get('/Mechanic/GetJobInvoiceDetails?jobId=' + jobId, function (res) {
+            if (res && res.success) {
+                $('#qrModalJobId').text('JOB #' + res.jobId);
+                $('#qrModalTotalAmount').text('₹' + res.totalBillAmount.toFixed(2));
+                $('#qrModalVisiting').text('₹' + res.visitingCharge.toFixed(2));
+                $('#qrModalService').text('₹' + res.serviceChargeMin.toFixed(2));
+                
+                var extraTotal = res.customEstimateAmount + res.partsEstimateAmount + res.extraLabourCharge + res.towingCharge;
+                if (extraTotal > 0) {
+                    $('#qrModalExtra').text('₹' + extraTotal.toFixed(2));
+                    $('#qrModalExtraRow').show();
+                } else {
+                    $('#qrModalExtraRow').hide();
+                }
+
+                $('#qrModalCommPct').text(res.commissionPercent.toFixed(0));
+                $('#qrModalCommAmount').text(res.adminCommission.toFixed(2));
+                $('#qrModalNetCredit').text('₹' + res.mechanicNetEarning.toFixed(2));
+
+                // Generate Dynamic UPI QR Code URL
+                var upiString = encodeURIComponent(`upi://pay?pa=raahsathi@upi&pn=RaahSathi+Assistance&am=${res.totalBillAmount.toFixed(2)}&cu=INR&tn=Job+RS-${res.jobId}`);
+                var qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${upiString}`;
+                $('#qrCodeImg').attr('src', qrUrl);
+
+                var modal = new bootstrap.Modal(document.getElementById('paymentQrModal'));
+                modal.show();
+            } else {
+                alert('Could not fetch payment details.');
+            }
+        });
+    }
+
+    $('#btnConfirmQrPayment').click(function () {
+        if (!currentQrJobId) return;
+        $.post('/Mechanic/CollectPaymentWithQr', { jobId: currentQrJobId }, function (res) {
+            if (res && res.success) {
+                var qrModal = bootstrap.Modal.getInstance(document.getElementById('paymentQrModal'));
+                if (qrModal) qrModal.hide();
+
+                alert(res.message);
+                showJobInvoiceModal(currentQrJobId);
+            } else {
+                alert(res.message || 'Payment processing failed.');
+            }
+        });
+    });
+
+    function showJobInvoiceModal(jobId) {
+        $.get('/Mechanic/GetJobInvoiceDetails?jobId=' + jobId, function (res) {
+            if (res && res.success) {
+                $('#invNumber').text(res.invoiceNo);
+                $('#invDate').text('Date: ' + res.date);
+                $('#invCustomerName').text(res.customerName);
+                $('#invCustomerPhone').text(res.customerPhone);
+                $('#invVehicleInfo').text(res.vehicleModel + ' (' + res.vehicleType + ' - ' + res.fuelType + ') • Reg: ' + res.vehicleRegNumber);
+                $('#invCustomerAddress').text(res.customerAddress);
+
+                $('#invMechanicName').text(res.mechanicName);
+                $('#invShopName').text(res.shopName);
+                $('#invMechanicPhone').text(res.mechanicPhone);
+                $('#invShopAddress').text(res.shopAddress);
+
+                var rowsHtml = '';
+                var itemNo = 1;
+
+                rowsHtml += `<tr><td>${itemNo++}</td><td>Basic Visiting & Distance Charge</td><td class="text-end font-weight-bold">₹${res.visitingCharge.toFixed(2)}</td></tr>`;
+                rowsHtml += `<tr><td>${itemNo++}</td><td>Breakdown Repair Service Fee (${res.problemType})</td><td class="text-end font-weight-bold">₹${res.serviceChargeMin.toFixed(2)}</td></tr>`;
+
+                if (res.customEstimateAmount > 0) {
+                    rowsHtml += `<tr><td>${itemNo++}</td><td>On-Spot Inspection Estimate (${res.customEstimateDetails || 'Custom Repair'})</td><td class="text-end font-weight-bold">₹${res.customEstimateAmount.toFixed(2)}</td></tr>`;
+                }
+
+                if (res.partsEstimateAmount > 0 || res.extraLabourCharge > 0) {
+                    var partLabel = res.partsDetails || 'Spare Part';
+                    if (res.partsMrp > res.partsEstimateAmount) {
+                        partLabel += ` <span class="badge bg-secondary text-light">MRP: ₹${res.partsMrp.toFixed(2)}</span>`;
+                    }
+                    var partsTotal = res.partsEstimateAmount + res.extraLabourCharge;
+                    rowsHtml += `<tr><td>${itemNo++}</td><td>Extra Spare Parts & Labour (${partLabel})</td><td class="text-end font-weight-bold">₹${partsTotal.toFixed(2)}</td></tr>`;
+                }
+
+                if (res.towingCharge > 0) {
+                    rowsHtml += `<tr><td>${itemNo++}</td><td>Emergency Towing Assistance Charge</td><td class="text-end font-weight-bold">₹${res.towingCharge.toFixed(2)}</td></tr>`;
+                }
+
+                $('#invItemsTable').html(rowsHtml);
+                $('#invTotalAmount').text('₹' + res.totalBillAmount.toFixed(2));
+
+                var invModal = new bootstrap.Modal(document.getElementById('jobInvoiceModal'));
+                invModal.show();
+            } else {
+                alert('Could not fetch invoice details.');
+            }
+        });
+    }
 </script>
 }
+
+<!-- DYNAMIC WALLET PAYMENT QR CODE MODAL FOR MECHANIC -->
+<div class="modal fade" id="paymentQrModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border border-warning shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold">
+                    <i class="fa-solid fa-qrcode me-2"></i> Collect Customer Payment (UPI QR)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <span class="badge bg-warning text-dark px-3 py-1 font-weight-bold mb-2" id="qrModalJobId">JOB #</span>
+                <span class="text-muted small d-block mb-1">Total Bill Amount to Collect</span>
+                <h2 class="text-success font-weight-extrabold mb-3" style="font-family: 'Outfit'; font-size: 2.4rem;" id="qrModalTotalAmount">₹0.00</h2>
+
+                <!-- QR Code Box Container -->
+                <div class="position-relative d-inline-block bg-white p-3 rounded-4 shadow-lg mb-3 border border-3 border-warning" style="max-width: 250px;">
+                    <img id="qrCodeImg" src="" alt="UPI Payment QR Code" class="img-fluid rounded" style="width: 210px; height: 210px;">
+                    <div class="mt-2 text-dark font-weight-bold extra-small" style="font-size: 0.75rem;">
+                        <i class="fa-solid fa-shield-halved text-success me-1"></i> Scan with GPay, PhonePe, Paytm or any UPI App
+                    </div>
+                </div>
+
+                <!-- Breakdown & Commission Vault Net Credit Summary Card -->
+                <div class="p-3 bg-black bg-opacity-60 rounded-3 border border-secondary text-start mb-3">
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                        <span>Basic Visiting & Distance:</span>
+                        <strong class="text-light" id="qrModalVisiting">₹0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                        <span>Breakdown Service Price:</span>
+                        <strong class="text-light" id="qrModalService">₹0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small mb-1" id="qrModalExtraRow" style="display:none;">
+                        <span>Custom Estimate / Parts:</span>
+                        <strong class="text-light" id="qrModalExtra">₹0.00</strong>
+                    </div>
+                    <hr class="border-secondary my-2">
+                    <div class="d-flex justify-content-between text-warning small font-weight-bold mb-1">
+                        <span><i class="fa-solid fa-shield-halved text-warning me-1"></i> Platform Commission (<span id="qrModalCommPct">10</span>%):</span>
+                        <span class="text-warning">-₹<span id="qrModalCommAmount">0.00</span></span>
+                    </div>
+                    <div class="d-flex justify-content-between text-success font-weight-bold fs-6">
+                        <span><i class="fa-solid fa-wallet text-success me-1"></i> Net Wallet Credit:</span>
+                        <span class="text-success" id="qrModalNetCredit">₹0.00</span>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-success btn-lg font-weight-bold w-100 py-3 shadow" id="btnConfirmQrPayment">
+                    <i class="fa-solid fa-check-circle me-2"></i> Confirm Customer Paid & Credit Wallet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- OFFICIAL ITEMIZED TAX INVOICE / RECEIPT MODAL -->
+<div class="modal fade" id="jobInvoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-light border border-info shadow-lg">
+            <div class="modal-header border-secondary d-print-none">
+                <h5 class="modal-title text-info font-weight-bold">
+                    <i class="fa-solid fa-receipt me-2"></i> Official Service Receipt / Tax Invoice
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="invoicePrintArea">
+                <div class="p-4 bg-dark bg-opacity-80 rounded-4 border border-secondary">
+                    <!-- Invoice Header -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 border-bottom border-secondary mb-4 gap-2">
+                        <div>
+                            <h3 class="text-warning font-weight-extrabold mb-1" style="font-family: 'Outfit';">RaahSathi Roadside Assistance</h3>
+                            <p class="text-muted small mb-0">Official Breakdown Repair Service Receipt</p>
+                        </div>
+                        <div class="text-md-end">
+                            <span class="badge bg-success text-white font-weight-bold px-3 py-1 mb-1" id="invStatusBadge"><i class="fa-solid fa-circle-check me-1"></i> PAYMENT RECEIVED & VERIFIED</span>
+                            <h6 class="text-light font-weight-bold mb-0" id="invNumber">RS-INV-0000-2026</h6>
+                            <span class="text-muted extra-small d-block" id="invDate">Date: --</span>
+                        </div>
+                    </div>
+
+                    <!-- Customer & Mechanic Info Grid -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-black bg-opacity-40 rounded-3 border border-secondary h-100">
+                                <h6 class="text-warning font-weight-bold mb-2"><i class="fa-solid fa-user me-1"></i> Customer Details</h6>
+                                <p class="mb-1 text-light font-weight-bold" id="invCustomerName">--</p>
+                                <p class="mb-1 text-muted small"><i class="fa-solid fa-phone me-1"></i> <span id="invCustomerPhone">--</span></p>
+                                <p class="mb-1 text-muted small"><i class="fa-solid fa-car me-1"></i> <span id="invVehicleInfo">--</span></p>
+                                <p class="mb-0 text-muted small"><i class="fa-solid fa-location-dot me-1"></i> <span id="invCustomerAddress">--</span></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-black bg-opacity-40 rounded-3 border border-secondary h-100">
+                                <h6 class="text-info font-weight-bold mb-2"><i class="fa-solid fa-screwdriver-wrench me-1"></i> Service Partner Details</h6>
+                                <p class="mb-1 text-light font-weight-bold" id="invMechanicName">--</p>
+                                <p class="mb-1 text-muted small"><i class="fa-solid fa-shop me-1"></i> <span id="invShopName">--</span></p>
+                                <p class="mb-1 text-muted small"><i class="fa-solid fa-phone me-1"></i> <span id="invMechanicPhone">--</span></p>
+                                <p class="mb-0 text-muted small"><i class="fa-solid fa-map-pin me-1"></i> <span id="invShopAddress">--</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Itemized Breakdown Table -->
+                    <h6 class="text-white font-weight-bold mb-2"><i class="fa-solid fa-list-check me-1"></i> Itemized Price & Estimate Breakdown</h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-dark table-striped table-bordered align-middle text-light mb-0">
+                            <thead>
+                                <tr class="table-secondary text-dark">
+                                    <th>#</th>
+                                    <th>Description / Service Item</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invItemsTable">
+                                <!-- Dynamic Items inserted via JS -->
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-dark fs-5 font-weight-bold">
+                                    <td colspan="2" class="text-end text-warning">TOTAL PAID AMOUNT:</td>
+                                    <td class="text-end text-success font-weight-extrabold" id="invTotalAmount">₹0.00</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Commission Vault & Receipt Footer -->
+                    <div class="p-3 bg-dark bg-opacity-60 rounded-3 border border-secondary d-flex justify-content-between align-items-center">
+                        <div class="text-muted extra-small">
+                            <i class="fa-solid fa-shield-halved text-success me-1"></i> Certified Digital Receipt by RaahSathi Escrow System
+                        </div>
+                        <button type="button" class="btn btn-outline-light btn-sm d-print-none" onclick="window.print()">
+                            <i class="fa-solid fa-print me-1"></i> Print Invoice
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

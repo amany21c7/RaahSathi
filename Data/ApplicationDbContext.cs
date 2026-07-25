@@ -22,6 +22,7 @@ namespace RaahSathi.Data
         public DbSet<JobChatMessage> JobChatMessages { get; set; }
         public DbSet<MechanicSupportMessage> MechanicSupportMessages { get; set; }
         public DbSet<ProblemTypePricing> ProblemTypePricings { get; set; }
+        public DbSet<AdminWithdrawal> AdminWithdrawals { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

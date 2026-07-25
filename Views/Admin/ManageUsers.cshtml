@@ -339,6 +339,10 @@
                                                     {
                                                         <a href="@mechProfile.AadhaarBackUrl" target="_blank" class="badge bg-secondary text-decoration-none py-1.5"><i class="fa-solid fa-image me-1"></i> Aadhaar Back</a>
                                                     }
+                                                    @if (!string.IsNullOrEmpty(mechProfile.DrivingLicenceUrl))
+                                                    {
+                                                        <a href="@mechProfile.DrivingLicenceUrl" target="_blank" class="badge bg-secondary text-decoration-none py-1.5"><i class="fa-solid fa-id-card me-1"></i> Driving Licence</a>
+                                                    }
                                                     @if (!string.IsNullOrEmpty(mechProfile.PanCardUrl))
                                                     {
                                                         <a href="@mechProfile.PanCardUrl" target="_blank" class="badge bg-secondary text-decoration-none py-1.5"><i class="fa-solid fa-image me-1"></i> PAN Card</a>

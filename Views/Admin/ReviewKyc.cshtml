@@ -82,6 +82,15 @@
                                 </a>
                             </div>
                         }
+                        @if (!string.IsNullOrEmpty(Model.DrivingLicenceUrl))
+                        {
+                            <div class="col-6 mt-3">
+                                <span class="text-muted small">Driving Licence</span>
+                                <a href="@Model.DrivingLicenceUrl" target="_blank">
+                                    <img src="@Model.DrivingLicenceUrl" class="img-fluid rounded border border-secondary mt-1" style="height: 100px; object-fit: cover;">
+                                </a>
+                            </div>
+                        }
                         @if (!string.IsNullOrEmpty(Model.PanCardUrl))
                         {
                             <div class="col-6 mt-3">

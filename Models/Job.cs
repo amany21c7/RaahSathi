@@ -56,6 +56,7 @@ namespace RaahSathi.Models
 
         // Parts / Spares & Extra Labour approval
         public double PartsEstimateAmount { get; set; } = 0.0;
+        public double PartsMrp { get; set; } = 0.0;
         public string PartsEstimateDetails { get; set; } = string.Empty;
         public string ExtraPartsName { get; set; } = string.Empty;
         public double ExtraLabourCharge { get; set; } = 0.0;

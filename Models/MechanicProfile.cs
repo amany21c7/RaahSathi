@@ -43,6 +43,8 @@ namespace RaahSathi.Models
         [StringLength(500)]
         public string PanCardUrl { get; set; } = string.Empty;
         [StringLength(500)]
+        public string DrivingLicenceUrl { get; set; } = string.Empty;
+        [StringLength(500)]
         public string SelfieUrl { get; set; } = string.Empty;
 
         // Shop Information

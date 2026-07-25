@@ -282,7 +282,7 @@ namespace RaahSathi.Controllers
                 VisitingCharge = visitingCharge,
                 ServiceChargeMin = serviceMin,
                 ServiceChargeMax = serviceMax,
-                FinalBillAmount = visitingCharge
+                FinalBillAmount = Math.Round(visitingCharge + serviceMin, 2)
             };
 
             _dbContext.Jobs.Add(job);
@@ -367,7 +367,7 @@ namespace RaahSathi.Controllers
                 VisitingCharge = visitingCharge,
                 ServiceChargeMin = serviceMin,
                 ServiceChargeMax = serviceMax,
-                FinalBillAmount = visitingCharge // Initially contains visiting charge
+                FinalBillAmount = Math.Round(visitingCharge + serviceMin, 2)
             };
 
             _dbContext.Jobs.Add(job);
@@ -504,7 +504,8 @@ namespace RaahSathi.Controllers
             job.CustomEstimateApproved = approve;
             if (approve)
             {
-                job.FinalBillAmount = job.VisitingCharge + job.CustomEstimateAmount;
+                double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
+                job.FinalBillAmount = baseEstBill + job.CustomEstimateAmount;
                 job.Status = "Repairing";
             }
             else
@@ -572,40 +573,99 @@ namespace RaahSathi.Controllers
             job.Status = "Completed";
             job.CompletedAt = DateTime.UtcNow;
 
+            // Calculate 2-Phase Tiered Commission (Under ₹1000 => 8%, ₹1000+ => 10%)
+            double commRate = job.FinalBillAmount < 1000 ? 0.08 : 0.10;
+            double adminCommission = Math.Round(job.FinalBillAmount * commRate, 2);
+            double mechanicNetEarning = Math.Round(job.FinalBillAmount - adminCommission, 2);
+
             var payment = new Payment
             {
                 JobId = job.Id,
                 Amount = job.FinalBillAmount,
-                PaymentStatus = "Held", // Held in Escrow first
-                RazorpayPaymentId = string.IsNullOrEmpty(paymentId) ? "pay_" + Guid.NewGuid().ToString().Substring(0, 14) : paymentId
+                PaymentStatus = "Released", // Auto-released escrow to wallet & admin vault
+                RazorpayPaymentId = string.IsNullOrEmpty(paymentId) ? "pay_" + Guid.NewGuid().ToString().Substring(0, 14) : paymentId,
+                AdminCommissionAmount = adminCommission,
+                MechanicEarningAmount = mechanicNetEarning,
+                CommissionRateUsed = commRate
             };
 
             _dbContext.Payments.Add(payment);
 
-            // Also credit mechanic wallet (daily payout mock) but mark as pending escrow release
+            // Credit mechanic net earnings (92% or 90%) into mechanic wallet
             if (job.MechanicId.HasValue)
             {
                 var mechProfile = await _dbContext.MechanicProfiles.FindAsync(job.MechanicId.Value);
                 if (mechProfile != null)
                 {
-                    // Deduct platform commission (e.g. 20% or 15%)
-                    double netEarning = job.FinalBillAmount * (1 - mechProfile.CommissionRate);
-                    mechProfile.CurrentEarnings += netEarning;
+                    mechProfile.CurrentEarnings += mechanicNetEarning;
                     mechProfile.TotalJobs += 1;
-                    
-                    // Trigger tiered commission incentive
-                    if (mechProfile.TotalJobs >= 100 && mechProfile.CommissionRate > 0.15)
-                    {
-                        mechProfile.CommissionRate = 0.15; // Decreased commission as reward
-                    }
-
-                    // Auto-release escrow to wallet for instant payout demo
-                    payment.PaymentStatus = "Released";
+                    mechProfile.CommissionRate = commRate;
                 }
             }
 
             await _dbContext.SaveChangesAsync();
             return Json(new { success = true });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetJobInvoiceDetails(int jobId)
+        {
+            var job = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Vehicle)
+                .Include(j => j.Mechanic)
+                .FirstOrDefaultAsync(j => j.Id == jobId);
+
+            if (job == null) return Json(new { success = false, message = "Job not found." });
+
+            var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == job.MechanicId);
+            var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
+
+            double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
+            double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
+            double commRate = totalBill < 1000 ? 0.08 : 0.10;
+
+            double adminCommission = payment != null && payment.AdminCommissionAmount > 0 ? payment.AdminCommissionAmount : Math.Round(totalBill * commRate, 2);
+            double mechanicNetEarning = payment != null && payment.MechanicEarningAmount > 0 ? payment.MechanicEarningAmount : Math.Round(totalBill - adminCommission, 2);
+            double effectiveCommRatePct = (payment?.CommissionRateUsed ?? commRate) * 100;
+
+            return Json(new
+            {
+                success = true,
+                invoiceNo = $"RS-INV-{job.Id:D4}-{DateTime.Now.Year}",
+                jobId = job.Id,
+                date = (job.CompletedAt ?? job.CreatedAt).ToString("dd MMM yyyy, hh:mm tt"),
+                status = job.Status,
+                customerName = job.Customer?.Name ?? "Customer",
+                customerPhone = job.Customer?.PhoneNumber ?? "N/A",
+                customerAddress = job.Address,
+                vehicleModel = job.Vehicle?.Model ?? "Vehicle",
+                vehicleType = job.Vehicle?.VehicleType ?? "Car",
+                vehicleRegNumber = job.Vehicle?.RegistrationNumber ?? "UP32 AB 1234",
+                fuelType = job.FuelType,
+                mechanicName = job.Mechanic?.Name ?? "Verified Technician",
+                mechanicPhone = job.Mechanic?.PhoneNumber ?? "N/A",
+                shopName = mechProfile?.ShopName ?? "RaahSathi Partner Garage",
+                shopAddress = mechProfile?.ShopAddress ?? "Sector 62 Noida",
+                problemType = job.ProblemType,
+                
+                // Itemized Breakdown
+                visitingCharge = job.VisitingCharge,
+                serviceChargeMin = job.ServiceChargeMin,
+                customEstimateAmount = job.CustomEstimateApproved == true ? job.CustomEstimateAmount : 0.0,
+                customEstimateDetails = job.CustomEstimateDetails,
+                partsEstimateAmount = job.PartsApproved == true ? job.PartsEstimateAmount : 0.0,
+                partsMrp = job.PartsApproved == true ? (job.PartsMrp > 0 ? job.PartsMrp : job.PartsEstimateAmount) : 0.0,
+                extraLabourCharge = job.PartsApproved == true ? job.ExtraLabourCharge : 0.0,
+                partsDetails = job.ExtraPartsName,
+                towingCharge = job.TowingApproved == true ? job.TowingCharge : 0.0,
+                
+                // Totals & Commission
+                totalBillAmount = totalBill,
+                adminCommission = adminCommission,
+                mechanicNetEarning = mechanicNetEarning,
+                commissionPercent = effectiveCommRatePct
+            });
         }
 
         [HttpPost]

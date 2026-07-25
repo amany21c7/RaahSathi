@@ -24,10 +24,28 @@ namespace RaahSathi.Services
             _dbContext = dbContext;
         }
 
+        private static string NormalizeVehicleCategory(string? vehicleType)
+        {
+            if (string.IsNullOrWhiteSpace(vehicleType)) return "Car";
+            string v = vehicleType.Trim().ToLower();
+
+            if (v.Contains("2") || v.Contains("bike") || v.Contains("scooter") || v.Contains("wheeler") || v.Contains("motorcycle") || v.Contains("ev bike"))
+                return "2-Wheeler";
+            if (v.Contains("comm") || v.Contains("auto") || v.Contains("rickshaw") || v.Contains("van") || v.Contains("taxi"))
+                return "Commercial";
+            if (v.Contains("heavy") || v.Contains("truck") || v.Contains("bus") || v.Contains("jcb") || v.Contains("crane") || v.Contains("tractor"))
+                return "Heavy";
+
+            return "Car";
+        }
+
         public async Task<(double baseFee, double visitingCharge)> CalculateVisitingChargeAsync(string vehicleType, double distanceKm)
         {
+            string category = NormalizeVehicleCategory(vehicleType);
+
             var rule = await _dbContext.PricingRules
-                .FirstOrDefaultAsync(r => r.VehicleCategory == vehicleType)
+                .FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower())
+                ?? await _dbContext.PricingRules.FirstOrDefaultAsync(r => r.VehicleCategory.ToLower().Contains(category.ToLower()))
                 ?? await _dbContext.PricingRules.FirstAsync(); // fallback to default
 
             double baseFee = rule.BaseFee;
@@ -74,8 +92,11 @@ namespace RaahSathi.Services
 
         public async Task<double> CalculateTowingChargeAsync(string vehicleType, double distanceKm)
         {
+            string category = NormalizeVehicleCategory(vehicleType);
+
             var rule = await _dbContext.PricingRules
-                .FirstOrDefaultAsync(r => r.VehicleCategory == vehicleType)
+                .FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower())
+                ?? await _dbContext.PricingRules.FirstOrDefaultAsync(r => r.VehicleCategory.ToLower().Contains(category.ToLower()))
                 ?? await _dbContext.PricingRules.FirstAsync(); // fallback
 
             double baseTowing = rule.BaseTowingFee;

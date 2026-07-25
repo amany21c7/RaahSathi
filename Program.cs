@@ -96,9 +96,19 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [Jobs] ADD [ExtraLabourCharge] float NOT NULL DEFAULT 0.0;
                 END;
 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'PartsMrp')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [PartsMrp] float NOT NULL DEFAULT 0.0;
+                END;
+
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'Languages')
                 BEGIN
                     ALTER TABLE [MechanicProfiles] ADD [Languages] nvarchar(200) NOT NULL DEFAULT 'Hindi, English';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'DrivingLicenceUrl')
+                BEGIN
+                    ALTER TABLE [MechanicProfiles] ADD [DrivingLicenceUrl] nvarchar(500) NOT NULL DEFAULT '';
                 END;
 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'WorkingHours')
@@ -214,6 +224,24 @@ using (var scope = app.Services.CreateScope())
                         [MaxServiceCharge] float NOT NULL DEFAULT 3500.0,
                         [IsActive] bit NOT NULL DEFAULT 1
                     );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[AdminWithdrawals]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [AdminWithdrawals] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [Amount] float NOT NULL,
+                        [PayoutMethod] nvarchar(100) NOT NULL DEFAULT 'Bank Transfer',
+                        [ReferenceNumber] nvarchar(100) NOT NULL DEFAULT '',
+                        [WithdrawnAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Payments]') AND name = N'AdminCommissionAmount')
+                BEGIN
+                    ALTER TABLE [Payments] ADD [AdminCommissionAmount] float NOT NULL DEFAULT 0.0;
+                    ALTER TABLE [Payments] ADD [MechanicEarningAmount] float NOT NULL DEFAULT 0.0;
+                    ALTER TABLE [Payments] ADD [CommissionRateUsed] float NOT NULL DEFAULT 0.08;
                 END;
             ");
         }

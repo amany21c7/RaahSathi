@@ -40,9 +40,16 @@
 .bg-primary.bg-opacity-20 {
     background-color: rgba(var(--bs-primary-rgb), 0.2) !important;
 }
-.px-2.5 {
+.px-2\.5 {
     padding-left: 0.625rem !important;
     padding-right: 0.625rem !important;
+}
+.py-2\.5 {
+    padding-top: 0.625rem !important;
+    padding-bottom: 0.625rem !important;
+}
+.p-3\.5 {
+    padding: 0.875rem !important;
 }
 
 /* Premium Luxury Modern Navbar System */
