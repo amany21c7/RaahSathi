@@ -514,16 +514,14 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = $"Requested amount (₹{amount}) exceeds current available commission vault balance (₹{currentVaultBalance:N2})." });
             }
 
-            var withdrawal = new AdminWithdrawal
-            {
-                Amount = amount,
-                PayoutMethod = string.IsNullOrWhiteSpace(payoutMethod) ? "Bank Transfer" : payoutMethod,
-                ReferenceNumber = string.IsNullOrWhiteSpace(referenceNumber) ? "ADM_" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper() : referenceNumber,
-                WithdrawnAt = DateTime.UtcNow
-            };
+            string method = string.IsNullOrWhiteSpace(payoutMethod) ? "Bank Transfer" : payoutMethod;
+            string refNo = string.IsNullOrWhiteSpace(referenceNumber) ? "ADM_" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper() : referenceNumber;
 
-            _dbContext.AdminWithdrawals.Add(withdrawal);
-            await _dbContext.SaveChangesAsync();
+            // Execute Stored Procedure: rs_adminwithdrawals_insert
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                "EXEC dbo.rs_adminwithdrawals_insert @Amount = {0}, @PayoutMethod = {1}, @ReferenceNumber = {2}",
+                amount, method, refNo
+            );
 
             return Json(new { success = true, newVaultBalance = Math.Round(currentVaultBalance - amount, 2), message = $"₹{amount:N2} successfully withdrawn from Admin Commission Vault!" });
         }

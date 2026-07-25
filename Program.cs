@@ -243,6 +243,129 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [Payments] ADD [MechanicEarningAmount] float NOT NULL DEFAULT 0.0;
                     ALTER TABLE [Payments] ADD [CommissionRateUsed] float NOT NULL DEFAULT 0.08;
                 END;
+
+                -- Stored Procedure: rs_payments_process_escrow
+                IF OBJECT_ID(N'[dbo].[rs_payments_process_escrow]', N'P') IS NOT NULL
+                    DROP PROCEDURE [dbo].[rs_payments_process_escrow];
+            ");
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                CREATE PROCEDURE dbo.rs_payments_process_escrow
+                    @JobId INT,
+                    @PaymentId NVARCHAR(100)
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+                    BEGIN TRANSACTION;
+                    BEGIN TRY
+                        DECLARE @FinalBill FLOAT, @CustomerId INT, @MechanicId INT;
+                        DECLARE @VisitingCharge FLOAT, @ServiceMin FLOAT, @BaseEst FLOAT;
+
+                        SELECT @FinalBill = FinalBillAmount, 
+                               @CustomerId = CustomerId, 
+                               @MechanicId = MechanicId,
+                               @VisitingCharge = VisitingCharge,
+                               @ServiceMin = ServiceChargeMin
+                        FROM dbo.Jobs WHERE Id = @JobId;
+
+                        SET @BaseEst = ISNULL(@VisitingCharge, 0) + ISNULL(@ServiceMin, 0);
+                        IF @FinalBill < @BaseEst SET @FinalBill = @BaseEst;
+
+                        DECLARE @CommRate FLOAT = CASE WHEN @FinalBill < 1000 THEN 0.08 ELSE 0.10 END;
+                        DECLARE @AdminCommission FLOAT = ROUND(@FinalBill * @CommRate, 2);
+                        DECLARE @MechanicEarning FLOAT = ROUND(@FinalBill - @AdminCommission, 2);
+
+                        IF EXISTS (SELECT 1 FROM dbo.Payments WHERE JobId = @JobId)
+                        BEGIN
+                            UPDATE dbo.Payments
+                            SET Amount = @FinalBill,
+                                PaymentStatus = N'Released',
+                                RazorpayPaymentId = @PaymentId,
+                                AdminCommissionAmount = @AdminCommission,
+                                MechanicEarningAmount = @MechanicEarning,
+                                CommissionRateUsed = @CommRate
+                            WHERE JobId = @JobId;
+                        END
+                        ELSE
+                        BEGIN
+                            INSERT INTO dbo.Payments (JobId, Amount, PaymentStatus, RazorpayPaymentId, AdminCommissionAmount, MechanicEarningAmount, CommissionRateUsed, CreatedAt)
+                            VALUES (@JobId, @FinalBill, N'Released', @PaymentId, @AdminCommission, @MechanicEarning, @CommRate, GETUTCDATE());
+                        END
+
+                        IF @MechanicId IS NOT NULL
+                        BEGIN
+                            UPDATE dbo.MechanicProfiles
+                            SET CurrentEarnings = CurrentEarnings + @MechanicEarning,
+                                TotalJobs = TotalJobs + 1,
+                                CommissionRate = @CommRate
+                            WHERE UserId = @MechanicId;
+                        END
+
+                        UPDATE dbo.Jobs
+                        SET Status = N'Completed', CompletedAt = GETUTCDATE()
+                        WHERE Id = @JobId;
+
+                        COMMIT TRANSACTION;
+                    END TRY
+                    BEGIN CATCH
+                        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+                        THROW;
+                    END CATCH
+                END;
+            ");
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                IF OBJECT_ID(N'[dbo].[rs_adminwithdrawals_insert]', N'P') IS NOT NULL
+                    DROP PROCEDURE [dbo].[rs_adminwithdrawals_insert];
+            ");
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                CREATE PROCEDURE dbo.rs_adminwithdrawals_insert
+                    @Amount FLOAT,
+                    @PayoutMethod NVARCHAR(100),
+                    @ReferenceNumber NVARCHAR(100)
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+                    BEGIN TRANSACTION;
+                    BEGIN TRY
+                        INSERT INTO dbo.AdminWithdrawals (Amount, PayoutMethod, ReferenceNumber, WithdrawnAt)
+                        VALUES (@Amount, @PayoutMethod, @ReferenceNumber, GETUTCDATE());
+
+                        COMMIT TRANSACTION;
+                    END TRY
+                    BEGIN CATCH
+                        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+                        THROW;
+                    END CATCH
+                END;
+            ");
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                IF OBJECT_ID(N'[dbo].[rs_mechanicprofiles_withdraw_wallet]', N'P') IS NOT NULL
+                    DROP PROCEDURE [dbo].[rs_mechanicprofiles_withdraw_wallet];
+            ");
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                CREATE PROCEDURE dbo.rs_mechanicprofiles_withdraw_wallet
+                    @MechanicUserId INT,
+                    @Amount FLOAT
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+                    BEGIN TRANSACTION;
+                    BEGIN TRY
+                        UPDATE dbo.MechanicProfiles
+                        SET CurrentEarnings = CurrentEarnings - @Amount
+                        WHERE UserId = @MechanicUserId;
+
+                        COMMIT TRANSACTION;
+                    END TRY
+                    BEGIN CATCH
+                        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+                        THROW;
+                    END CATCH
+                END;
             ");
         }
         catch (Exception exSchema)

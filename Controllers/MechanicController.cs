@@ -442,51 +442,23 @@ namespace RaahSathi.Controllers
             var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (mechProfile == null) return Json(new { success = false, message = "Mechanic profile not found." });
 
-            // Calculate current total bill
+            string payId = "pay_qr_" + Guid.NewGuid().ToString().Substring(0, 12);
+
+            // Execute Stored Procedure: rs_payments_process_escrow
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                "EXEC dbo.rs_payments_process_escrow @JobId = {0}, @PaymentId = {1}",
+                job.Id, payId
+            );
+
+            // Refresh updated data for JSON response
+            await _dbContext.Entry(job).ReloadAsync();
+            await _dbContext.Entry(mechProfile).ReloadAsync();
+
             double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
             double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
-            job.FinalBillAmount = totalBill;
-
-            // Tiered Commission: < ₹1,000 => 8%, >= ₹1,000 => 10%
             double commRate = totalBill < 1000 ? 0.08 : 0.10;
             double adminCommission = Math.Round(totalBill * commRate, 2);
             double mechanicNetEarning = Math.Round(totalBill - adminCommission, 2);
-
-            // Record / Update payment
-            var existingPayment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
-            if (existingPayment == null)
-            {
-                existingPayment = new Payment
-                {
-                    JobId = jobId,
-                    Amount = totalBill,
-                    PaymentStatus = "Released",
-                    RazorpayPaymentId = "pay_qr_" + Guid.NewGuid().ToString().Substring(0, 12),
-                    AdminCommissionAmount = adminCommission,
-                    MechanicEarningAmount = mechanicNetEarning,
-                    CommissionRateUsed = commRate,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _dbContext.Payments.Add(existingPayment);
-            }
-            else
-            {
-                existingPayment.Amount = totalBill;
-                existingPayment.PaymentStatus = "Released";
-                existingPayment.AdminCommissionAmount = adminCommission;
-                existingPayment.MechanicEarningAmount = mechanicNetEarning;
-                existingPayment.CommissionRateUsed = commRate;
-            }
-
-            // Save net earnings directly into Mechanic Wallet (CurrentEarnings)
-            mechProfile.CurrentEarnings += mechanicNetEarning;
-            mechProfile.TotalJobs += 1;
-            mechProfile.CommissionRate = commRate;
-
-            job.Status = "Completed";
-            job.CompletedAt = DateTime.UtcNow;
-
-            await _dbContext.SaveChangesAsync();
 
             return Json(new
             {

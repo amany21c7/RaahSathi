@@ -569,41 +569,14 @@ namespace RaahSathi.Controllers
             var job = await _dbContext.Jobs.FindAsync(id);
             if (job == null) return NotFound();
 
-            // Set job to Completed and record payment details
-            job.Status = "Completed";
-            job.CompletedAt = DateTime.UtcNow;
+            string payId = string.IsNullOrEmpty(paymentId) ? "pay_" + Guid.NewGuid().ToString().Substring(0, 14) : paymentId;
 
-            // Calculate 2-Phase Tiered Commission (Under ₹1000 => 8%, ₹1000+ => 10%)
-            double commRate = job.FinalBillAmount < 1000 ? 0.08 : 0.10;
-            double adminCommission = Math.Round(job.FinalBillAmount * commRate, 2);
-            double mechanicNetEarning = Math.Round(job.FinalBillAmount - adminCommission, 2);
+            // Execute Stored Procedure: rs_payments_process_escrow
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                "EXEC dbo.rs_payments_process_escrow @JobId = {0}, @PaymentId = {1}",
+                job.Id, payId
+            );
 
-            var payment = new Payment
-            {
-                JobId = job.Id,
-                Amount = job.FinalBillAmount,
-                PaymentStatus = "Released", // Auto-released escrow to wallet & admin vault
-                RazorpayPaymentId = string.IsNullOrEmpty(paymentId) ? "pay_" + Guid.NewGuid().ToString().Substring(0, 14) : paymentId,
-                AdminCommissionAmount = adminCommission,
-                MechanicEarningAmount = mechanicNetEarning,
-                CommissionRateUsed = commRate
-            };
-
-            _dbContext.Payments.Add(payment);
-
-            // Credit mechanic net earnings (92% or 90%) into mechanic wallet
-            if (job.MechanicId.HasValue)
-            {
-                var mechProfile = await _dbContext.MechanicProfiles.FindAsync(job.MechanicId.Value);
-                if (mechProfile != null)
-                {
-                    mechProfile.CurrentEarnings += mechanicNetEarning;
-                    mechProfile.TotalJobs += 1;
-                    mechProfile.CommissionRate = commRate;
-                }
-            }
-
-            await _dbContext.SaveChangesAsync();
             return Json(new { success = true });
         }
 
