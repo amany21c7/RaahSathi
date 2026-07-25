@@ -965,39 +965,13 @@
                     $('#mechanicRankedList').html(html);
                 }, 1200);
 
-                // Phase 1 (0-20 sec): Top 5 Verified Mechanics
-                setTimeout(function() {
-                    log("Broadcasting request to Top 5 verified mechanics in area...", "text-warning");
-                    $('#searchAlertText').text("Request sent to Top 5 verified mechanics. Whichever mechanic accepts first will be assigned...");
-                }, 1200);
+                log("Broadcasting request to nearby verified mechanics in area...", "text-warning");
+                $('#searchAlertText').text("Request sent to nearby verified mechanics. Awaiting mechanic acceptance...");
 
-                // Phase 2 (15-30 sec): Nearby Workshops & Additional Mechanics
-                setTimeout(function() {
-                    log("Expanding search to nearby workshops & additional mechanics...", "text-info");
-                    $('#searchAlertText').text("We're expanding the search to nearby service partners to get you help as quickly as possible.");
-                }, 15000);
-
-                // Phase 3 (30-60 sec): Highway Partners & Regional Towing Network
-                setTimeout(function() {
-                    log("Broadcasting to regional highway partners & towing network...", "text-info");
-                    $('#searchAlertText').text("Connecting with regional highway partners, towing network & nearby town workshops...");
-                }, 30000);
-
-                var chosen = data[0]; // Top matched mechanic (or 5-star preferred)
                 setTimeout(function() {
                     clearTimeout(searchTimeoutTimer);
-                    log("Mechanic '" + chosen.name + "' accepted the dispatch request!", "text-success");
-                    
-                    $('#dispatchMainTitle').html('<i class="fa-solid fa-circle-check text-success me-2"></i> Mechanic Found!');
-                    $('#dispatchSubTitle').text(chosen.name + " (" + chosen.rating + " ★) is arriving in " + Math.round(chosen.etaMinutes) + " minutes.");
-                    $('#liveEtaHeaderBadge').removeClass('bg-warning').addClass('bg-success text-white').text("Arriving in " + Math.round(chosen.etaMinutes) + " Mins");
-                }, 3800);
-
-                setTimeout(function() {
-                    $.post('/Customer/SimulateAcceptJob', { jobId: jobId, mechanicId: chosen.id }, function(res) {
-                        window.location.href = '/Customer/Tracker?id=' + jobId;
-                    });
-                }, 5200);
+                    window.location.href = '/Customer/Tracker?id=' + jobId;
+                }, 2200);
             });
         }
     });

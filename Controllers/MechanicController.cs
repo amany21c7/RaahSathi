@@ -580,6 +580,30 @@ namespace RaahSathi.Controllers
             return Json(new { success = true });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetActiveJobState(int jobId)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated" });
+
+            var job = await _dbContext.Jobs.FindAsync(jobId);
+            if (job == null || job.MechanicId != user.Id) return Json(new { success = false, message = "Job not found" });
+
+            return Json(new
+            {
+                success = true,
+                jobId = job.Id,
+                status = job.Status,
+                customEstimateAmount = job.CustomEstimateAmount,
+                customEstimateDetails = job.CustomEstimateDetails,
+                customEstimateApproved = job.CustomEstimateApproved,
+                partsEstimateAmount = job.PartsEstimateAmount,
+                partsApproved = job.PartsApproved,
+                towingApproved = job.TowingApproved,
+                finalBillAmount = job.FinalBillAmount
+            });
+        }
+
         [HttpPost]
         public async Task<IActionResult> SubmitPartsEstimate(int jobId, double amount, string details)
         {

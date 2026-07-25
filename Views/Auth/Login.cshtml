@@ -33,13 +33,13 @@
                     <label class="form-label text-muted small">10-Digit Mobile Number</label>
                     <div class="input-group">
                         <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
-                        <input type="tel" class="form-control glass-input text-white" id="loginPhone" placeholder="Enter Mobile Number" maxlength="10">
+                        <input type="tel" class="form-control glass-input text-white" id="loginPhone" placeholder="Enter Mobile Number" maxlength="10" autocomplete="off" value="">
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="form-label text-muted small">Password</label>
-                    <input type="password" class="form-control glass-input text-white" id="loginPassword" placeholder="••••••••">
+                    <input type="password" class="form-control glass-input text-white" id="loginPassword" placeholder="••••••••" autocomplete="new-password" value="">
                 </div>
 
                 <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3" id="btnLoginSubmit">
@@ -321,6 +321,23 @@
 @section Scripts {
 <script>
 $(document).ready(function() {
+    // Clear all credentials inputs on load to ensure clean fresh state after logout
+    function clearLoginInputs() {
+        $('#loginPhone').val('');
+        $('#loginPassword').val('');
+        $('#adminPhoneInput').val('');
+        $('#adminPasswordInput').val('');
+        $('#registerPhone').val('');
+        $('#registerName').val('');
+        $('#registerNewPassword').val('');
+        $('#registerConfirmPassword').val('');
+        $('#forgotPhoneNum').val('');
+    }
+
+    clearLoginInputs();
+    setTimeout(clearLoginInputs, 150);
+    setTimeout(clearLoginInputs, 500);
+
     // Sync initial targetRole on load
     var initialRole = "@targetRole" || "Customer";
     if (initialRole !== "Admin") {
@@ -337,6 +354,7 @@ $(document).ready(function() {
             $('input[name="registerRole"][value="' + val + '"]').prop('checked', true);
             $('input[name="forgotRole"][value="' + val + '"]').prop('checked', true);
         }
+        clearLoginInputs();
     });
 
     // Open Only for Admin Modal Popup

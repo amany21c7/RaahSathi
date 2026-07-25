@@ -191,6 +191,9 @@
                     <i class="fa-solid fa-comments me-1.5"></i> 💬 Chat
                 </button>
             </div>
+            <button type="button" class="btn btn-outline-info font-weight-bold w-100 py-2.5 shadow-sm" onclick="showCustomerInvoiceModal(@job.Id)">
+                <i class="fa-solid fa-receipt me-2"></i> View Itemized Tax Invoice / Receipt
+            </button>
         </div>
 
         <!-- SOS & Safety Center -->
@@ -271,6 +274,7 @@
             </div>
 
             <button class="btn btn-premium-primary w-100 py-3" onclick="openRazorpayMock()"><i class="fa-solid fa-lock me-1"></i> Pay Now (Escrow Release)</button>
+            <button type="button" class="btn btn-outline-info w-100 mt-2 py-2.5 font-weight-bold" onclick="showCustomerInvoiceModal(@job.Id)"><i class="fa-solid fa-receipt me-2"></i> View Itemized Tax Invoice / Receipt</button>
             <button class="btn btn-premium-danger w-100 mt-2" onclick="fileDispute()"><i class="fa-solid fa-triangle-exclamation"></i> Raise Dispute / Report Fraud</button>
         </div>
 

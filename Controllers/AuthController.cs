@@ -323,7 +323,7 @@ namespace RaahSathi.Controllers
                 Response.Cookies.Delete("RaahSathiUserId");
                 Response.Cookies.Delete("RaahSathiUserName");
             }
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Login", "Auth");
         }
     }
 }
