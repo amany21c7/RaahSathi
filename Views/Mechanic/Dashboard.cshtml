@@ -930,26 +930,74 @@
     let dispatchCountdownTimer = null;
     let dispatchSecondsLeft = 15;
     let currentDispatchJobId = null;
-    let sirenAudioCtx = null;
 
-    // Play siren alert chime sound
+    // Heavy Emergency Dispatch Siren Ringtone Generator
+    let sirenAudioCtx = null;
+    let sirenRepeatInterval = null;
+
+    function stopSirenAlert() {
+        if (sirenRepeatInterval) {
+            clearInterval(sirenRepeatInterval);
+            sirenRepeatInterval = null;
+        }
+    }
+
     function playSirenAlert() {
-        try {
-            if (!sirenAudioCtx) {
-                sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            let osc = sirenAudioCtx.createOscillator();
-            let gain = sirenAudioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(800, sirenAudioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1200, sirenAudioCtx.currentTime + 0.3);
-            gain.gain.setValueAtTime(0.3, sirenAudioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, sirenAudioCtx.currentTime + 0.3);
-            osc.connect(gain);
-            gain.connect(sirenAudioCtx.destination);
-            osc.start();
-            osc.stop(sirenAudioCtx.currentTime + 0.3);
-        } catch(e) {}
+        stopSirenAlert();
+        
+        function triggerSirenBurst() {
+            try {
+                if (!sirenAudioCtx) {
+                    sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (sirenAudioCtx.state === 'suspended') {
+                    sirenAudioCtx.resume();
+                }
+
+                let now = sirenAudioCtx.currentTime;
+
+                // 3-Pulse Heavy Emergency Dispatch Siren (Dual-Tone Wail + Sub Bass)
+                for (let i = 0; i < 3; i++) {
+                    let startTime = now + (i * 0.75);
+
+                    // High Sawtooth Lead Siren (600Hz -> 1350Hz -> 650Hz)
+                    let osc1 = sirenAudioCtx.createOscillator();
+                    let gain1 = sirenAudioCtx.createGain();
+                    osc1.type = 'sawtooth';
+                    osc1.frequency.setValueAtTime(600, startTime);
+                    osc1.frequency.linearRampToValueAtTime(1350, startTime + 0.35);
+                    osc1.frequency.linearRampToValueAtTime(650, startTime + 0.7);
+
+                    gain1.gain.setValueAtTime(0.5, startTime);
+                    gain1.gain.exponentialRampToValueAtTime(0.01, startTime + 0.72);
+
+                    osc1.connect(gain1);
+                    gain1.connect(sirenAudioCtx.destination);
+                    osc1.start(startTime);
+                    osc1.stop(startTime + 0.72);
+
+                    // Heavy Low Square Bass Harmonic (280Hz -> 650Hz -> 300Hz)
+                    let osc2 = sirenAudioCtx.createOscillator();
+                    let gain2 = sirenAudioCtx.createGain();
+                    osc2.type = 'square';
+                    osc2.frequency.setValueAtTime(280, startTime);
+                    osc2.frequency.linearRampToValueAtTime(650, startTime + 0.35);
+                    osc2.frequency.linearRampToValueAtTime(300, startTime + 0.7);
+
+                    gain2.gain.setValueAtTime(0.3, startTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, startTime + 0.72);
+
+                    osc2.connect(gain2);
+                    gain2.connect(sirenAudioCtx.destination);
+                    osc2.start(startTime);
+                    osc2.stop(startTime + 0.72);
+                }
+            } catch(e) {}
+        }
+
+        triggerSirenBurst();
+        // Repeat siren wail every 3.2s while dispatch alert is active
+        sirenRepeatInterval = setInterval(triggerSirenBurst, 3200);
     }
 
     // Dynamic Tab Navigation
@@ -1024,6 +1072,7 @@
     }
 
     function acceptPing(jobId) {
+        stopSirenAlert();
         if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
         $.post('/Mechanic/AcceptJob', { jobId: jobId }, function(res) {
             if (res.success) {
@@ -1035,6 +1084,7 @@
     }
 
     function declinePing(jobId) {
+        stopSirenAlert();
         if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
         $.post('/Mechanic/DeclineJob', { jobId: jobId }, function() {
             currentDispatchJobId = null;
@@ -1068,12 +1118,19 @@
         }
     });
 
-    // Step Status Advances
+    // Step Status Advances with Payment Validation
     function advanceStatus(nextStatus) {
         var activeJobId = "@(activeJob?.Id ?? 0)";
         if (activeJobId > 0) {
             $.post('/Mechanic/AdvanceJobStatus', { jobId: activeJobId, newStatus: nextStatus }, function(res) {
-                if (res.success) location.reload();
+                if (res && res.success) {
+                    location.reload();
+                } else if (res && res.requiresPayment) {
+                    alert(res.message);
+                    openPaymentQrModal(activeJobId);
+                } else if (res) {
+                    alert(res.message || 'Could not update status.');
+                }
             });
         }
     }

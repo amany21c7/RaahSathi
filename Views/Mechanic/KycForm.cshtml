@@ -501,5 +501,16 @@
             stopWebcam();
         }
     });
+    // Live KYC Approval Polling
+    var currentKycStatus = "@ViewBag.KycStatus";
+    if (currentKycStatus === "Pending" || currentKycStatus === "Incomplete") {
+        setInterval(function() {
+            $.get('/Mechanic/GetKycStatus', function(res) {
+                if (res && res.success && res.isApproved) {
+                    window.location.href = '/Mechanic/Dashboard';
+                }
+            });
+        }, 3000);
+    }
 </script>
 }

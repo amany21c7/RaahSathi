@@ -152,12 +152,31 @@ namespace RaahSathi.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> GetKycStatus()
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated" });
+
+            var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
+            return Json(new { 
+                success = true, 
+                kycStatus = profile?.KycStatus ?? "Incomplete",
+                isApproved = profile?.KycStatus == "Approved"
+            });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> KycForm()
         {
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return RedirectToAction("Login", "Auth");
 
             var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
+
+            if (profile != null && profile.KycStatus == "Approved")
+            {
+                return RedirectToAction("Dashboard");
+            }
 
             ViewBag.UserName = user.Name;
             ViewBag.UserPhone = user.PhoneNumber;
@@ -529,11 +548,33 @@ namespace RaahSathi.Controllers
         [HttpPost]
         public async Task<IActionResult> AdvanceJobStatus(int jobId, string newStatus)
         {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated." });
+
             var job = await _dbContext.Jobs.FindAsync(jobId);
-            if (job == null) return NotFound();
+            if (job == null) return Json(new { success = false, message = "Job not found." });
+
+            if (newStatus.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+            {
+                // Strict Validation: Verify if payment has been collected and processed in Payments table
+                var payment = await _dbContext.Payments
+                    .FirstOrDefaultAsync(p => p.JobId == jobId && (p.PaymentStatus == "Released" || p.PaymentStatus == "Paid" || p.PaymentStatus == "Completed" || p.PaymentStatus == "Captured"));
+
+                if (payment == null)
+                {
+                    return Json(new { 
+                        success = false, 
+                        requiresPayment = true,
+                        message = "⚠️ Payment Pending! Job cannot be marked as Completed until customer payment is collected. Please click 'Collect Payment' to generate QR Code or confirm payment." 
+                    });
+                }
+
+                job.CompletedAt = DateTime.UtcNow;
+            }
 
             job.Status = newStatus;
             await _dbContext.SaveChangesAsync();
+
             return Json(new { success = true });
         }
 
