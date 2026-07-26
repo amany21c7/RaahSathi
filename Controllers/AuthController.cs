@@ -35,6 +35,7 @@ namespace RaahSathi.Controllers
             else if (user.Role == "Admin")
             {
                 Response.Cookies.Append("RaahSathiAdminUserId", user.Id.ToString(), options);
+                Response.Cookies.Append("RaahSathiAdminRole", string.IsNullOrWhiteSpace(user.AdminRole) ? "Super Admin" : user.AdminRole, options);
             }
         }
 

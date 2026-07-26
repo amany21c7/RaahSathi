@@ -23,6 +23,20 @@
 .text-white { color: #ffffff !important; }
 .text-warning { color: var(--primary) !important; }
 
+/* Signature Dual-Color RaahSathi Brand Styling */
+.raahsathi-brand, .brand-raahsathi {
+    display: inline-block;
+    white-space: nowrap;
+}
+.raahsathi-brand .raah, .brand-raahsathi .raah {
+    color: #ff6b00 !important;
+    font-weight: inherit;
+}
+.raahsathi-brand .sathi, .brand-raahsathi .sathi {
+    color: inherit;
+    font-weight: inherit;
+}
+
 /* Opacity and spacing utility fixes */
 .bg-opacity-20 {
     --bs-bg-opacity: 0.2 !important;
