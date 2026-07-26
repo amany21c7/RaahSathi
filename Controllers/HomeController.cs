@@ -151,6 +151,24 @@ namespace RaahSathi.Controllers
             return View();
         }
 
+        public IActionResult Terms()
+        {
+            ViewData["Title"] = "Terms & Conditions - RaahSathi Platform Rules";
+            return View();
+        }
+
+        public IActionResult RefundPolicy()
+        {
+            ViewData["Title"] = "Refund & Escrow Guarantee Policy - RaahSathi";
+            return View();
+        }
+
+        public IActionResult CancellationPolicy()
+        {
+            ViewData["Title"] = "Cancellation & ETA Service Level Policy - RaahSathi";
+            return View();
+        }
+
         public IActionResult Faq()
         {
             ViewData["Title"] = "Frequently Asked Questions (FAQs) - RaahSathi";

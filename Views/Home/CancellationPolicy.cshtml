@@ -1,0 +1,76 @@
+@{
+    ViewData["Title"] = "Cancellation & Service Level Policy";
+}
+
+<div class="container py-4 py-md-5">
+    <!-- Header Section -->
+    <div class="text-center mb-5">
+        <span class="badge bg-danger text-white px-3 py-2 font-weight-bold mb-3 rounded-pill" style="font-size: 0.85rem; letter-spacing: 1px;">
+            <i class="fa-solid fa-ban me-1"></i> SERVICE LEVEL &amp; CANCELLATIONS
+        </span>
+        <h1 class="display-4 font-weight-bold text-white mb-3" style="font-family: 'Outfit', sans-serif;">
+            Cancellation &amp; Service Level Policy
+        </h1>
+        <p class="lead text-muted max-w-700 mx-auto" style="font-size: 1.15rem; line-height: 1.6;">
+            Understand booking cancellation terms, ETA guarantees, and fair usage guidelines for customers and mechanics.
+        </p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="glass-card p-4 p-md-5 border border-secondary border-opacity-30">
+                <div class="mb-4 pb-3 border-bottom border-secondary border-opacity-30 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Effective Date: July 2026 | SLA Standard v1.8</span>
+                    <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30">Fair Usage Protocol</span>
+                </div>
+
+                <!-- Section 1 -->
+                <div class="mb-5">
+                    <h4 class="text-warning font-weight-bold mb-3">1. Customer Cancellation Rules</h4>
+                    <p class="text-muted" style="line-height: 1.8;">
+                        We understand roadside plans change or another solution may be found. Customers can cancel requests at any time via the Customer Dashboard:
+                    </p>
+                    <ul class="text-muted" style="line-height: 1.8;">
+                        <li><strong>Free Cancellation (Within 5 Mins):</strong> 100% free cancellation if requested within 5 minutes of booking creation or before mechanic dispatches.</li>
+                        <li><strong>Post-Dispatch Cancellation:</strong> If cancelled after the mechanic has travelled more than 3 km, a minor visiting fee allowance (₹50-₹99) is deducted to cover mechanic travel fuel costs.</li>
+                        <li><strong>On-Site Cancellation:</strong> If cancelled after the mechanic arrives at the location, visiting base fee is payable.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 2 -->
+                <div class="mb-5">
+                    <h4 class="text-warning font-weight-bold mb-3">2. Mechanic Cancellation &amp; Non-Performance Policy</h4>
+                    <p class="text-muted" style="line-height: 1.8;">
+                        Patrol mechanics are strictly monitored for dispatch compliance. If a mechanic cancels an accepted job without valid cause or fails to move toward the breakdown spot:
+                    </p>
+                    <ul class="text-muted" style="line-height: 1.8;">
+                        <li>The system automatically re-dispatches the <strong>next closest available mechanic</strong> immediately.</li>
+                        <li>The customer receives 100% refund of any authorized Escrow funds.</li>
+                        <li>The defaulting mechanic is penalized on their reliability score and subject to temporary account suspension.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 3 -->
+                <div class="mb-5">
+                    <h4 class="text-warning font-weight-bold mb-3">3. ETA Guarantee &amp; Weather/Traffic Exceptions</h4>
+                    <p class="text-muted" style="line-height: 1.8;">
+                        Our dispatch engine provides real-time ETA estimates. While we aim for under 25-minute arrival across cities, delays due to severe highway congestion, extreme weather conditions, or road blockages will be communicated via live SMS updates.
+                    </p>
+                </div>
+
+                <!-- Section 4 -->
+                <div class="mb-4">
+                    <h4 class="text-warning font-weight-bold mb-3">4. How to Cancel a Request</h4>
+                    <p class="text-muted" style="line-height: 1.8;">
+                        To cancel an active request, go to <strong>Track Booking</strong> on your Customer Dashboard and click <span class="badge bg-danger text-white">Cancel Assistance Request</span>, or call our 24×7 Emergency Control Desk at <strong>1800-102-7224</strong>.
+                    </p>
+                </div>
+
+                <div class="pt-4 border-top border-secondary border-opacity-30 text-center">
+                    <a href="/Customer/Dashboard" class="btn btn-warning text-dark font-weight-bold px-4 py-2 me-2"><i class="fa-solid fa-map-location-dot me-2"></i> View Active Bookings</a>
+                    <a href="/Home/RefundPolicy" class="btn btn-outline-light px-4 py-2"><i class="fa-solid fa-rotate-left me-2"></i> Refund Policy</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
