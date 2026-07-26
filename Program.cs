@@ -15,6 +15,8 @@ builder.Services.AddScoped<IPricingEngine, PricingEngine>();
 builder.Services.AddScoped<IDispatchEngine, DispatchEngine>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IPricingRepository, PricingRepository>();
+builder.Services.AddScoped<IPricingService, PricingService>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();

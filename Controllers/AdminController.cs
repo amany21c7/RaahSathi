@@ -12,10 +12,12 @@ namespace RaahSathi.Controllers
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _dbContext;
+        private readonly Services.IPricingService _pricingService;
 
-        public AdminController(ApplicationDbContext dbContext)
+        public AdminController(ApplicationDbContext dbContext, Services.IPricingService pricingService)
         {
             _dbContext = dbContext;
+            _pricingService = pricingService;
         }
 
         private bool IsAdmin()
@@ -349,46 +351,33 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            if (string.IsNullOrWhiteSpace(problemName))
+            bool success = await _pricingService.AddNewProblemPriceRateAsync(problemName, vehicleCategory, minServiceCharge, maxServiceCharge);
+            if (!success)
             {
-                TempData["Error"] = "Please enter a valid problem name.";
-                return RedirectToAction("ManagePricing");
+                TempData["Error"] = "Please enter valid problem pricing details.";
+                return RedirectToAction("Pricing");
             }
 
-            var item = new ProblemTypePricing
-            {
-                ProblemName = problemName.Trim(),
-                VehicleCategory = string.IsNullOrWhiteSpace(vehicleCategory) ? "Car" : vehicleCategory,
-                MinServiceCharge = minServiceCharge,
-                MaxServiceCharge = maxServiceCharge,
-                IsActive = true
-            };
-
-            _dbContext.ProblemTypePricings.Add(item);
-            await _dbContext.SaveChangesAsync();
-
+            await LogAdminActionAsync("ADD_PROBLEM_PRICE", $"Added Problem '{problemName}' ({vehicleCategory}) -> Min: ₹{minServiceCharge}, Max: ₹{maxServiceCharge}");
             TempData["Success"] = $"Vehicle Problem Type '{problemName}' added successfully.";
-            return RedirectToAction("ManagePricing");
+            return RedirectToAction("Pricing");
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateProblemType(int id, string problemName, string vehicleCategory, double minServiceCharge, double maxServiceCharge)
+        public async Task<IActionResult> UpdateProblemTypePrice(int id, string problemName, string vehicleCategory, double minServiceCharge, double maxServiceCharge)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            var item = await _dbContext.ProblemTypePricings.FindAsync(id);
-            if (item != null)
+            bool success = await _pricingService.UpdateProblemPriceRateAsync(id, problemName, vehicleCategory, minServiceCharge, maxServiceCharge);
+            if (!success)
             {
-                if (!string.IsNullOrWhiteSpace(problemName)) item.ProblemName = problemName.Trim();
-                if (!string.IsNullOrWhiteSpace(vehicleCategory)) item.VehicleCategory = vehicleCategory;
-                item.MinServiceCharge = minServiceCharge;
-                item.MaxServiceCharge = maxServiceCharge;
-
-                await _dbContext.SaveChangesAsync();
-                TempData["Success"] = $"Price range updated for '{item.ProblemName}'.";
+                TempData["Error"] = "Invalid input values or problem rate not found.";
+                return RedirectToAction("Pricing");
             }
 
-            return RedirectToAction("ManagePricing");
+            await LogAdminActionAsync("UPDATE_PROBLEM_PRICE", $"Updated Problem '{problemName}' ({vehicleCategory}) -> Min: ₹{minServiceCharge}, Max: ₹{maxServiceCharge}");
+            TempData["Success"] = $"Price rate for '{problemName}' updated successfully!";
+            return RedirectToAction("Pricing");
         }
 
         [HttpPost]
@@ -396,15 +385,14 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            var item = await _dbContext.ProblemTypePricings.FindAsync(id);
-            if (item != null)
+            bool success = await _pricingService.DeleteProblemPriceRateAsync(id);
+            if (success)
             {
-                _dbContext.ProblemTypePricings.Remove(item);
-                await _dbContext.SaveChangesAsync();
+                await LogAdminActionAsync("DELETE_PROBLEM_PRICE", $"Deleted Problem Rate ID {id}");
                 TempData["Success"] = "Problem Type deleted successfully.";
             }
 
-            return RedirectToAction("ManagePricing");
+            return RedirectToAction("Pricing");
         }
 
         public async Task<IActionResult> Messages(string? statusFilter)
@@ -670,8 +658,8 @@ namespace RaahSathi.Controllers
         public async Task<IActionResult> Pricing()
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
-            ViewBag.PricingRules = await _dbContext.PricingRules.ToListAsync();
-            ViewBag.ProblemTypes = await _dbContext.ProblemTypePricings.OrderBy(p => p.VehicleCategory).ThenBy(p => p.ProblemName).ToListAsync();
+            ViewBag.PricingRules = await _pricingService.GetAllBaseCategoryPricingRulesAsync();
+            ViewBag.ProblemTypes = await _pricingService.GetAllActiveProblemPricesAsync();
             ViewBag.Cities = await _dbContext.CityServiceAreas.ToListAsync();
 
             return View();
@@ -1052,6 +1040,19 @@ namespace RaahSathi.Controllers
                 .ToListAsync();
 
             return Json(new { success = true, category, title, type = "Job", items = jobs });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePricingRule(int ruleId, double baseFee, double perKmRate)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized access." });
+
+            bool success = await _pricingService.UpdateCategoryBaseRatesAsync(ruleId, baseFee, perKmRate);
+            if (!success) return Json(new { success = false, message = "Invalid pricing rule values." });
+
+            await LogAdminActionAsync("UPDATE_BASE_PRICING", $"Updated Rule ID {ruleId} -> Base: ₹{baseFee}, PerKM: ₹{perKmRate}");
+            TempData["Success"] = "Base pricing rates updated successfully!";
+            return RedirectToAction("Pricing");
         }
     }
 }

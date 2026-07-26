@@ -183,21 +183,30 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, answer = "Please type a valid query." });
             }
 
-            // Fetch live PricingRules from Database dynamically so Admin Console updates reflect immediately
+            // Fetch live PricingRules & ProblemTypePricings from Database dynamically so Admin Console updates reflect immediately
             List<PricingRule> rules;
+            List<ProblemTypePricing> problemTypesList;
             try
             {
                 rules = await _dbContext.PricingRules.ToListAsync();
+                problemTypesList = await _dbContext.ProblemTypePricings.Where(p => p.IsActive).ToListAsync();
             }
             catch
             {
                 rules = new List<PricingRule>();
+                problemTypesList = new List<ProblemTypePricing>();
             }
 
             var carRule = rules.FirstOrDefault(r => r.VehicleCategory == "Car") ?? new PricingRule { BaseFee = 99, PerKmRate = 8 };
             var bikeRule = rules.FirstOrDefault(r => r.VehicleCategory == "2-Wheeler") ?? new PricingRule { BaseFee = 49, PerKmRate = 5 };
             var commRule = rules.FirstOrDefault(r => r.VehicleCategory == "Commercial") ?? new PricingRule { BaseFee = 199, PerKmRate = 12 };
             var heavyRule = rules.FirstOrDefault(r => r.VehicleCategory == "Heavy") ?? new PricingRule { BaseFee = 299, PerKmRate = 15 };
+
+            string problemPricesSummary = string.Join("; ", problemTypesList.Select(pt => $"{pt.ProblemName} ({pt.VehicleCategory}): ₹{pt.MinServiceCharge}-₹{pt.MaxServiceCharge}"));
+            if (string.IsNullOrWhiteSpace(problemPricesSummary))
+            {
+                problemPricesSummary = "Battery ₹150-3500, Tyre ₹200-800, Fuel Delivery ₹250+, Lockout ₹200-600, Brake/Clutch ₹200-1000";
+            }
 
             string apiKey = _configuration["GroqApiKey"] ?? Environment.GetEnvironmentVariable("GROQ_API_KEY") ?? "";
 
@@ -211,7 +220,7 @@ RaahSathi Services & Information (Updated Live from Database):
     - 2-Wheeler/Auto: Base ₹{bikeRule.BaseFee} + ₹{bikeRule.PerKmRate}/km
     - Commercial Truck/Pickup: Base ₹{commRule.BaseFee} + ₹{commRule.PerKmRate}/km
     - Heavy JCB/Crane: Base ₹{heavyRule.BaseFee} + ₹{heavyRule.PerKmRate}/km
-  * Layer 2 (Service Fix Fee): Standard repair fix range (e.g. Battery ₹150-3500, Tyre ₹200-800, Fuel ₹250+fuel, Towing ₹300-1500, Engine Check ₹180-1200).
+  * Layer 2 (Service Fix Fee Overrides): {problemPricesSummary}.
 - Zero Verbal Negotiation & Escrow Lock Security.
 - 100% KYC Verified Mechanics with live GPS tracking on driver map.
 Answer queries concisely, politely, and accurately in English or Hinglish.";
