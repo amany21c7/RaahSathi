@@ -86,6 +86,8 @@ namespace RaahSathi.Controllers
             ViewBag.PricingRules = pricingRules;
             ViewBag.Disputes = disputes;
             ViewBag.CityAreas = await _dbContext.CityServiceAreas.ToListAsync();
+            var emergencySetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "EmergencyMode");
+            ViewBag.IsGlobalEmergency = emergencySetting?.SettingValue?.Equals("ON", StringComparison.OrdinalIgnoreCase) == true || emergencySetting?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
 
             return View();
         }
@@ -542,27 +544,104 @@ namespace RaahSathi.Controllers
             catch { }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> ToggleEmergencyMode(bool enable, string? reason)
+        [HttpGet]
+        public async Task<IActionResult> GetCityEmergencyStatuses()
         {
             if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
 
-            var setting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "EmergencyMode");
-            if (setting == null)
+            var globalSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "EmergencyMode");
+            bool isGlobalEmergency = globalSetting?.SettingValue?.Equals("ON", StringComparison.OrdinalIgnoreCase) == true || globalSetting?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+
+            var cities = await _dbContext.CityServiceAreas
+                .Select(c => new { 
+                    c.Id, 
+                    c.CityName, 
+                    c.AreaName, 
+                    c.State, 
+                    c.ServiceRadiusKm, 
+                    c.IsEmergencyMode, 
+                    c.EmergencyReason 
+                })
+                .ToListAsync();
+
+            return Json(new { success = true, isGlobalEmergency, cities });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleCityEmergencyMode(string cityName, bool enable, string? weatherReason)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
+
+            string reasonText = string.IsNullOrWhiteSpace(weatherReason) ? "Heavy Rain & Storm 🌧️" : weatherReason.Trim();
+
+            if (string.IsNullOrWhiteSpace(cityName) || cityName.Equals("All Cities", StringComparison.OrdinalIgnoreCase))
             {
-                setting = new AdminSystemSetting { SettingKey = "EmergencyMode", SettingValue = enable ? "ON" : "OFF", Category = "Emergency", Description = reason ?? "Surge dispatch mode" };
-                _dbContext.AdminSystemSettings.Add(setting);
+                var globalSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "EmergencyMode");
+                if (globalSetting == null)
+                {
+                    globalSetting = new AdminSystemSetting { SettingKey = "EmergencyMode", SettingValue = enable ? "ON" : "OFF", Category = "Emergency", Description = reasonText };
+                    _dbContext.AdminSystemSettings.Add(globalSetting);
+                }
+                else
+                {
+                    globalSetting.SettingValue = enable ? "ON" : "OFF";
+                    globalSetting.Description = reasonText;
+                }
+
+                var allCities = await _dbContext.CityServiceAreas.ToListAsync();
+                foreach (var c in allCities)
+                {
+                    c.IsEmergencyMode = enable;
+                    c.EmergencyReason = reasonText;
+                }
+
+                await _dbContext.SaveChangesAsync();
+                await LogAdminActionAsync("EMERGENCY_MODE_ALL", $"All Cities Emergency Mode set to {(enable ? "ON (+12%)" : "OFF")}. Reason: {reasonText}");
+
+                return Json(new { success = true, isEmergency = enable, cityName = "All Cities", message = $"Emergency Surge Mode is now {(enable ? "ACTIVE (+12%) 🚨" : "OFF 🟢")} for ALL Cities!" });
             }
             else
             {
-                setting.SettingValue = enable ? "ON" : "OFF";
-                setting.Description = reason ?? "Emergency mode updated";
+                // When toggling a specific city, reset global emergency setting if it was ON
+                var globalSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "EmergencyMode");
+                if (globalSetting != null && globalSetting.SettingValue == "ON")
+                {
+                    globalSetting.SettingValue = "OFF";
+                }
+
+                string cleanTarget = cityName.Trim().ToLower();
+                var cityAreas = await _dbContext.CityServiceAreas
+                    .Where(c => c.CityName.ToLower() == cleanTarget || c.CityName.ToLower().Contains(cleanTarget) || cleanTarget.Contains(c.CityName.ToLower()))
+                    .ToListAsync();
+
+                if (cityAreas.Count == 0)
+                {
+                    var allCities = await _dbContext.CityServiceAreas.ToListAsync();
+                    cityAreas = allCities.Where(c => c.CityName.Trim().Equals(cleanTarget, StringComparison.OrdinalIgnoreCase) || c.CityName.ToLower().Contains(cleanTarget) || cleanTarget.Contains(c.CityName.ToLower())).ToList();
+                }
+
+                if (cityAreas.Count == 0)
+                {
+                    return Json(new { success = false, message = $"City '{cityName}' not found in database." });
+                }
+
+                foreach (var c in cityAreas)
+                {
+                    c.IsEmergencyMode = enable;
+                    c.EmergencyReason = reasonText;
+                }
+
+                await _dbContext.SaveChangesAsync();
+                await LogAdminActionAsync("EMERGENCY_MODE_CITY", $"Emergency Mode for {cityName} set to {(enable ? "ON (+12%)" : "OFF")}. Reason: {reasonText}");
+
+                return Json(new { success = true, isEmergency = enable, cityName = cityName, message = $"Emergency Surge (+12%) for {cityName} is now {(enable ? "ACTIVE 🚨" : "OFF 🟢")}" });
             }
+        }
 
-            await _dbContext.SaveChangesAsync();
-            await LogAdminActionAsync("EMERGENCY_MODE", $"Emergency Mode set to {(enable ? "ON" : "OFF")}. Reason: {reason ?? "N/A"}");
-
-            return Json(new { success = true, isEmergency = enable, message = $"Emergency Mode is now {(enable ? "ACTIVE 🚨" : "OFF 🟢")}" });
+        [HttpPost]
+        public async Task<IActionResult> ToggleEmergencyMode(bool enable, string? reason)
+        {
+            return await ToggleCityEmergencyMode("All Cities", enable, reason);
         }
 
         [HttpPost]

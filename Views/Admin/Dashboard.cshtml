@@ -154,22 +154,47 @@
                     </div>
                     <div class="col-6">
                         <div class="p-2.5 rounded bg-black bg-opacity-50 border border-danger border-opacity-30 d-flex align-items-center justify-content-between">
-                            <span class="text-light font-weight-bold"><i class="fa-solid fa-circle text-danger me-1" style="font-size:0.6rem;"></i> Mumbai</span>
-                            <span class="badge bg-danger text-white font-weight-bold">🔴 Surge (Low)</span>
+                            <span class="text-light font-weight-bold"><span class="pulse-red-dot me-1"></span> Mumbai</span>
+                            <span class="badge bg-danger text-white font-weight-bold">🔴 Surge (+12%)</span>
                         </div>
                     </div>
                 }
                 else
                 {
+                    bool isGlobalSurge = ViewBag.IsGlobalEmergency ?? false;
                     @foreach (var c in cityAreas)
                     {
+                        bool isSurgeActive = c.IsEmergencyMode || isGlobalSurge;
                         <div class="col-6">
-                            <div class="p-2.5 rounded bg-black bg-opacity-50 border border-warning border-opacity-40 d-flex align-items-center justify-content-between">
+                            <div class="p-2.5 rounded bg-black bg-opacity-50 border @(isSurgeActive ? "border-danger bg-danger bg-opacity-10 shadow-sm" : "border-warning border-opacity-40") d-flex align-items-center justify-content-between">
                                 <div>
-                                    <span class="text-light font-weight-bold"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.6rem;"></i> @c.CityName</span>
-                                    <div class="text-muted" style="font-size:0.7rem;">@c.AreaName (@c.State)</div>
+                                    <span class="text-light font-weight-bold d-flex align-items-center gap-1">
+                                        @if (isSurgeActive)
+                                        {
+                                            <span class="pulse-red-dot" title="Emergency Weather Surge Active (+12%)"></span>
+                                        }
+                                        else
+                                        {
+                                            <i class="fa-solid fa-circle text-warning me-1" style="font-size:0.6rem;"></i>
+                                        }
+                                        @c.CityName
+                                    </span>
+                                    <div class="text-muted" style="font-size:0.7rem;">
+                                        @c.AreaName (@c.State)
+                                        @if (isSurgeActive)
+                                        {
+                                            <span class="text-danger font-weight-bold ms-1" style="font-size:0.68rem;">🚨 @(string.IsNullOrEmpty(c.EmergencyReason) ? "Rain Surge" : c.EmergencyReason)</span>
+                                        }
+                                    </div>
                                 </div>
-                                <span class="badge bg-warning text-dark font-weight-bold">@c.ServiceRadiusKm KM</span>
+                                @if (isSurgeActive)
+                                {
+                                    <span class="badge bg-danger text-white font-weight-bold shadow-sm" style="font-size:0.7rem;">🚨 +12% Surge</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark font-weight-bold">@c.ServiceRadiusKm KM</span>
+                                }
                             </div>
                         </div>
                     }
