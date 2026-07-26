@@ -24,7 +24,7 @@
 
 <div class="row g-4">
     <!-- Problem Types Price Registry -->
-    <div class="col-lg-8">
+    <div class="col-lg-7">
         <div class="card bg-dark border-secondary shadow-sm">
             <div class="card-header border-secondary bg-transparent d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 py-3">
                 <h5 class="text-white mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Problem Types Price Overrides</h5>
@@ -93,31 +93,51 @@
         </div>
     </div>
 
-    <!-- Base Distance & Towing Pricing Coefficients -->
-    <div class="col-lg-4">
+    <!-- Pricing Engine Tuning Card -->
+    <div class="col-lg-5">
         <div class="card bg-dark border-secondary shadow-sm">
             <div class="card-header border-secondary bg-transparent py-3">
-                <h5 class="text-white mb-0"><i class="fa-solid fa-sliders text-warning me-2"></i> Base Coefficients</h5>
+                <h5 class="text-white mb-0"><i class="fa-solid fa-sliders text-warning me-2"></i> Pricing Engine Tuning</h5>
             </div>
             <div class="card-body">
                 <div class="d-flex flex-column gap-3">
                     @foreach (var r in pricingRules)
                     {
                         <div class="p-3 bg-black bg-opacity-40 rounded border border-secondary">
-                            <h6 class="text-warning font-weight-bold mb-2">@r.VehicleCategory Base Rates</h6>
+                            <h6 class="text-white font-weight-bold mb-3">@r.VehicleCategory Rate Settings</h6>
                             <form action="/Admin/UpdatePricingRule" method="POST">
                                 <input type="hidden" name="ruleId" value="@r.Id">
-                                <div class="row g-2 mb-2">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small font-weight-bold">Target City / Region</label>
+                                    <select name="cityName" class="form-select glass-input text-warning font-weight-bold py-1">
+                                        <option value="All Cities" selected="@(r.CityName == "All Cities")">🌐 All Cities (National Default)</option>
+                                        @foreach (var c in cityNamesList)
+                                        {
+                                            <option value="@c" selected="@(r.CityName == c)">📍 @c</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="row g-2 mb-3">
                                     <div class="col-6">
-                                        <label class="form-label text-muted small">Base Visiting (₹)</label>
-                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseFee" value="@r.BaseFee" required>
+                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Base Visiting Fee (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseFee" value="@r.BaseFee" step="1" required>
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label text-muted small">Per KM Rate (₹)</label>
-                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmRate" value="@r.PerKmRate" required>
+                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Visiting Per-KM Rate (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmRate" value="@r.PerKmRate" step="1" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Base Towing Fee (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseTowingFee" value="@r.BaseTowingFee" step="1" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Towing Per-KM Rate (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmTowingRate" value="@r.PerKmTowingRate" step="1" required>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-outline-warning btn-sm w-100 font-weight-bold"><i class="fa-solid fa-floppy-disk me-1"></i> Save Base Rates</button>
+                                <button type="submit" class="btn text-white font-weight-bold btn-sm w-100 py-2 shadow-sm" style="background: linear-gradient(135deg, #ff6b00 0%, #e05d00 100%); border: none;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Apply Rates Update
+                                </button>
                             </form>
                         </div>
                     }

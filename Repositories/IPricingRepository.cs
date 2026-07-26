@@ -12,6 +12,6 @@ namespace RaahSathi.Repositories
         Task<bool> AddProblemTypePricingAsync(ProblemTypePricing pricing);
         Task<bool> DeleteProblemTypePricingAsync(int id);
         Task<List<PricingRule>> GetAllPricingRulesAsync();
-        Task<bool> UpdateBasePricingRuleAsync(int ruleId, double baseFee, double perKmRate);
+        Task<bool> UpdateBasePricingRuleAsync(int ruleId, string cityName, double baseFee, double perKmRate, double baseTowingFee, double perKmTowingRate);
     }
 }

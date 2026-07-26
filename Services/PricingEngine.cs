@@ -10,9 +10,9 @@ namespace RaahSathi.Services
 {
     public interface IPricingEngine
     {
-        Task<(double baseFee, double visitingCharge)> CalculateVisitingChargeAsync(string vehicleType, double distanceKm);
+        Task<(double baseFee, double visitingCharge)> CalculateVisitingChargeAsync(string vehicleType, double distanceKm, string? cityName = null);
         (double min, double max) GetServiceChargeRange(string problemType, string? cityName = null);
-        Task<double> CalculateTowingChargeAsync(string vehicleType, double distanceKm);
+        Task<double> CalculateTowingChargeAsync(string vehicleType, double distanceKm, string? cityName = null);
     }
 
     public class PricingEngine : IPricingEngine
@@ -39,14 +39,25 @@ namespace RaahSathi.Services
             return "Car";
         }
 
-        public async Task<(double baseFee, double visitingCharge)> CalculateVisitingChargeAsync(string vehicleType, double distanceKm)
+        public async Task<(double baseFee, double visitingCharge)> CalculateVisitingChargeAsync(string vehicleType, double distanceKm, string? cityName = null)
         {
             string category = NormalizeVehicleCategory(vehicleType);
+            string cleanCity = string.IsNullOrWhiteSpace(cityName) ? "" : cityName.Trim().ToLower();
 
-            var rule = await _dbContext.PricingRules
-                .FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower())
-                ?? await _dbContext.PricingRules.FirstOrDefaultAsync(r => r.VehicleCategory.ToLower().Contains(category.ToLower()))
-                ?? await _dbContext.PricingRules.FirstAsync(); // fallback to default
+            PricingRule? rule = null;
+
+            // 1. First priority: Check exact match for specific City Name
+            if (!string.IsNullOrEmpty(cleanCity))
+            {
+                rule = await _dbContext.PricingRules
+                    .FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower() && r.CityName.ToLower() == cleanCity);
+            }
+
+            // 2. Second priority: Fallback to "All Cities" or default rule
+            rule ??= await _dbContext.PricingRules
+                .FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower() && (r.CityName == "All Cities" || string.IsNullOrEmpty(r.CityName)))
+                ?? await _dbContext.PricingRules.FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower())
+                ?? await _dbContext.PricingRules.FirstAsync();
 
             double baseFee = rule.BaseFee;
             double perKmRate = rule.PerKmRate;
@@ -96,14 +107,23 @@ namespace RaahSathi.Services
             };
         }
 
-        public async Task<double> CalculateTowingChargeAsync(string vehicleType, double distanceKm)
+        public async Task<double> CalculateTowingChargeAsync(string vehicleType, double distanceKm, string? cityName = null)
         {
             string category = NormalizeVehicleCategory(vehicleType);
+            string cleanCity = string.IsNullOrWhiteSpace(cityName) ? "" : cityName.Trim().ToLower();
 
-            var rule = await _dbContext.PricingRules
-                .FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower())
-                ?? await _dbContext.PricingRules.FirstOrDefaultAsync(r => r.VehicleCategory.ToLower().Contains(category.ToLower()))
-                ?? await _dbContext.PricingRules.FirstAsync(); // fallback
+            PricingRule? rule = null;
+
+            if (!string.IsNullOrEmpty(cleanCity))
+            {
+                rule = await _dbContext.PricingRules
+                    .FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower() && r.CityName.ToLower() == cleanCity);
+            }
+
+            rule ??= await _dbContext.PricingRules
+                .FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower() && (r.CityName == "All Cities" || string.IsNullOrEmpty(r.CityName)))
+                ?? await _dbContext.PricingRules.FirstOrDefaultAsync(r => r.VehicleCategory.ToLower() == category.ToLower())
+                ?? await _dbContext.PricingRules.FirstAsync();
 
             double baseTowing = rule.BaseTowingFee;
             double perKmTowingRate = rule.PerKmTowingRate;

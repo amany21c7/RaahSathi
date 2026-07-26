@@ -342,34 +342,48 @@
     <div class="col-lg-5">
         <div class="glass-card border-warning border-opacity-30">
             <h4 class="text-white mb-4"><i class="fa-solid fa-sliders text-warning me-2"></i> Pricing Engine Tuning</h4>
-            <p class="text-muted small mb-4">Modify the persistent database coefficients for Distance Visited (Layer 1) and Towing (Layer 4) pricing rules below. Updates apply instantly system-wide.</p>
             
             <div class="d-flex flex-column gap-4">
+                @{
+                    var dashboardCityNames = cityAreas.Select(c => c.CityName).Distinct().OrderBy(c => c).ToList();
+                }
                 @foreach (var r in pricingRules)
                 {
                     <div class="p-3 bg-dark bg-opacity-40 rounded border border-secondary">
                         <h6 class="text-white font-weight-bold mb-3">@r.VehicleCategory Rate Settings</h6>
                         <form action="/Admin/UpdatePricingRule" method="POST">
                             <input type="hidden" name="ruleId" value="@r.Id">
+                            <div class="mb-3">
+                                <label class="form-label text-muted small font-weight-bold" style="font-size:0.75rem;">Target City / Region</label>
+                                <select name="cityName" class="form-select glass-input text-warning font-weight-bold py-1">
+                                    <option value="All Cities" selected="@(r.CityName == "All Cities")">🌐 All Cities (National Default)</option>
+                                    @foreach (var c in dashboardCityNames)
+                                    {
+                                        <option value="@c" selected="@(r.CityName == c)">📍 @c</option>
+                                    }
+                                </select>
+                            </div>
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
-                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Base Visiting Fee</label>
-                                    <input type="number" class="form-control glass-input" name="baseFee" value="@r.BaseFee" step="1">
+                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Base Visiting Fee (₹)</label>
+                                    <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseFee" value="@r.BaseFee" step="1" required>
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Visiting Per-KM Rate</label>
-                                    <input type="number" class="form-control glass-input" name="perKmRate" value="@r.PerKmRate" step="1">
+                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Visiting Per-KM Rate (₹)</label>
+                                    <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmRate" value="@r.PerKmRate" step="1" required>
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Base Towing Fee</label>
-                                    <input type="number" class="form-control glass-input" name="baseTowingFee" value="@r.BaseTowingFee" step="1">
+                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Base Towing Fee (₹)</label>
+                                    <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseTowingFee" value="@r.BaseTowingFee" step="1" required>
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Towing Per-KM Rate</label>
-                                    <input type="number" class="form-control glass-input" name="perKmTowingRate" value="@r.PerKmTowingRate" step="1">
+                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Towing Per-KM Rate (₹)</label>
+                                    <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmTowingRate" value="@r.PerKmTowingRate" step="1" required>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-premium-primary btn-sm w-100">Apply Rates Update</button>
+                            <button type="submit" class="btn text-white font-weight-bold btn-sm w-100 py-2 shadow-sm" style="background: linear-gradient(135deg, #ff6b00 0%, #e05d00 100%); border: none;">
+                                <i class="fa-solid fa-circle-check me-1"></i> Apply Rates Update
+                            </button>
                         </form>
                     </div>
                 }

@@ -11,6 +11,6 @@ namespace RaahSathi.Services
         Task<bool> UpdateProblemPriceRateAsync(int id, string problemName, string vehicleCategory, string cityName, double minServiceCharge, double maxServiceCharge);
         Task<bool> AddNewProblemPriceRateAsync(string problemName, string vehicleCategory, string cityName, double minServiceCharge, double maxServiceCharge);
         Task<bool> DeleteProblemPriceRateAsync(int id);
-        Task<bool> UpdateCategoryBaseRatesAsync(int ruleId, double baseFee, double perKmRate);
+        Task<bool> UpdateCategoryBaseRatesAsync(int ruleId, string cityName, double baseFee, double perKmRate, double baseTowingFee, double perKmTowingRate);
     }
 }

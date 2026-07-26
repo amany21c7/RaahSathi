@@ -330,8 +330,10 @@ namespace RaahSathi.Controllers
             await _dbContext.SaveChangesAsync();
 
             TempData["Success"] = $"Pricing Rule for {vehicleCategory} added successfully.";
-            return RedirectToAction("ManagePricing");
+            return RedirectToAction("Pricing");
         }
+
+
 
         [HttpPost]
         public async Task<IActionResult> DeletePricingRule(int id)
@@ -1043,16 +1045,23 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdatePricingRule(int ruleId, double baseFee, double perKmRate)
+        public async Task<IActionResult> UpdatePricingRule(int ruleId, string cityName, double baseFee, double perKmRate, double baseTowingFee, double perKmTowingRate)
         {
             if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized access." });
 
-            bool success = await _pricingService.UpdateCategoryBaseRatesAsync(ruleId, baseFee, perKmRate);
+            bool success = await _pricingService.UpdateCategoryBaseRatesAsync(ruleId, cityName, baseFee, perKmRate, baseTowingFee, perKmTowingRate);
             if (!success) return Json(new { success = false, message = "Invalid pricing rule values." });
 
-            await LogAdminActionAsync("UPDATE_BASE_PRICING", $"Updated Rule ID {ruleId} -> Base: ₹{baseFee}, PerKM: ₹{perKmRate}");
-            TempData["Success"] = "Base pricing rates updated successfully!";
-            return RedirectToAction("Pricing");
+            await LogAdminActionAsync("UPDATE_BASE_PRICING", $"Updated Rule ID {ruleId} ({cityName}) -> Base: ₹{baseFee}, PerKM: ₹{perKmRate}, BaseTowing: ₹{baseTowingFee}, PerKmTowing: ₹{perKmTowingRate}");
+
+            string referer = Request.Headers["Referer"].ToString();
+            if (!string.IsNullOrEmpty(referer) && !Request.Headers["X-Requested-With"].ToString().Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Success"] = "Pricing Engine Tuning rates updated successfully!";
+                return Redirect(referer);
+            }
+
+            return Json(new { success = true, message = "Pricing Rule updated successfully." });
         }
     }
 }

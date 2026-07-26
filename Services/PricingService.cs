@@ -68,10 +68,10 @@ namespace RaahSathi.Services
             return await _pricingRepository.DeleteProblemTypePricingAsync(id);
         }
 
-        public async Task<bool> UpdateCategoryBaseRatesAsync(int ruleId, double baseFee, double perKmRate)
+        public async Task<bool> UpdateCategoryBaseRatesAsync(int ruleId, string cityName, double baseFee, double perKmRate, double baseTowingFee, double perKmTowingRate)
         {
-            if (ruleId <= 0 || baseFee < 0 || perKmRate < 0) return false;
-            return await _pricingRepository.UpdateBasePricingRuleAsync(ruleId, baseFee, perKmRate);
+            if (ruleId <= 0 || baseFee < 0 || perKmRate < 0 || baseTowingFee < 0 || perKmTowingRate < 0) return false;
+            return await _pricingRepository.UpdateBasePricingRuleAsync(ruleId, cityName, baseFee, perKmRate, baseTowingFee, perKmTowingRate);
         }
     }
 }

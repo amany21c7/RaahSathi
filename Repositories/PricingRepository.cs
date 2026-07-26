@@ -74,13 +74,16 @@ namespace RaahSathi.Repositories
             return await _dbContext.PricingRules.ToListAsync();
         }
 
-        public async Task<bool> UpdateBasePricingRuleAsync(int ruleId, double baseFee, double perKmRate)
+        public async Task<bool> UpdateBasePricingRuleAsync(int ruleId, string cityName, double baseFee, double perKmRate, double baseTowingFee, double perKmTowingRate)
         {
             var rule = await _dbContext.PricingRules.FindAsync(ruleId);
             if (rule == null) return false;
 
+            rule.CityName = string.IsNullOrWhiteSpace(cityName) ? "All Cities" : cityName.Trim();
             rule.BaseFee = baseFee;
             rule.PerKmRate = perKmRate;
+            rule.BaseTowingFee = baseTowingFee;
+            rule.PerKmTowingRate = perKmTowingRate;
 
             await _dbContext.SaveChangesAsync();
             return true;
