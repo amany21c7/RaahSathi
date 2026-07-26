@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RaahSathi.Data;
 using RaahSathi.Services;
 using RaahSathi.Models;
+using RaahSathi.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,9 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add Business Services
+// Add Business Services & Repositories
 builder.Services.AddScoped<IPricingEngine, PricingEngine>();
 builder.Services.AddScoped<IDispatchEngine, DispatchEngine>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();

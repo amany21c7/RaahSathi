@@ -1,0 +1,158 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using RaahSathi.Data;
+using RaahSathi.Models;
+using RaahSathi.Repositories;
+
+namespace RaahSathi.Services
+{
+    public class PaymentService : IPaymentService
+    {
+        private readonly IPaymentRepository _paymentRepository;
+        private readonly ApplicationDbContext _dbContext;
+
+        public PaymentService(IPaymentRepository paymentRepository, ApplicationDbContext dbContext)
+        {
+            _paymentRepository = paymentRepository;
+            _dbContext = dbContext;
+        }
+
+        public PaymentCommissionCalculationResult CalculateTieredCommissionAndNetEarnings(double totalBillAmount)
+        {
+            // Tiered Commission Rule: 8% for < ₹1000, 10% for >= ₹1000
+            double commRate = totalBillAmount < 1000 ? 0.08 : 0.10;
+            double adminCommission = Math.Round(totalBillAmount * commRate, 2);
+            double mechanicNetEarning = Math.Round(totalBillAmount - adminCommission, 2);
+
+            return new PaymentCommissionCalculationResult
+            {
+                TotalBillAmount = totalBillAmount,
+                CommissionRate = commRate,
+                AdminCommissionAmount = adminCommission,
+                MechanicNetEarningAmount = mechanicNetEarning
+            };
+        }
+
+        public async Task<bool> ProcessEscrowPaymentForJobAsync(int jobId, string? paymentId)
+        {
+            var job = await _dbContext.Jobs.FindAsync(jobId);
+            if (job == null) return false;
+
+            string payId = string.IsNullOrWhiteSpace(paymentId) ? "pay_" + Guid.NewGuid().ToString().Substring(0, 14) : paymentId.Trim();
+
+            // Try executing Stored Procedure first via Repository
+            bool spSuccess = await _paymentRepository.ExecuteProcessEscrowStoredProcedureAsync(job.Id, payId);
+            if (spSuccess)
+            {
+                return true;
+            }
+
+            // Fallback Execution via Repository Layer
+            double baseEst = job.VisitingCharge + job.ServiceChargeMin;
+            double finalBill = job.FinalBillAmount > baseEst ? job.FinalBillAmount : baseEst;
+            var commCalc = CalculateTieredCommissionAndNetEarnings(finalBill);
+
+            var paymentModel = new Payment
+            {
+                JobId = job.Id,
+                Amount = finalBill,
+                PaymentStatus = "Released",
+                RazorpayPaymentId = payId,
+                AdminCommissionAmount = commCalc.AdminCommissionAmount,
+                MechanicEarningAmount = commCalc.MechanicNetEarningAmount,
+                CommissionRateUsed = commCalc.CommissionRate,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _paymentRepository.SaveEscrowPaymentWithFallbackAsync(
+                paymentModel,
+                job.Id,
+                job.MechanicId,
+                commCalc.MechanicNetEarningAmount,
+                commCalc.CommissionRate
+            );
+
+            return true;
+        }
+
+        public async Task<JobInvoiceBreakdownResult> GenerateJobInvoiceBreakdownAsync(int jobId)
+        {
+            var job = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Vehicle)
+                .Include(j => j.Mechanic)
+                .FirstOrDefaultAsync(j => j.Id == jobId);
+
+            if (job == null)
+            {
+                return new JobInvoiceBreakdownResult
+                {
+                    Success = false,
+                    Message = "Job record not found."
+                };
+            }
+
+            var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == job.MechanicId);
+            var payment = await _paymentRepository.GetPaymentByJobIdAsync(jobId);
+
+            double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
+            double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
+            var commCalc = CalculateTieredCommissionAndNetEarnings(totalBill);
+
+            double adminCommission = payment != null && payment.AdminCommissionAmount > 0 
+                ? payment.AdminCommissionAmount 
+                : commCalc.AdminCommissionAmount;
+
+            double mechanicNetEarning = payment != null && payment.MechanicEarningAmount > 0 
+                ? payment.MechanicEarningAmount 
+                : commCalc.MechanicNetEarningAmount;
+
+            double effectiveCommRatePct = (payment?.CommissionRateUsed ?? commCalc.CommissionRate) * 100;
+
+            return new JobInvoiceBreakdownResult
+            {
+                Success = true,
+                InvoiceNo = $"RS-INV-{job.Id:D4}-{DateTime.Now.Year}",
+                JobId = job.Id,
+                Date = (job.CompletedAt ?? job.CreatedAt).ToString("dd MMM yyyy, hh:mm tt"),
+                Status = job.Status,
+                CustomerName = job.Customer?.Name ?? "Customer",
+                CustomerPhone = job.Customer?.PhoneNumber ?? "N/A",
+                CustomerAddress = job.Address ?? "Breakdown Location",
+                VehicleModel = job.Vehicle?.Model ?? "Vehicle",
+                VehicleType = job.Vehicle?.VehicleType ?? "Car",
+                VehicleRegNumber = job.Vehicle?.RegistrationNumber ?? "UP32 AB 1234",
+                FuelType = job.FuelType ?? "Petrol",
+                MechanicName = job.Mechanic?.Name ?? "Verified Technician",
+                MechanicPhone = job.Mechanic?.PhoneNumber ?? "N/A",
+                ShopName = mechProfile?.ShopName ?? "RaahSathi Partner Garage",
+                ShopAddress = mechProfile?.ShopAddress ?? "Sector 62 Noida",
+                ProblemType = job.ProblemType ?? "Roadside Emergency",
+
+                // Breakdown Items
+                VisitingCharge = job.VisitingCharge,
+                ServiceChargeMin = job.ServiceChargeMin,
+                CustomEstimateAmount = job.CustomEstimateApproved == true ? job.CustomEstimateAmount : 0.0,
+                CustomEstimateDetails = job.CustomEstimateDetails,
+                PartsEstimateAmount = job.PartsApproved == true ? job.PartsEstimateAmount : 0.0,
+                PartsMrp = job.PartsApproved == true ? (job.PartsMrp > 0 ? job.PartsMrp : job.PartsEstimateAmount) : 0.0,
+                ExtraLabourCharge = job.PartsApproved == true ? job.ExtraLabourCharge : 0.0,
+                PartsDetails = job.ExtraPartsName,
+                TowingCharge = job.TowingApproved == true ? job.TowingCharge : 0.0,
+
+                // Financial Totals
+                TotalBillAmount = totalBill,
+                AdminCommission = adminCommission,
+                MechanicNetEarning = mechanicNetEarning,
+                CommissionPercent = effectiveCommRatePct
+            };
+        }
+
+        public async Task<List<Payment>> GetAdminEscrowTransactionsLedgerAsync()
+        {
+            return await _paymentRepository.GetAllEscrowTransactionsAsync();
+        }
+    }
+}

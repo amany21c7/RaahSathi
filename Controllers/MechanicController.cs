@@ -14,12 +14,14 @@ namespace RaahSathi.Controllers
         private readonly ApplicationDbContext _dbContext;
         private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env;
         private readonly Services.IDispatchEngine _dispatchEngine;
+        private readonly Services.IPaymentService _paymentService;
 
-        public MechanicController(ApplicationDbContext dbContext, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, Services.IDispatchEngine dispatchEngine)
+        public MechanicController(ApplicationDbContext dbContext, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, Services.IDispatchEngine dispatchEngine, Services.IPaymentService paymentService)
         {
             _dbContext = dbContext;
             _env = env;
             _dispatchEngine = dispatchEngine;
+            _paymentService = paymentService;
         }
 
         private async Task<User?> GetActiveMechanicUserAsync()
@@ -444,76 +446,21 @@ namespace RaahSathi.Controllers
 
             string payId = "pay_qr_" + Guid.NewGuid().ToString().Substring(0, 12);
 
-            try
-            {
-                // Execute Stored Procedure: rs_payments_process_escrow
-                await _dbContext.Database.ExecuteSqlRawAsync(
-                    "EXEC dbo.rs_payments_process_escrow @JobId = {0}, @PaymentId = {1}",
-                    job.Id, payId
-                );
-            }
-            catch
-            {
-                // Fail-Safe Fallback: EF Core direct transaction execution if Stored Procedure throws or is unavailable
-                double baseEst = job.VisitingCharge + job.ServiceChargeMin;
-                double finalBill = job.FinalBillAmount > baseEst ? job.FinalBillAmount : baseEst;
-                double fallbackCommRate = finalBill < 1000 ? 0.08 : 0.10;
-                double adminComm = Math.Round(finalBill * fallbackCommRate, 2);
-                double mechEarning = Math.Round(finalBill - adminComm, 2);
+            bool success = await _paymentService.ProcessEscrowPaymentForJobAsync(job.Id, payId);
+            if (!success) return Json(new { success = false, message = "Failed to process QR payment." });
 
-                var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == job.Id);
-                if (payment != null)
-                {
-                    payment.Amount = finalBill;
-                    payment.PaymentStatus = "Released";
-                    payment.RazorpayPaymentId = payId;
-                    payment.AdminCommissionAmount = adminComm;
-                    payment.MechanicEarningAmount = mechEarning;
-                    payment.CommissionRateUsed = fallbackCommRate;
-                }
-                else
-                {
-                    _dbContext.Payments.Add(new Payment
-                    {
-                        JobId = job.Id,
-                        Amount = finalBill,
-                        PaymentStatus = "Released",
-                        RazorpayPaymentId = payId,
-                        AdminCommissionAmount = adminComm,
-                        MechanicEarningAmount = mechEarning,
-                        CommissionRateUsed = fallbackCommRate,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                }
-
-                mechProfile.CurrentEarnings += mechEarning;
-                mechProfile.TotalJobs += 1;
-                mechProfile.CommissionRate = fallbackCommRate;
-
-                job.Status = "Completed";
-                job.CompletedAt = DateTime.UtcNow;
-                await _dbContext.SaveChangesAsync();
-            }
-
-            // Refresh updated data for JSON response
-            try { await _dbContext.Entry(job).ReloadAsync(); } catch { }
-            try { await _dbContext.Entry(mechProfile).ReloadAsync(); } catch { }
-
-            double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
-            double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
-            double commRate = totalBill < 1000 ? 0.08 : 0.10;
-            double adminCommission = Math.Round(totalBill * commRate, 2);
-            double mechanicNetEarning = Math.Round(totalBill - adminCommission, 2);
+            // Fetch updated invoice breakdown via IPaymentService
+            var breakdown = await _paymentService.GenerateJobInvoiceBreakdownAsync(job.Id);
 
             return Json(new
             {
                 success = true,
-                message = $"Payment of ₹{totalBill:N2} collected via QR! Net ₹{mechanicNetEarning:N2} credited to your wallet after {commRate * 100:F0}% commission deduction.",
+                message = $"Payment of ₹{breakdown.TotalBillAmount:N2} collected via QR! Net ₹{breakdown.MechanicNetEarning:N2} credited to your wallet after {breakdown.CommissionPercent:F0}% commission deduction.",
                 jobId = job.Id,
-                finalBillAmount = totalBill,
-                adminCommission = adminCommission,
-                mechanicNetEarning = mechanicNetEarning,
-                commissionPercent = commRate * 100,
+                finalBillAmount = breakdown.TotalBillAmount,
+                adminCommission = breakdown.AdminCommission,
+                mechanicNetEarning = breakdown.MechanicNetEarning,
+                commissionPercent = breakdown.CommissionPercent,
                 newWalletBalance = mechProfile.CurrentEarnings
             });
         }

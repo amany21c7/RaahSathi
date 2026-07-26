@@ -16,13 +16,15 @@ namespace RaahSathi.Controllers
         private readonly IPricingEngine _pricingEngine;
         private readonly IDispatchEngine _dispatchEngine;
         private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env;
+        private readonly IPaymentService _paymentService;
 
-        public CustomerController(ApplicationDbContext dbContext, IPricingEngine pricingEngine, IDispatchEngine dispatchEngine, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
+        public CustomerController(ApplicationDbContext dbContext, IPricingEngine pricingEngine, IDispatchEngine dispatchEngine, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, IPaymentService paymentService)
         {
             _dbContext = dbContext;
             _pricingEngine = pricingEngine;
             _dispatchEngine = dispatchEngine;
             _env = env;
+            _paymentService = paymentService;
         }
 
         private async Task<User?> GetActiveCustomerAsync()
@@ -566,68 +568,8 @@ namespace RaahSathi.Controllers
         [HttpPost]
         public async Task<IActionResult> ProcessPayment(int id, string paymentId)
         {
-            var job = await _dbContext.Jobs.FindAsync(id);
-            if (job == null) return NotFound();
-
-            string payId = string.IsNullOrEmpty(paymentId) ? "pay_" + Guid.NewGuid().ToString().Substring(0, 14) : paymentId;
-
-            try
-            {
-                // Execute Stored Procedure: rs_payments_process_escrow
-                await _dbContext.Database.ExecuteSqlRawAsync(
-                    "EXEC dbo.rs_payments_process_escrow @JobId = {0}, @PaymentId = {1}",
-                    job.Id, payId
-                );
-            }
-            catch
-            {
-                // Fail-Safe Fallback: EF Core direct transaction execution if Stored Procedure throws or is unavailable
-                double baseEst = job.VisitingCharge + job.ServiceChargeMin;
-                double finalBill = job.FinalBillAmount > baseEst ? job.FinalBillAmount : baseEst;
-                double fallbackCommRate = finalBill < 1000 ? 0.08 : 0.10;
-                double adminComm = Math.Round(finalBill * fallbackCommRate, 2);
-                double mechEarning = Math.Round(finalBill - adminComm, 2);
-
-                var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == job.Id);
-                if (payment != null)
-                {
-                    payment.Amount = finalBill;
-                    payment.PaymentStatus = "Released";
-                    payment.RazorpayPaymentId = payId;
-                    payment.AdminCommissionAmount = adminComm;
-                    payment.MechanicEarningAmount = mechEarning;
-                    payment.CommissionRateUsed = fallbackCommRate;
-                }
-                else
-                {
-                    _dbContext.Payments.Add(new Payment
-                    {
-                        JobId = job.Id,
-                        Amount = finalBill,
-                        PaymentStatus = "Released",
-                        RazorpayPaymentId = payId,
-                        AdminCommissionAmount = adminComm,
-                        MechanicEarningAmount = mechEarning,
-                        CommissionRateUsed = fallbackCommRate,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                }
-
-                if (job.MechanicId.HasValue)
-                {
-                    var mechProf = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == job.MechanicId.Value);
-                    if (mechProf != null)
-                    {
-                        mechProf.CurrentEarnings += mechEarning;
-                        mechProf.TotalJobs += 1;
-                        mechProf.CommissionRate = fallbackCommRate;
-                    }
-                }
-
-                job.Status = "Completed";
-                job.CompletedAt = DateTime.UtcNow;
-                await _dbContext.SaveChangesAsync();
-            }
+            bool success = await _paymentService.ProcessEscrowPaymentForJobAsync(id, paymentId);
+            if (!success) return NotFound();
 
             return Json(new { success = true });
         }
@@ -635,62 +577,10 @@ namespace RaahSathi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetJobInvoiceDetails(int jobId)
         {
-            var job = await _dbContext.Jobs
-                .Include(j => j.Customer)
-                .Include(j => j.Vehicle)
-                .Include(j => j.Mechanic)
-                .FirstOrDefaultAsync(j => j.Id == jobId);
+            var breakdown = await _paymentService.GenerateJobInvoiceBreakdownAsync(jobId);
+            if (!breakdown.Success) return Json(new { success = false, message = breakdown.Message ?? "Job not found." });
 
-            if (job == null) return Json(new { success = false, message = "Job not found." });
-
-            var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == job.MechanicId);
-            var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
-
-            double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
-            double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
-            double commRate = totalBill < 1000 ? 0.08 : 0.10;
-
-            double adminCommission = payment != null && payment.AdminCommissionAmount > 0 ? payment.AdminCommissionAmount : Math.Round(totalBill * commRate, 2);
-            double mechanicNetEarning = payment != null && payment.MechanicEarningAmount > 0 ? payment.MechanicEarningAmount : Math.Round(totalBill - adminCommission, 2);
-            double effectiveCommRatePct = (payment?.CommissionRateUsed ?? commRate) * 100;
-
-            return Json(new
-            {
-                success = true,
-                invoiceNo = $"RS-INV-{job.Id:D4}-{DateTime.Now.Year}",
-                jobId = job.Id,
-                date = (job.CompletedAt ?? job.CreatedAt).ToString("dd MMM yyyy, hh:mm tt"),
-                status = job.Status,
-                customerName = job.Customer?.Name ?? "Customer",
-                customerPhone = job.Customer?.PhoneNumber ?? "N/A",
-                customerAddress = job.Address,
-                vehicleModel = job.Vehicle?.Model ?? "Vehicle",
-                vehicleType = job.Vehicle?.VehicleType ?? "Car",
-                vehicleRegNumber = job.Vehicle?.RegistrationNumber ?? "UP32 AB 1234",
-                fuelType = job.FuelType,
-                mechanicName = job.Mechanic?.Name ?? "Verified Technician",
-                mechanicPhone = job.Mechanic?.PhoneNumber ?? "N/A",
-                shopName = mechProfile?.ShopName ?? "RaahSathi Partner Garage",
-                shopAddress = mechProfile?.ShopAddress ?? "Sector 62 Noida",
-                problemType = job.ProblemType,
-                
-                // Itemized Breakdown
-                visitingCharge = job.VisitingCharge,
-                serviceChargeMin = job.ServiceChargeMin,
-                customEstimateAmount = job.CustomEstimateApproved == true ? job.CustomEstimateAmount : 0.0,
-                customEstimateDetails = job.CustomEstimateDetails,
-                partsEstimateAmount = job.PartsApproved == true ? job.PartsEstimateAmount : 0.0,
-                partsMrp = job.PartsApproved == true ? (job.PartsMrp > 0 ? job.PartsMrp : job.PartsEstimateAmount) : 0.0,
-                extraLabourCharge = job.PartsApproved == true ? job.ExtraLabourCharge : 0.0,
-                partsDetails = job.ExtraPartsName,
-                towingCharge = job.TowingApproved == true ? job.TowingCharge : 0.0,
-                
-                // Totals & Commission
-                totalBillAmount = totalBill,
-                adminCommission = adminCommission,
-                mechanicNetEarning = mechanicNetEarning,
-                commissionPercent = effectiveCommRatePct
-            });
+            return Json(breakdown);
         }
 
         [HttpPost]
