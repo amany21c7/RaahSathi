@@ -4,6 +4,7 @@
     var pricingRules = ViewBag.PricingRules as List<PricingRule> ?? new List<PricingRule>();
     var problemTypes = ViewBag.ProblemTypes as List<ProblemTypePricing> ?? new List<ProblemTypePricing>();
     var cities = ViewBag.Cities as List<CityServiceArea> ?? new List<CityServiceArea>();
+    var cityNamesList = cities.Select(c => c.CityName).Distinct().OrderBy(c => c).ToList();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -23,12 +24,12 @@
 
 <div class="row g-4">
     <!-- Problem Types Price Registry -->
-    <div class="col-lg-7">
+    <div class="col-lg-8">
         <div class="card bg-dark border-secondary shadow-sm">
-            <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center py-3">
+            <div class="card-header border-secondary bg-transparent d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 py-3">
                 <h5 class="text-white mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Problem Types Price Overrides</h5>
                 <button type="button" class="btn btn-warning btn-sm font-weight-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addProblemModal">
-                    <i class="fa-solid fa-plus me-1"></i> Add Problem Rate
+                    <i class="fa-solid fa-plus me-1"></i> Add City Problem Rate
                 </button>
             </div>
             <div class="card-body p-0">
@@ -38,6 +39,7 @@
                             <tr class="border-secondary text-muted small">
                                 <th class="ps-3 py-3">Problem Name</th>
                                 <th>Category</th>
+                                <th>Target City</th>
                                 <th>Min Service Charge</th>
                                 <th>Max Service Charge</th>
                                 <th class="text-end pe-3">Actions</th>
@@ -47,7 +49,7 @@
                             @if (problemTypes.Count == 0)
                             {
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">No problem types defined. Click "Add Problem Rate" to create one.</td>
+                                    <td colspan="6" class="text-center py-4 text-muted">No problem types defined. Click "Add City Problem Rate" to create one.</td>
                                 </tr>
                             }
                             else
@@ -57,18 +59,28 @@
                                     <tr class="border-secondary">
                                         <td class="ps-3 font-weight-bold text-white">@p.ProblemName</td>
                                         <td><span class="badge bg-secondary text-light">@p.VehicleCategory</span></td>
+                                        <td>
+                                            @if (p.CityName == "All Cities")
+                                            {
+                                                <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30"><i class="fa-solid fa-earth-americas me-1"></i> All Cities</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30"><i class="fa-solid fa-city me-1"></i> @p.CityName</span>
+                                            }
+                                        </td>
                                         <td class="text-warning font-weight-bold">₹@p.MinServiceCharge.ToString("N0")</td>
                                         <td class="text-success font-weight-bold">₹@p.MaxServiceCharge.ToString("N0")</td>
                                         <td class="text-end pe-3">
                                             <button type="button" 
                                                     class="btn btn-sm btn-outline-warning me-1 px-2"
-                                                    onclick="openEditProblemModal(@p.Id, '@p.ProblemName.Replace("'", "\\'")', '@p.VehicleCategory', @p.MinServiceCharge, @p.MaxServiceCharge)"
-                                                    title="Edit Price Rate">
+                                                    onclick="openEditProblemModal(@p.Id, '@p.ProblemName.Replace("'", "\\'")', '@p.VehicleCategory', '@p.CityName.Replace("'", "\\'")', @p.MinServiceCharge, @p.MaxServiceCharge)"
+                                                    title="Edit City Price Rate">
                                                 <i class="fa-solid fa-pen-to-square me-1"></i> Edit
                                             </button>
                                             <form action="/Admin/DeleteProblemType" method="POST" class="d-inline">
                                                 <input type="hidden" name="id" value="@p.Id">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger px-2" onclick="return confirm('Delete price rate for @p.ProblemName?')"><i class="fa-solid fa-trash"></i></button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger px-2" onclick="return confirm('Delete price rate for @p.ProblemName (@p.CityName)?')"><i class="fa-solid fa-trash"></i></button>
                                             </form>
                                         </td>
                                     </tr>
@@ -82,7 +94,7 @@
     </div>
 
     <!-- Base Distance & Towing Pricing Coefficients -->
-    <div class="col-lg-5">
+    <div class="col-lg-4">
         <div class="card bg-dark border-secondary shadow-sm">
             <div class="card-header border-secondary bg-transparent py-3">
                 <h5 class="text-white mb-0"><i class="fa-solid fa-sliders text-warning me-2"></i> Base Coefficients</h5>
@@ -120,11 +132,21 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark text-white border border-secondary shadow-lg">
             <div class="modal-header border-secondary bg-black bg-opacity-40">
-                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-plus me-2"></i>Add Problem Type Pricing</h5>
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-plus me-2"></i>Add City-Wise Problem Rate</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="/Admin/AddProblemType" method="POST">
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Target City / Region</label>
+                        <select name="cityName" class="form-select glass-input text-warning font-weight-bold">
+                            <option value="All Cities">🌐 All Cities (National Default)</option>
+                            @foreach (var c in cityNamesList)
+                            {
+                                <option value="@c">📍 @c</option>
+                            }
+                        </select>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small font-weight-bold">Problem Name</label>
                         <input type="text" name="problemName" class="form-control glass-input text-white font-weight-bold" placeholder="e.g. Battery Jumpstart" required>
@@ -151,7 +173,7 @@
                 </div>
                 <div class="modal-footer border-secondary bg-black bg-opacity-40">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4"><i class="fa-solid fa-check me-1"></i> Add Rate Override</button>
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4"><i class="fa-solid fa-check me-1"></i> Add City Rate Override</button>
                 </div>
             </form>
         </div>
@@ -163,12 +185,22 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark text-white border border-secondary shadow-lg">
             <div class="modal-header border-secondary bg-black bg-opacity-40">
-                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Edit Problem Price Rate</h5>
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Edit City Price Rate</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="/Admin/UpdateProblemTypePrice" method="POST">
                 <input type="hidden" name="id" id="editProblemId">
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Target City / Region</label>
+                        <select name="cityName" id="editCityName" class="form-select glass-input text-warning font-weight-bold">
+                            <option value="All Cities">🌐 All Cities (National Default)</option>
+                            @foreach (var c in cityNamesList)
+                            {
+                                <option value="@c">📍 @c</option>
+                            }
+                        </select>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small font-weight-bold">Problem Name</label>
                         <input type="text" name="problemName" id="editProblemName" class="form-control glass-input text-white font-weight-bold" required>
@@ -195,7 +227,7 @@
                 </div>
                 <div class="modal-footer border-secondary bg-black bg-opacity-40">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4"><i class="fa-solid fa-check me-1"></i> Save Changes</button>
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4"><i class="fa-solid fa-check me-1"></i> Save City Price</button>
                 </div>
             </form>
         </div>
@@ -203,10 +235,11 @@
 </div>
 
 <script>
-    function openEditProblemModal(id, name, category, minCharge, maxCharge) {
+    function openEditProblemModal(id, name, category, city, minCharge, maxCharge) {
         document.getElementById('editProblemId').value = id;
         document.getElementById('editProblemName').value = name;
         document.getElementById('editVehicleCategory').value = category;
+        document.getElementById('editCityName').value = city || "All Cities";
         document.getElementById('editMinServiceCharge').value = minCharge;
         document.getElementById('editMaxServiceCharge').value = maxCharge;
 

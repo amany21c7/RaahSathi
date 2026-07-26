@@ -264,9 +264,16 @@ namespace RaahSathi.Controllers
                 catch { }
             }
 
+            string detectedCity = "";
+            if (!string.IsNullOrWhiteSpace(address))
+            {
+                var matchedCity = await _dbContext.CityServiceAreas.FirstOrDefaultAsync(c => address.ToLower().Contains(c.CityName.ToLower()));
+                if (matchedCity != null) detectedCity = matchedCity.CityName;
+            }
+
             double mockDist = 3.5;
             var (baseFee, visitingCharge) = await _pricingEngine.CalculateVisitingChargeAsync(vehicle.VehicleType, mockDist);
-            var (serviceMin, serviceMax) = _pricingEngine.GetServiceChargeRange(problemType ?? "Other");
+            var (serviceMin, serviceMax) = _pricingEngine.GetServiceChargeRange(problemType ?? "Other", detectedCity);
 
             var job = new Job
             {

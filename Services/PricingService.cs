@@ -15,9 +15,9 @@ namespace RaahSathi.Services
             _pricingRepository = pricingRepository;
         }
 
-        public async Task<List<ProblemTypePricing>> GetAllActiveProblemPricesAsync()
+        public async Task<List<ProblemTypePricing>> GetAllActiveProblemPricesAsync(string? cityName = null)
         {
-            return await _pricingRepository.GetAllProblemTypePricingsAsync();
+            return await _pricingRepository.GetAllProblemTypePricingsAsync(cityName);
         }
 
         public async Task<List<PricingRule>> GetAllBaseCategoryPricingRulesAsync()
@@ -25,7 +25,7 @@ namespace RaahSathi.Services
             return await _pricingRepository.GetAllPricingRulesAsync();
         }
 
-        public async Task<bool> UpdateProblemPriceRateAsync(int id, string problemName, string vehicleCategory, double minServiceCharge, double maxServiceCharge)
+        public async Task<bool> UpdateProblemPriceRateAsync(int id, string problemName, string vehicleCategory, string cityName, double minServiceCharge, double maxServiceCharge)
         {
             if (id <= 0 || string.IsNullOrWhiteSpace(problemName) || minServiceCharge < 0 || maxServiceCharge < minServiceCharge)
             {
@@ -36,12 +36,13 @@ namespace RaahSathi.Services
                 id,
                 problemName.Trim(),
                 string.IsNullOrWhiteSpace(vehicleCategory) ? "Car" : vehicleCategory.Trim(),
+                string.IsNullOrWhiteSpace(cityName) ? "All Cities" : cityName.Trim(),
                 minServiceCharge,
                 maxServiceCharge
             );
         }
 
-        public async Task<bool> AddNewProblemPriceRateAsync(string problemName, string vehicleCategory, double minServiceCharge, double maxServiceCharge)
+        public async Task<bool> AddNewProblemPriceRateAsync(string problemName, string vehicleCategory, string cityName, double minServiceCharge, double maxServiceCharge)
         {
             if (string.IsNullOrWhiteSpace(problemName) || minServiceCharge < 0 || maxServiceCharge < minServiceCharge)
             {
@@ -52,6 +53,7 @@ namespace RaahSathi.Services
             {
                 ProblemName = problemName.Trim(),
                 VehicleCategory = string.IsNullOrWhiteSpace(vehicleCategory) ? "Car" : vehicleCategory.Trim(),
+                CityName = string.IsNullOrWhiteSpace(cityName) ? "All Cities" : cityName.Trim(),
                 MinServiceCharge = minServiceCharge,
                 MaxServiceCharge = maxServiceCharge,
                 IsActive = true

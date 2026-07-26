@@ -16,11 +16,18 @@ namespace RaahSathi.Repositories
             _dbContext = dbContext;
         }
 
-        public async Task<List<ProblemTypePricing>> GetAllProblemTypePricingsAsync()
+        public async Task<List<ProblemTypePricing>> GetAllProblemTypePricingsAsync(string? cityName = null)
         {
-            return await _dbContext.ProblemTypePricings
-                .Where(p => p.IsActive)
-                .OrderBy(p => p.VehicleCategory)
+            var query = _dbContext.ProblemTypePricings.Where(p => p.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(cityName) && !cityName.Equals("All Cities", System.StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(p => p.CityName.ToLower() == cityName.Trim().ToLower() || p.CityName == "All Cities");
+            }
+
+            return await query
+                .OrderBy(p => p.CityName)
+                .ThenBy(p => p.VehicleCategory)
                 .ThenBy(p => p.ProblemName)
                 .ToListAsync();
         }
@@ -30,13 +37,14 @@ namespace RaahSathi.Repositories
             return await _dbContext.ProblemTypePricings.FindAsync(id);
         }
 
-        public async Task<bool> UpdateProblemTypePricingAsync(int id, string problemName, string category, double minCharge, double maxCharge)
+        public async Task<bool> UpdateProblemTypePricingAsync(int id, string problemName, string category, string cityName, double minCharge, double maxCharge)
         {
             var problem = await _dbContext.ProblemTypePricings.FindAsync(id);
             if (problem == null) return false;
 
             problem.ProblemName = problemName.Trim();
             problem.VehicleCategory = category.Trim();
+            problem.CityName = string.IsNullOrWhiteSpace(cityName) ? "All Cities" : cityName.Trim();
             problem.MinServiceCharge = minCharge;
             problem.MaxServiceCharge = maxCharge;
 

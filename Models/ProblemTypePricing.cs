@@ -15,6 +15,9 @@ namespace RaahSathi.Models
         [StringLength(50)]
         public string VehicleCategory { get; set; } = "Car"; // "Car", "2-Wheeler", "Commercial", "Heavy", "All"
 
+        [StringLength(100)]
+        public string CityName { get; set; } = "All Cities"; // "All Cities", "Noida", "Delhi", "Lucknow", "Mumbai", etc.
+
         public double MinServiceCharge { get; set; }
         public double MaxServiceCharge { get; set; }
 

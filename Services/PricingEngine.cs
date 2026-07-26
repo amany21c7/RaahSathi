@@ -11,7 +11,7 @@ namespace RaahSathi.Services
     public interface IPricingEngine
     {
         Task<(double baseFee, double visitingCharge)> CalculateVisitingChargeAsync(string vehicleType, double distanceKm);
-        (double min, double max) GetServiceChargeRange(string problemType);
+        (double min, double max) GetServiceChargeRange(string problemType, string? cityName = null);
         Task<double> CalculateTowingChargeAsync(string vehicleType, double distanceKm);
     }
 
@@ -55,24 +55,30 @@ namespace RaahSathi.Services
             return (baseFee, Math.Round(visitingCharge, 2));
         }
 
-        public (double min, double max) GetServiceChargeRange(string problemType)
+        public (double min, double max) GetServiceChargeRange(string problemType, string? cityName = null)
         {
             if (!string.IsNullOrWhiteSpace(problemType))
             {
                 string cleanType = problemType.Trim().ToLower();
-                
-                var exactMatch = _dbContext.ProblemTypePricings
-                    .FirstOrDefault(p => p.IsActive && p.ProblemName.ToLower() == cleanType);
-                if (exactMatch != null)
+                string cleanCity = string.IsNullOrWhiteSpace(cityName) ? "" : cityName.Trim().ToLower();
+
+                // 1. First priority: Check exact match for specific City Name
+                if (!string.IsNullOrEmpty(cleanCity))
                 {
-                    return (exactMatch.MinServiceCharge, exactMatch.MaxServiceCharge);
+                    var cityMatch = _dbContext.ProblemTypePricings
+                        .FirstOrDefault(p => p.IsActive && p.CityName.ToLower() == cleanCity && (p.ProblemName.ToLower() == cleanType || p.ProblemName.ToLower().Contains(cleanType) || cleanType.Contains(p.ProblemName.ToLower())));
+                    if (cityMatch != null)
+                    {
+                        return (cityMatch.MinServiceCharge, cityMatch.MaxServiceCharge);
+                    }
                 }
 
-                var partialMatch = _dbContext.ProblemTypePricings
-                    .FirstOrDefault(p => p.IsActive && (p.ProblemName.ToLower().Contains(cleanType) || cleanType.Contains(p.ProblemName.ToLower())));
-                if (partialMatch != null)
+                // 2. Second priority: Fallback to "All Cities" or general rate override
+                var globalMatch = _dbContext.ProblemTypePricings
+                    .FirstOrDefault(p => p.IsActive && (p.CityName == "All Cities" || string.IsNullOrEmpty(p.CityName)) && (p.ProblemName.ToLower() == cleanType || p.ProblemName.ToLower().Contains(cleanType) || cleanType.Contains(p.ProblemName.ToLower())));
+                if (globalMatch != null)
                 {
-                    return (partialMatch.MinServiceCharge, partialMatch.MaxServiceCharge);
+                    return (globalMatch.MinServiceCharge, globalMatch.MaxServiceCharge);
                 }
             }
 

@@ -261,6 +261,9 @@
                 </div>
 
                 <div class="py-2 flex-grow-1">
+                    <a href="/" class="noc-nav-item" target="_blank" title="Go to Main Website Homepage">
+                        <i class="fa-solid fa-house text-warning"></i> Home
+                    </a>
                     <a href="/Admin/Dashboard" class="noc-nav-item @(Context.Request.Path.Value?.Equals("/Admin/Dashboard", StringComparison.OrdinalIgnoreCase) == true || Context.Request.Path.Value?.Equals("/Admin", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-gauge-high"></i> Dashboard
                     </a>
@@ -398,6 +401,18 @@
                                 <span style="color: #FFFFFF; font-weight: 800; letter-spacing: 0.3px;">In</span>
                                 <span style="color: #00E676; font-weight: 800; letter-spacing: 0.3px;">India</span>
                             </span>
+                        </div>
+                        <div class="d-flex gap-3 mt-2 mt-md-0 flex-wrap align-items-center">
+                            @if (isSuperAdmin)
+                            {
+                                <a href="/testing-manual.html" target="_blank" class="text-warning text-decoration-none font-weight-bold"><i class="fa-solid fa-book-open me-1"></i> Testing Manual</a>
+                                <span>•</span>
+                            }
+                            <a href="/Home/Privacy" class="text-muted text-decoration-none hover-warning">Privacy Policy</a>
+                            <span>•</span>
+                            <a href="/Home/Faq" class="text-muted text-decoration-none hover-warning">FAQs</a>
+                            <span>•</span>
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="text-muted text-decoration-none hover-warning">Emergency Support</a>
                         </div>
                     </div>
                 </footer>

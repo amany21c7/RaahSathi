@@ -347,36 +347,36 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddProblemType(string problemName, string vehicleCategory, double minServiceCharge, double maxServiceCharge)
+        public async Task<IActionResult> AddProblemType(string problemName, string vehicleCategory, string cityName, double minServiceCharge, double maxServiceCharge)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            bool success = await _pricingService.AddNewProblemPriceRateAsync(problemName, vehicleCategory, minServiceCharge, maxServiceCharge);
+            bool success = await _pricingService.AddNewProblemPriceRateAsync(problemName, vehicleCategory, cityName, minServiceCharge, maxServiceCharge);
             if (!success)
             {
                 TempData["Error"] = "Please enter valid problem pricing details.";
                 return RedirectToAction("Pricing");
             }
 
-            await LogAdminActionAsync("ADD_PROBLEM_PRICE", $"Added Problem '{problemName}' ({vehicleCategory}) -> Min: ₹{minServiceCharge}, Max: ₹{maxServiceCharge}");
-            TempData["Success"] = $"Vehicle Problem Type '{problemName}' added successfully.";
+            await LogAdminActionAsync("ADD_PROBLEM_PRICE", $"Added Problem '{problemName}' ({vehicleCategory}, City: {cityName}) -> Min: ₹{minServiceCharge}, Max: ₹{maxServiceCharge}");
+            TempData["Success"] = $"Vehicle Problem Type '{problemName}' ({cityName}) added successfully.";
             return RedirectToAction("Pricing");
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateProblemTypePrice(int id, string problemName, string vehicleCategory, double minServiceCharge, double maxServiceCharge)
+        public async Task<IActionResult> UpdateProblemTypePrice(int id, string problemName, string vehicleCategory, string cityName, double minServiceCharge, double maxServiceCharge)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            bool success = await _pricingService.UpdateProblemPriceRateAsync(id, problemName, vehicleCategory, minServiceCharge, maxServiceCharge);
+            bool success = await _pricingService.UpdateProblemPriceRateAsync(id, problemName, vehicleCategory, cityName, minServiceCharge, maxServiceCharge);
             if (!success)
             {
                 TempData["Error"] = "Invalid input values or problem rate not found.";
                 return RedirectToAction("Pricing");
             }
 
-            await LogAdminActionAsync("UPDATE_PROBLEM_PRICE", $"Updated Problem '{problemName}' ({vehicleCategory}) -> Min: ₹{minServiceCharge}, Max: ₹{maxServiceCharge}");
-            TempData["Success"] = $"Price rate for '{problemName}' updated successfully!";
+            await LogAdminActionAsync("UPDATE_PROBLEM_PRICE", $"Updated Problem '{problemName}' ({vehicleCategory}, City: {cityName}) -> Min: ₹{minServiceCharge}, Max: ₹{maxServiceCharge}");
+            TempData["Success"] = $"Price rate for '{problemName}' ({cityName}) updated successfully!";
             return RedirectToAction("Pricing");
         }
 
