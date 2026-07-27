@@ -122,6 +122,29 @@ namespace RaahSathi.Controllers
                 .OrderByDescending(m => m.SentAt)
                 .ToListAsync();
 
+            // Calculate Wallet Stats
+            var payments = await _dbContext.Payments
+                .Include(p => p.Job)
+                .Where(p => p.Job != null && p.Job.MechanicId == user.Id && p.PaymentStatus == "Released")
+                .ToListAsync();
+
+            var todayLocal = DateTime.UtcNow.ToLocalTime().Date;
+            double todayEarnings = payments
+                .Where(p => p.CreatedAt.ToLocalTime().Date == todayLocal)
+                .Sum(p => p.MechanicEarningAmount);
+
+            var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+            double weeklyEarnings = payments
+                .Where(p => p.CreatedAt >= sevenDaysAgo)
+                .Sum(p => p.MechanicEarningAmount);
+
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            double monthlyVolume = payments
+                .Where(p => p.CreatedAt >= thirtyDaysAgo)
+                .Sum(p => p.Amount);
+
+            double pendingSettlement = profile.CurrentEarnings;
+
             ViewBag.User = user;
             ViewBag.Profile = profile;
             ViewBag.ActiveJob = activeJob;
@@ -130,6 +153,11 @@ namespace RaahSathi.Controllers
             ViewBag.ActiveWarning = activeWarning;
             ViewBag.SupportMessages = supportMessages;
             ViewBag.UnreadSupportCount = supportMessages.Count(m => !m.IsRead && m.IsFromAdmin);
+            ViewBag.TodayEarnings = todayEarnings;
+            ViewBag.WeeklyEarnings = weeklyEarnings;
+            ViewBag.MonthlyVolume = monthlyVolume;
+            ViewBag.PendingSettlement = pendingSettlement;
+            ViewBag.Payments = payments.OrderByDescending(p => p.CreatedAt).ToList();
 
             return View();
         }
@@ -801,6 +829,60 @@ namespace RaahSathi.Controllers
             await _dbContext.SaveChangesAsync();
 
             return Json(new { success = true, message = "Reply sent to Operations Support Team!" });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetWalletStats()
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated" });
+
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (profile == null) return Json(new { success = false, message = "Profile not found" });
+
+            var payments = await _dbContext.Payments
+                .Include(p => p.Job)
+                .Where(p => p.Job != null && p.Job.MechanicId == user.Id && p.PaymentStatus == "Released")
+                .ToListAsync();
+
+            var todayLocal = DateTime.UtcNow.ToLocalTime().Date;
+            double todayEarnings = payments
+                .Where(p => p.CreatedAt.ToLocalTime().Date == todayLocal)
+                .Sum(p => p.MechanicEarningAmount);
+
+            var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+            double weeklyEarnings = payments
+                .Where(p => p.CreatedAt >= sevenDaysAgo)
+                .Sum(p => p.MechanicEarningAmount);
+
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            double monthlyVolume = payments
+                .Where(p => p.CreatedAt >= thirtyDaysAgo)
+                .Sum(p => p.Amount);
+
+            double pendingSettlement = profile.CurrentEarnings;
+
+            var transactions = payments
+                .OrderByDescending(p => p.CreatedAt)
+                .Take(10)
+                .Select(p => new {
+                    id = p.Id,
+                    jobId = p.JobId,
+                    amount = p.Amount,
+                    mechanicEarning = p.MechanicEarningAmount,
+                    createdAt = p.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt"),
+                    status = p.PaymentStatus
+                })
+                .ToList();
+
+            return Json(new {
+                success = true,
+                todayEarnings = todayEarnings,
+                weeklyEarnings = weeklyEarnings,
+                monthlyVolume = monthlyVolume,
+                pendingSettlement = pendingSettlement,
+                transactions = transactions
+            });
         }
     }
 }
