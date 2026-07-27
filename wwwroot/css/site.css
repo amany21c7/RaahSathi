@@ -2,10 +2,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --bg-dark: #0a1324; /* Deep Navy from brand icon */
-    --bg-card: #121f35; /* Card Midnight Navy */
-    --border-color: #243552; /* Slate Blue Border */
-    --border-hover: #ff6b00; /* Vibrant Brand Orange Hover */
+    --bg-dark: #070c16; /* Clean deep dark navy background */
+    --bg-card: #0e1726; /* Softer card background */
+    --border-color: rgba(255, 255, 255, 0.08); /* Clean, ultra-soft white border */
+    --border-hover: rgba(255, 107, 0, 0.5); /* Soft Brand Orange Hover */
     --primary: #ff6b00; /* Energetic Brand Road Orange */
     --primary-hover: #e05d00; /* Darker Brand Orange */
     --secondary: #38bdf8; /* Brand Accent Blue */
@@ -13,7 +13,7 @@
     --danger: #ef4444;
     --danger-hover: #dc2626;
     --success: #10b981;
-    --text-main: #f8fafc;
+    --text-main: #f1f5f9;
     --text-muted: #94a3b8;
 }
 
@@ -127,15 +127,16 @@ h1, h2, h3, h4, h5, h6 {
 .glass-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 14px;
     padding: 24px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 .glass-card:hover {
     border-color: var(--border-hover);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
 /* Solid Buttons */
@@ -145,9 +146,9 @@ h1, h2, h3, h4, h5, h6 {
     color: #ffffff !important;
     font-weight: 600;
     letter-spacing: 0.3px;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 8px;
-    padding: 10px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 12px;
+    padding: 10px 22px;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     position: relative;
     overflow: hidden;
@@ -205,11 +206,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-premium-secondary {
     font-family: 'Outfit', 'Inter', sans-serif;
-    background: rgba(30, 41, 59, 0.65) !important;
+    background: rgba(30, 41, 59, 0.45) !important;
     color: var(--text-main) !important;
     border: 1px solid var(--border-color) !important;
-    border-radius: 8px;
-    padding: 10px 20px;
+    border-radius: 12px;
+    padding: 10px 22px;
     font-weight: 500;
     backdrop-filter: blur(8px);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -438,10 +439,10 @@ select.glass-input,
 textarea.glass-input,
 .form-control.glass-input,
 .form-select.glass-input {
-    background-color: #1e293b !important;
+    background-color: #0b111e !important;
     border: 1px solid var(--border-color) !important;
     color: #ffffff !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
     padding: 10px 14px !important;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -557,13 +558,13 @@ select.glass-input option {
 }
 
 .problem-card {
-    background: #0f172a;
+    background: #0b111e;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 12px;
     padding: 16px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
 }
 
 .problem-card i {

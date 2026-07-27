@@ -78,7 +78,10 @@
 
             <!-- Step 1: Vehicle Category Selection -->
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <label class="form-label text-white small font-weight-bold mb-0">1. Select Vehicle Type</label>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center font-weight-bold" style="width:20px; height:20px; font-size:0.7rem;">1</span>
+                    <label class="form-label text-white small font-weight-bold mb-0">Select Vehicle Type</label>
+                </div>
                 <span class="badge bg-dark text-warning border border-warning border-opacity-40 px-2.5 py-1 font-weight-bold" id="vehicleCategoryTooltipBadge" style="font-size:0.75rem;">
                     <i class="fa-solid fa-circle-info me-1"></i> All Cars and SUVs
                 </span>
@@ -131,7 +134,10 @@
 
 
             <!-- Step 2: Issue / Problem Category Selection Cards -->
-            <label class="form-label text-white small font-weight-bold mb-2">2. Breakdown Problem</label>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center font-weight-bold" style="width:20px; height:20px; font-size:0.7rem;">2</span>
+                <label class="form-label text-white small font-weight-bold mb-0">Breakdown Problem</label>
+            </div>
             <div class="row g-2 mb-3">
                 <div class="col-6">
                     <div class="prob-card p-2.5 rounded-3 border border-warning active-prob-card cursor-pointer d-flex align-items-center" onclick="setProblemType('Battery Dead', this)">
@@ -229,7 +235,10 @@
             <!-- Step 3: Breakdown Address & Gali / House No. -->
             <div class="row g-2 mb-3">
                 <div class="col-12">
-                    <label class="form-label text-white small font-weight-bold">3. Exact Breakdown Address <span class="text-warning">*</span></label>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center font-weight-bold" style="width:20px; height:20px; font-size:0.7rem;">3</span>
+                        <label class="form-label text-white small font-weight-bold mb-0">Exact Breakdown Address <span class="text-warning">*</span></label>
+                    </div>
                     <div class="input-group">
                         <input type="text" class="form-control glass-input text-white font-weight-bold" id="addressInput" placeholder="Auto-detecting Gali, House No, Sector & City via GPS..." onkeypress="if(event.key==='Enter'){event.preventDefault();searchAddressFromInput();}" required />
                         <button type="button" class="btn btn-warning font-weight-bold text-dark text-nowrap" onclick="searchAddressFromInput()" title="Search address on map">
@@ -405,16 +414,20 @@
 
 <style>
 .v-pill, .prob-card {
-    transition: all 0.2s ease-in-out;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 12px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 .v-pill:hover, .prob-card:hover {
     transform: translateY(-2px);
-    border-color: #f59e0b !important;
+    border-color: rgba(245, 158, 11, 0.4) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
 }
 .active-v-pill, .active-prob-card {
-    background: rgba(245, 158, 11, 0.15) !important;
+    background: rgba(245, 158, 11, 0.08) !important;
     border-color: #f59e0b !important;
-    box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);
 }
 </style>
 
