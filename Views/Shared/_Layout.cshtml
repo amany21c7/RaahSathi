@@ -275,6 +275,15 @@
                     <button type="button" class="btn-close btn-close-white d-lg-none" onclick="toggleAdminSidebar()"></button>
                 </div>
 
+                <!-- Mobile Only Search Bar inside Sidebar -->
+                <div class="px-3 py-2.5 d-lg-none border-bottom border-secondary border-opacity-20 bg-black bg-opacity-20">
+                    <div class="input-group input-group-sm position-relative">
+                        <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="mobileSearchInput" class="form-control bg-dark border-secondary text-white small" placeholder="Search mechanics, jobs..." autocomplete="off">
+                        <div id="mobileSearchResults" class="dropdown-menu bg-dark border-secondary shadow-lg py-2 text-white" style="position: absolute; top: 100%; left: 0; right: 0; display: none; max-height: 400px; overflow-y: auto; z-index: 10050; width: 100%;"></div>
+                    </div>
+                </div>
+
                 <div class="py-2 flex-grow-1">
                     <a href="/" class="noc-nav-item" target="_blank" title="Go to Main Website Homepage">
                         <i class="fa-solid fa-house text-warning"></i> Home
@@ -354,9 +363,10 @@
                         <button type="button" class="btn btn-outline-warning btn-sm d-lg-none px-2 py-1 me-1" onclick="toggleAdminSidebar()">
                             <i class="fa-solid fa-bars fs-6"></i>
                         </button>
-                        <div class="input-group input-group-sm noc-topbar-search" style="width: 260px;">
+                        <div class="input-group input-group-sm noc-topbar-search" style="width: 260px; position: relative;">
                             <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                            <input type="text" class="form-control bg-dark border-secondary text-white small" placeholder="Search mechanics, jobs...">
+                            <input type="text" id="globalSearchInput" class="form-control bg-dark border-secondary text-white small" placeholder="Search mechanics, jobs..." autocomplete="off">
+                            <div id="globalSearchResults" class="dropdown-menu bg-dark border-secondary shadow-lg py-2 text-white" style="position: absolute; top: 100%; left: 0; right: 0; display: none; max-height: 400px; overflow-y: auto; z-index: 10050; min-width: 320px;"></div>
                         </div>
                     </div>
 
@@ -1005,5 +1015,384 @@
         })();
     </script>
     <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- Global Job Details Modal -->
+    <div class="modal fade" id="globalJobDetailsModal" tabindex="-1" aria-hidden="true" style="z-index: 10550;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-warning text-white shadow-lg" style="border-radius:12px; border:1px solid #f59e0b;">
+                <div class="modal-header border-secondary bg-black bg-opacity-20">
+                    <h5 class="modal-title text-warning font-weight-bold" id="gJobTitle">Job Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <span class="text-muted small d-block">Status</span>
+                            <span id="gJobStatus" class="badge bg-warning text-dark font-weight-bold">Requested</span>
+                        </div>
+                        <div class="col-6 text-end">
+                            <span class="text-muted small d-block">Created On</span>
+                            <span id="gJobDate" class="text-white small font-weight-bold">N/A</span>
+                        </div>
+                        <div class="col-12 border-bottom border-secondary border-opacity-30 pb-2"></div>
+                        <div class="col-6">
+                            <span class="text-muted small d-block">Customer</span>
+                            <strong id="gJobCustomer" class="text-white">Rahul Sharma</strong>
+                            <span id="gJobCustomerPhone" class="text-muted small d-block">98765...</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted small d-block">Assigned Partner</span>
+                            <strong id="gJobMechanic" class="text-white">Amit Kumar</strong>
+                            <span id="gJobMechanicPhone" class="text-muted small d-block">98765...</span>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Vehicle & Reg No</span>
+                            <span id="gJobVehicle" class="text-white font-weight-bold">N/A</span>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Reported Problem</span>
+                            <span id="gJobProblem" class="badge bg-danger text-white">Flat Tyre</span>
+                            <p id="gJobDesc" class="text-muted small mt-1 mb-0">No description</p>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Service Address</span>
+                            <span id="gJobAddress" class="text-light small">N/A</span>
+                        </div>
+                        <div class="col-12 border-bottom border-secondary border-opacity-30 pb-2"></div>
+                        <div class="col-12">
+                            <span class="text-warning small font-weight-bold d-block mb-1">Financial Breakdown</span>
+                            <div class="p-3 bg-black bg-opacity-30 border border-secondary rounded-3 small">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Visiting Charge:</span>
+                                    <span id="gJobBillVisit">₹0</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Service Min:</span>
+                                    <span id="gJobBillService">₹0</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1" id="rowGJobCustomEst">
+                                    <span>Approved Custom Estimate:</span>
+                                    <span id="gJobBillCustomEst">₹0</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1" id="rowGJobParts">
+                                    <span>Extra Parts:</span>
+                                    <span id="gJobBillParts">₹0</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1" id="rowGJobLabour">
+                                    <span>Extra Labour:</span>
+                                    <span id="gJobBillLabour">₹0</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1" id="rowGJobTowing">
+                                    <span>Towing Fee:</span>
+                                    <span id="gJobBillTowing">₹0</span>
+                                </div>
+                                <div class="d-flex justify-content-between border-top border-secondary pt-1 mt-1 font-weight-bold text-white fs-6">
+                                    <span>Total Paid Bill:</span>
+                                    <span id="gJobBillTotal" class="text-warning">₹0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12" id="gJobDisputeContainer" style="display:none;">
+                            <span class="text-danger small font-weight-bold d-block mb-1">Active Dispute Details</span>
+                            <div class="p-2.5 bg-danger bg-opacity-10 border border-danger rounded text-white small">
+                                <span class="d-block">Status: <strong class="text-danger" id="gJobDisputeStatus">Active</strong></span>
+                                <span class="d-block mt-1">Reason: <span id="gJobDisputeReason">No reason specified.</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Mechanic Details Modal -->
+    <div class="modal fade" id="globalMechanicDetailsModal" tabindex="-1" aria-hidden="true" style="z-index: 10550;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-info text-white shadow-lg" style="border-radius:12px; border:1px solid #0dcaf0;">
+                <div class="modal-header border-secondary bg-black bg-opacity-20">
+                    <h5 class="modal-title text-info font-weight-bold" id="gMechTitle">Partner Profile</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <span class="text-muted small d-block">KYC Status</span>
+                            <span id="gMechKyc" class="badge bg-success text-white font-weight-bold">Approved</span>
+                        </div>
+                        <div class="col-6 text-end">
+                            <span class="text-muted small d-block">Network Status</span>
+                            <span id="gMechOnline" class="badge bg-success text-white font-weight-bold">Online</span>
+                        </div>
+                        <div class="col-12 border-bottom border-secondary border-opacity-30 pb-2"></div>
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Partner Name</span>
+                            <h4 id="gMechName" class="text-white font-weight-bold mb-1">Amit Kumar</h4>
+                            <span id="gMechPhone" class="text-muted small font-weight-bold"><i class="fa-solid fa-phone text-info me-1"></i> +91 9876543210</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted small d-block">Experience</span>
+                            <strong id="gMechExp" class="text-light">6 Years</strong>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted small d-block">Customer Rating</span>
+                            <strong id="gMechRating" class="text-warning">4.8 ★</strong>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Garage/Shop Name</span>
+                            <span id="gMechShop" class="text-warning font-weight-bold">Garage Experts</span>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Shop Address & Timings</span>
+                            <span id="gMechAddress" class="text-light small">LKO</span>
+                            <div class="text-muted small mt-1" id="gMechTimings">Timings: N/A</div>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Aadhaar Verification</span>
+                            <span id="gMechAadhaar" class="text-white font-weight-bold">N/A</span>
+                        </div>
+                        <div class="col-12 border-bottom border-secondary border-opacity-30 pb-2"></div>
+                        <div class="col-6">
+                            <span class="text-muted small d-block">Completed Jobs</span>
+                            <strong id="gMechTotalJobs" class="text-white">0 Jobs</strong>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted small d-block">Current Wallet Earnings</span>
+                            <strong id="gMechEarnings" class="text-success">₹0.00</strong>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Specializations</span>
+                            <div id="gMechSpecs" class="d-flex flex-wrap gap-1 mt-1"></div>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted small d-block">Supported Vehicles</span>
+                            <div id="gMechVehicles" class="d-flex flex-wrap gap-1 mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var searchInputs = $('#globalSearchInput, #mobileSearchInput');
+            var debounceTimer;
+
+            // Close search results dropdown on clicking outside
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('.noc-topbar-search, .position-relative').length) {
+                    $('#globalSearchResults, #mobileSearchResults').hide();
+                }
+            });
+
+            // Prevent closing when clicking inside results
+            $('#globalSearchResults, #mobileSearchResults').on('click', function(e) {
+                e.stopPropagation();
+            });
+
+            searchInputs.on('input focus', function () {
+                clearTimeout(debounceTimer);
+                var self = $(this);
+                var query = self.val();
+                var resultsDiv = self.siblings('.dropdown-menu');
+
+                if (!query || query.trim().length < 2) {
+                    resultsDiv.hide().empty();
+                    return;
+                }
+
+                debounceTimer = setTimeout(function () {
+                    $.getJSON('/Admin/GlobalSearch', { query: query }, function (data) {
+                        resultsDiv.empty();
+
+                        if (!data.success) {
+                            resultsDiv.append('<div class="dropdown-header text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> Error loading results</div>');
+                            resultsDiv.show();
+                            return;
+                        }
+
+                        var hasResults = false;
+
+                        // Mechanics Header
+                        if (data.mechanics && data.mechanics.length > 0) {
+                            hasResults = true;
+                            resultsDiv.append('<h6 class="dropdown-header text-info font-weight-bold pb-1 pt-2 px-3 m-0" style="font-size:0.75rem;"><i class="fa-solid fa-user-gear me-1"></i> MECHANICS (' + data.mechanics.length + ')</h6>');
+                            data.mechanics.forEach(function (m) {
+                                var badgeKyc = m.kycStatus === 'Approved' ? 'bg-success' : 'bg-warning text-dark';
+                                var onlineStatus = m.isOnline ? '<span class="text-success ms-1">🟢</span>' : '<span class="text-muted ms-1">⚫</span>';
+                                var html = '<a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 border-bottom border-secondary border-opacity-10 text-white small" href="javascript:void(0);" onclick="showGlobalMechanicDetails(' + m.id + ')">' +
+                                    '<div>' +
+                                    '  <strong class="text-light font-weight-bold">' + m.name + '</strong>' + onlineStatus +
+                                    '  <div class="text-muted small" style="font-size:0.75rem;">' + (m.shopName || 'Independent Partner') + ' | ' + m.phone + '</div>' +
+                                    '</div>' +
+                                    '<span class="badge ' + badgeKyc + ' font-weight-bold small" style="font-size:0.65rem;">' + m.kycStatus + '</span>' +
+                                    '</a>';
+                                resultsDiv.append(html);
+                            });
+                        }
+
+                        // Jobs Header
+                        if (data.jobs && data.jobs.length > 0) {
+                            hasResults = true;
+                            resultsDiv.append('<h6 class="dropdown-header text-warning font-weight-bold pb-1 pt-2 px-3 m-0" style="font-size:0.75rem;"><i class="fa-solid fa-wrench me-1"></i> ACTIVE JOBS (' + data.jobs.length + ')</h6>');
+                            data.jobs.forEach(function (j) {
+                                var badgeClass = 'bg-secondary';
+                                if (j.status === 'Completed') badgeClass = 'bg-success';
+                                else if (j.status === 'Cancelled') badgeClass = 'bg-danger';
+                                else if (j.status === 'Assigned') badgeClass = 'bg-info text-dark';
+                                else if (j.status === 'Requested') badgeClass = 'bg-warning text-dark';
+
+                                var html = '<a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 border-bottom border-secondary border-opacity-10 text-white small" href="javascript:void(0);" onclick="showGlobalJobDetails(' + j.id + ')">' +
+                                    '<div>' +
+                                    '  <strong class="text-light font-weight-bold">#RS-' + String(j.id).padStart(4, '0') + ' (' + j.problem + ')</strong>' +
+                                    '  <div class="text-muted small" style="font-size:0.75rem;">Cust: ' + j.customerName + ' | Tech: ' + j.mechanicName + '</div>' +
+                                    '</div>' +
+                                    '<span class="badge ' + badgeClass + ' font-weight-bold small" style="font-size:0.65rem;">' + j.status + '</span>' +
+                                    '</a>';
+                                resultsDiv.append(html);
+                            });
+                        }
+
+                        if (!hasResults) {
+                            resultsDiv.append('<div class="p-3 text-center text-muted small"><i class="fa-solid fa-magnifying-glass-minus me-1"></i> No matching entries found</div>');
+                        }
+
+                        resultsDiv.show();
+                    });
+                }, 250);
+            });
+        });
+
+        function showGlobalJobDetails(jobId) {
+            $('#globalSearchResults, #mobileSearchResults').hide();
+            if ($('.noc-sidebar').hasClass('show')) {
+                toggleAdminSidebar();
+            }
+            $.getJSON('/Admin/GetGlobalJobDetails', { id: jobId }, function (data) {
+                if (!data.success) {
+                    alert(data.message || "Failed to load job details.");
+                    return;
+                }
+
+                $('#gJobTitle').text('Job Details: ' + data.displayId);
+                $('#gJobStatus').text(data.status).attr('class', 'badge font-weight-bold').addClass(
+                    data.status === 'Completed' ? 'bg-success text-white' :
+                    data.status === 'Cancelled' ? 'bg-danger text-white' :
+                    data.status === 'Assigned' ? 'bg-info text-dark' : 'bg-warning text-dark'
+                );
+                $('#gJobDate').text(data.date);
+                $('#gJobCustomer').text(data.customerName);
+                $('#gJobCustomerPhone').text(data.customerPhone);
+                $('#gJobMechanic').text(data.mechanicName);
+                $('#gJobMechanicPhone').text(data.mechanicPhone);
+                $('#gJobVehicle').text(data.vehicle);
+                $('#gJobProblem').text(data.problem);
+                $('#gJobDesc').text(data.description || 'No description provided.');
+                $('#gJobAddress').text(data.address);
+
+                // Financials
+                $('#gJobBillVisit').text('₹' + data.visiting.toFixed(2));
+                $('#gJobBillService').text('₹' + data.service.toFixed(2));
+
+                if (data.customEst > 0) {
+                    $('#rowGJobCustomEst').show();
+                    $('#gJobBillCustomEst').text('₹' + data.customEst.toFixed(2));
+                } else {
+                    $('#rowGJobCustomEst').hide();
+                }
+
+                if (data.parts > 0) {
+                    $('#rowGJobParts').show();
+                    $('#gJobBillParts').text('₹' + data.parts.toFixed(2));
+                } else {
+                    $('#rowGJobParts').hide();
+                }
+
+                if (data.labour > 0) {
+                    $('#rowGJobLabour').show();
+                    $('#gJobBillLabour').text('₹' + data.labour.toFixed(2));
+                } else {
+                    $('#rowGJobLabour').hide();
+                }
+
+                if (data.towing > 0) {
+                    $('#rowGJobTowing').show();
+                    $('#gJobBillTowing').text('₹' + data.towing.toFixed(2));
+                } else {
+                    $('#rowGJobTowing').hide();
+                }
+
+                $('#gJobBillTotal').text('₹' + data.total.toFixed(2));
+
+                // Dispute
+                if (data.disputeStatus !== 'None') {
+                    $('#gJobDisputeContainer').show();
+                    $('#gJobDisputeStatus').text(data.disputeStatus);
+                    $('#gJobDisputeReason').text(data.disputeReason || 'No details provided.');
+                } else {
+                    $('#gJobDisputeContainer').hide();
+                }
+
+                var jobModal = new bootstrap.Modal(document.getElementById('globalJobDetailsModal'));
+                jobModal.show();
+            });
+        }
+
+        function showGlobalMechanicDetails(mechId) {
+            $('#globalSearchResults, #mobileSearchResults').hide();
+            if ($('.noc-sidebar').hasClass('show')) {
+                toggleAdminSidebar();
+            }
+            $.getJSON('/Admin/GetGlobalMechanicDetails', { id: mechId }, function (data) {
+                if (!data.success) {
+                    alert(data.message || "Failed to load mechanic details.");
+                    return;
+                }
+
+                $('#gMechTitle').text('Partner Profile: ' + data.displayId);
+                $('#gMechKyc').text(data.kycStatus).attr('class', 'badge font-weight-bold').addClass(
+                    data.kycStatus === 'Approved' ? 'bg-success text-white' : 'bg-warning text-dark'
+                );
+                $('#gMechOnline').text(data.isOnline ? 'Online' : 'Offline').attr('class', 'badge font-weight-bold').addClass(
+                    data.isOnline ? 'bg-success text-white' : 'bg-secondary text-light'
+                );
+                $('#gMechName').text(data.name);
+                $('#gMechPhone').html('<i class="fa-solid fa-phone text-info me-1"></i> ' + data.phone);
+                $('#gMechExp').text(data.experience + ' Years');
+                $('#gMechRating').text((data.rating || 4.8) + ' ★');
+                $('#gMechShop').text(data.shopName || 'Independent Field Partner');
+                $('#gMechAddress').text(data.shopAddress || 'N/A');
+                $('#gMechTimings').text('Shop Timings: ' + (data.shopTimings || 'N/A'));
+                $('#gMechAadhaar').text(data.aadhaar || 'Verified via Aadhaar OTP');
+
+                // Earnings & Stats
+                $('#gMechTotalJobs').text(data.totalJobs + ' Completed Jobs');
+                $('#gMechEarnings').text('₹' + data.earnings.toFixed(2));
+
+                // Specs
+                $('#gMechSpecs').empty();
+                if (data.specializations) {
+                    data.specializations.split(',').forEach(function (s) {
+                        $('#gMechSpecs').append('<span class="badge bg-info text-dark text-xs font-weight-medium">' + s.trim() + '</span>');
+                    });
+                } else {
+                    $('#gMechSpecs').append('<span class="text-muted small">None</span>');
+                }
+
+                // Vehicles
+                $('#gMechVehicles').empty();
+                if (data.vehicles) {
+                    data.vehicles.split(',').forEach(function (v) {
+                        $('#gMechVehicles').append('<span class="badge bg-secondary text-light text-xs">' + v.trim() + '</span>');
+                    });
+                } else {
+                    $('#gMechVehicles').append('<span class="text-muted small">None</span>');
+                }
+
+                var mechModal = new bootstrap.Modal(document.getElementById('globalMechanicDetailsModal'));
+                mechModal.show();
+            });
+        }
+    </script>
 </body>
 </html>

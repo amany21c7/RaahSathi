@@ -1228,5 +1228,138 @@ namespace RaahSathi.Controllers
             catch { }
             return defaultValue;
         }
+
+        [HttpGet("/Admin/GlobalSearch")]
+        public async Task<IActionResult> GlobalSearch(string query)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Not authenticated" });
+            if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 2)
+            {
+                return Json(new { success = true, mechanics = new List<object>(), jobs = new List<object>() });
+            }
+
+            string cleanQuery = query.Trim();
+
+            // Search mechanics
+            var matchingMechanics = await _dbContext.MechanicProfiles
+                .Include(m => m.User)
+                .Where(m => m.User != null && (m.User.Name.Contains(cleanQuery) || m.User.PhoneNumber.Contains(cleanQuery) || m.ShopName.Contains(cleanQuery) || m.DisplayId.Contains(cleanQuery)))
+                .Take(5)
+                .Select(m => new {
+                    id = m.UserId,
+                    displayId = m.DisplayId,
+                    name = m.User != null ? m.User.Name : "Mechanic",
+                    phone = m.User != null ? m.User.PhoneNumber : "",
+                    shopName = m.ShopName,
+                    rating = m.Rating,
+                    experience = m.ExperienceYears,
+                    isOnline = m.IsOnline,
+                    kycStatus = m.KycStatus
+                })
+                .ToListAsync();
+
+            // Search jobs
+            int targetJobId = -1;
+            bool isInt = int.TryParse(cleanQuery.Replace("#", "").Replace("RS-", "").Replace("rs-", ""), out targetJobId);
+
+            var matchingJobs = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Mechanic)
+                .Where(j => (isInt && j.Id == targetJobId) || 
+                            (j.Customer != null && j.Customer.Name.Contains(cleanQuery)) || 
+                            (j.Mechanic != null && j.Mechanic.Name.Contains(cleanQuery)) || 
+                            j.ProblemType.Contains(cleanQuery) || 
+                            j.Status.Contains(cleanQuery))
+                .OrderByDescending(j => j.Id)
+                .Take(5)
+                .Select(j => new {
+                    id = j.Id,
+                    customerName = j.Customer != null ? j.Customer.Name : "Customer",
+                    mechanicName = j.Mechanic != null ? j.Mechanic.Name : "Matching...",
+                    problem = j.ProblemType,
+                    status = j.Status,
+                    finalBill = j.FinalBillAmount
+                })
+                .ToListAsync();
+
+            return Json(new {
+                success = true,
+                mechanics = matchingMechanics,
+                jobs = matchingJobs
+            });
+        }
+
+        [HttpGet("/Admin/GetGlobalJobDetails")]
+        public async Task<IActionResult> GetGlobalJobDetails(int id)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Not authenticated" });
+
+            var job = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Mechanic)
+                .Include(j => j.Vehicle)
+                .FirstOrDefaultAsync(j => j.Id == id);
+
+            if (job == null) return Json(new { success = false, message = "Job not found." });
+
+            return Json(new {
+                success = true,
+                id = job.Id,
+                displayId = $"#RS-{job.Id:D4}",
+                customerName = job.Customer?.Name ?? "Customer",
+                customerPhone = job.Customer?.PhoneNumber ?? "N/A",
+                mechanicName = job.Mechanic?.Name ?? "Pending Matching",
+                mechanicPhone = job.Mechanic?.PhoneNumber ?? "N/A",
+                vehicle = $"{job.Vehicle?.Model ?? "Vehicle"} ({job.Vehicle?.RegistrationNumber ?? "N/A"})",
+                problem = job.ProblemType,
+                description = job.ProblemDescription,
+                status = job.Status,
+                visiting = job.VisitingCharge,
+                service = job.ServiceChargeMin,
+                customEst = job.CustomEstimateAmount,
+                parts = job.PartsEstimateAmount,
+                labour = job.ExtraLabourCharge,
+                towing = job.TowingCharge,
+                total = job.FinalBillAmount > 0 ? job.FinalBillAmount : (job.VisitingCharge + job.ServiceChargeMin),
+                date = job.CreatedAt.ToString("dd MMM yyyy, hh:mm tt"),
+                completedDate = job.CompletedAt?.ToString("dd MMM yyyy, hh:mm tt") ?? "N/A",
+                address = job.Address,
+                disputeStatus = job.DisputeStatus,
+                disputeReason = job.DisputeReason
+            });
+        }
+
+        [HttpGet("/Admin/GetGlobalMechanicDetails")]
+        public async Task<IActionResult> GetGlobalMechanicDetails(int id)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Not authenticated" });
+
+            var mechanic = await _dbContext.MechanicProfiles
+                .Include(m => m.User)
+                .FirstOrDefaultAsync(m => m.UserId == id);
+
+            if (mechanic == null) return Json(new { success = false, message = "Mechanic not found." });
+
+            return Json(new {
+                success = true,
+                id = mechanic.UserId,
+                displayId = mechanic.DisplayId,
+                name = mechanic.User?.Name ?? "Mechanic",
+                phone = mechanic.User?.PhoneNumber ?? "N/A",
+                shopName = mechanic.ShopName,
+                shopAddress = mechanic.ShopAddress,
+                shopTimings = mechanic.ShopTiming,
+                rating = mechanic.Rating,
+                experience = mechanic.ExperienceYears,
+                specializations = mechanic.Specialization,
+                vehicles = mechanic.VehicleExpertise,
+                kycStatus = mechanic.KycStatus,
+                isOnline = mechanic.IsOnline,
+                aadhaar = mechanic.AadhaarNumber,
+                earnings = mechanic.CurrentEarnings,
+                totalJobs = mechanic.TotalJobs,
+                certification = mechanic.IsCertified ? "Certified Professional" : "Standard Partner"
+            });
+        }
     }
 }
