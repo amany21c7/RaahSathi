@@ -502,7 +502,7 @@ namespace RaahSathi.Controllers
             return Json(new
             {
                 success = true,
-                message = $"Payment of ₹{breakdown.TotalBillAmount:N2} collected via QR! Net ₹{breakdown.MechanicNetEarning:N2} credited to your wallet after {breakdown.CommissionPercent:F0}% commission deduction.",
+                message = $"Payment of ₹{breakdown.TotalBillAmount:N2} collected successfully!",
                 jobId = job.Id,
                 finalBillAmount = breakdown.TotalBillAmount,
                 adminCommission = breakdown.AdminCommission,

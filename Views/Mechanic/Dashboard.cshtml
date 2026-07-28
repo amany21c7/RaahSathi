@@ -534,6 +534,7 @@
                                 <th>Customer</th>
                                 <th>Date</th>
                                 <th>Total Bill</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -546,6 +547,11 @@
                                     <td>@j.Customer?.Name</td>
                                     <td class="small text-muted">@(j.CompletedAt?.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt") ?? "-")</td>
                                     <td class="text-success font-weight-bold">₹@j.FinalBillAmount</td>
+                                    <td>
+                                        <button class="btn btn-outline-info btn-sm font-weight-bold" onclick="showJobInvoiceModal(@j.Id)">
+                                            <i class="fa-solid fa-receipt me-1"></i> View Receipt
+                                        </button>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -1492,7 +1498,7 @@
                 if (qrModal) qrModal.hide();
 
                 alert(res.message);
-                showJobInvoiceModal(currentQrJobId);
+                location.reload();
             } else {
                 alert(res.message || 'Payment processing failed.');
             }
@@ -1599,12 +1605,12 @@
                         <span>Custom Estimate / Parts:</span>
                         <strong class="text-light" id="qrModalExtra">₹0.00</strong>
                     </div>
-                    <hr class="border-secondary my-2">
-                    <div class="d-flex justify-content-between text-warning small font-weight-bold mb-1">
+                    <hr class="border-secondary my-2" style="display: none !important;">
+                    <div class="d-flex justify-content-between text-warning small font-weight-bold mb-1" style="display: none !important;">
                         <span><i class="fa-solid fa-shield-halved text-warning me-1"></i> Platform Commission (<span id="qrModalCommPct">10</span>%):</span>
                         <span class="text-warning">-₹<span id="qrModalCommAmount">0.00</span></span>
                     </div>
-                    <div class="d-flex justify-content-between text-success font-weight-bold fs-6">
+                    <div class="d-flex justify-content-between text-success font-weight-bold fs-6" style="display: none !important;">
                         <span><i class="fa-solid fa-wallet text-success me-1"></i> Net Wallet Credit:</span>
                         <span class="text-success" id="qrModalNetCredit">₹0.00</span>
                     </div>
@@ -1689,7 +1695,7 @@
                     </div>
 
                     <!-- Platform Vault Net Credit Card -->
-                    <div class="p-3 bg-black bg-opacity-60 rounded-3 border border-secondary">
+                    <div class="p-3 bg-black bg-opacity-60 rounded-3 border border-secondary" style="display: none !important;">
                         <div class="d-flex justify-content-between text-warning small font-weight-bold mb-1">
                             <span><i class="fa-solid fa-shield-halved text-warning me-1"></i> Platform Commission (<span id="mechInvCommPercent">10</span>%):</span>
                             <span class="text-warning font-weight-bold" id="mechInvCommAmount">-₹0.00</span>

@@ -145,19 +145,23 @@
                     <div class="timeline-label">Accepted</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Arrived">2</div>
+                    <div class="timeline-step" id="step-Driving">2</div>
+                    <div class="timeline-label">Driving</div>
+                </div>
+                <div class="timeline-item-col">
+                    <div class="timeline-step" id="step-Arrived">3</div>
                     <div class="timeline-label">Arrived</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Inspecting">3</div>
+                    <div class="timeline-step" id="step-Inspecting">4</div>
                     <div class="timeline-label">Inspecting</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Repairing">4</div>
+                    <div class="timeline-step" id="step-Repairing">5</div>
                     <div class="timeline-label">Repairing</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Completed">5</div>
+                    <div class="timeline-step" id="step-Completed">6</div>
                     <div class="timeline-label">Finished</div>
                 </div>
             </div>
@@ -514,6 +518,18 @@
     var mechanicLat = 0;
     var mechanicLng = 0;
 
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        var R = 6371; // Radius of the earth in km
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
     $(document).ready(function() {
         // Initialize Map
         map = L.map('map-container').setView([customerLat, customerLng], 14);
@@ -656,8 +672,15 @@
             }
 
             // Estimate ETA description
-            if (res.status === "Accepted") {
-                $('#etaText').html("<i class='fa-solid fa-spinner fa-spin text-warning me-1'></i> Mechanic travelling. ETA <b>~8 mins</b>");
+            if (res.status === "Accepted" || res.status === "Driving") {
+                var etaDisplay = "<b>~8 mins</b>";
+                if (res.mechanicLat && res.mechanicLng) {
+                    var dist = calculateDistance(customerLat, customerLng, res.mechanicLat, res.mechanicLng);
+                    var mins = Math.round(dist * 3.2 + 2);
+                    if (mins < 2) mins = 2; // minimum 2 minutes
+                    etaDisplay = "<b>~" + mins + " mins</b> (" + dist.toFixed(1) + " km away)";
+                }
+                $('#etaText').html("<i class='fa-solid fa-spinner fa-spin text-warning me-1'></i> Mechanic travelling. ETA " + etaDisplay);
             } else if (res.status === "Arrived") {
                 $('#etaText').html("<span class='text-success font-weight-bold'><i class='fa-solid fa-check-circle me-1'></i> Mechanic has arrived on scene.</span>");
             } else if (res.status === "Inspecting") {
@@ -720,20 +743,27 @@
         
         if (status === "Accepted") {
             $('#step-Accepted').addClass('active');
+        } else if (status === "Driving") {
+            $('#step-Accepted').addClass('completed');
+            $('#step-Driving').addClass('active');
         } else if (status === "Arrived") {
             $('#step-Accepted').addClass('completed');
+            $('#step-Driving').addClass('completed');
             $('#step-Arrived').addClass('active');
         } else if (status === "Inspecting" || status === "EstimatePending") {
             $('#step-Accepted').addClass('completed');
+            $('#step-Driving').addClass('completed');
             $('#step-Arrived').addClass('completed');
             $('#step-Inspecting').addClass('active');
         } else if (status === "Repairing") {
             $('#step-Accepted').addClass('completed');
+            $('#step-Driving').addClass('completed');
             $('#step-Arrived').addClass('completed');
             $('#step-Inspecting').addClass('completed');
             $('#step-Repairing').addClass('active');
         } else if (status === "Completed") {
             $('#step-Accepted').addClass('completed');
+            $('#step-Driving').addClass('completed');
             $('#step-Arrived').addClass('completed');
             $('#step-Inspecting').addClass('completed');
             $('#step-Repairing').addClass('completed');

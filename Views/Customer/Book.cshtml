@@ -439,13 +439,7 @@
         var selectedVehicleType = "Car";
         var selectedProblemType = "Battery Dead";
         var isCustLoggedIn = @(isCustLoggedIn.ToString().ToLower());
-        
-        @if (preSelectedVehicle != null)
-        {
-            <text>
-            setVehicleType("@preSelectedVehicle.VehicleType");
-            </text>
-        }
+        var preSelectedVehicleId = @(preSelectedVehicle?.Id ?? 0);
         
         // Initialize Map
         var map = L.map('map-container').setView([currentLat, currentLng], 14);
@@ -865,7 +859,7 @@
         function submitDispatch(fullName, phone, otp) {
             var address = $('#addressInput').val().trim();
             var landmark = $('#landmarkInput').val().trim();
-            var vehicleId = $('#vehicleSelect').val() || null;
+            var vehicleId = preSelectedVehicleId > 0 ? preSelectedVehicleId : null;
             var vehicleNameModel = $('#vehicleNameModelInput').val().trim();
             var registrationNumber = $('#vehicleRegNumberInput').val().trim();
             var problemDescription = $('#problemDescInput').val().trim();
@@ -990,6 +984,13 @@
                     window.location.href = '/Customer/Tracker?id=' + jobId;
                 }, 2200);
             });
+        }
+
+        @if (preSelectedVehicle != null)
+        {
+            <text>
+            setVehicleType("@preSelectedVehicle.VehicleType");
+            </text>
         }
     });
 </script>
