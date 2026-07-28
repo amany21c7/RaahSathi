@@ -50,9 +50,14 @@ namespace RaahSathi.Controllers
             int totalJobs = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed");
             double totalRevenue = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").SumAsync(p => (double?)p.Amount) ?? 0.0;
             
-            // Tiered Admin Commission Vault Calculation (8% < 1000, 10% >= 1000)
+            // Tiered Admin Commission Vault Calculation (using dynamic phase/parts rates)
             var releasedPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").ToListAsync();
-            double totalCommissionEarned = releasedPayments.Sum(p => p.AdminCommissionAmount > 0 ? p.AdminCommissionAmount : (p.Amount < 1000 ? p.Amount * 0.08 : p.Amount * 0.10));
+            double rate1 = (await GetSettingDoubleAsync("CommissionPhase1", 8)) / 100.0;
+            double rate2 = (await GetSettingDoubleAsync("CommissionPhase2", 10)) / 100.0;
+            double rate3 = (await GetSettingDoubleAsync("CommissionPhase3", 12)) / 100.0;
+            double totalCommissionEarned = releasedPayments.Sum(p => p.AdminCommissionAmount > 0 
+                ? p.AdminCommissionAmount 
+                : (p.Amount < 1000 ? p.Amount * rate1 : (p.Amount <= 3000 ? p.Amount * rate2 : p.Amount * rate3)));
             double totalWithdrawn = await _dbContext.AdminWithdrawals.SumAsync(w => (double?)w.Amount) ?? 0.0;
             double adminVaultBalance = Math.Max(0.0, Math.Round(totalCommissionEarned - totalWithdrawn, 2));
             var withdrawalHistory = await _dbContext.AdminWithdrawals.OrderByDescending(w => w.WithdrawnAt).Take(10).ToListAsync();
@@ -498,7 +503,12 @@ namespace RaahSathi.Controllers
             if (amount <= 0) return Json(new { success = false, message = "Please enter a valid withdrawal amount." });
 
             var releasedPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").ToListAsync();
-            double totalCommissionEarned = releasedPayments.Sum(p => p.AdminCommissionAmount > 0 ? p.AdminCommissionAmount : (p.Amount < 1000 ? p.Amount * 0.08 : p.Amount * 0.10));
+            double rate1 = (await GetSettingDoubleAsync("CommissionPhase1", 8)) / 100.0;
+            double rate2 = (await GetSettingDoubleAsync("CommissionPhase2", 10)) / 100.0;
+            double rate3 = (await GetSettingDoubleAsync("CommissionPhase3", 12)) / 100.0;
+            double totalCommissionEarned = releasedPayments.Sum(p => p.AdminCommissionAmount > 0 
+                ? p.AdminCommissionAmount 
+                : (p.Amount < 1000 ? p.Amount * rate1 : (p.Amount <= 3000 ? p.Amount * rate2 : p.Amount * rate3)));
             double totalWithdrawn = await _dbContext.AdminWithdrawals.SumAsync(w => (double?)w.Amount) ?? 0.0;
             double currentVaultBalance = Math.Max(0.0, Math.Round(totalCommissionEarned - totalWithdrawn, 2));
 
@@ -743,6 +753,11 @@ namespace RaahSathi.Controllers
             ViewBag.ProblemTypes = await _pricingService.GetAllActiveProblemPricesAsync();
             ViewBag.Cities = await _dbContext.CityServiceAreas.ToListAsync();
 
+            ViewBag.CommPhase1 = await GetSettingIntAsync("CommissionPhase1", 8);
+            ViewBag.CommPhase2 = await GetSettingIntAsync("CommissionPhase2", 10);
+            ViewBag.CommPhase3 = await GetSettingIntAsync("CommissionPhase3", 12);
+            ViewBag.CommParts = await GetSettingIntAsync("CommissionParts", 5);
+
             return View();
         }
 
@@ -961,7 +976,12 @@ namespace RaahSathi.Controllers
 
             var todayPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released" && p.CreatedAt >= today).ToListAsync();
             double todayRevenue = todayPayments.Sum(p => p.Amount);
-            double todayCommission = todayPayments.Sum(p => p.AdminCommissionAmount > 0 ? p.AdminCommissionAmount : (p.Amount < 1000 ? p.Amount * 0.08 : p.Amount * 0.10));
+            double rate1 = (await GetSettingDoubleAsync("CommissionPhase1", 8)) / 100.0;
+            double rate2 = (await GetSettingDoubleAsync("CommissionPhase2", 10)) / 100.0;
+            double rate3 = (await GetSettingDoubleAsync("CommissionPhase3", 12)) / 100.0;
+            double todayCommission = todayPayments.Sum(p => p.AdminCommissionAmount > 0 
+                ? p.AdminCommissionAmount 
+                : (p.Amount < 1000 ? p.Amount * rate1 : (p.Amount <= 3000 ? p.Amount * rate2 : p.Amount * rate3)));
 
             var ratedJobs = await _dbContext.Jobs.Where(j => j.RatingFromCustomer.HasValue).Select(j => j.RatingFromCustomer.GetValueOrDefault()).ToListAsync();
             double avgRating = ratedJobs.Count > 0 ? Math.Round(ratedJobs.Average(), 1) : 4.8;
@@ -1141,6 +1161,72 @@ namespace RaahSathi.Controllers
             }
 
             return Json(new { success = true, message = "Pricing Rule updated successfully." });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveCommissionSettings(int phase1, int phase2, int phase3, int parts)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            await SaveOrUpdateSettingAsync("CommissionPhase1", phase1.ToString(), "Commission");
+            await SaveOrUpdateSettingAsync("CommissionPhase2", phase2.ToString(), "Commission");
+            await SaveOrUpdateSettingAsync("CommissionPhase3", phase3.ToString(), "Commission");
+            await SaveOrUpdateSettingAsync("CommissionParts", parts.ToString(), "Commission");
+
+            await LogAdminActionAsync("COMMISSION_SETTINGS", $"Updated commission phases: P1={phase1}%, P2={phase2}%, P3={phase3}%, Parts={parts}%");
+            
+            TempData["Success"] = "Admin commission rates updated successfully!";
+            return RedirectToAction("Pricing");
+        }
+
+        private async Task SaveOrUpdateSettingAsync(string key, string value, string category)
+        {
+            var setting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
+            if (setting == null)
+            {
+                setting = new AdminSystemSetting
+                {
+                    SettingKey = key,
+                    SettingValue = value,
+                    Category = category,
+                    Description = $"Admin commission rate config for {key}"
+                };
+                _dbContext.AdminSystemSettings.Add(setting);
+            }
+            else
+            {
+                setting.SettingValue = value;
+                _dbContext.Entry(setting).State = EntityState.Modified;
+            }
+            await _dbContext.SaveChangesAsync();
+        }
+
+        private async Task<double> GetSettingDoubleAsync(string key, double defaultValue)
+        {
+            try
+            {
+                var setting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
+                if (setting != null && double.TryParse(setting.SettingValue, out double val))
+                {
+                    return val;
+                }
+            }
+            catch { }
+            return defaultValue;
+        }
+
+        private async Task<int> GetSettingIntAsync(string key, int defaultValue)
+        {
+            try
+            {
+                var setting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
+                if (setting != null && int.TryParse(setting.SettingValue, out int val))
+                {
+                    return val;
+                }
+            }
+            catch { }
+            return defaultValue;
         }
     }
 }

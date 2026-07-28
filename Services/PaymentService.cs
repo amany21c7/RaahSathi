@@ -19,18 +19,62 @@ namespace RaahSathi.Services
             _dbContext = dbContext;
         }
 
-        public PaymentCommissionCalculationResult CalculateTieredCommissionAndNetEarnings(double totalBillAmount)
+        private double GetSettingDouble(string key, double defaultValue)
         {
-            // Tiered Commission Rule: 8% for < ₹1000, 10% for >= ₹1000
-            double commRate = totalBillAmount < 1000 ? 0.08 : 0.10;
-            double adminCommission = Math.Round(totalBillAmount * commRate, 2);
-            double mechanicNetEarning = Math.Round(totalBillAmount - adminCommission, 2);
+            try
+            {
+                var setting = _dbContext.AdminSystemSettings.FirstOrDefault(s => s.SettingKey == key);
+                if (setting != null && double.TryParse(setting.SettingValue, out double val))
+                {
+                    return val;
+                }
+            }
+            catch { }
+            return defaultValue;
+        }
+
+        public PaymentCommissionCalculationResult CalculateTieredCommissionAndNetEarnings(double totalBillAmount, double partsAmount = 0)
+        {
+            // Fetch rates from DB settings or fall back to default
+            double rate1 = GetSettingDouble("CommissionPhase1", 8) / 100.0;
+            double rate2 = GetSettingDouble("CommissionPhase2", 10) / 100.0;
+            double rate3 = GetSettingDouble("CommissionPhase3", 12) / 100.0;
+            double rateParts = GetSettingDouble("CommissionParts", 5) / 100.0;
+
+            double serviceAmount = totalBillAmount - partsAmount;
+            if (serviceAmount < 0) serviceAmount = 0;
+
+            double serviceCommRate = 0.08;
+            double serviceCommission = 0;
+
+            if (serviceAmount < 1000)
+            {
+                serviceCommRate = rate1;
+                serviceCommission = serviceAmount * rate1;
+            }
+            else if (serviceAmount <= 3000)
+            {
+                serviceCommRate = rate2;
+                serviceCommission = serviceAmount * rate2;
+            }
+            else
+            {
+                serviceCommRate = rate3;
+                serviceCommission = serviceAmount * rate3;
+            }
+
+            double partsCommission = partsAmount * rateParts;
+            double totalCommission = Math.Round(serviceCommission + partsCommission, 2);
+            double mechanicNetEarning = Math.Round(totalBillAmount - totalCommission, 2);
+
+            // Compute effective average rate for backward compatibility
+            double effectiveRate = totalBillAmount > 0 ? (totalCommission / totalBillAmount) : serviceCommRate;
 
             return new PaymentCommissionCalculationResult
             {
                 TotalBillAmount = totalBillAmount,
-                CommissionRate = commRate,
-                AdminCommissionAmount = adminCommission,
+                CommissionRate = effectiveRate,
+                AdminCommissionAmount = totalCommission,
                 MechanicNetEarningAmount = mechanicNetEarning
             };
         }
@@ -52,7 +96,8 @@ namespace RaahSathi.Services
             // Fallback Execution via Repository Layer
             double baseEst = job.VisitingCharge + job.ServiceChargeMin;
             double finalBill = job.FinalBillAmount > baseEst ? job.FinalBillAmount : baseEst;
-            var commCalc = CalculateTieredCommissionAndNetEarnings(finalBill);
+            double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
+            var commCalc = CalculateTieredCommissionAndNetEarnings(finalBill, partsAmt);
 
             var paymentModel = new Payment
             {
@@ -99,7 +144,8 @@ namespace RaahSathi.Services
 
             double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
             double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
-            var commCalc = CalculateTieredCommissionAndNetEarnings(totalBill);
+            double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
+            var commCalc = CalculateTieredCommissionAndNetEarnings(totalBill, partsAmt);
 
             double adminCommission = payment != null && payment.AdminCommissionAmount > 0 
                 ? payment.AdminCommissionAmount 

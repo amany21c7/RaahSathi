@@ -528,11 +528,12 @@ namespace RaahSathi.Controllers
 
             double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
             double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
-            double commRate = totalBill < 1000 ? 0.08 : 0.10;
+            double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
+            var commCalc = _paymentService.CalculateTieredCommissionAndNetEarnings(totalBill, partsAmt);
 
-            double adminCommission = payment != null && payment.AdminCommissionAmount > 0 ? payment.AdminCommissionAmount : Math.Round(totalBill * commRate, 2);
-            double mechanicNetEarning = payment != null && payment.MechanicEarningAmount > 0 ? payment.MechanicEarningAmount : Math.Round(totalBill - adminCommission, 2);
-            double effectiveCommRatePct = (payment?.CommissionRateUsed ?? commRate) * 100;
+            double adminCommission = payment != null && payment.AdminCommissionAmount > 0 ? payment.AdminCommissionAmount : commCalc.AdminCommissionAmount;
+            double mechanicNetEarning = payment != null && payment.MechanicEarningAmount > 0 ? payment.MechanicEarningAmount : commCalc.MechanicNetEarningAmount;
+            double effectiveCommRatePct = (payment?.CommissionRateUsed ?? commCalc.CommissionRate) * 100;
 
             return Json(new
             {

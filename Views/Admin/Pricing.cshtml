@@ -7,10 +7,64 @@
     var cityNamesList = cities.Select(c => c.CityName).Distinct().OrderBy(c => c).ToList();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
+<div class="row mb-4 align-items-center">
+    <div class="col-lg-6">
         <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-tags text-warning me-2"></i> City-Wise Pricing Engine Controls</h4>
         <p class="text-muted small mb-0">Configure base rates, per-KM rates, towing fees, and breakdown problem prices city by city.</p>
+    </div>
+    <div class="col-lg-6 mt-3 mt-lg-0">
+        <div class="p-3 bg-dark bg-opacity-70 border border-warning border-opacity-40 rounded-3 shadow-sm">
+            <h6 class="text-warning font-weight-bold mb-2">
+                <i class="fa-solid fa-percent me-1"></i> Admin Commission Settings Vault
+            </h6>
+            <form action="/Admin/SaveCommissionSettings" method="POST" class="row g-2">
+                <div class="col-3">
+                    <label class="text-muted small d-block mb-1 font-weight-bold">&lt; ₹1000</label>
+                    <select name="phase1" class="form-select form-select-sm bg-dark text-white border-secondary">
+                        @for (int i = 1; i <= 20; i++)
+                        {
+                            bool isSelected = i == (ViewBag.CommPhase1 ?? 8);
+                            <!option value="@i" @(isSelected ? "selected" : "")>@i%</!option>
+                        }
+                    </select>
+                </div>
+                <div class="col-3">
+                    <label class="text-muted small d-block mb-1 font-weight-bold">₹1000 - ₹3000</label>
+                    <select name="phase2" class="form-select form-select-sm bg-dark text-white border-secondary">
+                        @for (int i = 1; i <= 20; i++)
+                        {
+                            bool isSelected = i == (ViewBag.CommPhase2 ?? 10);
+                            <!option value="@i" @(isSelected ? "selected" : "")>@i%</!option>
+                        }
+                    </select>
+                </div>
+                <div class="col-3">
+                    <label class="text-muted small d-block mb-1 font-weight-bold">&gt; ₹3000</label>
+                    <select name="phase3" class="form-select form-select-sm bg-dark text-white border-secondary">
+                        @for (int i = 1; i <= 20; i++)
+                        {
+                            bool isSelected = i == (ViewBag.CommPhase3 ?? 12);
+                            <!option value="@i" @(isSelected ? "selected" : "")>@i%</!option>
+                        }
+                    </select>
+                </div>
+                <div class="col-3">
+                    <label class="text-muted small d-block mb-1 font-weight-bold">Extra Parts</label>
+                    <select name="parts" class="form-select form-select-sm bg-dark text-white border-secondary">
+                        @for (int i = 1; i <= 8; i++)
+                        {
+                            bool isSelected = i == (ViewBag.CommParts ?? 5);
+                            <!option value="@i" @(isSelected ? "selected" : "")>@i%</!option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12 mt-2">
+                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark w-100">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Save Commission Rates
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
