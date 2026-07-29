@@ -6,6 +6,62 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="@(ViewData["MetaDescription"] ?? "RaahSathi is India's premier 24x7 connected roadside assistance network. Instantly find verified mechanics, towing services, and workshops near you with transparent upfront pricing.")" />
+    <meta name="keywords" content="@(ViewData["MetaKeywords"] ?? "roadside assistance, mechanic near me, car repair, bike repair, towing services, battery jumpstart, flat tyre repair, emergency fuel, RaahSathi, roadside help India")" />
+    <link rel="canonical" href="@(ViewData["CanonicalUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="@(ViewData["OgType"] ?? "website")" />
+    <meta property="og:title" content="@(ViewData["OgTitle"] ?? ViewData["Title"] ?? "RaahSathi | Roadside Assistance")" />
+    <meta property="og:description" content="@(ViewData["OgDescription"] ?? ViewData["MetaDescription"] ?? "India's Connected Roadside Assistance Network. Get instant help anywhere, anytime with transparent pricing.")" />
+    <meta property="og:url" content="@(ViewData["OgUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
+    <meta property="og:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/header-logo.png")" />
+    <meta property="og:site_name" content="RaahSathi" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@(ViewData["OgTitle"] ?? ViewData["Title"] ?? "RaahSathi | Roadside Assistance")" />
+    <meta name="twitter:description" content="@(ViewData["OgDescription"] ?? ViewData["MetaDescription"] ?? "India's Connected Roadside Assistance Network.")" />
+    <meta name="twitter:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/header-logo.png")" />
+
+    <!-- JSON-LD Structured Data Schema -->
+    @if (ViewData["StructuredData"] != null)
+    {
+        @Html.Raw(ViewData["StructuredData"])
+    }
+    else
+    {
+        <script type="application/ld+json">
+        {
+          "@@context": "https://schema.org",
+          "@@type": "AutoRepair",
+          "name": "RaahSathi",
+          "image": "@($"{Context.Request.Scheme}://{Context.Request.Host}/images/header-logo.png")",
+          "description": "India's premier 24x7 connected roadside assistance network. Instantly find verified mechanics, towing services, and workshops near you.",
+          "telephone": "1800-102-7224",
+          "priceRange": "₹49 - ₹8000",
+          "address": {
+            "@@type": "PostalAddress",
+            "addressLocality": "Noida",
+            "addressRegion": "Uttar Pradesh",
+            "addressCountry": "IN"
+          },
+          "geo": {
+            "@@type": "GeoCoordinates",
+            "latitude": 28.6273,
+            "longitude": 77.3725
+          },
+          "openingHoursSpecification": {
+            "@@type": "OpeningHoursSpecification",
+            "dayOfWeek": [
+              "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+            ],
+            "opens": "00:00",
+            "closes": "23:59"
+          }
+        }
+        </script>
+    }
     
     <!-- Instant Zero-Flash Translation Guard -->
     <style id="fouc-guard-style">

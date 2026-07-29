@@ -29,12 +29,55 @@ namespace RaahSathi.Controllers
             var pricingRules = await _dbContext.PricingRules.ToListAsync();
             ViewBag.PricingRules = pricingRules;
             ViewBag.ProblemTypes = await _dbContext.ProblemTypePricings.Where(p => p.IsActive).OrderBy(p => p.VehicleCategory).ThenBy(p => p.ProblemName).ToListAsync();
+
+            // Dynamic SEO Meta info
+            ViewData["Title"] = "RaahSathi | 24x7 Roadside Assistance & Towing Network India";
+            ViewData["MetaDescription"] = "RaahSathi is India's leading 24x7 on-demand roadside assistance network. Instantly calculate towing costs and hire verified mechanics for puncture repair, battery jumpstart, and fuel delivery near you.";
+            ViewData["MetaKeywords"] = "roadside assistance India, highway mechanic helper, flat tyre repair, towing service Noida, battery jumpstart creta, emergency fuel dispatch, RaahSathi";
+
+            var carBase = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Car")?.BaseFee ?? 99;
+            var bikeBase = pricingRules.FirstOrDefault(r => r.VehicleCategory == "2-Wheeler")?.BaseFee ?? 49;
+            var host = Request.Host.Value;
+            var scheme = Request.Scheme;
+
+            ViewData["StructuredData"] = $@"<script type=""application/ld+json"">
+{{
+  ""@context"": ""https://schema.org"",
+  ""@type"": ""AutoRepair"",
+  ""name"": ""RaahSathi Roadside Assistance"",
+  ""image"": ""{scheme}://{host}/images/header-logo.png"",
+  ""telephone"": ""1800-102-7224"",
+  ""priceRange"": ""₹{bikeBase} - ₹{carBase}"",
+  ""description"": ""Connected roadside assistance network in India offering transparent upfront pricing and 25-minute ETA."",
+  ""address"": {{
+    ""@type"": ""PostalAddress"",
+    ""addressLocality"": ""Noida"",
+    ""addressRegion"": ""Uttar Pradesh"",
+    ""postalCode"": ""201301"",
+    ""addressCountry"": ""IN""
+  }},
+  ""geo"": {{
+    ""@type"": ""GeoCoordinates"",
+    ""latitude"": 28.6273,
+    ""longitude"": 77.3725
+  }},
+  ""openingHoursSpecification"": {{
+    ""@type"": ""OpeningHoursSpecification"",
+    ""dayOfWeek"": [""Monday"", ""Tuesday"", ""Wednesday"", ""Thursday"", ""Friday"", ""Saturday"", ""Sunday""],
+    ""opens"": ""00:00"",
+    ""closes"": ""23:59""
+  }}
+}}
+</script>";
+
             return View();
         }
 
         public IActionResult HowItWorks()
         {
             ViewData["Title"] = "How RaahSathi Works - Roadside Assistance in 6 Steps";
+            ViewData["MetaDescription"] = "Learn how RaahSathi's on-demand roadside assistance works. Follow our simple 6-step dispatch workflow from upfront cost estimation to live GPS mechanic tracking and secure escrow payouts.";
+            ViewData["MetaKeywords"] = "how roadside assistance works, towing dispatch process, escrow auto repair payments, live GPS mechanic tracking, RaahSathi process";
             return View();
         }
 
@@ -43,24 +86,33 @@ namespace RaahSathi.Controllers
             ViewData["Title"] = "Services - One platform, every vehicle, every breakdown";
             var pricingRules = await _dbContext.PricingRules.ToListAsync();
             ViewBag.PricingRules = pricingRules;
+
+            ViewData["MetaDescription"] = "Explore RaahSathi's emergency breakdown services. Get upfront prices and prompt dispatch for battery jumpstarts, flat tyre repair, towing, lockouts, fuel delivery, and mechanical checkups.";
+            ViewData["MetaKeywords"] = "battery jumpstart service, flat tyre repair near me, emergency towing services, car lockout help, flatbed towing, highway fuel delivery";
             return View();
         }
 
         public IActionResult AboutUs()
         {
             ViewData["Title"] = "About Us - On Every Road, A Trusted Companion";
+            ViewData["MetaDescription"] = "Meet RaahSathi, India's trusted roadside companion. Read our mission to eliminate verbal price negotiation, background-verify all mechanics, and build a premium digital emergency network.";
+            ViewData["MetaKeywords"] = "about RaahSathi, roadside assistance mission, verified auto mechanics network, transparent towing prices, Aman yadav RaahSathi";
             return View();
         }
 
         public IActionResult ContactUs()
         {
             ViewData["Title"] = "Contact Us - 24x7 Emergency Roadside Support & Partnership";
+            ViewData["MetaDescription"] = "Contact RaahSathi support desk. Reach our 24x7 toll-free emergency highway hotline 1800-102-7224, submit partnership inquiries, or send us feedback for instant resolution.";
+            ViewData["MetaKeywords"] = "RaahSathi contact number, roadside assistance helpline, toll free highway number, support email, mechanic partnership contact";
             return View();
         }
 
         public IActionResult Manual()
         {
             ViewData["Title"] = "Testing Manual & System Documentation - RaahSathi";
+            ViewData["MetaDescription"] = "RaahSathi Testing Manual and System Integration Documentation for operators, mechanics, and administrators.";
+            ViewData["MetaKeywords"] = "RaahSathi manual, operator handbook, system integration documentation";
             return View();
         }
 
@@ -148,30 +200,40 @@ namespace RaahSathi.Controllers
         public IActionResult Privacy()
         {
             ViewData["Title"] = "Privacy Policy - RaahSathi Data & Safety Rules";
+            ViewData["MetaDescription"] = "Read the RaahSathi Privacy Policy. Learn how we safeguard user data, handle GPS location history, verify profiles, and enforce security mechanisms across our roadside network.";
+            ViewData["MetaKeywords"] = "privacy policy RaahSathi, data safety, GPS tracking privacy, security protocol, mechanic background checks";
             return View();
         }
 
         public IActionResult Terms()
         {
             ViewData["Title"] = "Terms & Conditions - RaahSathi Platform Rules";
+            ViewData["MetaDescription"] = "View the Terms and Conditions of using the RaahSathi platform. Understand customer obligations, technician service rules, legal liabilities, and agreement details.";
+            ViewData["MetaKeywords"] = "terms and conditions, user agreement, roadside assistance terms, legal rules, platform compliance, liability clause";
             return View();
         }
 
         public IActionResult RefundPolicy()
         {
             ViewData["Title"] = "Refund & Escrow Guarantee Policy - RaahSathi";
+            ViewData["MetaDescription"] = "Review RaahSathi's Refund & Escrow Guarantee Policy. Details on how payments are held in escrow and released only upon verified completion of roadside breakdown service.";
+            ViewData["MetaKeywords"] = "refund policy, escrow payment guarantee, money back breakdown service, payment refund, verified payment release";
             return View();
         }
 
         public IActionResult CancellationPolicy()
         {
             ViewData["Title"] = "Cancellation & ETA Service Level Policy - RaahSathi";
+            ViewData["MetaDescription"] = "Understand RaahSathi's Cancellation Policy and ETA Service Level Agreements. Rules for cancellations by customers or mechanics, and dispatch timings SLA.";
+            ViewData["MetaKeywords"] = "cancellation policy, ETA roadside assistance, booking cancellation, technician arrival SLA, cancellation fees";
             return View();
         }
 
         public IActionResult Faq()
         {
             ViewData["Title"] = "Frequently Asked Questions (FAQs) - RaahSathi";
+            ViewData["MetaDescription"] = "Find answers to FAQs about RaahSathi. Details on booking mechanics, estimating upfront costs, platform commission fee structures, and resolving disputes.";
+            ViewData["MetaKeywords"] = "roadside assistance FAQs, towing service costs, mechanic tracker help, escrow payments faq, weather surge Noida";
             return View();
         }
 
@@ -303,6 +365,60 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             }
 
             return Json(new { success = true, answer = answer });
+        }
+
+        [Route("sitemap.xml")]
+        public IActionResult Sitemap()
+        {
+            var host = Request.Host.Value;
+            var scheme = Request.Scheme;
+            var baseUrl = $"{scheme}://{host}";
+            
+            var sitemapContent = new System.Text.StringBuilder();
+            sitemapContent.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            sitemapContent.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+
+            void AddUrl(string path, string frequency, string priority)
+            {
+                sitemapContent.AppendLine("  <url>");
+                sitemapContent.AppendLine($"    <loc>{baseUrl}{path}</loc>");
+                sitemapContent.AppendLine($"    <lastmod>{DateTime.UtcNow:yyyy-MM-dd}</lastmod>");
+                sitemapContent.AppendLine($"    <changefreq>{frequency}</changefreq>");
+                sitemapContent.AppendLine($"    <priority>{priority}</priority>");
+                sitemapContent.AppendLine("  </url>");
+            }
+
+            // Public Routes
+            AddUrl("/", "daily", "1.0");
+            AddUrl("/Home/Services", "weekly", "0.9");
+            AddUrl("/Home/HowItWorks", "weekly", "0.8");
+            AddUrl("/Home/AboutUs", "monthly", "0.7");
+            AddUrl("/Home/ContactUs", "monthly", "0.7");
+            AddUrl("/Home/Faq", "weekly", "0.6");
+            AddUrl("/Home/Privacy", "yearly", "0.5");
+            AddUrl("/Home/Terms", "yearly", "0.5");
+            AddUrl("/Home/RefundPolicy", "yearly", "0.5");
+            AddUrl("/Home/CancellationPolicy", "yearly", "0.5");
+
+            sitemapContent.AppendLine("</urlset>");
+            return Content(sitemapContent.ToString(), "application/xml", System.Text.Encoding.UTF8);
+        }
+
+        [Route("robots.txt")]
+        public IActionResult RobotsText()
+        {
+            var host = Request.Host.Value;
+            var scheme = Request.Scheme;
+            var robots = new System.Text.StringBuilder();
+            robots.AppendLine("User-agent: *");
+            robots.AppendLine("Allow: /");
+            robots.AppendLine("Disallow: /Admin/");
+            robots.AppendLine("Disallow: /Customer/");
+            robots.AppendLine("Disallow: /Mechanic/");
+            robots.AppendLine("Disallow: /Auth/");
+            robots.AppendLine($"Sitemap: {scheme}://{host}/sitemap.xml");
+
+            return Content(robots.ToString(), "text/plain", System.Text.Encoding.UTF8);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

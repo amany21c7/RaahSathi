@@ -599,6 +599,16 @@ app.UseAuthorization();
 app.MapStaticAssets();
 
 app.MapControllerRoute(
+    name: "sitemap",
+    pattern: "sitemap.xml",
+    defaults: new { controller = "Home", action = "Sitemap" });
+
+app.MapControllerRoute(
+    name: "robots",
+    pattern: "robots.txt",
+    defaults: new { controller = "Home", action = "RobotsText" });
+
+app.MapControllerRoute(
     name: "adminSecretLogin",
     pattern: "AdminRaahiSathiLogin",
     defaults: new { controller = "Auth", action = "AdminRahiSarhiLogin" });
