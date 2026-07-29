@@ -214,7 +214,7 @@
         const data = pricingData[selectedCategory] || pricingData["Car"];
 
         const baseVal = data.base;
-        const distVal = dist * data.rate;
+        const distVal = (dist * 2) * data.rate;
         const visitingCharge = baseVal + distVal;
 
         const minTotal = Math.round(visitingCharge + minFix);

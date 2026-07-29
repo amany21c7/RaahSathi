@@ -102,7 +102,7 @@ namespace RaahSathi.Services
 
             double baseFee = rule.BaseFee;
             double perKmRate = rule.PerKmRate;
-            double visitingCharge = baseFee + (distanceKm * perKmRate);
+            double visitingCharge = baseFee + ((distanceKm * 2) * perKmRate);
 
             // Apply +12% Emergency Weather Surge if City or Global Emergency Mode is Active
             if (await IsCityInEmergencySurgeAsync(cityName))

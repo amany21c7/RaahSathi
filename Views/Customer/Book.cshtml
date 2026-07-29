@@ -765,7 +765,7 @@
             var perKm = selectedRule.perKm;
             var dist = currentPatrolDistance || 3.2;
 
-            var visitingCharge = baseFee + (dist * perKm);
+            var visitingCharge = baseFee + ((dist * 2) * perKm);
             $('#baseFeeText').text('₹' + visitingCharge.toFixed(2));
             $('#distanceText').text(dist.toFixed(1) + " km");
 

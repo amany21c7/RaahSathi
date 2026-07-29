@@ -277,11 +277,11 @@ RaahSathi Services & Information (Updated Live from Database):
 - Platform: RaahSathi connects stranded drivers with verified patrol mechanics across 20+ cities & highways in India.
 - Emergency 24x7 Hotline: 1800-102-7224 (Toll-Free).
 - Upfront 2-Layer Pricing System (LIVE ADMIN RATES):
-  * Layer 1 (Visiting Charge): Base Fee + (Distance * Rate per KM).
-    - Car/SUV/Van: Base ₹{carRule.BaseFee} + ₹{carRule.PerKmRate}/km
-    - 2-Wheeler/Auto: Base ₹{bikeRule.BaseFee} + ₹{bikeRule.PerKmRate}/km
-    - Commercial Truck/Pickup: Base ₹{commRule.BaseFee} + ₹{commRule.PerKmRate}/km
-    - Heavy JCB/Crane: Base ₹{heavyRule.BaseFee} + ₹{heavyRule.PerKmRate}/km
+  * Layer 1 (Visiting Charge): Base Fee + (2 * Distance * Rate per KM) (to cover the mechanic's round trip).
+    - Car/SUV/Van: Base ₹{carRule.BaseFee} + 2 * ₹{carRule.PerKmRate}/km
+    - 2-Wheeler/Auto: Base ₹{bikeRule.BaseFee} + 2 * ₹{bikeRule.PerKmRate}/km
+    - Commercial Truck/Pickup: Base ₹{commRule.BaseFee} + 2 * ₹{commRule.PerKmRate}/km
+    - Heavy JCB/Crane: Base ₹{heavyRule.BaseFee} + 2 * ₹{heavyRule.PerKmRate}/km
   * Layer 2 (Service Fix Fee Overrides): {problemPricesSummary}.
 - Zero Verbal Negotiation & Escrow Lock Security.
 - 100% KYC Verified Mechanics with live GPS tracking on driver map.
