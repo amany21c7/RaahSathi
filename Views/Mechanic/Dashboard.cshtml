@@ -241,6 +241,13 @@
                     </div>
                 </div>
 
+                <!-- Highly Visible General Inactivity Warning banner -->
+                <div id="general-inactivity-warning" class="alert alert-danger bg-dark border-danger text-danger small mb-3 d-none">
+                    <i class="fa-solid fa-triangle-exclamation me-1 animate-pulse"></i> 
+                    <strong>CRITICAL WARNING:</strong> 
+                    <span id="general-warning-msg">Inactivity detected! Please respond immediately to prevent job reassignment!</span>
+                </div>
+
                 <!-- 6-Stage Progress Indicator Bar -->
                 <div class="mb-4">
                     <span class="text-muted small d-block mb-2 font-weight-bold">Live Breakdown Repair Progress:</span>
@@ -1503,6 +1510,18 @@
                     $('#mech-chat-unread-badge').text(res.unreadChatCount).removeClass('d-none');
                 } else {
                     $('#mech-chat-unread-badge').addClass('d-none');
+                }
+
+                // General inactivity warning updates (handles both Accepted and Driving statuses)
+                if ((res.status === "Accepted" || res.status === "Driving") && res.inactiveSeconds >= 30) {
+                    $('#general-inactivity-warning').removeClass('d-none');
+                    if (res.status === "Accepted") {
+                        $('#general-warning-msg').text("You accepted the job but have not started driving. Please click 'Start Driving to Location' immediately to prevent job reassignment!");
+                    } else {
+                        $('#general-warning-msg').text("Inactivity detected! You have not moved for 5 minutes. Resume travel immediately to prevent job reassignment!");
+                    }
+                } else {
+                    $('#general-inactivity-warning').addClass('d-none');
                 }
 
                 // Dynamic UI updates for simulation

@@ -670,7 +670,7 @@ namespace RaahSathi.Controllers
             }
 
             double inactiveSeconds = 0;
-            if (job.Status == "Driving" && job.LastMovementTime.HasValue)
+            if ((job.Status == "Accepted" || job.Status == "Driving") && job.LastMovementTime.HasValue)
             {
                 inactiveSeconds = (DateTime.UtcNow - job.LastMovementTime.Value).TotalSeconds;
             }

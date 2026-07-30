@@ -674,7 +674,7 @@
             }
 
             // Check inactive seconds for warning display
-            if (res.status === "Driving" && res.inactiveSeconds >= 30) {
+            if ((res.status === "Accepted" || res.status === "Driving") && res.inactiveSeconds >= 30) {
                 $('#customer-inactivity-warning').removeClass('d-none');
             } else {
                 $('#customer-inactivity-warning').addClass('d-none');
