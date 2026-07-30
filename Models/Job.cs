@@ -94,6 +94,11 @@ namespace RaahSathi.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? CompletedAt { get; set; }
 
+        // Live Route Simulation & Tracking
+        public bool IsSimulationPaused { get; set; } = false;
+        public DateTime? LastMovementTime { get; set; }
+        public DateTime? LastLocationUpdateTime { get; set; }
+
         // Navigation properties
         public User? Customer { get; set; }
         public User? Mechanic { get; set; }

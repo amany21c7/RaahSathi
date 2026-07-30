@@ -351,6 +351,11 @@ namespace RaahSathi.Controllers
 
             job.MechanicId = user.Id;
             job.Status = "Accepted";
+            
+            job.LastMovementTime = DateTime.UtcNow;
+            job.LastLocationUpdateTime = DateTime.UtcNow;
+            job.IsSimulationPaused = false;
+
             await _dbContext.SaveChangesAsync();
 
             return Json(new { success = true });
@@ -602,6 +607,14 @@ namespace RaahSathi.Controllers
             }
 
             job.Status = newStatus;
+
+            if (newStatus.Equals("Driving", StringComparison.OrdinalIgnoreCase))
+            {
+                job.LastMovementTime = DateTime.UtcNow;
+                job.LastLocationUpdateTime = DateTime.UtcNow;
+                job.IsSimulationPaused = false;
+            }
+
             await _dbContext.SaveChangesAsync();
 
             return Json(new { success = true });
@@ -651,6 +664,20 @@ namespace RaahSathi.Controllers
             var job = await _dbContext.Jobs.FindAsync(jobId);
             if (job == null || job.MechanicId != user.Id) return Json(new { success = false, message = "Job not found" });
 
+            if (job.Status == "Driving")
+            {
+                await Services.JobSimulationHelper.SimulateMovementAsync(_dbContext, job);
+            }
+
+            double inactiveSeconds = 0;
+            if (job.Status == "Driving" && job.LastMovementTime.HasValue)
+            {
+                inactiveSeconds = (DateTime.UtcNow - job.LastMovementTime.Value).TotalSeconds;
+            }
+
+            int unreadChatCount = await _dbContext.JobChatMessages
+                .CountAsync(m => m.JobId == jobId && m.SenderRole == "Customer" && !m.IsRead);
+
             return Json(new
             {
                 success = true,
@@ -662,8 +689,30 @@ namespace RaahSathi.Controllers
                 partsEstimateAmount = job.PartsEstimateAmount,
                 partsApproved = job.PartsApproved,
                 towingApproved = job.TowingApproved,
-                finalBillAmount = job.FinalBillAmount
+                finalBillAmount = job.FinalBillAmount,
+                isSimulationPaused = job.IsSimulationPaused,
+                inactiveSeconds = inactiveSeconds,
+                unreadChatCount = unreadChatCount
             });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleSimulationPause(int jobId)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated" });
+
+            var job = await _dbContext.Jobs.FindAsync(jobId);
+            if (job == null || job.MechanicId != user.Id) return Json(new { success = false, message = "Job not found" });
+
+            job.IsSimulationPaused = !job.IsSimulationPaused;
+            if (!job.IsSimulationPaused)
+            {
+                job.LastMovementTime = DateTime.UtcNow;
+            }
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { success = true, isSimulationPaused = job.IsSimulationPaused });
         }
 
         [HttpPost]

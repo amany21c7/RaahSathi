@@ -21,6 +21,8 @@ namespace RaahSathi.Models
         [StringLength(1000)]
         public string MessageText { get; set; } = string.Empty;
 
+        public bool IsRead { get; set; } = false;
+
         public DateTime SentAt { get; set; } = DateTime.UtcNow;
     }
 }

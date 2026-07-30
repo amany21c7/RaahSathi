@@ -96,6 +96,21 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [CityServiceAreas] ADD [EmergencyReason] nvarchar(200) NOT NULL DEFAULT 'Heavy Rain 🌧️';
                 END;
 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'IsSimulationPaused')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [IsSimulationPaused] bit NOT NULL DEFAULT 0;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'LastMovementTime')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [LastMovementTime] datetime2 NULL;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'LastLocationUpdateTime')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [LastLocationUpdateTime] datetime2 NULL;
+                END;
+
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'CustomEstimateAmount')
                 BEGIN
                     ALTER TABLE [Jobs] ADD [CustomEstimateAmount] float NOT NULL DEFAULT 0.0;
@@ -226,7 +241,7 @@ using (var scope = app.Services.CreateScope())
                     );
                 END;
 
-                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[JobChatMessages]') AND type in (N'U'))
+                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[JobChatMessages]') AND type in (N'U'))
                 BEGIN
                     CREATE TABLE [JobChatMessages] (
                         [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
@@ -235,8 +250,14 @@ using (var scope = app.Services.CreateScope())
                         [SenderRole] nvarchar(20) NOT NULL DEFAULT 'Customer',
                         [SenderName] nvarchar(100) NOT NULL DEFAULT '',
                         [MessageText] nvarchar(1000) NOT NULL DEFAULT '',
-                        [SentAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                        [SentAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [IsRead] bit NOT NULL DEFAULT 0
                     );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[JobChatMessages]') AND name = N'IsRead')
+                BEGIN
+                    ALTER TABLE [JobChatMessages] ADD [IsRead] bit NOT NULL DEFAULT 0;
                 END;
 
                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[ProblemTypePricings]') AND type in (N'U'))

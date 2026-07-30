@@ -281,8 +281,9 @@
                             <a href="tel:@activeJob.Customer?.PhoneNumber" class="btn btn-success font-weight-bold px-4 py-2">
                                 <i class="fa-solid fa-phone me-1"></i> Call (@activeJob.Customer?.PhoneNumber)
                             </a>
-                            <button type="button" class="btn btn-outline-info font-weight-bold px-3 py-2" data-bs-toggle="modal" data-bs-target="#liveChatMechModal" onclick="fetchMechChatMessages()">
+                            <button type="button" class="btn btn-outline-info font-weight-bold px-3 py-2 position-relative" data-bs-toggle="modal" data-bs-target="#liveChatMechModal" onclick="fetchMechChatMessages()">
                                 <i class="fa-solid fa-comments me-1"></i> Live Chat with Customer
+                                <span id="mech-chat-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
                             </button>
                             <a href="https://maps.google.com/?q=@activeJob.CustomerLat,@activeJob.CustomerLng" target="_blank" class="btn btn-outline-warning font-weight-bold px-3 py-2">
                                 <i class="fa-solid fa-diamond-turn-right me-1"></i> Navigate GPS
@@ -323,6 +324,34 @@
                         <button class="btn btn-premium-primary w-100 py-3 font-weight-bold" onclick="advanceStatus('Arrived')">
                             <i class="fa-solid fa-location-dot me-2"></i> I Have Arrived at Location
                         </button>
+
+                        <div class="glass-card p-3 border-secondary mb-3 mt-3">
+                            <h6 class="text-white font-weight-bold mb-2"><i class="fa-solid fa-route text-warning me-1"></i> GPS Travel Simulation Control</h6>
+                            <p class="text-muted small">You can pause/resume your travel simulation for testing. If travel is paused or inactive for 5 minutes (30 seconds for quick testing), warning will trigger.</p>
+                            
+                            <div id="sim-warning-container" class="alert alert-danger bg-dark border-danger text-danger small mb-3 d-none">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>WARNING:</strong> Inactivity detected! You have not moved for 5 minutes. Resume travel immediately to prevent job reassignment!
+                            </div>
+                            
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="small text-muted">Simulation Status:</span>
+                                    <strong id="simStatusText" class="@(activeJob.IsSimulationPaused ? "text-warning" : "text-success")">
+                                        @(activeJob.IsSimulationPaused ? "PAUSED (Stopped)" : "ACTIVE (Driving)")
+                                    </strong>
+                                </div>
+                                <button id="btnToggleSim" class="btn @(activeJob.IsSimulationPaused ? "btn-outline-success" : "btn-outline-warning") btn-sm" onclick="toggleSim()">
+                                    @if(activeJob.IsSimulationPaused)
+                                    {
+                                        <i class="fa-solid fa-play me-1"></i> <span>Resume Travel</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fa-solid fa-pause me-1"></i> <span>Pause Travel</span>
+                                    }
+                                </button>
+                            </div>
+                        </div>
                     }
                     else if (activeJob.Status == "Arrived")
                     {
@@ -454,18 +483,20 @@
                 <div class="p-4 rounded-circle bg-warning bg-opacity-10 border border-warning d-inline-block mb-3">
                     <i class="fa-solid fa-tower-broadcast text-warning" style="font-size: 3.5rem;"></i>
                 </div>
-                <h3 class="text-white font-weight-bold mb-2" style="font-family: 'Outfit';">
+                <h3 class="text-white font-weight-bold mb-2" style="font-family: 'Outfit';" id="dispatchTitleText">
                     @(profile.IsOnline ? "RaahSathi Dispatch Network Active" : "You Are Currently Offline")
                 </h3>
-                <p class="lead text-muted max-w-600 mx-auto mb-4" style="font-size: 1.05rem;">
+                <p class="lead text-muted max-w-600 mx-auto mb-4" style="font-size: 1.05rem;" id="dispatchDescText">
                     @(profile.IsOnline ? "Standing by for breakdown assistance requests within your selected service radius." : "Switch status to Online in the top bar to start receiving incoming assistance pings.")
                 </p>
-                @if (!profile.IsOnline)
-                {
-                    <button class="btn btn-premium-primary btn-lg px-5 py-3 font-weight-bold" onclick="toggleMechanicOnlineState()">
-                        <i class="fa-solid fa-power-off me-2"></i> Go Online Now
-                    </button>
-                }
+                <div id="goOnlineBtnContainer">
+                    @if (!profile.IsOnline)
+                    {
+                        <button class="btn btn-premium-primary btn-lg px-5 py-3 font-weight-bold" onclick="toggleMechanicOnlineState()">
+                            <i class="fa-solid fa-power-off me-2"></i> Go Online Now
+                        </button>
+                    }
+                </div>
             </div>
         }
     </div>
@@ -1057,17 +1088,57 @@
         }
     }
 
+    var isOnline = @(profile.IsOnline ? "true" : "false");
+
+    // General User Interaction Unlock for AudioContext
+    $(document).on('click touchstart', function() {
+        try {
+            if (sirenAudioCtx && sirenAudioCtx.state === 'suspended') {
+                sirenAudioCtx.resume();
+            }
+        } catch(e) {}
+    });
+
+    function updateOnlineUI(online) {
+        isOnline = online;
+        if (online) {
+            $('#badgeOnlineStatus').removeClass('bg-secondary text-light').addClass('bg-success text-white').html('<i class="fa-solid fa-circle me-1" style="font-size:0.6rem;"></i> 🟢 ONLINE');
+            $('#toggleOnlineSwitch').prop('checked', true);
+            $('#lblSwitchOnline').text('Status: Online');
+            $('#dispatchTitleText').text('RaahSathi Dispatch Network Active');
+            $('#dispatchDescText').text('Standing by for breakdown assistance requests within your selected service radius.');
+            $('#goOnlineBtnContainer').html('');
+        } else {
+            $('#badgeOnlineStatus').removeClass('bg-success text-white').addClass('bg-secondary text-light').html('<i class="fa-solid fa-circle me-1" style="font-size:0.6rem;"></i> ⚪ OFFLINE');
+            $('#toggleOnlineSwitch').prop('checked', false);
+            $('#lblSwitchOnline').text('Status: Offline');
+            $('#dispatchTitleText').text('You Are Currently Offline');
+            $('#dispatchDescText').text('Switch status to Online in the top bar to start receiving incoming assistance pings.');
+            $('#goOnlineBtnContainer').html('<button class="btn btn-premium-primary btn-lg px-5 py-3 font-weight-bold" onclick="toggleMechanicOnlineState()"><i class="fa-solid fa-power-off me-2"></i> Go Online Now</button>');
+        }
+    }
+
     // Toggle Online/Offline State
     function toggleMechanicOnlineState() {
+        try {
+            if (!sirenAudioCtx) {
+                sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (sirenAudioCtx.state === 'suspended') {
+                sirenAudioCtx.resume();
+            }
+        } catch(e) {}
+
         $.post('/Mechanic/ToggleOnline', function(res) {
             if (res.success) {
-                location.reload();
+                updateOnlineUI(res.isOnline);
             }
         });
     }
 
     // Real-Time Dispatch Checker
     function pollIncomingDispatchRequests() {
+        if (!isOnline) return;
         $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: currentDispatchJobId }, function(res) {
             if (res.hasJob && !currentDispatchJobId) {
                 currentDispatchJobId = res.jobId;
@@ -1268,7 +1339,7 @@
         var activeJobId = "@(activeJob?.Id ?? 0)";
         if (!activeJobId || activeJobId == 0) return;
 
-        $.get('/Customer/GetChatMessages', { jobId: activeJobId }, function(res) {
+        $.get('/Customer/GetChatMessages', { jobId: activeJobId, viewerRole: 'Mechanic' }, function(res) {
             if (res && res.success) {
                 var html = '';
                 if (res.messages.length === 0) {
@@ -1427,20 +1498,68 @@
 
         $.get('/Mechanic/GetActiveJobState?jobId=' + currentActiveJobId, function(res) {
             if (res && res.success) {
+                // Update unread chat message badge
+                if (res.unreadChatCount > 0 && !$('#liveChatMechModal').hasClass('show')) {
+                    $('#mech-chat-unread-badge').text(res.unreadChatCount).removeClass('d-none');
+                } else {
+                    $('#mech-chat-unread-badge').addClass('d-none');
+                }
+
+                // Dynamic UI updates for simulation
+                if (res.status === "Driving") {
+                    if (res.isSimulationPaused) {
+                        $('#simStatusText').removeClass('text-success').addClass('text-warning').html('PAUSED (Stopped)');
+                        $('#btnToggleSim').html('<i class="fa-solid fa-play me-1"></i> Resume Travel').removeClass('btn-outline-warning').addClass('btn-outline-success');
+                    } else {
+                        $('#simStatusText').removeClass('text-warning').addClass('text-success').html('ACTIVE (Driving)');
+                        $('#btnToggleSim').html('<i class="fa-solid fa-pause me-1"></i> Pause Travel').removeClass('btn-outline-success').addClass('btn-outline-warning');
+                    }
+
+                    if (res.inactiveSeconds >= 30) {
+                        $('#sim-warning-container').removeClass('d-none');
+                    } else {
+                        $('#sim-warning-container').addClass('d-none');
+                    }
+                }
+
+                var newStatus = res.status || "";
+                if (newStatus !== lastJobStatus) {
+                    location.reload();
+                    return;
+                }
+
                 var newCustomApproved = (res.customEstimateApproved === null || res.customEstimateApproved === undefined) ? "null" : res.customEstimateApproved.toString().toLowerCase();
                 var newPartsApproved = (res.partsApproved === null || res.partsApproved === undefined) ? "null" : res.partsApproved.toString().toLowerCase();
                 var newTowingApproved = (res.towingApproved === null || res.towingApproved === undefined) ? "null" : res.towingApproved.toString().toLowerCase();
-                var newStatus = res.status || "";
 
                 if (newCustomApproved !== lastCustomEstimateApproved || 
                     newPartsApproved !== lastPartsApproved || 
-                    newTowingApproved !== lastTowingApproved ||
-                    newStatus !== lastJobStatus) {
+                    newTowingApproved !== lastTowingApproved) {
                     
                     location.reload();
                 }
+            } else {
+                location.reload();
             }
         });
+    }
+
+    function toggleSim() {
+        var activeJobId = "@(activeJob?.Id ?? 0)";
+        if (activeJobId > 0) {
+            $.post('/Mechanic/ToggleSimulationPause', { jobId: activeJobId }, function(res) {
+                if (res && res.success) {
+                    if (res.isSimulationPaused) {
+                        $('#simStatusText').removeClass('text-success').addClass('text-warning').html('PAUSED (Stopped)');
+                        $('#btnToggleSim').html('<i class="fa-solid fa-play me-1"></i> Resume Travel').removeClass('btn-outline-warning').addClass('btn-outline-success');
+                    } else {
+                        $('#simStatusText').removeClass('text-warning').addClass('text-success').html('ACTIVE (Driving)');
+                        $('#btnToggleSim').html('<i class="fa-solid fa-pause me-1"></i> Pause Travel').removeClass('btn-outline-success').addClass('btn-outline-warning');
+                        $('#sim-warning-container').addClass('d-none');
+                    }
+                }
+            });
+        }
     }
 
     if (currentActiveJobId && currentActiveJobId !== "0") {

@@ -120,6 +120,27 @@
 <div class="row">
     <!-- Map & Route Column -->
     <div class="col-lg-8 mb-4 mb-lg-0">
+        <!-- Dispatch Timeout alert card -->
+        <div id="dispatch-timeout-alert" class="alert alert-warning bg-dark border-warning text-warning p-4 mb-4 rounded-3 d-none shadow-lg">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="p-2 rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="fa-solid fa-clock-rotate-left text-warning fa-2x animate-pulse"></i>
+                </div>
+                <div>
+                    <h6 class="text-warning mb-0 font-weight-bold">⚠️ Connection Timeout (No Response)</h6>
+                    <p class="mb-0 small text-muted">We are unable to connect to a nearby mechanic at this moment. Please retry dispatch or return to dashboard.</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-warning text-dark font-weight-bold btn-sm px-4" onclick="retryDispatch()">
+                    <i class="fa-solid fa-rotate-right me-1"></i> Retry Dispatch Request
+                </button>
+                <a href="/Customer/Dashboard" class="btn btn-outline-secondary btn-sm">
+                    Cancel & Return to Dashboard
+                </a>
+            </div>
+        </div>
+
         <!-- Tracker Map Card -->
         <div class="glass-card p-0 mb-4 overflow-hidden" style="min-height: 400px; display:flex; flex-direction:column;">
             <div class="p-3 bg-dark border-bottom border-secondary d-flex align-items-center justify-content-between">
@@ -173,6 +194,23 @@
         <!-- Mechanic Info Card & Verification -->
         <div class="glass-card mb-4" id="mechanicDetailsCard">
             <h5 class="text-white mb-3">Assigned Expert</h5>
+            
+            <!-- Inactivity Warning Alert -->
+            <div id="customer-inactivity-warning" class="alert alert-danger bg-dark border-danger text-danger small p-3 mb-3 d-none">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fa-solid fa-triangle-exclamation text-danger fa-lg"></i>
+                    <span><strong>Mechanic Stopped Moving!</strong> No progress detected for 5 minutes.</span>
+                </div>
+                <div class="d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-danger btn-sm font-weight-bold flex-fill py-2 shadow-sm" onclick="reassignMechanic()">
+                        <i class="fa-solid fa-rotate me-1"></i> Reassign Mechanic
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-sm font-weight-bold flex-fill py-2 shadow-sm" onclick="keepWaiting()">
+                        <i class="fa-solid fa-hourglass-start me-1"></i> I Will Wait
+                    </button>
+                </div>
+            </div>
+
             <div class="d-flex align-items-center mb-3">
                 <div class="position-relative me-3">
                     <div class="rounded-circle bg-warning p-3 d-flex align-items-center justify-content-center text-dark" style="width: 55px; height: 55px; font-weight:bold; font-size:1.2rem;">
@@ -191,8 +229,9 @@
                 <a href="tel:@job.Mechanic?.PhoneNumber" class="btn btn-warning font-weight-bold flex-fill py-2.5 shadow-sm">
                     <i class="fa-solid fa-phone me-1.5"></i> 📞 Call
                 </a>
-                <button type="button" class="btn btn-outline-info font-weight-bold flex-fill py-2.5 shadow-sm" data-bs-toggle="modal" data-bs-target="#liveChatModal" onclick="fetchChatMessages()">
+                <button type="button" class="btn btn-outline-info font-weight-bold flex-fill py-2.5 shadow-sm position-relative" data-bs-toggle="modal" data-bs-target="#liveChatModal" onclick="fetchChatMessages()">
                     <i class="fa-solid fa-comments me-1.5"></i> 💬 Chat
+                    <span id="chat-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
                 </button>
             </div>
             <button type="button" class="btn btn-outline-info font-weight-bold w-100 py-2.5 shadow-sm" onclick="showCustomerInvoiceModal(@job.Id)">
@@ -627,6 +666,20 @@
 
     function pollJobStatus() {
         $.get('/Customer/GetJobStatus?id=@job.Id', function(res) {
+            // Update unread chat message badge
+            if (res.unreadChatCount > 0 && !$('#liveChatModal').hasClass('show')) {
+                $('#chat-unread-badge').text(res.unreadChatCount).removeClass('d-none');
+            } else {
+                $('#chat-unread-badge').addClass('d-none');
+            }
+
+            // Check inactive seconds for warning display
+            if (res.status === "Driving" && res.inactiveSeconds >= 30) {
+                $('#customer-inactivity-warning').removeClass('d-none');
+            } else {
+                $('#customer-inactivity-warning').addClass('d-none');
+            }
+
             // Update Timeline steps
             updateTimelineUI(res.status);
 
@@ -669,6 +722,19 @@
                     ]);
                     map.fitBounds(bounds, {padding: [50, 50]});
                 }
+            }
+
+            // Check requested status timeout alert
+            if (res.status === "Requested") {
+                $('#etaText').html("<i class='fa-solid fa-circle-notch fa-spin text-info me-1'></i> Searching for nearest verified mechanics... Please hold on.");
+                if (res.jobAgeSeconds >= 30) {
+                    $('#etaText').html("<span class='text-danger font-weight-bold'><i class='fa-solid fa-circle-exclamation me-1'></i> Connection Timeout: No response from nearby mechanics.</span>");
+                    $('#dispatch-timeout-alert').removeClass('d-none');
+                } else {
+                    $('#dispatch-timeout-alert').addClass('d-none');
+                }
+            } else {
+                $('#dispatch-timeout-alert').addClass('d-none');
             }
 
             // Estimate ETA description
@@ -828,7 +894,7 @@
 
     // Live Chat Functionality
     function fetchChatMessages() {
-        $.get('/Customer/GetChatMessages?jobId=@job.Id', function(res) {
+        $.get('/Customer/GetChatMessages?jobId=@job.Id&viewerRole=Customer', function(res) {
             if (res && res.success) {
                 var html = '';
                 if (res.messages.length === 0) {
@@ -1012,6 +1078,43 @@
                 pollJobStatus();
             });
         }
+    }
+
+    function reassignMechanic() {
+        if (confirm("Are you sure you want to reassign this mechanic? A new verified technician will be dispatched to your location immediately.")) {
+            $.post('/Customer/ReassignMechanic', { id: @job.Id }, function(res) {
+                if (res && res.success) {
+                    alert("🔄 " + res.message);
+                    window.location.href = '/Customer/Dashboard';
+                } else {
+                    alert(res.message || "Failed to reassign mechanic.");
+                }
+            });
+        }
+    }
+
+    function retryDispatch() {
+        $.post('/Customer/RetryDispatch', { id: @job.Id }, function(res) {
+            if (res && res.success) {
+                alert("🚀 Dispatch request renewed! We are searching for nearby verified mechanics again.");
+                $('#dispatch-timeout-alert').addClass('d-none');
+                pollJobStatus();
+            } else {
+                alert(res.message || "Failed to renew dispatch.");
+            }
+        });
+    }
+
+    function keepWaiting() {
+        $.post('/Customer/KeepWaiting', { id: @job.Id }, function(res) {
+            if (res && res.success) {
+                alert("⏳ " + res.message);
+                $('#customer-inactivity-warning').addClass('d-none');
+                pollJobStatus();
+            } else {
+                alert(res.message || "Failed to submit request.");
+            }
+        });
     }
 </script>
 }

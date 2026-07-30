@@ -470,7 +470,21 @@ namespace RaahSathi.Controllers
             MechanicProfile? mechProfile = null;
             if (job.MechanicId.HasValue)
             {
+                await JobSimulationHelper.SimulateMovementAsync(_dbContext, job);
                 mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == job.MechanicId.Value);
+            }
+
+            double inactiveSeconds = 0;
+            if (job.Status == "Driving" && job.LastMovementTime.HasValue)
+            {
+                inactiveSeconds = (DateTime.UtcNow - job.LastMovementTime.Value).TotalSeconds;
+            }
+
+            int unreadChatCount = 0;
+            if (job.MechanicId.HasValue)
+            {
+                unreadChatCount = await _dbContext.JobChatMessages
+                    .CountAsync(m => m.JobId == id && m.SenderRole == "Mechanic" && !m.IsRead);
             }
 
             return Json(new
@@ -500,8 +514,92 @@ namespace RaahSathi.Controllers
                 finalBillAmount = job.FinalBillAmount,
                 disputeStatus = job.DisputeStatus,
                 customerLat = job.CustomerLat,
-                customerLng = job.CustomerLng
+                customerLng = job.CustomerLng,
+                isSimulationPaused = job.IsSimulationPaused,
+                inactiveSeconds = inactiveSeconds,
+                jobAgeSeconds = (DateTime.UtcNow - job.CreatedAt).TotalSeconds,
+                unreadChatCount = unreadChatCount
             });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReassignMechanic(int id)
+        {
+            var job = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Mechanic)
+                .FirstOrDefaultAsync(j => j.Id == id);
+
+            if (job == null) return NotFound();
+
+            if (job.MechanicId.HasValue)
+            {
+                int oldMechanicId = job.MechanicId.Value;
+                string oldMechIdStr = oldMechanicId.ToString();
+
+                if (string.IsNullOrEmpty(job.DeclinedMechanicIds))
+                {
+                    job.DeclinedMechanicIds = oldMechIdStr;
+                }
+                else
+                {
+                    var ids = job.DeclinedMechanicIds.Split(',').Select(i => i.Trim()).ToList();
+                    if (!ids.Contains(oldMechIdStr))
+                    {
+                        job.DeclinedMechanicIds += "," + oldMechIdStr;
+                    }
+                }
+
+                job.MechanicId = null;
+                job.Status = "Requested";
+                job.IsSimulationPaused = false;
+                job.LastMovementTime = null;
+                job.LastLocationUpdateTime = null;
+
+                var audit = new AuditLog
+                {
+                    AdminName = "System (Customer Request)",
+                    ActionType = "REASSIGN",
+                    Details = $"Job #{job.Id} reassigned. Mechanic ID {oldMechIdStr} was unassigned due to inactivity.",
+                    TimeStamp = DateTime.UtcNow
+                };
+                _dbContext.AuditLogs.Add(audit);
+
+                await _dbContext.SaveChangesAsync();
+                return Json(new { success = true, message = "Mechanic successfully reassigned. Searching for new partners." });
+            }
+
+            return Json(new { success = false, message = "No mechanic was assigned to this job." });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RetryDispatch(int id)
+        {
+            var job = await _dbContext.Jobs.FindAsync(id);
+            if (job == null) return NotFound();
+
+            if (job.Status == "Requested")
+            {
+                job.CreatedAt = DateTime.UtcNow; // Reset creation time to renew dispatch wails
+                job.DeclinedMechanicIds = ""; // Reset declined list so previously declined mechanics can get it again
+                await _dbContext.SaveChangesAsync();
+                return Json(new { success = true, message = "Dispatch request successfully renewed!" });
+            }
+
+            return Json(new { success = false, message = "Job is no longer in pending dispatch state." });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> KeepWaiting(int id)
+        {
+            var job = await _dbContext.Jobs.FindAsync(id);
+            if (job == null) return NotFound();
+
+            // Reset LastMovementTime to now to give the mechanic another chance
+            job.LastMovementTime = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Timer reset. We notified the mechanic that you are waiting." });
         }
 
         [HttpPost]
@@ -720,21 +818,44 @@ namespace RaahSathi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetChatMessages(int jobId)
+        public async Task<IActionResult> GetChatMessages(int jobId, string? viewerRole = null)
         {
             var messages = await _dbContext.JobChatMessages
                 .Where(m => m.JobId == jobId)
                 .OrderBy(m => m.SentAt)
-                .Select(m => new {
-                    id = m.Id,
-                    senderRole = m.SenderRole,
-                    senderName = m.SenderName,
-                    messageText = m.MessageText,
-                    sentTime = m.SentAt.ToLocalTime().ToString("hh:mm tt")
-                })
                 .ToListAsync();
 
-            return Json(new { success = true, messages = messages });
+            if (!string.IsNullOrEmpty(viewerRole))
+            {
+                bool changed = false;
+                foreach (var msg in messages)
+                {
+                    if (viewerRole == "Customer" && msg.SenderRole == "Mechanic" && !msg.IsRead)
+                    {
+                        msg.IsRead = true;
+                        changed = true;
+                    }
+                    else if (viewerRole == "Mechanic" && msg.SenderRole == "Customer" && !msg.IsRead)
+                    {
+                        msg.IsRead = true;
+                        changed = true;
+                    }
+                }
+                if (changed)
+                {
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+
+            var result = messages.Select(m => new {
+                id = m.Id,
+                senderRole = m.SenderRole,
+                senderName = m.SenderName,
+                messageText = m.MessageText,
+                sentTime = m.SentAt.ToLocalTime().ToString("hh:mm tt")
+            }).ToList();
+
+            return Json(new { success = true, messages = result });
         }
 
         [HttpPost]
