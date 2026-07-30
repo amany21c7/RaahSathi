@@ -921,14 +921,19 @@
                 </div>
 
                 <div class="row g-2">
-                    <div class="col-8">
+                    <div class="col-6">
                         <button type="button" class="btn btn-success btn-lg w-100 py-3 font-weight-bold fs-5 shadow-lg" id="btnAcceptDispatchModal">
                             <i class="fa-solid fa-check me-2"></i> Accept Request
                         </button>
                     </div>
-                    <div class="col-4">
-                        <button type="button" class="btn btn-outline-danger btn-lg w-100 py-3 font-weight-bold" id="btnDeclineDispatchModal">
+                    <div class="col-3">
+                        <button type="button" class="btn btn-outline-danger btn-lg w-100 py-3 font-weight-bold" id="btnDeclineDispatchModal" title="Decline job request permanently">
                             Decline
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button type="button" class="btn btn-outline-secondary btn-lg w-100 py-3 font-weight-bold text-light" id="btnSnoozeDispatchModal" title="Close alert for 10 minutes">
+                            Close
                         </button>
                     </div>
                 </div>
@@ -1096,6 +1101,7 @@
     }
 
     var isOnline = @(profile.IsOnline ? "true" : "false");
+    var hasActiveJob = @(activeJob != null ? "true" : "false");
 
     // General User Interaction Unlock for AudioContext
     $(document).on('click touchstart', function() {
@@ -1145,7 +1151,7 @@
 
     // Real-Time Dispatch Checker
     function pollIncomingDispatchRequests() {
-        if (!isOnline) return;
+        if (!isOnline || hasActiveJob) return;
         $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: currentDispatchJobId }, function(res) {
             if (res.hasJob && !currentDispatchJobId) {
                 currentDispatchJobId = res.jobId;
@@ -1192,6 +1198,11 @@
             clearInterval(dispatchCountdownTimer);
             declinePing(data.jobId);
         });
+
+        $('#btnSnoozeDispatchModal').off('click').on('click', function() {
+            clearInterval(dispatchCountdownTimer);
+            snoozePing(data.jobId);
+        });
     }
 
     function acceptPing(jobId) {
@@ -1218,9 +1229,21 @@
         });
     }
 
+    function snoozePing(jobId) {
+        stopSirenAlert();
+        if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+        $.post('/Mechanic/SnoozeJob', { jobId: jobId }, function() {
+            currentDispatchJobId = null;
+            var modalEl = document.getElementById('incomingDispatchModal');
+            var instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+            location.reload();
+        });
+    }
+
     $(document).ready(function() {
         var pingJobId = @(pingJob?.Id ?? 0);
-        var hasActiveJob = @(activeJob != null ? "true" : "false");
+        hasActiveJob = @(activeJob != null ? "true" : "false");
 
         if (pingJobId > 0 && !hasActiveJob) {
             var initialPingData = {

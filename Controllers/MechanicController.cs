@@ -61,6 +61,73 @@ namespace RaahSathi.Controllers
             return null;
         }
 
+        private bool OtherMechanicAvailable(Job job, double maxRadiusKm, int currentMechanicId)
+        {
+            var onlineProfiles = _dbContext.MechanicProfiles
+                .Where(p => p.UserId != currentMechanicId && p.IsOnline && p.KycStatus == "Approved")
+                .ToList();
+
+            foreach (var profile in onlineProfiles)
+            {
+                // Check active job
+                bool hasActive = _dbContext.Jobs.Any(j => j.MechanicId == profile.UserId && j.Status != "Completed" && j.Status != "Cancelled");
+                if (hasActive)
+                    continue;
+
+                // Check distance
+                double dist = _dispatchEngine.CalculateDistance(job.CustomerLat, job.CustomerLng, profile.Latitude, profile.Longitude);
+                double allowedRadius = Math.Max(maxRadiusKm, profile.ServiceRadiusKm);
+                if (dist > allowedRadius)
+                    continue;
+
+                // Check if they declined/snoozed this job
+                if (!string.IsNullOrEmpty(job.DeclinedMechanicIds))
+                {
+                    var otherStrId = profile.UserId.ToString();
+                    var entries = job.DeclinedMechanicIds.Split(',').Select(id => id.Trim()).ToList();
+                    bool otherDeclined = false;
+                    foreach (var entry in entries)
+                    {
+                        if (entry == otherStrId)
+                        {
+                            otherDeclined = true;
+                            break;
+                        }
+                        if (entry.StartsWith(otherStrId + "_snooze_"))
+                        {
+                            string tsStr = entry.Substring((otherStrId + "_snooze_").Length);
+                            if (DateTime.TryParse(tsStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime snoozeUntil))
+                            {
+                                if (DateTime.UtcNow < snoozeUntil)
+                                {
+                                    otherDeclined = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (entry.StartsWith(otherStrId + "_decline_"))
+                        {
+                            string tsStr = entry.Substring((otherStrId + "_decline_").Length);
+                            if (DateTime.TryParse(tsStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime declineUntil))
+                            {
+                                if (DateTime.UtcNow < declineUntil)
+                                {
+                                    otherDeclined = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (otherDeclined)
+                        continue;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
         public async Task<IActionResult> Dashboard()
         {
             var user = await GetActiveMechanicUserAsync();
@@ -97,10 +164,71 @@ namespace RaahSathi.Controllers
             Job? pingJob = null;
             if (profile.IsOnline && profile.KycStatus == "Approved" && activeJob == null)
             {
-                pingJob = await _dbContext.Jobs
+                var candidates = await _dbContext.Jobs
                     .Include(j => j.Customer)
                     .Include(j => j.Vehicle)
-                    .FirstOrDefaultAsync(j => j.Status == "Requested" && j.MechanicId == null);
+                    .Where(j => j.Status == "Requested" && j.MechanicId == null)
+                    .OrderByDescending(j => j.CreatedAt)
+                    .ToListAsync();
+
+                string userStrId = user.Id.ToString();
+                foreach (var job in candidates)
+                {
+                    bool shouldSkip = false;
+                    if (!string.IsNullOrEmpty(job.DeclinedMechanicIds))
+                    {
+                        var entries = job.DeclinedMechanicIds.Split(',').Select(id => id.Trim()).ToList();
+                        foreach (var entry in entries)
+                        {
+                            if (entry == userStrId)
+                            {
+                                shouldSkip = true; // Permanently declined
+                                break;
+                            }
+                            if (entry.StartsWith(userStrId + "_snooze_"))
+                            {
+                                string tsStr = entry.Substring((userStrId + "_snooze_").Length);
+                                if (DateTime.TryParse(tsStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime snoozeUntil))
+                                {
+                                    if (DateTime.UtcNow < snoozeUntil)
+                                    {
+                                        shouldSkip = true; // Still snoozed
+                                        break;
+                                    }
+                                }
+                            }
+                            if (entry.StartsWith(userStrId + "_decline_"))
+                            {
+                                string tsStr = entry.Substring((userStrId + "_decline_").Length);
+                                if (DateTime.TryParse(tsStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime declineUntil))
+                                {
+                                    if (DateTime.UtcNow < declineUntil)
+                                    {
+                                        shouldSkip = true; // Still within 2 minutes of decline
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        // 2 minutes have passed! Check if other mechanics are available
+                                        double jobAgeSeconds = (DateTime.UtcNow - job.CreatedAt).TotalSeconds;
+                                        double maxRadiusKm = jobAgeSeconds < 20 ? 15.0 : (jobAgeSeconds < 30 ? 30.0 : 50.0);
+                                        if (OtherMechanicAvailable(job, maxRadiusKm, user.Id))
+                                        {
+                                            shouldSkip = true; // Another mechanic is available, skip for this mechanic
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (!shouldSkip)
+                    {
+                        pingJob = job;
+                        break;
+                    }
+                }
             }
 
             // Historical Jobs
@@ -404,16 +532,58 @@ namespace RaahSathi.Controllers
 
             foreach (var job in requestedJobs)
             {
-                // Skip if mechanic previously declined this job
-                if (!string.IsNullOrEmpty(job.DeclinedMechanicIds))
-                {
-                    var declinedIds = job.DeclinedMechanicIds.Split(',').Select(id => id.Trim()).ToList();
-                    if (declinedIds.Contains(userStrId)) continue;
-                }
-
                 // Dynamic radius expansion based on job age (0-20s: 15km, 20-30s: 30km, 30s+: 50km)
                 double jobAgeSeconds = (DateTime.UtcNow - job.CreatedAt).TotalSeconds;
                 double maxRadiusKm = jobAgeSeconds < 20 ? 15.0 : (jobAgeSeconds < 30 ? 30.0 : 50.0);
+
+                // Skip if mechanic previously declined or snoozed this job
+                if (!string.IsNullOrEmpty(job.DeclinedMechanicIds))
+                {
+                    var entries = job.DeclinedMechanicIds.Split(',').Select(id => id.Trim()).ToList();
+                    bool shouldSkip = false;
+                    foreach (var entry in entries)
+                    {
+                        if (entry == userStrId)
+                        {
+                            shouldSkip = true; // Permanently declined
+                            break;
+                        }
+                        if (entry.StartsWith(userStrId + "_snooze_"))
+                        {
+                            string tsStr = entry.Substring((userStrId + "_snooze_").Length);
+                            if (DateTime.TryParse(tsStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime snoozeUntil))
+                            {
+                                if (DateTime.UtcNow < snoozeUntil)
+                                {
+                                    shouldSkip = true; // Still snoozed/closed
+                                    break;
+                                }
+                            }
+                        }
+                        if (entry.StartsWith(userStrId + "_decline_"))
+                        {
+                            string tsStr = entry.Substring((userStrId + "_decline_").Length);
+                            if (DateTime.TryParse(tsStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime declineUntil))
+                            {
+                                if (DateTime.UtcNow < declineUntil)
+                                {
+                                    shouldSkip = true; // Still within 2 minutes of decline, skip!
+                                    break;
+                                }
+                                else
+                                {
+                                    // 2 minutes have passed! Check if other mechanics are available
+                                    if (OtherMechanicAvailable(job, maxRadiusKm, user.Id))
+                                    {
+                                        shouldSkip = true; // Another mechanic is available, skip for this mechanic
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (shouldSkip) continue;
+                }
 
                 // Check distance within expanding radius limit
                 double distanceKm = _dispatchEngine.CalculateDistance(job.CustomerLat, job.CustomerLng, profile.Latitude, profile.Longitude);
@@ -461,17 +631,51 @@ namespace RaahSathi.Controllers
             if (job != null)
             {
                 string userStrId = user.Id.ToString();
+                string declineTimestamp = DateTime.UtcNow.AddMinutes(2).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                string declineEntry = $"{userStrId}_decline_{declineTimestamp}";
+
                 if (string.IsNullOrEmpty(job.DeclinedMechanicIds))
                 {
-                    job.DeclinedMechanicIds = userStrId;
+                    job.DeclinedMechanicIds = declineEntry;
                 }
                 else
                 {
                     var ids = job.DeclinedMechanicIds.Split(',').Select(i => i.Trim()).ToList();
-                    if (!ids.Contains(userStrId))
-                    {
-                        job.DeclinedMechanicIds += "," + userStrId;
-                    }
+                    // Clean up any old decline/snooze entries for this user
+                    ids.RemoveAll(id => id == userStrId || id.StartsWith(userStrId + "_snooze_") || id.StartsWith(userStrId + "_decline_"));
+                    ids.Add(declineEntry);
+                    job.DeclinedMechanicIds = string.Join(",", ids);
+                }
+                await _dbContext.SaveChangesAsync();
+            }
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SnoozeJob(int jobId)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated" });
+
+            var job = await _dbContext.Jobs.FindAsync(jobId);
+            if (job != null)
+            {
+                string userStrId = user.Id.ToString();
+                string snoozeTimestamp = DateTime.UtcNow.AddMinutes(10).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                string snoozeEntry = $"{userStrId}_snooze_{snoozeTimestamp}";
+
+                if (string.IsNullOrEmpty(job.DeclinedMechanicIds))
+                {
+                    job.DeclinedMechanicIds = snoozeEntry;
+                }
+                else
+                {
+                    var ids = job.DeclinedMechanicIds.Split(',').Select(i => i.Trim()).ToList();
+                    // Clean up any old entries for this user
+                    ids.RemoveAll(id => id == userStrId || id.StartsWith(userStrId + "_snooze_"));
+                    ids.Add(snoozeEntry);
+                    job.DeclinedMechanicIds = string.Join(",", ids);
                 }
                 await _dbContext.SaveChangesAsync();
             }
