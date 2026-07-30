@@ -917,6 +917,10 @@
 
         // 4. Uber-Style Parallel Dispatch & Real-Time Transitions
         var searchTimeoutTimer = null;
+        var pollInterval = null;
+        var elapsedSeconds = 0;
+        const maxWaitSeconds = 15;
+
         function simulateParallelDispatch(jobId, hasPreferred, preferredName) {
             var consoleEl = $('#dispatchConsole');
             function log(txt, colorClass = '') {
@@ -934,14 +938,17 @@
 
             log("Job #" + jobId + " created. Scoring nearby mechanics...", "text-warning");
 
-            // Setup 2-Minute (120 seconds) SLA Timeout
+            // Setup 15 seconds default timeout visual
             searchTimeoutTimer = setTimeout(function() {
-                var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
-                if (dModal) dModal.hide();
-
-                var tModal = new bootstrap.Modal(document.getElementById('timeoutModal'));
-                tModal.show();
-            }, 120000); // 2 minutes timeout
+                clearInterval(pollInterval);
+                log("Timeout waiting for instant acceptance. Redirecting to tracking hub...", "text-muted");
+                $('#searchAlertText').text("Redirecting to tracking hub...");
+                setTimeout(function() {
+                    var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
+                    if (dModal) dModal.hide();
+                    window.location.href = '/Customer/Tracker?id=' + jobId;
+                }, 1000);
+            }, maxWaitSeconds * 1000);
 
             $.get('/Customer/GetDispatchOptions?jobId=' + jobId, function(data) {
                 if (!data || data.length === 0) {
@@ -977,12 +984,32 @@
                 }, 1200);
 
                 log("Broadcasting request to nearby verified mechanics in area...", "text-warning");
-                $('#searchAlertText').text("Request sent to nearby verified mechanics. Awaiting mechanic acceptance...");
+                $('#searchAlertText').html("<i class='fa-solid fa-spinner fa-spin text-warning me-1'></i> Request sent. Awaiting mechanic acceptance... (<span id='dispatch-timer-countdown'>15</span>s)");
 
-                setTimeout(function() {
-                    clearTimeout(searchTimeoutTimer);
-                    window.location.href = '/Customer/Tracker?id=' + jobId;
-                }, 2200);
+                // Start polling status
+                elapsedSeconds = 0;
+                pollInterval = setInterval(function() {
+                    elapsedSeconds++;
+                    var timeLeft = maxWaitSeconds - elapsedSeconds;
+                    if (timeLeft < 0) timeLeft = 0;
+                    $('#dispatch-timer-countdown').text(timeLeft);
+
+                    $.get('/Customer/GetJobStatus?id=' + jobId, function(res) {
+                        if (res && res.status && res.status !== "Requested") {
+                            // Mechanic accepted the job!
+                            clearInterval(pollInterval);
+                            clearTimeout(searchTimeoutTimer);
+                            log("🎉 Mechanic " + (res.mechanicName || "RK Singh") + " accepted your request!", "text-success font-weight-bold");
+                            $('#searchAlertText').html("<span class='text-success font-weight-bold'><i class='fa-solid fa-circle-check me-1'></i> Accepted! Redirecting to live tracking...</span>");
+                            
+                            setTimeout(function() {
+                                var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
+                                if (dModal) dModal.hide();
+                                window.location.href = '/Customer/Tracker?id=' + jobId;
+                            }, 1000);
+                        }
+                    });
+                }, 1000);
             });
         }
 
