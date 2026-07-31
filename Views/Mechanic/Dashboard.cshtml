@@ -109,6 +109,65 @@
         z-index: 1040;
         padding: 8px 12px;
     }
+
+    /* Print Styles for Mechanic Invoice */
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        #jobInvoiceModal, #jobInvoiceModal * {
+            visibility: visible;
+        }
+        #jobInvoiceModal {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            border: none !important;
+            box-shadow: none !important;
+            background: #fff !important;
+            color: #000 !important;
+        }
+        #mechInvoicePrintArea, #mechInvoicePrintArea * {
+            visibility: visible;
+        }
+        #mechInvoicePrintArea {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: #fff !important;
+            color: #000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .d-print-none, .modal-header, .btn-close {
+            display: none !important;
+        }
+        .bg-dark, .bg-black, .bg-opacity-80, .bg-opacity-40 {
+            background: #fff !important;
+            color: #000 !important;
+            border: 1px solid #ccc !important;
+        }
+        .text-light, .text-muted, .text-warning, .text-info, .text-success, .text-white-50 {
+            color: #000 !important;
+        }
+        .table-dark {
+            background-color: #fff !important;
+            color: #000 !important;
+        }
+        .table-dark th, .table-dark td {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+        }
+        .badge {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+            background: #eee !important;
+        }
+    }
 </style>
 
 <div class="container-fluid px-2 px-md-4 py-3 pb-5 mb-5">
@@ -601,78 +660,132 @@
 
     <!-- ==================== TAB 4: WALLET ==================== -->
     <div id="tab-wallet" class="mech-tab-content" style="display:none;">
-        <div class="glass-card mb-4 border-success border-opacity-30">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-wallet text-success me-2"></i> Wallet & Settlement Hub</h4>
-                <button class="btn btn-success font-weight-bold px-4" onclick="openWithdrawModal()">
-                    <i class="fa-solid fa-building-columns me-1"></i> Withdraw Payout
-                </button>
-            </div>
+        <div class="row g-4">
+            <!-- Left: Neo-banking Card & Quick Actions -->
+            <div class="col-lg-5">
+                <div class="glass-card mb-4 p-4 border-success border-opacity-35 text-white position-relative overflow-hidden" 
+                     style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(20, 83, 45, 0.3) 100%) !important;">
+                    
+                    <!-- Decorative background glow -->
+                    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(16, 185, 129, 0.2); filter: blur(40px); border-radius: 50%;"></div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <span class="text-success small font-weight-bold tracking-wider uppercase"><i class="fa-solid fa-shield-halved me-1"></i> Partner Security Escrow</span>
+                            <h5 class="text-white font-weight-bold mt-1 mb-0">RaahSathi Vault</h5>
+                        </div>
+                        <i class="fa-solid fa-credit-card text-success fa-2x opacity-75"></i>
+                    </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="p-3 bg-dark bg-opacity-60 rounded-3 border border-secondary text-center">
-                        <span class="text-muted small d-block mb-1">Today's Earnings</span>
-                        <h3 class="text-success font-weight-bold mb-0" id="lblWalletTodayEarnings">₹@(((double)ViewBag.TodayEarnings).ToString("N2"))</h3>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="p-3 bg-dark bg-opacity-60 rounded-3 border border-secondary text-center">
-                        <span class="text-muted small d-block mb-1">Weekly Earnings</span>
-                        <h3 class="text-warning font-weight-bold mb-0" id="lblWalletWeeklyEarnings">₹@(((double)ViewBag.WeeklyEarnings).ToString("N2"))</h3>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="p-3 bg-dark bg-opacity-60 rounded-3 border border-secondary text-center">
-                        <span class="text-muted small d-block mb-1">Monthly Volume</span>
-                        <h3 class="text-info font-weight-bold mb-0" id="lblWalletMonthlyVolume">₹@(((double)ViewBag.MonthlyVolume).ToString("N2"))</h3>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="p-3 bg-dark bg-opacity-60 rounded-3 border border-secondary text-center">
-                        <span class="text-muted small d-block mb-1">Pending Settlement</span>
-                        <h3 class="text-light font-weight-bold mb-0" id="lblWalletPendingSettlement">₹@(((double)ViewBag.PendingSettlement).ToString("N2"))</h3>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Earnings Statement -->
-            <div class="border-top border-secondary border-opacity-30 pt-4 mt-2">
-                <h5 class="text-white font-weight-bold mb-3"><i class="fa-solid fa-list-check text-warning me-2"></i> Recent Earnings Statement</h5>
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Job ID</th>
-                                <th>Date & Time</th>
-                                <th>Transaction Type</th>
-                                <th>Total Bill</th>
-                                <th>Net Credited</th>
-                            </tr>
-                        </thead>
-                        <tbody id="walletTransactionsTableBody">
-                            @if (ViewBag.Payments == null || ((List<Payment>)ViewBag.Payments).Count == 0)
+                    <!-- Glowing Balance -->
+                    <div class="my-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-muted small d-block">AVAILABLE BALANCE</span>
+                                <h1 class="text-white font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit'; font-size: 2.2rem; text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);" id="lblWalletPendingSettlement">₹@(((double)ViewBag.PendingSettlement).ToString("N2"))</h1>
+                            </div>
+                            @if (ViewBag.PendingPayoutAmount != null && (double)ViewBag.PendingPayoutAmount > 0)
                             {
-                                <tr>
-                                    <td colspan="5" class="text-muted text-center py-4">No transactions recorded yet.</td>
-                                </tr>
+                                <div class="text-end">
+                                    <span class="text-warning small d-block font-weight-bold"><i class="fa-regular fa-clock me-1"></i> PENDING PAYOUT</span>
+                                    <h3 class="text-warning font-weight-bold mb-0 mt-1" style="font-family: 'Outfit';">₹@(((double)ViewBag.PendingPayoutAmount).ToString("N2"))</h3>
+                                </div>
                             }
-                            else
-                            {
-                                foreach (var p in (List<Payment>)ViewBag.Payments)
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-end mt-4 pt-2 border-top border-secondary border-opacity-30">
+                        <div>
+                            <div class="text-muted" style="font-size: 0.65rem; text-transform: uppercase;">Partner Name</div>
+                            <div class="font-weight-bold text-white small">@user.Name</div>
+                        </div>
+                        <div>
+                            <span class="badge bg-success-subtle text-success border border-success border-opacity-30 rounded-pill px-2.5 py-1 small" style="font-size: 0.7rem;">
+                                <span class="d-inline-block rounded-circle bg-success me-1 animate-pulse" style="width: 6px; height: 6px;"></span> Active Account
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wallet Quick Actions Card -->
+                <div class="glass-card mb-4 p-4 border-secondary">
+                    <h5 class="text-white font-weight-bold mb-3"><i class="fa-solid fa-sliders text-warning me-2"></i> Payout Quick Actions</h5>
+                    <p class="text-muted small mb-4">Transfer your earnings to your linked bank account or UPI ID instantly. Transactions are settled using IMPS direct settlement SLA.</p>
+                    
+                    <button class="btn btn-success btn-lg w-100 py-3 font-weight-bold shadow-lg" onclick="openWithdrawModal()" 
+                            style="background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important; border: none;">
+                        <i class="fa-solid fa-building-columns me-2"></i> Withdraw Earnings Now
+                    </button>
+                    <a href="javascript:void(0)" class="btn btn-outline-secondary w-100 mt-2 py-2.5 font-weight-bold" onclick="switchMechTab('tab-profile')">
+                        <i class="fa-solid fa-user-gear me-2"></i> Manage Payout Details
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right: Wallet Stats & Statement -->
+            <div class="col-lg-7">
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-4">
+                        <div class="glass-card p-3 border-secondary text-center">
+                            <span class="text-muted small d-block mb-1">Today's Earnings</span>
+                            <h4 class="text-success font-weight-extrabold mb-0" id="lblWalletTodayEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.TodayEarnings).ToString("N2"))</h4>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="glass-card p-3 border-secondary text-center">
+                            <span class="text-muted small d-block mb-1">Weekly Earnings</span>
+                            <h4 class="text-warning font-weight-extrabold mb-0" id="lblWalletWeeklyEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.WeeklyEarnings).ToString("N2"))</h4>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="glass-card p-3 border-secondary text-center">
+                            <span class="text-muted small d-block mb-1">Monthly Volume</span>
+                            <h4 class="text-info font-weight-extrabold mb-0" id="lblWalletMonthlyVolume" style="font-family: 'Outfit';">₹@(((double)ViewBag.MonthlyVolume).ToString("N2"))</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Earnings Statement Card -->
+                <div class="glass-card border-secondary">
+                    <h5 class="text-white font-weight-bold mb-3"><i class="fa-solid fa-file-invoice-dollar text-warning me-2"></i> Recent Earnings Statement</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover align-middle mb-0">
+                            <thead>
+                                <tr class="border-secondary text-muted small">
+                                    <th>Job ID</th>
+                                    <th>Date & Time</th>
+                                    <th>Status</th>
+                                    <th>Total Bill</th>
+                                    <th class="text-end">Net Credited</th>
+                                </tr>
+                            </thead>
+                            <tbody id="walletTransactionsTableBody">
+                                @if (ViewBag.Payments == null || ((List<Payment>)ViewBag.Payments).Count == 0)
                                 {
                                     <tr>
-                                        <td><b>#@p.JobId</b></td>
-                                        <td class="small text-muted">@p.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</td>
-                                        <td><span class="badge bg-success-subtle text-success border border-success border-opacity-35 px-2 py-1">Job Earning</span></td>
-                                        <td class="text-white">₹@p.Amount.ToString("N2")</td>
-                                        <td class="text-success font-weight-bold">₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                        <td colspan="5" class="text-muted text-center py-4">No transactions recorded yet.</td>
                                     </tr>
                                 }
-                            }
-                        </tbody>
-                    </table>
+                                else
+                                {
+                                    foreach (var p in (List<Payment>)ViewBag.Payments)
+                                    {
+                                        <tr class="border-secondary">
+                                            <td><b>#@p.JobId</b></td>
+                                            <td class="small text-muted">@p.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</td>
+                                            <td><span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-30 px-2.5 py-1">Escrow Released</span></td>
+                                            <td class="text-white-50">₹@p.Amount.ToString("N2")</td>
+                                            <td class="text-success font-weight-bold text-end">+₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>             </div>
             </div>
         </div>
     </div>
@@ -814,6 +927,12 @@
                     </div>
 
                     <div class="row g-3">
+                        <!-- Operating City -->
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1">Operating City</label>
+                            <input type="text" id="txtProfileCity" class="form-control glass-input text-white font-weight-bold" value="@profile.City" placeholder="e.g. Noida, Delhi">
+                        </div>
+
                         <!-- UPI ID Input -->
                         <div class="col-md-6">
                             <label class="form-label text-muted small mb-1">UPI ID (Optional)</label>
@@ -834,13 +953,16 @@
                         <div class="col-12 border-top border-secondary border-opacity-30 pt-3">
                             <span class="text-muted small d-block mb-2 font-weight-bold"><i class="fa-solid fa-landmark me-1"></i> Bank Account Details (Optional):</span>
                             <div class="row g-2">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
+                                    <input type="text" id="txtProfileHolderName" class="form-control glass-input" value="@profile.AccountHolderName" placeholder="Account Holder Name">
+                                </div>
+                                <div class="col-md-3">
                                     <input type="text" id="txtBankName" class="form-control glass-input" value="@profile.BankName" placeholder="Bank Name (e.g. SBI, HDFC)">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <input type="text" id="txtAccountNo" class="form-control glass-input" value="@profile.BankAccountNumber" placeholder="Account Number">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <input type="text" id="txtIfscCode" class="form-control glass-input" value="@profile.IfscCode" placeholder="IFSC Code">
                                 </div>
                             </div>
@@ -943,25 +1065,91 @@
 </div>
 
 <!-- WITHDRAWAL PAYOUT MODAL -->
-<div class="modal fade" id="withdrawModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="withdrawModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark text-white border-success">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title text-success"><i class="fa-solid fa-building-columns me-2"></i> Withdraw Wallet Earnings</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content bg-dark text-white border-success" style="border-radius: 12px; overflow:hidden;">
+            <div class="modal-header border-secondary" style="background: linear-gradient(135deg, #0f1f15 0%, #153a21 100%) !important;">
+                <h5 class="modal-title text-success font-weight-bold"><i class="fa-solid fa-building-columns me-2"></i> Withdraw Wallet Earnings</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="resetWithdrawModal()"></button>
             </div>
-            <div class="modal-body p-3">
-                <span class="text-muted small d-block mb-1">Available Wallet Balance</span>
-                <h2 class="text-success font-weight-extrabold mb-3">₹@(profile.CurrentEarnings.ToString("N2"))</h2>
-
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Enter Withdrawal Amount (₹)</label>
-                    <input type="number" id="txtWithdrawAmount" class="form-control glass-input text-warning font-weight-bold" value="@(profile.CurrentEarnings > 0 ? profile.CurrentEarnings : 1000)" placeholder="e.g. 1000">
+            
+            <!-- View 1: Input Form -->
+            <div class="modal-body p-4" id="withdrawFormView">
+                <div class="text-center mb-3">
+                    <span class="text-muted small d-block">Available Wallet Balance</span>
+                    <h2 class="text-success font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit'; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">₹@(profile.CurrentEarnings.ToString("N2"))</h2>
                 </div>
 
-                <button class="btn btn-success w-100 py-3 font-weight-bold" onclick="processWithdrawal()">
-                    <i class="fa-solid fa-arrow-up-from-bracket me-1"></i> Request Instant Payout
+                <div class="mb-3">
+                    <label class="form-label text-muted small font-weight-bold mb-1">WITHDRAWAL METHOD</label>
+                    <div class="d-flex gap-2">
+                        <input type="radio" class="btn-check" name="radWithdrawMethod" id="radWithdrawBank" value="Bank" @(profile.PreferredPayoutMethod == "Bank" || string.IsNullOrEmpty(profile.PreferredPayoutMethod) ? "checked" : "") onclick="toggleWithdrawFields('Bank')">
+                        <label class="btn btn-outline-success flex-fill font-weight-bold" for="radWithdrawBank"><i class="fa-solid fa-building-columns me-1"></i> Bank Account</label>
+
+                        <input type="radio" class="btn-check" name="radWithdrawMethod" id="radWithdrawUPI" value="UPI" @(profile.PreferredPayoutMethod == "UPI" ? "checked" : "") onclick="toggleWithdrawFields('UPI')">
+                        <label class="btn btn-outline-success flex-fill font-weight-bold" for="radWithdrawUPI"><i class="fa-solid fa-mobile-screen me-1"></i> UPI ID</label>
+                    </div>
+                </div>
+
+                <!-- Bank Details Fields -->
+                <div id="divWithdrawBankFields" class="@(profile.PreferredPayoutMethod == "UPI" ? "d-none" : "")">
+                    <div class="mb-2">
+                        <label class="form-label text-muted small mb-0 font-weight-bold">ACCOUNT HOLDER NAME <span class="text-danger">*</span></label>
+                        <input type="text" id="txtWithdrawHolderName" class="form-control glass-input text-white" value="@profile.AccountHolderName" placeholder="Enter Full Name">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label text-muted small mb-0 font-weight-bold">BANK NAME <span class="text-danger">*</span></label>
+                        <input type="text" id="txtWithdrawBankName" class="form-control glass-input text-white" value="@profile.BankName" placeholder="e.g. SBI, HDFC, ICICI">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label text-muted small mb-0 font-weight-bold">BANK ACCOUNT NUMBER <span class="text-danger">*</span></label>
+                        <input type="text" id="txtWithdrawAccNo" class="form-control glass-input text-white" value="@profile.BankAccountNumber" placeholder="Enter Account Number">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-0 font-weight-bold">IFSC CODE <span class="text-danger">*</span></label>
+                        <input type="text" id="txtWithdrawIfsc" class="form-control glass-input text-white" value="@profile.IfscCode" placeholder="Enter IFSC Code (e.g. SBIN0001234)">
+                    </div>
+                </div>
+
+                <!-- UPI Fields -->
+                <div id="divWithdrawUpiFields" class="@(profile.PreferredPayoutMethod == "UPI" ? "" : "d-none")">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-0 font-weight-bold">UPI ID <span class="text-danger">*</span></label>
+                        <input type="text" id="txtWithdrawUpi" class="form-control glass-input text-success font-weight-bold" value="@profile.UpiId" placeholder="e.g. 9876543210@paytm / name@upi">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small font-weight-bold mb-1">WITHDRAWAL AMOUNT (₹)</label>
+                    <input type="number" id="txtWithdrawAmount" class="form-control glass-input text-warning font-weight-bold fs-4 py-2" value="@((int)profile.CurrentEarnings)" max="@profile.CurrentEarnings" min="1" placeholder="e.g. 500">
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="setWithdrawAmount(500)">₹500</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="setWithdrawAmount(1000)">₹1000</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="setWithdrawAmount(2000)">₹2000</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" onclick="setWithdrawAmount(@((int)profile.CurrentEarnings))">Withdraw All</button>
+                    </div>
+                </div>
+
+                <button class="btn btn-success w-100 py-3 font-weight-bold shadow mt-2" onclick="simulatePayoutWithdrawal()" id="btnSubmitWithdrawal">
+                    <i class="fa-solid fa-arrow-up-from-bracket me-1"></i> Request Payout Verification
                 </button>
+            </div>
+
+            <!-- View 2: Processing View -->
+            <div class="modal-body p-5 text-center d-none" id="withdrawProcessingView">
+                <div class="spinner-grow text-success mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                <h5 class="font-weight-bold text-white mb-2">Initiating Instant Payout...</h5>
+                <p class="text-muted small" id="withdrawStatusText">Contacting NPCI IMPS direct settlement node...</p>
+            </div>
+
+            <!-- View 3: Success View -->
+            <div class="modal-body p-5 text-center d-none" id="withdrawSuccessView">
+                <div class="checkmark-circle">
+                    <div class="check-icon" style="border-color: #22c55e;"></div>
+                </div>
+                <h5 class="font-weight-bold text-success mb-2">Payout Transferred!</h5>
+                <p class="text-muted small" id="withdrawSuccessMsg">Amount successfully deposited to your linked account.</p>
+                <button type="button" class="btn btn-outline-success btn-sm mt-3 px-4 font-weight-bold" data-bs-dismiss="modal" onclick="reloadDashboard()">Okay</button>
             </div>
         </div>
     </div>
@@ -1325,6 +1513,8 @@
         var bankName = $('#txtBankName').val();
         var accNo = $('#txtAccountNo').val();
         var ifsc = $('#txtIfscCode').val();
+        var holderName = $('#txtProfileHolderName').val();
+        var city = $('#txtProfileCity').val();
         var payoutMethod = $('input[name="radPayoutMethod"]:checked').val() || 'UPI';
         var acceptsCash = $('#chkAcceptsCash').is(':checked');
 
@@ -1336,6 +1526,8 @@
             bankName: bankName,
             accountNumber: accNo,
             ifscCode: ifsc,
+            accountHolderName: holderName,
+            city: city,
             preferredPayoutMethod: payoutMethod,
             acceptsCash: acceptsCash
         }, function(res) {
@@ -1345,23 +1537,106 @@
         });
     }
 
+    function toggleWithdrawFields(method) {
+        if (method === 'Bank') {
+            $('#divWithdrawBankFields').removeClass('d-none');
+            $('#divWithdrawUpiFields').addClass('d-none');
+        } else {
+            $('#divWithdrawBankFields').addClass('d-none');
+            $('#divWithdrawUpiFields').removeClass('d-none');
+        }
+    }
+
     function openWithdrawModal() {
+        resetWithdrawModal();
+        var method = $('input[name="radWithdrawMethod"]:checked').val() || 'Bank';
+        toggleWithdrawFields(method);
         var modal = new bootstrap.Modal(document.getElementById('withdrawModal'));
         modal.show();
     }
 
-    function processWithdrawal() {
-        var amt = $('#txtWithdrawAmount').val();
-        if (amt > 0) {
-            $.post('/Mechanic/WithdrawWallet', { amount: amt }, function(res) {
-                if (res.success) {
-                    alert(res.message);
-                    location.reload();
-                } else {
-                    alert(res.message);
-                }
-            });
+    function resetWithdrawModal() {
+        $('#withdrawProcessingView').addClass('d-none');
+        $('#withdrawSuccessView').addClass('d-none');
+        $('#withdrawFormView').removeClass('d-none');
+    }
+
+    function setWithdrawAmount(val) {
+        $('#txtWithdrawAmount').val(val);
+    }
+
+    function reloadDashboard() {
+        location.reload();
+    }
+
+    function simulatePayoutWithdrawal() {
+        var amt = parseFloat($('#txtWithdrawAmount').val());
+        var maxAmt = parseFloat("@profile.CurrentEarnings");
+        var payoutMethod = $('input[name="radWithdrawMethod"]:checked').val() || 'Bank';
+
+        var holderName = $('#txtWithdrawHolderName').val();
+        var bankName = $('#txtWithdrawBankName').val();
+        var accNo = $('#txtWithdrawAccNo').val();
+        var ifsc = $('#txtWithdrawIfsc').val();
+        var upiId = $('#txtWithdrawUpi').val();
+
+        if (isNaN(amt) || amt <= 0) {
+            alert("Please enter a valid withdrawal amount.");
+            return;
         }
+        if (amt > maxAmt) {
+            alert("Withdrawal amount cannot exceed your available wallet balance.");
+            return;
+        }
+
+        if (payoutMethod === 'Bank') {
+            if (!holderName || !holderName.trim()) { alert("Please enter Account Holder Name."); return; }
+            if (!bankName || !bankName.trim()) { alert("Please enter Bank Name."); return; }
+            if (!accNo || !accNo.trim()) { alert("Please enter Bank Account Number."); return; }
+            if (!ifsc || !ifsc.trim()) { alert("Please enter IFSC Code."); return; }
+        } else {
+            if (!upiId || !upiId.trim()) { alert("Please enter UPI ID."); return; }
+        }
+
+        $('#withdrawFormView').addClass('d-none');
+        $('#withdrawProcessingView').removeClass('d-none');
+
+        var destinationLabel = payoutMethod === 'UPI' ? upiId : (bankName + " (A/C: " + accNo + ")");
+        var steps = [
+            "Contacting NPCI IMPS direct settlement node...",
+            "Authorizing secure payment escrow payout request...",
+            "Submitting payout request for verification..."
+        ];
+
+        var stepIdx = 0;
+        $('#withdrawStatusText').text(steps[stepIdx]);
+        var interval = setInterval(function() {
+            stepIdx++;
+            if (stepIdx < steps.length) {
+                $('#withdrawStatusText').text(steps[stepIdx]);
+            } else {
+                clearInterval(interval);
+                // Trigger actual backend withdrawal
+                $.post('/Mechanic/WithdrawWallet', {
+                    amount: amt,
+                    payoutMethod: payoutMethod,
+                    accountHolderName: holderName,
+                    accountNumber: accNo,
+                    bankName: bankName,
+                    ifscCode: ifsc,
+                    upiId: upiId
+                }, function(res) {
+                    if (res.success) {
+                        $('#withdrawProcessingView').addClass('d-none');
+                        $('#withdrawSuccessView').removeClass('d-none');
+                        $('#withdrawSuccessMsg').text("Payout request of ₹" + amt.toFixed(2) + " submitted successfully! Status is pending Admin approval.");
+                    } else {
+                        alert(res.message || "Failed to process withdrawal.");
+                        resetWithdrawModal();
+                    }
+                });
+            }
+        }, 1000);
     }
 
     // Customer-Mechanic Live Chat
@@ -1720,6 +1995,10 @@
         });
     }
 
+    function printMechanicInvoice() {
+        window.print();
+    }
+
     $(document).ready(function() {
         $('#jobInvoiceModal').on('hidden.bs.modal', function () {
             location.reload();
@@ -1795,7 +2074,7 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body p-4" id="mechInvoicePrintArea">
                 <div class="p-4 bg-dark bg-opacity-80 rounded-4 border border-secondary">
                     <!-- Invoice Header -->
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 border-bottom border-secondary mb-4 gap-2">
@@ -1868,7 +2147,10 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-secondary">
+            <div class="modal-footer border-secondary d-print-none">
+                <button type="button" class="btn btn-outline-light font-weight-bold px-4 py-2" onclick="printMechanicInvoice()">
+                    <i class="fa-solid fa-print me-1"></i> Print / Save PDF
+                </button>
                 <button type="button" class="btn btn-success font-weight-bold px-4 py-2" data-bs-dismiss="modal">
                     Close & Go Standby
                 </button>

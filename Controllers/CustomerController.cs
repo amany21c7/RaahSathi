@@ -743,7 +743,7 @@ namespace RaahSathi.Controllers
             // Update mechanic metrics
             if (job.MechanicId.HasValue)
             {
-                var profile = await _dbContext.MechanicProfiles.FindAsync(job.MechanicId.Value);
+                var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == job.MechanicId.Value);
                 if (profile != null)
                 {
                     var ratedJobs = await _dbContext.Jobs

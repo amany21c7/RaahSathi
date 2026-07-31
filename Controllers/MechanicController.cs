@@ -273,6 +273,10 @@ namespace RaahSathi.Controllers
 
             double pendingSettlement = profile.CurrentEarnings;
 
+            double pendingPayout = await _dbContext.MechanicPayoutRequests
+                .Where(r => r.MechanicId == user.Id && r.Status == "Pending")
+                .SumAsync(r => r.Amount);
+
             ViewBag.User = user;
             ViewBag.Profile = profile;
             ViewBag.ActiveJob = activeJob;
@@ -285,6 +289,7 @@ namespace RaahSathi.Controllers
             ViewBag.WeeklyEarnings = weeklyEarnings;
             ViewBag.MonthlyVolume = monthlyVolume;
             ViewBag.PendingSettlement = pendingSettlement;
+            ViewBag.PendingPayoutAmount = pendingPayout;
             ViewBag.Payments = payments.OrderByDescending(p => p.CreatedAt).ToList();
 
             return View();
@@ -313,7 +318,7 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated" });
 
-            var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             return Json(new { 
                 success = true, 
                 kycStatus = profile?.KycStatus ?? "Incomplete",
@@ -327,7 +332,7 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return RedirectToAction("Login", "Auth");
 
-            var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
 
             if (profile != null && profile.KycStatus == "Approved")
             {
@@ -352,7 +357,7 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return RedirectToAction("Login", "Auth");
 
-            var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile == null)
             {
                 profile = new MechanicProfile { UserId = user.Id };
@@ -434,7 +439,7 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false });
 
-            var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile != null)
             {
                 profile.IsOnline = !profile.IsOnline;
@@ -451,7 +456,7 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return RedirectToAction("Login", "Auth");
 
-            var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile != null)
             {
                 profile.Latitude = lat;
@@ -952,12 +957,12 @@ namespace RaahSathi.Controllers
         public async Task<IActionResult> UpdateProfileSettings(
             string[] vehicleExpertise, string[] specialization, int serviceRadiusKm, 
             string languages, string workingHours, string bankName, string accountNumber, string ifscCode, string upiId,
-            string preferredPayoutMethod, bool acceptsCash = true)
+            string accountHolderName, string city, string preferredPayoutMethod, bool acceptsCash = true)
         {
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated" });
 
-            var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile != null)
             {
                 if (vehicleExpertise != null && vehicleExpertise.Length > 0)
@@ -975,6 +980,8 @@ namespace RaahSathi.Controllers
                 profile.BankAccountNumber = accountNumber ?? string.Empty;
                 profile.IfscCode = ifscCode ?? string.Empty;
                 profile.UpiId = upiId ?? string.Empty;
+                profile.AccountHolderName = accountHolderName ?? string.Empty;
+                profile.City = string.IsNullOrEmpty(city) ? "Noida" : city.Trim();
                 profile.PreferredPayoutMethod = string.IsNullOrEmpty(preferredPayoutMethod) ? "UPI" : preferredPayoutMethod;
                 profile.AcceptsCash = acceptsCash;
 
@@ -986,25 +993,76 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> WithdrawWallet(double amount)
+        public async Task<IActionResult> WithdrawWallet(
+            double amount, string payoutMethod, string accountHolderName, 
+            string accountNumber, string bankName, string ifscCode, string upiId)
         {
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated" });
 
-            var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
-            if (profile != null)
-            {
-                if (amount <= 0 || amount > profile.CurrentEarnings)
-                {
-                    return Json(new { success = false, message = "Invalid withdrawal amount." });
-                }
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (profile == null) return Json(new { success = false, message = "Profile not found." });
 
-                profile.CurrentEarnings -= amount;
-                await _dbContext.SaveChangesAsync();
-                return Json(new { success = true, remainingBalance = profile.CurrentEarnings, message = $"₹{amount:F2} successfully transferred to your linked account!" });
+            if (amount <= 0 || amount > profile.CurrentEarnings)
+            {
+                return Json(new { success = false, message = "Invalid withdrawal amount." });
             }
 
-            return Json(new { success = false, message = "Profile not found." });
+            payoutMethod = payoutMethod ?? "Bank";
+
+            // Validate mandatory fields
+            if (payoutMethod == "Bank")
+            {
+                if (string.IsNullOrEmpty(accountHolderName) || string.IsNullOrEmpty(accountNumber) ||
+                    string.IsNullOrEmpty(bankName) || string.IsNullOrEmpty(ifscCode))
+                {
+                    return Json(new { success = false, message = "All bank account details are mandatory for Bank Payout." });
+                }
+            }
+            else if (payoutMethod == "UPI")
+            {
+                if (string.IsNullOrEmpty(upiId))
+                {
+                    return Json(new { success = false, message = "UPI ID is mandatory for UPI Payout." });
+                }
+            }
+
+            // Deduct the earnings (holding them in the pending request)
+            profile.CurrentEarnings -= amount;
+
+            // Also update the profile settings in the database for future convenience
+            profile.PreferredPayoutMethod = payoutMethod;
+            if (payoutMethod == "Bank")
+            {
+                profile.AccountHolderName = accountHolderName.Trim();
+                profile.BankAccountNumber = accountNumber.Trim();
+                profile.BankName = bankName.Trim();
+                profile.IfscCode = ifscCode.Trim();
+            }
+            else
+            {
+                profile.UpiId = upiId.Trim();
+            }
+
+            // Create a payout request
+            var payoutRequest = new MechanicPayoutRequest
+            {
+                MechanicId = user.Id,
+                Amount = amount,
+                PayoutMethod = payoutMethod,
+                AccountHolderName = payoutMethod == "Bank" ? accountHolderName.Trim() : string.Empty,
+                BankAccountNumber = payoutMethod == "Bank" ? accountNumber.Trim() : string.Empty,
+                BankName = payoutMethod == "Bank" ? bankName.Trim() : string.Empty,
+                IfscCode = payoutMethod == "Bank" ? ifscCode.Trim() : string.Empty,
+                UpiId = payoutMethod == "UPI" ? upiId.Trim() : string.Empty,
+                Status = "Pending",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.MechanicPayoutRequests.Add(payoutRequest);
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { success = true, remainingBalance = profile.CurrentEarnings, message = "Withdrawal request submitted successfully! Pending Admin verification and payout release." });
         }
 
         [HttpPost]
@@ -1013,7 +1071,7 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return RedirectToAction("Login", "Auth");
 
-            var profile = await _dbContext.MechanicProfiles.FindAsync(user.Id);
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile != null && profile.CurrentEarnings > 0)
             {
                 double amount = profile.CurrentEarnings;

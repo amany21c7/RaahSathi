@@ -111,6 +111,209 @@
         color: #ffffff !important;
         font-weight: 600;
     }
+
+    /* Credit Card CSS */
+    .card-wrapper {
+        perspective: 1000px;
+        width: 100%;
+        max-width: 290px;
+        margin: 0 auto 20px auto;
+    }
+    .credit-card-interactive {
+        width: 100%;
+        height: 160px;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .credit-card-interactive.flipped {
+        transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        border-radius: 12px;
+        padding: 15px;
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .card-front {
+        background: linear-gradient(135deg, #0e1e38 0%, #1e3a66 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .card-back {
+        background: linear-gradient(135deg, #1e3a66 0%, #0e1e38 100%);
+        transform: rotateY(180deg);
+        padding: 0;
+        justify-content: flex-start;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .card-chip {
+        width: 35px;
+        height: 25px;
+        background: linear-gradient(135deg, #f1c40f, #f39c12);
+        border-radius: 4px;
+    }
+    .card-number-display {
+        font-size: 1.15rem;
+        letter-spacing: 2px;
+        font-family: 'Courier New', Courier, monospace;
+        margin: 12px 0;
+        text-align: center;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+    }
+    .card-holder-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+    }
+    .card-label-small {
+        font-size: 0.55rem;
+        text-transform: uppercase;
+        opacity: 0.6;
+        margin-bottom: 2px;
+    }
+    .card-value-small {
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .card-black-bar {
+        width: 100%;
+        height: 35px;
+        background: #000;
+        margin-top: 15px;
+    }
+    .card-signature-area {
+        margin: 10px 15px;
+        height: 30px;
+        background: #fff;
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 10px;
+    }
+    .card-cvv-text {
+        font-family: 'Courier New', Courier, monospace;
+        color: #000;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+    /* Pulse indicator for UPI */
+    .pulse-circle {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: rgba(13, 110, 253, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+    }
+    .pulse-circle::before, .pulse-circle::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 2px solid #0d6efd;
+        opacity: 0;
+        animation: pulseAnimation 2s infinite;
+    }
+    .pulse-circle::after {
+        animation-delay: 1s;
+    }
+    @@keyframes pulseAnimation {
+        0% { transform: scale(0.9); opacity: 0.8; }
+        100% { transform: scale(1.6); opacity: 0; }
+    }
+    /* Success Checkmark Animation */
+    .checkmark-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: block;
+        stroke-width: 4;
+        stroke: #22c55e;
+        stroke-miterlimit: 10;
+        margin: 10% auto;
+        box-shadow: inset 0px 0px 0px #22c55e;
+        animation: fillCheck 0.4s ease-in-out 0.4s forwards, scaleCheck 0.3s ease-in-out 0.9s both;
+    }
+    .checkmark-kick {
+        transform-origin: 50% 50%;
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: strokeCheck 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+    }
+    @@keyframes strokeCheck { 100% { stroke-dashoffset: 0; } }
+    @@keyframes scaleCheck { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+    @@keyframes fillCheck { 100% { box-shadow: inset 0px 0px 0px 40px #22c55e; stroke: #fff; } }
+
+    /* Print Styles */
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        #customerInvoiceModal, #customerInvoiceModal * {
+            visibility: visible;
+        }
+        #customerInvoiceModal {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            border: none !important;
+            box-shadow: none !important;
+            background: #fff !important;
+            color: #000 !important;
+        }
+        #custInvoicePrintArea, #custInvoicePrintArea * {
+            visibility: visible;
+        }
+        #custInvoicePrintArea {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: #fff !important;
+            color: #000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .d-print-none, .modal-header, .btn-close {
+            display: none !important;
+        }
+        .bg-dark, .bg-black, .bg-opacity-80, .bg-opacity-40 {
+            background: #fff !important;
+            color: #000 !important;
+            border: 1px solid #ccc !important;
+        }
+        .text-light, .text-muted, .text-warning, .text-info, .text-success, .text-white-50 {
+            color: #000 !important;
+        }
+        .table-dark {
+            background-color: #fff !important;
+            color: #000 !important;
+        }
+        .table-dark th, .table-dark td {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+        }
+        .badge {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+            background: #eee !important;
+        }
+    }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -499,6 +702,7 @@
 <div class="modal fade" id="razorpayModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content text-dark bg-white" style="border-radius:12px; overflow:hidden;">
+            <!-- Header -->
             <div class="p-4 bg-primary text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #0e1e38 0%, #1a335a 100%) !important;">
                 <div>
                     <h5 class="mb-0 font-weight-bold">RaahSathi Platform Checkout</h5>
@@ -506,29 +710,33 @@
                 </div>
                 <i class="fa-solid fa-shield-halved fa-2x text-warning"></i>
             </div>
-            <div class="p-4 text-dark bg-light border-bottom">
-                <div class="d-flex justify-content-between">
+            
+            <!-- Order Info Bar -->
+            <div class="p-3 text-dark bg-light border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <div class="text-muted small">ORDER ID</div>
-                        <div class="font-weight-bold text-dark">ord_raahsathi_@(job.Id)</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">ORDER ID</div>
+                        <div class="font-weight-bold text-dark" style="font-size: 0.9rem;">ord_raahsathi_@(job.Id)</div>
                     </div>
                     <div class="text-end">
-                        <div class="text-muted small">AMOUNT DUE</div>
-                        <h4 class="font-weight-bold text-dark mb-0" id="modalPaymentAmount">₹139.00</h4>
+                        <div class="text-muted" style="font-size: 0.75rem;">AMOUNT DUE</div>
+                        <h5 class="font-weight-bold text-dark mb-0" id="modalPaymentAmount">₹139.00</h5>
                     </div>
                 </div>
             </div>
-            <div class="p-4">
-                <h6 class="text-muted mb-3 small">SELECT PAYMENT METHOD</h6>
+
+            <!-- View 1: Selector View -->
+            <div class="p-4" id="rzpSelectionView">
+                <h6 class="text-muted mb-3 small font-weight-bold">SELECT PAYMENT METHOD</h6>
                 <div class="d-flex flex-column gap-2 mb-4">
-                    <button class="btn btn-outline-primary text-start p-3 d-flex align-items-center justify-content-between" onclick="payWithUPI()">
+                    <button class="btn btn-outline-primary text-start p-3 d-flex align-items-center justify-content-between" onclick="showRzpUpi()">
                         <div>
                             <span class="font-weight-bold text-dark d-block">Pay via UPI (GPay, PhonePe, Paytm)</span>
                             <span class="text-muted small">Instant escrow transfer</span>
                         </div>
                         <i class="fa-brands fa-google-pay fa-2x text-primary"></i>
                     </button>
-                    <button class="btn btn-outline-primary text-start p-3 d-flex align-items-center justify-content-between" onclick="payWithCard()">
+                    <button class="btn btn-outline-primary text-start p-3 d-flex align-items-center justify-content-between" onclick="showRzpCard()">
                         <div>
                             <span class="font-weight-bold text-dark d-block">Debit / Credit Card</span>
                             <span class="text-muted small">Visa, MasterCard, RuPay</span>
@@ -540,6 +748,124 @@
                     <i class="fa-solid fa-lock me-1"></i> Funds held securely in escrow pending release approval.
                 </div>
                 <button type="button" class="btn btn-outline-danger w-100" data-bs-dismiss="modal">Cancel Payment</button>
+            </div>
+
+            <!-- View 2: Card View -->
+            <div class="p-4 d-none" id="rzpCardView">
+                <!-- 3D Interactive Card Mockup -->
+                <div class="card-wrapper">
+                    <div class="credit-card-interactive" id="previewCard">
+                        <!-- Front -->
+                        <div class="card-front">
+                            <div class="card-logo-row">
+                                <div class="card-chip"></div>
+                                <i class="fa-solid fa-credit-card fa-2x text-white-50"></i>
+                            </div>
+                            <div class="card-number-display" id="cardNumLabel">•••• •••• •••• ••••</div>
+                            <div class="card-holder-info">
+                                <div>
+                                    <div class="card-label-small">Card Holder</div>
+                                    <div class="card-value-small" id="cardNameLabel">YOUR NAME</div>
+                                </div>
+                                <div>
+                                    <div class="card-label-small">Expires</div>
+                                    <div class="card-value-small" id="cardExpiryLabel">MM/YY</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Back -->
+                        <div class="card-back">
+                            <div class="card-black-bar"></div>
+                            <div class="card-label-small px-3 mt-2">CVV / Security Code</div>
+                            <div class="card-signature-area">
+                                <div class="card-cvv-text" id="cardCvvLabel">•••</div>
+                            </div>
+                            <div class="px-3 text-muted" style="font-size:0.55rem; text-align:center;">Secure payment standard. Authorized signature required.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Form Inputs -->
+                <form id="cardPaymentForm" onsubmit="submitCardPayment(event)">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold mb-1">CARD NUMBER</label>
+                        <input type="text" class="form-control" id="cardInputNumber" placeholder="4321 8765 1234 5678" maxlength="19" required oninput="formatCardNumber(this)" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold mb-1">CARD HOLDER NAME</label>
+                        <input type="text" class="form-control" id="cardInputName" placeholder="Rahul Sharma" required oninput="updateCardName(this)" />
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-7">
+                            <label class="form-label text-muted small font-weight-bold mb-1">EXPIRY DATE</label>
+                            <input type="text" class="form-control" id="cardInputExpiry" placeholder="MM/YY" maxlength="5" required oninput="formatCardExpiry(this)" />
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label text-muted small font-weight-bold mb-1">CVV</label>
+                            <input type="password" class="form-control" id="cardInputCvv" placeholder="•••" maxlength="3" required onfocus="flipCard(true)" onblur="flipCard(false)" oninput="updateCardCvv(this)" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary flex-fill" onclick="resetRzpSelection()">Back</button>
+                        <button type="submit" class="btn btn-primary flex-fill font-weight-bold" style="background: linear-gradient(135deg, #0e1e38 0%, #1a335a 100%) !important; border: none;">Pay Now</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- View 3: UPI View -->
+            <div class="p-4 d-none" id="rzpUpiView">
+                <div class="text-center mb-4">
+                    <h6 class="text-muted small font-weight-bold mb-3">SELECT UPI APP</h6>
+                    <div class="d-flex justify-content-center gap-3 mb-4">
+                        <button class="btn btn-outline-primary p-2 d-flex flex-column align-items-center justify-content-center" style="width: 85px; height: 80px;" onclick="startSimulatedUpiApp('Google Pay')">
+                            <i class="fa-brands fa-google-pay fa-2x mb-1"></i>
+                            <span class="small" style="font-size:0.7rem; font-weight:bold;">GPay</span>
+                        </button>
+                        <button class="btn btn-outline-primary p-2 d-flex flex-column align-items-center justify-content-center" style="width: 85px; height: 80px;" onclick="startSimulatedUpiApp('PhonePe')">
+                            <i class="fa-solid fa-mobile-screen fa-2x mb-1 text-primary"></i>
+                            <span class="small" style="font-size:0.7rem; font-weight:bold;">PhonePe</span>
+                        </button>
+                        <button class="btn btn-outline-primary p-2 d-flex flex-column align-items-center justify-content-center" style="width: 85px; height: 80px;" onclick="startSimulatedUpiApp('Paytm')">
+                            <i class="fa-solid fa-wallet fa-2x mb-1 text-primary"></i>
+                            <span class="small" style="font-size:0.7rem; font-weight:bold;">Paytm</span>
+                        </button>
+                    </div>
+                    
+                    <div class="border-top border-secondary pt-3 mb-3">
+                        <span class="text-muted small d-block mb-2 font-weight-bold">OR SCAN SECURE ESCROW QR CODE</span>
+                        <div class="pulse-circle mb-3">
+                            <i class="fa-solid fa-qrcode fa-2x text-primary"></i>
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm font-weight-bold px-3" onclick="simulateQrScan()">Simulate QR Code Scan</button>
+                    </div>
+                </div>
+
+                <!-- UPI Processing / Waiting Countdown Sub-view -->
+                <div id="upiWaitingScreen" class="d-none text-center bg-light p-3 rounded mb-3 border">
+                    <div class="spinner-grow text-primary spinner-grow-sm mb-2" role="status"></div>
+                    <div class="font-weight-bold text-dark small mb-1" id="upiAppWaitingText">Waiting for Google Pay authorization...</div>
+                    <div class="text-muted small" style="font-size:0.75rem;">Please approve the payment request on your phone.</div>
+                    <div class="font-weight-bold text-danger mt-2" id="upiTimer" style="font-size:1.1rem;">0:15</div>
+                </div>
+
+                <button type="button" class="btn btn-outline-secondary w-100" onclick="resetRzpSelection()">Back</button>
+            </div>
+
+            <!-- View 4: Processing View -->
+            <div class="p-5 text-center d-none" id="rzpProcessingView">
+                <i class="fa-solid fa-circle-notch fa-spin fa-3x text-primary mb-3"></i>
+                <h5 class="font-weight-bold text-dark mb-2">Processing ESCROW Payment...</h5>
+                <p class="text-muted small" id="processingStatusText">Contacting Razorpay vault and securing escrow channel...</p>
+            </div>
+
+            <!-- View 5: Success View -->
+            <div class="p-5 text-center d-none" id="rzpSuccessView">
+                <div class="checkmark-circle">
+                    <div class="check-icon"></div>
+                </div>
+                <h5 class="font-weight-bold text-success mb-2">Payment ESCROW Completed!</h5>
+                <p class="text-muted small mb-0">Funds are held securely. Dispatch completed.</p>
             </div>
         </div>
     </div>
@@ -857,28 +1183,166 @@
         alert("Trip Sharing Link copied to clipboard:\n\nhttp://localhost:5000/Customer/ShareStatus?token=track_job_@(job.Id)");
     }
 
+    var upiTimerInterval = null;
+
     function openRazorpayMock() {
         var totalAmount = $('#billTotal').text();
         $('#modalPaymentAmount').text(totalAmount);
+        resetRzpSelection();
         var rzpModal = new bootstrap.Modal(document.getElementById('razorpayModal'));
         rzpModal.show();
     }
 
-    function payWithUPI() {
-        var rzpModal = bootstrap.Modal.getInstance(document.getElementById('razorpayModal'));
-        rzpModal.hide();
-        
-        $.post('/Customer/ProcessPayment', { id: @job.Id, paymentId: 'pay_upi_' + Math.random().toString(36).substring(7) }, function(res) {
-            pollJobStatus();
-        });
+    function showRzpUpi() {
+        $('#rzpSelectionView').addClass('d-none');
+        $('#rzpUpiView').removeClass('d-none');
+        $('#upiWaitingScreen').addClass('d-none');
+        if (upiTimerInterval) clearInterval(upiTimerInterval);
     }
 
-    function payWithCard() {
-        var rzpModal = bootstrap.Modal.getInstance(document.getElementById('razorpayModal'));
-        rzpModal.hide();
+    function showRzpCard() {
+        $('#rzpSelectionView').addClass('d-none');
+        $('#rzpCardView').removeClass('d-none');
+        // Reset card fields
+        $('#cardInputNumber').val('');
+        $('#cardInputName').val('');
+        $('#cardInputExpiry').val('');
+        $('#cardInputCvv').val('');
+        $('#cardNumLabel').text('•••• •••• •••• ••••');
+        $('#cardNameLabel').text('YOUR NAME');
+        $('#cardExpiryLabel').text('MM/YY');
+        $('#cardCvvLabel').text('•••');
+        $('#previewCard').removeClass('flipped');
+    }
 
-        $.post('/Customer/ProcessPayment', { id: @job.Id, paymentId: 'pay_card_' + Math.random().toString(36).substring(7) }, function(res) {
-            pollJobStatus();
+    function resetRzpSelection() {
+        $('#rzpCardView').addClass('d-none');
+        $('#rzpUpiView').addClass('d-none');
+        $('#rzpProcessingView').addClass('d-none');
+        $('#rzpSuccessView').addClass('d-none');
+        $('#rzpSelectionView').removeClass('d-none');
+        $('#upiWaitingScreen').addClass('d-none');
+        if (upiTimerInterval) clearInterval(upiTimerInterval);
+    }
+
+    // Card View formatting & dynamic sync
+    function formatCardNumber(input) {
+        var value = input.value.replace(/\D/g, '');
+        var formatted = value.match(/.{1,4}/g);
+        if (formatted) {
+            input.value = formatted.join(' ');
+        } else {
+            input.value = value;
+        }
+        $('#cardNumLabel').text(input.value || '•••• •••• •••• ••••');
+    }
+
+    function updateCardName(input) {
+        $('#cardNameLabel').text(input.value.toUpperCase() || 'YOUR NAME');
+    }
+
+    function formatCardExpiry(input) {
+        var value = input.value.replace(/\D/g, '');
+        if (value.length > 2) {
+            input.value = value.substring(0,2) + '/' + value.substring(2,4);
+        } else {
+            input.value = value;
+        }
+        $('#cardExpiryLabel').text(input.value || 'MM/YY');
+    }
+
+    function updateCardCvv(input) {
+        var value = input.value.replace(/\D/g, '');
+        input.value = value;
+        var masked = '';
+        for (var i = 0; i < value.length; i++) masked += '•';
+        $('#cardCvvLabel').text(masked || '•••');
+    }
+
+    function flipCard(flipped) {
+        if (flipped) {
+            $('#previewCard').addClass('flipped');
+        } else {
+            $('#previewCard').removeClass('flipped');
+        }
+    }
+
+    // Submit Card Payment
+    function submitCardPayment(e) {
+        e.preventDefault();
+        $('#rzpCardView').addClass('d-none');
+        $('#rzpProcessingView').removeClass('d-none');
+        
+        var statuses = [
+            "Contacting secure banking node...",
+            "Encrypting card credentials via SSL...",
+            "Verifying 3D Secure credentials...",
+            "Securing Escrow Vault credit..."
+        ];
+        
+        var step = 0;
+        $('#processingStatusText').text(statuses[step]);
+        var interval = setInterval(function() {
+            step++;
+            if (step < statuses.length) {
+                $('#processingStatusText').text(statuses[step]);
+            } else {
+                clearInterval(interval);
+                finalizeRzpPayment('pay_card_' + Math.random().toString(36).substring(7));
+            }
+        }, 1200);
+    }
+
+    // UPI Apps simulation
+    function startSimulatedUpiApp(appName) {
+        $('#upiWaitingScreen').removeClass('d-none');
+        $('#upiAppWaitingText').text('Waiting for ' + appName + ' authorization...');
+        
+        var time = 10;
+        $('#upiTimer').text('0:' + (time < 10 ? '0' : '') + time);
+        
+        if (upiTimerInterval) clearInterval(upiTimerInterval);
+        upiTimerInterval = setInterval(function() {
+            time--;
+            $('#upiTimer').text('0:' + (time < 10 ? '0' : '') + time);
+            
+            if (time <= 5) {
+                // Auto-approve after 5 seconds to simulate user typing PIN
+                clearInterval(upiTimerInterval);
+                $('#rzpUpiView').addClass('d-none');
+                $('#rzpProcessingView').removeClass('d-none');
+                $('#processingStatusText').text("Receiving UPI webhook check...");
+                setTimeout(function() {
+                    finalizeRzpPayment('pay_upi_' + Math.random().toString(36).substring(7));
+                }, 1000);
+            }
+        }, 1000);
+    }
+
+    // QR Scan simulation
+    function simulateQrScan() {
+        $('#rzpUpiView').addClass('d-none');
+        $('#rzpProcessingView').removeClass('d-none');
+        $('#processingStatusText').text("Simulating scan. Decrypting UPI Intent string...");
+        setTimeout(function() {
+            $('#processingStatusText').text("Validating dynamic escrow wallet...");
+            setTimeout(function() {
+                finalizeRzpPayment('pay_qr_' + Math.random().toString(36).substring(7));
+            }, 1000);
+        }, 1000);
+    }
+
+    function finalizeRzpPayment(paymentId) {
+        $('#rzpProcessingView').addClass('d-none');
+        $('#rzpSuccessView').removeClass('d-none');
+        
+        $.post('/Customer/ProcessPayment', { id: @job.Id, paymentId: paymentId }, function(res) {
+            setTimeout(function() {
+                var modalEl = document.getElementById('razorpayModal');
+                var rzpModal = bootstrap.Modal.getInstance(modalEl);
+                if (rzpModal) rzpModal.hide();
+                pollJobStatus();
+            }, 2000);
         });
     }
 

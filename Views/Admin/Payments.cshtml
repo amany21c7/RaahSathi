@@ -1,35 +1,93 @@
 @using RaahSathi.Models
 @model List<Payment>
 @{
-    ViewData["Title"] = "Payments & Escrow Vault";
+    ViewData["Title"] = "Payments & Payout Control";
     var withdrawals = ViewBag.Withdrawals as List<AdminWithdrawal> ?? new List<AdminWithdrawal>();
+    var payoutRequests = ViewBag.PayoutRequests as List<PayoutRequestViewModel> ?? new List<PayoutRequestViewModel>();
+    var mechanics = ViewBag.Mechanics as List<MechanicLedgerViewModel> ?? new List<MechanicLedgerViewModel>();
+
+    // Get unique cities for grouping mechanics
+    var cities = mechanics.Select(m => m.City).Distinct().OrderBy(c => c).ToList();
 }
+
+<style>
+    .nav-tabs .nav-link {
+        border: 1px solid transparent;
+        border-top-left-radius: 8.5px;
+        border-top-right-radius: 8.5px;
+        background: rgba(30, 41, 59, 0.4);
+        margin-right: 4px;
+        transition: all 0.2s ease;
+    }
+    .nav-tabs .nav-link:hover {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(255, 107, 0, 0.2);
+    }
+    .nav-tabs .nav-link.active {
+        background: #1e293b !important;
+        border-color: #ff6b00 #1e293b transparent !important;
+        border-width: 2px 1px 1px 1px !important;
+        font-weight: 700;
+    }
+    .glass-tab-content {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-top: none;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    }
+</style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-credit-card text-warning me-2"></i> Payments & Escrow Ledger</h4>
-        <p class="text-muted small mb-0">Customer escrow payments, admin commissions earned, mechanic earnings, and bank withdrawals.</p>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-credit-card text-warning me-2"></i> Payments & Payout Hub</h4>
+        <p class="text-muted small mb-0">Manage customer escrow transactions, approve mechanic payout requests, group mechanics city-wise, and audit job estimates.</p>
     </div>
 </div>
 
-<div class="card bg-dark border-secondary shadow-sm mb-4">
-    <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center">
-        <h5 class="text-white mb-0"><i class="fa-solid fa-receipt text-warning me-2"></i> Escrow Transactions</h5>
-        <div class="d-flex flex-wrap align-items-center gap-2">
-            <div class="d-flex align-items-center gap-1.5 bg-dark bg-opacity-40 p-1.5 rounded-3 border border-secondary" style="border-style: solid !important;">
-                <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">From:</label>
-                <input type="date" id="filterStartDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="applyCalendarFilter()">
-                
-                <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">To:</label>
-                <input type="date" id="filterEndDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="applyCalendarFilter()">
+<!-- Nav Tabs -->
+<ul class="nav nav-tabs border-secondary" id="paymentTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active text-white" id="escrow-tab" data-bs-toggle="tab" data-bs-target="#escrow-panel" type="button" role="tab"><i class="fa-solid fa-receipt text-warning me-1.5"></i> Escrow Transactions</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link text-white" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests-panel" type="button" role="tab">
+            <i class="fa-solid fa-clock-rotate-left text-success me-1.5"></i> Payout Approval Queue
+            @if (payoutRequests.Any(r => r.Request.Status == "Pending"))
+            {
+                <span class="badge bg-danger rounded-pill ms-1 font-weight-bold">@payoutRequests.Count(r => r.Request.Status == "Pending")</span>
+            }
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link text-white" id="mechanics-tab" data-bs-toggle="tab" data-bs-target="#mechanics-panel" type="button" role="tab"><i class="fa-solid fa-users text-info me-1.5"></i> City-Wise Mechanics</button>
+    </li>
+</ul>
+
+<!-- Tab Contents -->
+<div class="tab-content" id="paymentTabsContent">
+    
+    <!-- Tab 1: Escrow Transactions -->
+    <div class="tab-pane fade show active glass-tab-content" id="escrow-panel" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-vault text-warning me-2"></i> Escrow Transactions</h5>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="d-flex align-items-center gap-1.5 bg-dark bg-opacity-40 p-1.5 rounded-3 border border-secondary">
+                    <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">From:</label>
+                    <input type="date" id="filterStartDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="applyCalendarFilter()">
+                    
+                    <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">To:</label>
+                    <input type="date" id="filterEndDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="applyCalendarFilter()">
+                </div>
+                <button class="btn btn-outline-secondary btn-sm font-weight-bold" onclick="resetCalendarFilter()">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
             </div>
-            <button class="btn btn-outline-secondary btn-sm font-weight-bold" onclick="resetCalendarFilter()">
-                <i class="fa-solid fa-rotate-left"></i> Reset
-            </button>
         </div>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
+
+        <div class="table-responsive rounded-3 border border-secondary border-opacity-30">
             <table class="table table-dark table-hover mb-0 align-middle">
                 <thead>
                     <tr class="border-secondary text-muted small">
@@ -82,9 +140,554 @@
             </table>
         </div>
     </div>
+
+    <!-- Tab 2: Payout Approval Queue -->
+    <div class="tab-pane fade glass-tab-content" id="requests-panel" role="tabpanel">
+        <h5 class="text-white font-weight-bold mb-3"><i class="fa-solid fa-list-check text-success me-2"></i> Mechanic Payout Requests</h5>
+        
+        <div class="table-responsive rounded-3 border border-secondary border-opacity-30">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">ID</th>
+                        <th>Mechanic Details</th>
+                        <th>City</th>
+                        <th>Amount</th>
+                        <th>Payout Destination</th>
+                        <th>Requested Date</th>
+                        <th>Status</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (payoutRequests.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">No payout requests recorded.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var req in payoutRequests)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3"><b>#PR-@req.Request.Id</b></td>
+                                <td>
+                                    <div class="text-white font-weight-bold">@req.MechanicName</div>
+                                    <div class="small text-muted">@req.DisplayId • @req.PhoneNumber</div>
+                                </td>
+                                <td><span class="badge bg-dark border border-secondary text-light">@req.City</span></td>
+                                <td class="text-success font-weight-bold">₹@req.Request.Amount.ToString("N2")</td>
+                                <td>
+                                    @if (req.Request.PayoutMethod == "UPI")
+                                    {
+                                        <span class="text-info font-weight-bold"><i class="fa-solid fa-mobile-screen me-1"></i> UPI:</span> <code>@req.Request.UpiId</code>
+                                    }
+                                    else
+                                    {
+                                        <div class="small text-white-50"><i class="fa-solid fa-landmark me-1"></i> @req.Request.BankName</div>
+                                        <div class="small">Holder: <b>@req.Request.AccountHolderName</b></div>
+                                        <div class="small">A/C: <code>@req.Request.BankAccountNumber</code> • IFSC: <code>@req.Request.IfscCode</code></div>
+                                    }
+                                </td>
+                                <td class="small text-muted">@req.Request.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</td>
+                                <td>
+                                    @if (req.Request.Status == "Pending")
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="fa-regular fa-clock me-1"></i> Pending</span>
+                                    }
+                                    else if (req.Request.Status == "Approved")
+                                    {
+                                        <span class="badge bg-success text-white"><i class="fa-solid fa-check-circle me-1"></i> Approved</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger text-white"><i class="fa-solid fa-times-circle me-1"></i> Rejected</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3">
+                                    @if (req.Request.Status == "Pending")
+                                    {
+                                        <button class="btn btn-success btn-sm font-weight-bold me-1" onclick="openApproveModal(@req.Request.Id, '@req.MechanicName', @req.Request.Amount)">
+                                            <i class="fa-solid fa-circle-check"></i> Release
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm font-weight-bold" onclick="openRejectModal(@req.Request.Id, '@req.MechanicName', @req.Request.Amount)">
+                                            <i class="fa-solid fa-circle-xmark"></i> Reject
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <div class="small text-muted">
+                                            @if (req.Request.Status == "Approved")
+                                            {
+                                                <div class="text-success font-weight-bold">Ref: @req.Request.TransactionReference</div>
+                                            }
+                                            else
+                                            {
+                                                <div class="text-danger font-weight-medium">Reason: @req.Request.AdminRemarks</div>
+                                            }
+                                            <span style="font-size: 0.75rem;">Processed: @(req.Request.ProcessedAt?.ToLocalTime().ToString("dd MMM, hh:mm tt") ?? "-")</span>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tab 3: City-Wise Mechanics Directory -->
+    <div class="tab-pane fade glass-tab-content" id="mechanics-panel" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-map-location-dot text-info me-2"></i> City-Wise Mechanics Directory</h5>
+            
+            <div class="d-flex align-items-center gap-2">
+                <label class="text-muted small font-weight-bold mb-0 text-nowrap">Filter City:</label>
+                <select id="selFilterCity" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 180px;" onchange="filterMechanicsByCity()">
+                    <option value="All">All Cities</option>
+                    @foreach (var city in cities)
+                    {
+                        <option value="@city">@city</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive rounded-3 border border-secondary border-opacity-30">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">ID</th>
+                        <th>Mechanic Details</th>
+                        <th>City</th>
+                        <th>Wallet Balance</th>
+                        <th>Jobs Done</th>
+                        <th>KYC Details</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tblMechanicLedgerBody">
+                    @if (mechanics.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No verified mechanics registered.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var m in mechanics)
+                        {
+                            <tr class="border-secondary mech-ledger-row" data-city="@m.City">
+                                <td class="ps-3"><b>@m.DisplayId</b></td>
+                                <td>
+                                    <div class="text-white font-weight-bold">@m.Name</div>
+                                    <div class="small text-muted">@m.PhoneNumber</div>
+                                </td>
+                                <td><span class="badge bg-info text-dark font-weight-bold">@m.City</span></td>
+                                <td class="text-success font-weight-extrabold fs-6">₹@m.CurrentEarnings.ToString("N2")</td>
+                                <td>
+                                    <div class="font-weight-bold text-light">@m.TotalJobs Jobs</div>
+                                    <div class="small text-warning">⭐ @m.Rating.ToString("F1")</div>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(m.UpiId))
+                                    {
+                                        <div class="extra-small text-muted">UPI: <code>@m.UpiId</code></div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(m.BankAccountNumber))
+                                    {
+                                        <div class="extra-small text-muted">Bank: @m.BankName (A/C: *******@(m.BankAccountNumber.Length > 4 ? m.BankAccountNumber.Substring(m.BankAccountNumber.Length - 4) : m.BankAccountNumber))</div>
+                                    }
+                                    @if (string.IsNullOrEmpty(m.UpiId) && string.IsNullOrEmpty(m.BankAccountNumber))
+                                    {
+                                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30">No details saved</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3">
+                                    <button class="btn btn-outline-warning btn-sm font-weight-bold me-1" onclick="checkMechanicEstimates(@m.UserId, '@m.Name')">
+                                        <i class="fa-solid fa-list-check"></i> Check Estimates
+                                    </button>
+                                    @if (m.CurrentEarnings > 0)
+                                    {
+                                        <button class="btn btn-success btn-sm font-weight-bold" onclick="openDirectReleaseModal(@m.UserId, '@m.Name', @m.CurrentEarnings)">
+                                            <i class="fa-solid fa-wallet"></i> Release Wallet
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-secondary btn-sm font-weight-bold" disabled>
+                                            Settled
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL: APPROVE / RELEASE PAYOUT -->
+<div class="modal fade" id="approvePayoutModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="/Admin/ApprovePayoutRequest" method="post" class="modal-content bg-dark text-white border-success">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-success font-weight-bold"><i class="fa-solid fa-circle-check me-2"></i> Approve Payout Release</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" name="requestId" id="hidApproveRequestId" />
+                
+                <p class="text-muted">You are releasing the payout request for mechanic <b id="lblApproveMechanicName" class="text-light">--</b>.</p>
+                <div class="p-3 bg-black bg-opacity-40 rounded-3 border border-secondary mb-3 text-center">
+                    <span class="text-muted small d-block">Amount to Release</span>
+                    <h3 class="text-success font-weight-extrabold mb-0 mt-1" id="lblApproveAmount">₹0.00</h3>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small font-weight-bold">TRANSACTION REFERENCE NUMBER (UTR / IMPS Ref) <span class="text-danger">*</span></label>
+                    <input type="text" name="referenceNumber" class="form-control bg-dark text-white border-secondary font-weight-bold" placeholder="Enter bank reference transaction ID" required>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label text-muted small font-weight-bold">ADMIN FINANCE REMARKS</label>
+                    <textarea name="remarks" class="form-control bg-dark text-white border-secondary" rows="2" placeholder="e.g. Cleared via IMPS Bank Transfer"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-outline-secondary font-weight-bold text-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-success font-weight-bold px-4">Confirm Release & Release Funds</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: REJECT PAYOUT REQUEST -->
+<div class="modal fade" id="rejectPayoutModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="/Admin/RejectPayoutRequest" method="post" class="modal-content bg-dark text-white border-danger">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-danger font-weight-bold"><i class="fa-solid fa-circle-xmark me-2"></i> Reject Payout Request</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" name="requestId" id="hidRejectRequestId" />
+                
+                <p class="text-muted">You are rejecting the payout request for mechanic <b id="lblRejectMechanicName" class="text-light">--</b>. The funds will be refunded back to their wallet balance.</p>
+                <div class="p-3 bg-black bg-opacity-40 rounded-3 border border-secondary mb-3 text-center">
+                    <span class="text-muted small d-block">Amount to Refund</span>
+                    <h3 class="text-danger font-weight-extrabold mb-0 mt-1" id="lblRejectAmount">₹0.00</h3>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label text-muted small font-weight-bold">REJECTION REASON / REMARKS <span class="text-danger">*</span></label>
+                    <textarea name="remarks" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Enter reason for rejection so the partner is notified" required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-outline-secondary font-weight-bold text-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger font-weight-bold px-4">Reject Request & Refund</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: DIRECT WALLET RELEASE -->
+<div class="modal fade" id="directReleaseModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="/Admin/ReleaseMechanicWalletDirect" method="post" class="modal-content bg-dark text-white border-success">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-success font-weight-bold"><i class="fa-solid fa-wallet me-2"></i> Direct Wallet Balance Release</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" name="mechanicId" id="hidDirectMechanicId" />
+                
+                <p class="text-muted">This will directly release the entire wallet balance for <b id="lblDirectMechanicName" class="text-light">--</b> and reset it to ₹0.00.</p>
+                <div class="p-3 bg-black bg-opacity-40 rounded-3 border border-secondary mb-3 text-center">
+                    <span class="text-muted small d-block">Total Balance to Release</span>
+                    <h3 class="text-success font-weight-extrabold mb-0 mt-1" id="lblDirectAmount">₹0.00</h3>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label text-muted small font-weight-bold">SETTLEMENT DETAILS / REMARKS</label>
+                    <textarea name="remarks" class="form-control bg-dark text-white border-secondary" rows="2" placeholder="e.g. Directly released cash / processed manual bank transfer"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-outline-secondary font-weight-bold text-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-success font-weight-bold px-4">Release & Clear Wallet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: CHECK ESTIMATES / COMPLETED JOBS AUDIT -->
+<div class="modal fade" id="checkEstimatesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content bg-dark text-white border-warning">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-clipboard-list me-2"></i> Completed Estimates & Jobs Audit for <span id="lblAuditMechanicName">--</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Financial Reconciliation Summary Grid -->
+                <div class="row g-2 mb-3">
+                    <div class="col-md-3">
+                        <div class="p-3 bg-black bg-opacity-35 rounded border border-secondary text-center">
+                            <span class="text-muted small d-block">Gross Job Earnings</span>
+                            <h4 class="text-white font-weight-extrabold mb-0 mt-1" id="lblAuditGrossEarnings">₹0.00</h4>
+                            <span class="extra-small text-muted" id="lblAuditJobsCount">0 Jobs Completed</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 bg-black bg-opacity-35 rounded border border-secondary text-center">
+                            <span class="text-muted small d-block">Online Escrow vs Cash</span>
+                            <h5 class="text-info font-weight-bold mb-0 mt-1" id="lblAuditOnlineEarnings">Online: ₹0.00</h5>
+                            <span class="extra-small text-warning" id="lblAuditCashEarnings">Cash: ₹0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 bg-black bg-opacity-35 rounded border border-secondary text-center">
+                            <span class="text-muted small d-block">Wallet Balance</span>
+                            <h4 class="text-success font-weight-extrabold mb-0 mt-1" id="lblAuditWalletBalance">₹0.00</h4>
+                            <span class="extra-small text-muted">Available in Vault</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 bg-black bg-opacity-35 rounded border border-secondary text-center">
+                            <span class="text-muted small d-block">Pending Payout Requests</span>
+                            <h4 class="text-warning font-weight-extrabold mb-0 mt-1" id="lblAuditPendingPayouts">₹0.00</h4>
+                            <span class="extra-small text-muted" id="lblAuditSettledPayouts">Settled: ₹0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive rounded-3 border border-secondary border-opacity-30" style="max-height: 450px; overflow-y: auto;">
+                    <table class="table table-dark table-hover mb-0 align-middle">
+                        <thead>
+                            <tr class="border-secondary text-muted small text-nowrap">
+                                <th class="ps-3">Job ID</th>
+                                <th>Customer</th>
+                                <th>Problem Type</th>
+                                <th>Completed Date</th>
+                                <th>Payment Mode</th>
+                                <th>Basic Visiting</th>
+                                <th>Service Fee</th>
+                                <th>Custom Estimate</th>
+                                <th>Extra Parts & Labour</th>
+                                <th>Towing Fee</th>
+                                <th>Total Bill</th>
+                                <th>Admin Commission</th>
+                                <th class="text-end pe-3">Mechanic Earning</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblAuditJobsBody">
+                            <tr>
+                                <td colspan="13" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i> Fetching estimates list...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-top border-secondary bg-black bg-opacity-40 font-weight-bold" style="font-size:0.9rem;">
+                                <td class="ps-3 text-muted font-weight-bold" colspan="5">Total Audited Summary</td>
+                                <td class="text-white-50" id="auditTotalVisiting">₹0.00</td>
+                                <td class="text-white-50" id="auditTotalService">₹0.00</td>
+                                <td class="text-white-50" id="auditTotalCustom">₹0.00</td>
+                                <td class="text-white-50" id="auditTotalParts">₹0.00</td>
+                                <td class="text-white-50" id="auditTotalTowing">₹0.00</td>
+                                <td class="text-primary" id="auditTotalBill">₹0.00</td>
+                                <td class="text-warning" id="auditTotalCommission">₹0.00</td>
+                                <td class="text-success text-end pe-3" id="auditTotalNetCredit">₹0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-warning text-dark font-weight-bold px-4" data-bs-dismiss="modal">Close Audit Screen</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
+    // Tab memory handler
+    document.addEventListener("DOMContentLoaded", function() {
+        var activeTab = localStorage.getItem('adminActivePaymentTab');
+        if (activeTab) {
+            var tabEl = document.getElementById(activeTab);
+            if (tabEl) {
+                var tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            }
+        }
+        
+        var tabTriggerElList = [].slice.call(document.querySelectorAll('button[data-bs-toggle="tab"]'))
+        tabTriggerElList.forEach(function(tabTriggerEl) {
+            tabTriggerEl.addEventListener('shown.bs.tab', function(event) {
+                localStorage.setItem('adminActivePaymentTab', event.target.id);
+            });
+        });
+    });
+
+    // Payout modal handlers
+    function openApproveModal(id, name, amt) {
+        document.getElementById('hidApproveRequestId').value = id;
+        document.getElementById('lblApproveMechanicName').innerText = name;
+        document.getElementById('lblApproveAmount').innerText = '₹' + amt.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        new bootstrap.Modal(document.getElementById('approvePayoutModal')).show();
+    }
+
+    function openRejectModal(id, name, amt) {
+        document.getElementById('hidRejectRequestId').value = id;
+        document.getElementById('lblRejectMechanicName').innerText = name;
+        document.getElementById('lblRejectAmount').innerText = '₹' + amt.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        new bootstrap.Modal(document.getElementById('rejectPayoutModal')).show();
+    }
+
+    function openDirectReleaseModal(id, name, amt) {
+        document.getElementById('hidDirectMechanicId').value = id;
+        document.getElementById('lblDirectMechanicName').innerText = name;
+        document.getElementById('lblDirectAmount').innerText = '₹' + amt.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        new bootstrap.Modal(document.getElementById('directReleaseModal')).show();
+    }
+
+    // Filter mechanics list by City
+    function filterMechanicsByCity() {
+        var selectedCity = document.getElementById('selFilterCity').value;
+        var rows = document.getElementsByClassName('mech-ledger-row');
+        
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var city = row.getAttribute('data-city');
+            
+            if (selectedCity === 'All' || city === selectedCity) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    function checkMechanicEstimates(id, name) {
+        document.getElementById('lblAuditMechanicName').innerText = name;
+        var tbody = document.getElementById('tblAuditJobsBody');
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i> Fetching estimates list...</td></tr>';
+        
+        // Reset top widgets
+        document.getElementById('lblAuditGrossEarnings').innerText = '₹0.00';
+        document.getElementById('lblAuditJobsCount').innerText = '0 Jobs Completed';
+        document.getElementById('lblAuditOnlineEarnings').innerText = 'Online: ₹0.00';
+        document.getElementById('lblAuditCashEarnings').innerText = 'Cash: ₹0.00';
+        document.getElementById('lblAuditWalletBalance').innerText = '₹0.00';
+        document.getElementById('lblAuditPendingPayouts').innerText = '₹0.00';
+        document.getElementById('lblAuditSettledPayouts').innerText = 'Settled: ₹0.00';
+
+        var modal = new bootstrap.Modal(document.getElementById('checkEstimatesModal'));
+        modal.show();
+
+        $.get('/Admin/GetMechanicJobs?mechanicId=' + id, function(res) {
+            if (res.success) {
+                var html = '';
+                
+                // Populate top static profile metrics
+                document.getElementById('lblAuditWalletBalance').innerText = '₹' + res.walletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('lblAuditPendingPayouts').innerText = '₹' + res.pendingPayouts.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('lblAuditSettledPayouts').innerText = 'Settled: ₹' + res.settledPayouts.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('lblAuditJobsCount').innerText = res.jobs.length + ' Jobs Completed';
+
+                if (res.jobs.length === 0) {
+                    html = '<tr><td colspan="12" class="text-center py-4 text-muted">No completed jobs/estimates recorded for this partner.</td></tr>';
+                    tbody.innerHTML = html;
+                    
+                    document.getElementById('auditTotalVisiting').innerText = '₹0.00';
+                    document.getElementById('auditTotalService').innerText = '₹0.00';
+                    document.getElementById('auditTotalCustom').innerText = '₹0.00';
+                    document.getElementById('auditTotalParts').innerText = '₹0.00';
+                    document.getElementById('auditTotalTowing').innerText = '₹0.00';
+                    document.getElementById('auditTotalBill').innerText = '₹0.00';
+                    document.getElementById('auditTotalCommission').innerText = '₹0.00';
+                    document.getElementById('auditTotalNetCredit').innerText = '₹0.00';
+                } else {
+                    var totalVisiting = 0;
+                    var totalService = 0;
+                    var totalCustom = 0;
+                    var totalParts = 0;
+                    var totalTowing = 0;
+                    var totalBill = 0;
+                    var totalCommission = 0;
+                    var totalNetCredit = 0;
+                    var onlineEarnings = 0;
+                    var cashEarnings = 0;
+
+                    res.jobs.forEach(function(job) {
+                        var customDetails = job.customEstimateDetails ? ` (${job.customEstimateDetails})` : '';
+                        var partsTotal = job.partsBilled + job.extraLabour;
+                        
+                        totalVisiting += job.visitingCharge;
+                        totalService += job.serviceCharge;
+                        totalCustom += job.customEstimateAmount;
+                        totalParts += partsTotal;
+                        totalTowing += job.towingCharge;
+                        totalBill += job.totalBill;
+                        totalCommission += job.adminCommission;
+                        totalNetCredit += job.netCredit;
+
+                        if (job.isCash) {
+                            cashEarnings += job.netCredit;
+                        } else {
+                            onlineEarnings += job.netCredit;
+                        }
+
+                        var methodBadge = job.isCash 
+                            ? `<span class="badge bg-warning text-dark font-weight-bold"><i class="fa-solid fa-money-bill-1 me-1"></i> Cash</span>`
+                            : `<span class="badge bg-success text-white font-weight-bold"><i class="fa-solid fa-credit-card me-1"></i> Online</span>`;
+
+                        html += `
+                            <tr class="border-secondary text-nowrap">
+                                <td class="ps-3 font-weight-bold text-white">#RS-${job.jobId}</td>
+                                <td>${job.customerName}</td>
+                                <td><span class="badge bg-secondary text-light">${job.problemType}</span></td>
+                                <td class="small text-muted">${job.completedAt}</td>
+                                <td>${methodBadge}</td>
+                                <td class="text-white-50">₹${job.visitingCharge.toFixed(2)}</td>
+                                <td class="text-white-50">₹${job.serviceCharge.toFixed(2)}</td>
+                                <td class="text-white-50">₹${job.customEstimateAmount.toFixed(2)}${customDetails}</td>
+                                <td class="text-white-50">₹${partsTotal.toFixed(2)}</td>
+                                <td class="text-white-50">₹${job.towingCharge.toFixed(2)}</td>
+                                <td class="text-primary font-weight-bold">₹${job.totalBill.toFixed(2)}</td>
+                                <td class="text-warning font-weight-bold">₹${job.adminCommission.toFixed(2)}</td>
+                                <td class="text-success font-weight-bold text-end pe-3">₹${job.netCredit.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+
+                    document.getElementById('lblAuditGrossEarnings').innerText = '₹' + totalNetCredit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('lblAuditOnlineEarnings').innerText = 'Online: ₹' + onlineEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('lblAuditCashEarnings').innerText = 'Cash: ₹' + cashEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                    document.getElementById('auditTotalVisiting').innerText = '₹' + totalVisiting.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('auditTotalService').innerText = '₹' + totalService.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('auditTotalCustom').innerText = '₹' + totalCustom.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('auditTotalParts').innerText = '₹' + totalParts.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('auditTotalTowing').innerText = '₹' + totalTowing.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('auditTotalBill').innerText = '₹' + totalBill.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('auditTotalCommission').innerText = '₹' + totalCommission.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('auditTotalNetCredit').innerText = '₹' + totalNetCredit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+            } else {
+                tbody.innerHTML = '<tr><td colspan="13" class="text-center py-4 text-danger"><i class="fa-solid fa-circle-exclamation me-1"></i> Failed to retrieve jobs.</td></tr>';
+            }
+        });
+    }
+
+    // Escrow Calendar filters
     function applyCalendarFilter() {
         var startDateVal = document.getElementById('filterStartDate').value;
         var endDateVal = document.getElementById('filterEndDate').value;
@@ -92,7 +695,6 @@
         var start = startDateVal ? new Date(startDateVal) : null;
         var end = endDateVal ? new Date(endDateVal) : null;
         
-        // Normalize time for comparison
         if (start) {
             start.setHours(0, 0, 0, 0);
         }
@@ -132,7 +734,6 @@
             }
         }
         
-        // Update total values in footer
         document.getElementById('totalProcessed').innerText = '₹' + totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         document.getElementById('totalCommission').innerText = '₹' + totalCommission.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         document.getElementById('totalMechanic').innerText = '₹' + totalMechanic.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

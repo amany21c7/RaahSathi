@@ -29,6 +29,7 @@ namespace RaahSathi.Data
         public DbSet<PushNotificationLog> PushNotificationLogs { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<AdminSystemSetting> AdminSystemSettings { get; set; }
+        public DbSet<MechanicPayoutRequest> MechanicPayoutRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

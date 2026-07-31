@@ -260,7 +260,7 @@ namespace RaahSathi.Controllers
         public async Task<IActionResult> ApproveKyc(int userId, string status, bool? approve)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
-            var profile = await _dbContext.MechanicProfiles.FindAsync(userId);
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
             if (profile != null)
             {
                 // Fallback for cached forms sending 'approve' instead of 'status'
@@ -301,7 +301,7 @@ namespace RaahSathi.Controllers
             var user = await _dbContext.Users.FindAsync(id);
             if (user != null)
             {
-                var profile = await _dbContext.MechanicProfiles.FindAsync(id);
+                var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == id);
                 if (profile != null) _dbContext.MechanicProfiles.Remove(profile);
                 
                 _dbContext.Users.Remove(user);
@@ -830,7 +830,263 @@ namespace RaahSathi.Controllers
             var payments = await _dbContext.Payments.OrderByDescending(p => p.Id).ToListAsync();
             ViewBag.Withdrawals = await _dbContext.AdminWithdrawals.OrderByDescending(w => w.WithdrawnAt).ToListAsync();
 
+            // Load pending and processed payout requests
+            var requests = await _dbContext.MechanicPayoutRequests
+                .Join(_dbContext.Users,
+                      r => r.MechanicId,
+                      u => u.Id,
+                      (r, u) => new PayoutRequestViewModel 
+                      { 
+                          Request = r, 
+                          MechanicName = u.Name, 
+                          PhoneNumber = u.PhoneNumber,
+                          DisplayId = u.Role == "Mechanic" ? $"RS{u.Id:D2}M" : u.Id.ToString()
+                      })
+                .OrderByDescending(x => x.Request.CreatedAt)
+                .ToListAsync();
+
+            // Populate cities for each view model from profile
+            foreach (var r in requests)
+            {
+                var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == r.Request.MechanicId);
+                r.City = profile?.City ?? "Noida";
+            }
+
+            ViewBag.PayoutRequests = requests;
+
+            // Load mechanics ledger (city-wise)
+            var mechanics = await _dbContext.MechanicProfiles
+                .Join(_dbContext.Users,
+                      p => p.UserId,
+                      u => u.Id,
+                      (p, u) => new MechanicLedgerViewModel
+                      {
+                          UserId = p.UserId,
+                          Name = u.Name,
+                          PhoneNumber = u.PhoneNumber,
+                          DisplayId = u.Role == "Mechanic" ? $"RS{u.Id:D2}M" : u.Id.ToString(),
+                          City = p.City ?? "Noida",
+                          CurrentEarnings = p.CurrentEarnings,
+                          TotalJobs = p.TotalJobs,
+                          Rating = p.Rating,
+                          PreferredPayoutMethod = p.PreferredPayoutMethod ?? "UPI",
+                          BankName = p.BankName ?? string.Empty,
+                          BankAccountNumber = p.BankAccountNumber ?? string.Empty,
+                          IfscCode = p.IfscCode ?? string.Empty,
+                          UpiId = p.UpiId ?? string.Empty,
+                          AccountHolderName = p.AccountHolderName ?? string.Empty
+                      })
+                .OrderBy(m => m.City)
+                .ThenBy(m => m.Name)
+                .ToListAsync();
+            ViewBag.Mechanics = mechanics;
+
             return View(payments);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ApprovePayoutRequest(int requestId, string referenceNumber, string remarks)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
+            if (req == null) return NotFound();
+
+            if (req.Status != "Pending")
+            {
+                TempData["Error"] = "This request has already been processed.";
+                return RedirectToAction("Payments");
+            }
+
+            req.Status = "Approved";
+            req.ProcessedAt = DateTime.UtcNow;
+            req.TransactionReference = string.IsNullOrEmpty(referenceNumber) ? Guid.NewGuid().ToString().Substring(0, 12).ToUpper() : referenceNumber;
+            req.AdminRemarks = string.IsNullOrEmpty(remarks) ? "Payout released by Admin" : remarks;
+
+            var adminWithdrawal = new AdminWithdrawal
+            {
+                Amount = req.Amount,
+                PayoutMethod = req.PayoutMethod == "UPI" ? "UPI Direct" : "Bank Transfer",
+                ReferenceNumber = req.TransactionReference,
+                WithdrawnAt = DateTime.UtcNow
+            };
+            _dbContext.AdminWithdrawals.Add(adminWithdrawal);
+
+            var supportMsg = new MechanicSupportMessage
+            {
+                MechanicId = req.MechanicId,
+                Title = "💰 Payout Released",
+                MessageText = $"Your payout request for ₹{req.Amount:N2} has been approved and released.\nMethod: {req.PayoutMethod}\nReference Number: {req.TransactionReference}\nRemarks: {req.AdminRemarks}",
+                SenderRole = "Admin",
+                SenderName = "RaahSathi Finance Desk",
+                IsFromAdmin = true,
+                IsRead = false,
+                SentAt = DateTime.UtcNow
+            };
+            _dbContext.MechanicSupportMessages.Add(supportMsg);
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["Success"] = $"Payout of ₹{req.Amount:N2} approved and released successfully!";
+            return RedirectToAction("Payments");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RejectPayoutRequest(int requestId, string remarks)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
+            if (req == null) return NotFound();
+
+            if (req.Status != "Pending")
+            {
+                TempData["Error"] = "This request has already been processed.";
+                return RedirectToAction("Payments");
+            }
+
+            req.Status = "Rejected";
+            req.ProcessedAt = DateTime.UtcNow;
+            req.AdminRemarks = string.IsNullOrEmpty(remarks) ? "Rejected by Admin" : remarks;
+
+            // Refund held funds
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == req.MechanicId);
+            if (profile != null)
+            {
+                profile.CurrentEarnings += req.Amount;
+            }
+
+            var supportMsg = new MechanicSupportMessage
+            {
+                MechanicId = req.MechanicId,
+                Title = "❌ Payout Request Rejected",
+                MessageText = $"Your payout request for ₹{req.Amount:N2} was rejected by Admin.\nReason: {req.AdminRemarks}\nAmount has been refunded to your wallet balance.",
+                SenderRole = "Admin",
+                SenderName = "RaahSathi Finance Desk",
+                IsFromAdmin = true,
+                IsRead = false,
+                SentAt = DateTime.UtcNow
+            };
+            _dbContext.MechanicSupportMessages.Add(supportMsg);
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["Success"] = $"Payout request of ₹{req.Amount:N2} rejected. Funds returned to mechanic wallet.";
+            return RedirectToAction("Payments");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetMechanicJobs(int mechanicId)
+        {
+            if (!IsAdmin()) return Unauthorized();
+
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == mechanicId);
+            double walletBalance = profile?.CurrentEarnings ?? 0.0;
+
+            var pendingPayouts = await _dbContext.MechanicPayoutRequests
+                .Where(r => r.MechanicId == mechanicId && r.Status == "Pending")
+                .SumAsync(r => r.Amount);
+
+            var settledPayouts = await _dbContext.MechanicPayoutRequests
+                .Where(r => r.MechanicId == mechanicId && r.Status == "Approved")
+                .SumAsync(r => r.Amount);
+
+            var jobs = await _dbContext.Jobs
+                .GroupJoin(_dbContext.Payments,
+                           j => j.Id,
+                           p => p.JobId,
+                           (j, payments) => new { j, payment = payments.FirstOrDefault() })
+                .Where(x => x.j.MechanicId == mechanicId && x.j.Status == "Completed")
+                .OrderByDescending(x => x.j.CompletedAt)
+                .Select(x => new {
+                    jobId = x.j.Id,
+                    customerName = x.j.Customer != null ? x.j.Customer.Name : "Guest",
+                    problemType = x.j.ProblemType,
+                    completedAt = x.j.CompletedAt.HasValue ? x.j.CompletedAt.Value.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt") : "-",
+                    visitingCharge = x.j.VisitingCharge,
+                    serviceCharge = x.j.ServiceChargeMin,
+                    customEstimateAmount = x.j.CustomEstimateAmount,
+                    customEstimateDetails = x.j.CustomEstimateDetails,
+                    extraLabour = x.j.ExtraLabourCharge,
+                    partsBilled = x.j.PartsEstimateAmount,
+                    partsMrp = x.j.PartsMrp,
+                    towingCharge = x.j.TowingCharge,
+                    totalBill = x.j.FinalBillAmount,
+                    adminCommission = x.payment != null ? x.payment.AdminCommissionAmount : 0.0,
+                    netCredit = x.payment != null ? x.payment.MechanicEarningAmount : x.j.FinalBillAmount,
+                    isCash = x.payment == null
+                })
+                .ToListAsync();
+
+            return Json(new { 
+                success = true, 
+                jobs = jobs,
+                walletBalance = walletBalance,
+                pendingPayouts = pendingPayouts,
+                settledPayouts = settledPayouts
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReleaseMechanicWalletDirect(int mechanicId, string remarks)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == mechanicId);
+            if (profile == null || profile.CurrentEarnings <= 0)
+            {
+                TempData["Error"] = "Mechanic has no earnings to release.";
+                return RedirectToAction("Payments");
+            }
+
+            double releaseAmount = profile.CurrentEarnings;
+
+            var req = new MechanicPayoutRequest
+            {
+                MechanicId = mechanicId,
+                Amount = releaseAmount,
+                PayoutMethod = string.IsNullOrEmpty(profile.PreferredPayoutMethod) ? "Bank" : profile.PreferredPayoutMethod,
+                AccountHolderName = profile.AccountHolderName ?? string.Empty,
+                BankAccountNumber = profile.BankAccountNumber ?? string.Empty,
+                BankName = profile.BankName ?? string.Empty,
+                IfscCode = profile.IfscCode ?? string.Empty,
+                UpiId = profile.UpiId ?? string.Empty,
+                Status = "Approved",
+                CreatedAt = DateTime.UtcNow,
+                ProcessedAt = DateTime.UtcNow,
+                TransactionReference = "DIR-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
+                AdminRemarks = string.IsNullOrEmpty(remarks) ? "Direct wallet balance release by Admin" : remarks
+            };
+            _dbContext.MechanicPayoutRequests.Add(req);
+
+            profile.CurrentEarnings = 0.0;
+
+            var adminWithdrawal = new AdminWithdrawal
+            {
+                Amount = releaseAmount,
+                PayoutMethod = req.PayoutMethod == "UPI" ? "UPI Direct" : "Bank Transfer",
+                ReferenceNumber = req.TransactionReference,
+                WithdrawnAt = DateTime.UtcNow
+            };
+            _dbContext.AdminWithdrawals.Add(adminWithdrawal);
+
+            var supportMsg = new MechanicSupportMessage
+            {
+                MechanicId = mechanicId,
+                Title = "💰 Wallet Balance Released",
+                MessageText = $"Admin has directly released your full wallet balance of ₹{releaseAmount:N2}.\nReference Number: {req.TransactionReference}\nRemarks: {req.AdminRemarks}",
+                SenderRole = "Admin",
+                SenderName = "RaahSathi Finance Desk",
+                IsFromAdmin = true,
+                IsRead = false,
+                SentAt = DateTime.UtcNow
+            };
+            _dbContext.MechanicSupportMessages.Add(supportMsg);
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["Success"] = $"Wallet balance of ₹{releaseAmount:N2} released directly for mechanic!";
+            return RedirectToAction("Payments");
         }
 
         public async Task<IActionResult> Reports()

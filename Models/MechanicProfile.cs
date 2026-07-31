@@ -93,6 +93,10 @@ namespace RaahSathi.Models
         public string IfscCode { get; set; } = string.Empty;
         [StringLength(100)]
         public string UpiId { get; set; } = string.Empty;
+        [StringLength(200)]
+        public string AccountHolderName { get; set; } = string.Empty;
+        [StringLength(100)]
+        public string City { get; set; } = "Noida";
         [StringLength(50)]
         public string PreferredPayoutMethod { get; set; } = "UPI"; // "UPI", "Bank", "Cash"
         public bool AcceptsCash { get; set; } = true;

@@ -196,6 +196,36 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [MechanicProfiles] ADD [RepeatCustomersCount] int NOT NULL DEFAULT 14;
                 END;
 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'AccountHolderName')
+                BEGIN
+                    ALTER TABLE [MechanicProfiles] ADD [AccountHolderName] nvarchar(200) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'City')
+                BEGIN
+                    ALTER TABLE [MechanicProfiles] ADD [City] nvarchar(100) NOT NULL DEFAULT 'Noida';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[MechanicPayoutRequests]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [MechanicPayoutRequests] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [MechanicId] int NOT NULL,
+                        [Amount] float NOT NULL,
+                        [PayoutMethod] nvarchar(50) NOT NULL DEFAULT 'Bank',
+                        [AccountHolderName] nvarchar(200) NOT NULL DEFAULT '',
+                        [BankAccountNumber] nvarchar(100) NOT NULL DEFAULT '',
+                        [BankName] nvarchar(200) NOT NULL DEFAULT '',
+                        [IfscCode] nvarchar(50) NOT NULL DEFAULT '',
+                        [UpiId] nvarchar(100) NOT NULL DEFAULT '',
+                        [Status] nvarchar(50) NOT NULL DEFAULT 'Pending',
+                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [ProcessedAt] datetime2 NULL,
+                        [AdminRemarks] nvarchar(500) NOT NULL DEFAULT '',
+                        [TransactionReference] nvarchar(100) NOT NULL DEFAULT ''
+                    );
+                END;
+
                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[MechanicComplaints]') AND type in (N'U'))
                 BEGIN
                     CREATE TABLE [MechanicComplaints] (
