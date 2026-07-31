@@ -879,6 +879,15 @@ namespace RaahSathi.Controllers
                 .OrderBy(m => m.City)
                 .ThenBy(m => m.Name)
                 .ToListAsync();
+
+            // Populate pending payout amount for each mechanic
+            foreach (var m in mechanics)
+            {
+                m.PendingPayoutAmount = await _dbContext.MechanicPayoutRequests
+                    .Where(r => r.MechanicId == m.UserId && r.Status == "Pending")
+                    .SumAsync(r => r.Amount);
+            }
+
             ViewBag.Mechanics = mechanics;
 
             return View(payments);
@@ -1087,6 +1096,29 @@ namespace RaahSathi.Controllers
 
             TempData["Success"] = $"Wallet balance of ₹{releaseAmount:N2} released directly for mechanic!";
             return RedirectToAction("Payments");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendPayoutDetailsRequest(int mechanicId)
+        {
+            if (!IsAdmin()) return Unauthorized();
+
+            var supportMsg = new MechanicSupportMessage
+            {
+                MechanicId = mechanicId,
+                Title = "⚠️ Action Required: Submit Payout Details",
+                MessageText = "Hi, Admin has requested you to submit your bank account or UPI details under the Settings tab so that your wallet earnings can be released. Please fill them out as soon as possible.",
+                SenderRole = "Admin",
+                SenderName = "RaahSathi Finance Desk",
+                IsFromAdmin = true,
+                IsRead = false,
+                SentAt = DateTime.UtcNow
+            };
+
+            _dbContext.MechanicSupportMessages.Add(supportMsg);
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Request sent to mechanic successfully!" });
         }
 
         public async Task<IActionResult> Reports()
