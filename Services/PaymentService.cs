@@ -99,6 +99,9 @@ namespace RaahSathi.Services
             double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
             var commCalc = CalculateTieredCommissionAndNetEarnings(finalBill, partsAmt);
 
+            bool isCash = payId.StartsWith("pay_cash_", StringComparison.OrdinalIgnoreCase);
+            double actualMechanicEarning = isCash ? -commCalc.AdminCommissionAmount : commCalc.MechanicNetEarningAmount;
+
             var paymentModel = new Payment
             {
                 JobId = job.Id,
@@ -106,7 +109,7 @@ namespace RaahSathi.Services
                 PaymentStatus = "Released",
                 RazorpayPaymentId = payId,
                 AdminCommissionAmount = commCalc.AdminCommissionAmount,
-                MechanicEarningAmount = commCalc.MechanicNetEarningAmount,
+                MechanicEarningAmount = actualMechanicEarning,
                 CommissionRateUsed = commCalc.CommissionRate,
                 CreatedAt = DateTime.UtcNow
             };
@@ -115,7 +118,7 @@ namespace RaahSathi.Services
                 paymentModel,
                 job.Id,
                 job.MechanicId,
-                commCalc.MechanicNetEarningAmount,
+                actualMechanicEarning,
                 commCalc.CommissionRate
             );
 

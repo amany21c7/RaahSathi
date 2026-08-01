@@ -1196,6 +1196,57 @@ namespace RaahSathi.Controllers
             return View();
         }
 
+        public async Task<IActionResult> Account()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var upiId = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminUpiId");
+            var holderName = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountHolderName");
+            var bankName = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminBankName");
+            var accNum = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountNumber");
+            var ifsc = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminIfscCode");
+
+            ViewBag.AdminUpiId = upiId?.SettingValue ?? "";
+            ViewBag.AdminAccountHolderName = holderName?.SettingValue ?? "";
+            ViewBag.AdminBankName = bankName?.SettingValue ?? "";
+            ViewBag.AdminAccountNumber = accNum?.SettingValue ?? "";
+            ViewBag.AdminIfscCode = ifsc?.SettingValue ?? "";
+
+            var releasedPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").ToListAsync();
+            double rate1 = (await GetSettingDoubleAsync("CommissionPhase1", 8)) / 100.0;
+            double rate2 = (await GetSettingDoubleAsync("CommissionPhase2", 10)) / 100.0;
+            double rate3 = (await GetSettingDoubleAsync("CommissionPhase3", 12)) / 100.0;
+            double totalCommissionEarned = releasedPayments.Sum(p => p.AdminCommissionAmount > 0 
+                ? p.AdminCommissionAmount 
+                : (p.Amount < 1000 ? p.Amount * rate1 : (p.Amount <= 3000 ? p.Amount * rate2 : p.Amount * rate3)));
+            double totalWithdrawn = await _dbContext.AdminWithdrawals.SumAsync(w => (double?)w.Amount) ?? 0.0;
+            double adminVaultBalance = Math.Max(0.0, Math.Round(totalCommissionEarned - totalWithdrawn, 2));
+            var withdrawalHistory = await _dbContext.AdminWithdrawals.OrderByDescending(w => w.WithdrawnAt).Take(10).ToListAsync();
+
+            ViewBag.TotalCommissionEarned = totalCommissionEarned;
+            ViewBag.TotalWithdrawn = totalWithdrawn;
+            ViewBag.AdminVaultBalance = adminVaultBalance;
+            ViewBag.WithdrawalHistory = withdrawalHistory;
+
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveAdminAccountSettings(string upiId, string holderName, string bankName, string accountNumber, string ifscCode)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            await SaveOrUpdateSettingAsync("AdminUpiId", upiId ?? "", "Account");
+            await SaveOrUpdateSettingAsync("AdminAccountHolderName", holderName ?? "", "Account");
+            await SaveOrUpdateSettingAsync("AdminBankName", bankName ?? "", "Account");
+            await SaveOrUpdateSettingAsync("AdminAccountNumber", accountNumber ?? "", "Account");
+            await SaveOrUpdateSettingAsync("AdminIfscCode", ifscCode ?? "", "Account");
+
+            await LogAdminActionAsync("ADMIN_ACCOUNT_SETTINGS", "Updated Admin Bank Account & UPI Settings");
+            TempData["Success"] = "Admin Account & UPI details saved successfully.";
+            return RedirectToAction("Account");
+        }
+
         [HttpPost]
         public async Task<IActionResult> SaveSystemSettings(string commissionTierJson, string smsApiKey, string emailSender, string whatsappNo, string googleMapsKey)
         {

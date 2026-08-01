@@ -455,6 +455,13 @@ namespace RaahSathi.Controllers
 
             ViewBag.Job = job;
             ViewBag.MechanicProfile = mechProfile;
+
+            // Load Admin Payment details for QR generation
+            var upiSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminUpiId");
+            var nameSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountHolderName");
+            ViewBag.AdminUpiId = upiSetting?.SettingValue ?? "raahsathi@upi";
+            ViewBag.AdminAccountHolderName = nameSetting?.SettingValue ?? "RaahSathi URA";
+
             return View();
         }
 

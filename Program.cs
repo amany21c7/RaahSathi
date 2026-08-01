@@ -469,6 +469,17 @@ using (var scope = app.Services.CreateScope())
                         DECLARE @MechanicEarning FLOAT = ROUND(@FinalBill - @AdminCommission, 2);
                         DECLARE @CommRate FLOAT = CASE WHEN @FinalBill > 0 THEN ROUND(@AdminCommission / @FinalBill, 4) ELSE @ServiceRate END;
 
+                        -- If payment is cash, mechanic receives full bill in hand, so digital wallet is debited by commission amount
+                        DECLARE @ActualEarning FLOAT;
+                        IF @PaymentId LIKE N'pay_cash_%'
+                        BEGIN
+                            SET @ActualEarning = -@AdminCommission;
+                        END
+                        ELSE
+                        BEGIN
+                            SET @ActualEarning = @MechanicEarning;
+                        END
+
                         IF EXISTS (SELECT 1 FROM dbo.Payments WHERE JobId = @JobId)
                         BEGIN
                             UPDATE dbo.Payments
@@ -476,20 +487,20 @@ using (var scope = app.Services.CreateScope())
                                 PaymentStatus = N'Released',
                                 RazorpayPaymentId = @PaymentId,
                                 AdminCommissionAmount = @AdminCommission,
-                                MechanicEarningAmount = @MechanicEarning,
+                                MechanicEarningAmount = @ActualEarning,
                                 CommissionRateUsed = @CommRate
                             WHERE JobId = @JobId;
                         END
                         ELSE
                         BEGIN
                             INSERT INTO dbo.Payments (JobId, Amount, PaymentStatus, RazorpayPaymentId, AdminCommissionAmount, MechanicEarningAmount, CommissionRateUsed, CreatedAt)
-                            VALUES (@JobId, @FinalBill, N'Released', @PaymentId, @AdminCommission, @MechanicEarning, @CommRate, GETUTCDATE());
+                            VALUES (@JobId, @FinalBill, N'Released', @PaymentId, @AdminCommission, @ActualEarning, @CommRate, GETUTCDATE());
                         END
 
                         IF @MechanicId IS NOT NULL
                         BEGIN
                             UPDATE dbo.MechanicProfiles
-                            SET CurrentEarnings = CurrentEarnings + @MechanicEarning,
+                            SET CurrentEarnings = CurrentEarnings + @ActualEarning,
                                 TotalJobs = TotalJobs + 1,
                                 CommissionRate = @CommRate
                             WHERE UserId = @MechanicId;

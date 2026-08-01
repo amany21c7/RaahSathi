@@ -170,9 +170,6 @@
                                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                     <span class="text-muted small">Created: @job.CreatedAt.ToLocalTime().ToString("hh:mm tt")</span>
                                     <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-outline-info btn-sm font-weight-bold" onclick="showCustomerInvoiceModal(@job.Id)">
-                                            <i class="fa-solid fa-receipt me-1"></i> View Receipt
-                                        </button>
                                         <a href="/Customer/Tracker?id=@job.Id" class="btn btn-premium-primary btn-sm">
                                             <i class="fa-solid fa-compass me-1"></i> Open Live Route Tracker
                                         </a>

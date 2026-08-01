@@ -395,6 +395,9 @@
                     <a href="/Admin/Settings" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Settings", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-sliders"></i> Settings
                     </a>
+                    <a href="/Admin/Account" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Account", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                        <i class="fa-solid fa-building-columns"></i> Admin Account
+                    </a>
                     <a href="/Admin/Admins" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Admins", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-user-shield"></i> Admins
                     </a>

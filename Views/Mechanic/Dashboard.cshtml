@@ -1077,7 +1077,9 @@
             <div class="modal-body p-4" id="withdrawFormView">
                 <div class="text-center mb-3">
                     <span class="text-muted small d-block">Available Wallet Balance</span>
-                    <h2 class="text-success font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit'; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">₹@(profile.CurrentEarnings.ToString("N2"))</h2>
+                    <h2 class="@(profile.CurrentEarnings >= 0 ? "text-success" : "text-danger") font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit'; text-shadow: @(profile.CurrentEarnings >= 0 ? "0 0 10px rgba(16, 185, 129, 0.3)" : "0 0 10px rgba(239, 68, 68, 0.3)");">
+                        @(profile.CurrentEarnings >= 0 ? "" : "-")₹@(Math.Abs(profile.CurrentEarnings).ToString("N2"))
+                    </h2>
                 </div>
 
                 <div class="mb-3">
@@ -1232,48 +1234,84 @@
 
                 let now = sirenAudioCtx.currentTime;
 
-                // 3-Pulse Heavy Emergency Dispatch Siren (Dual-Tone Wail + Sub Bass)
+                // 3-Pulse Heavy Dual-Ring PCR Siren (Detuned Sawtooths + Thick Bass + Crossover Chorus)
                 for (let i = 0; i < 3; i++) {
-                    let startTime = now + (i * 0.75);
+                    let startTime = now + (i * 0.9);
 
-                    // High Sawtooth Lead Siren (600Hz -> 1350Hz -> 650Hz)
-                    let osc1 = sirenAudioCtx.createOscillator();
-                    let gain1 = sirenAudioCtx.createGain();
-                    osc1.type = 'sawtooth';
-                    osc1.frequency.setValueAtTime(600, startTime);
-                    osc1.frequency.linearRampToValueAtTime(1350, startTime + 0.35);
-                    osc1.frequency.linearRampToValueAtTime(650, startTime + 0.7);
+                    // High Ring 1 (Sawtooth)
+                    let osc1a = sirenAudioCtx.createOscillator();
+                    let gain1a = sirenAudioCtx.createGain();
+                    osc1a.type = 'sawtooth';
+                    osc1a.frequency.setValueAtTime(600, startTime);
+                    osc1a.frequency.linearRampToValueAtTime(1400, startTime + 0.4);
+                    osc1a.frequency.linearRampToValueAtTime(600, startTime + 0.85);
+                    osc1a.detune.setValueAtTime(-15, startTime); // detuning wail
 
-                    gain1.gain.setValueAtTime(0.5, startTime);
-                    gain1.gain.exponentialRampToValueAtTime(0.01, startTime + 0.72);
+                    gain1a.gain.setValueAtTime(0.6, startTime);
+                    gain1a.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
 
-                    osc1.connect(gain1);
-                    gain1.connect(sirenAudioCtx.destination);
-                    osc1.start(startTime);
-                    osc1.stop(startTime + 0.72);
+                    osc1a.connect(gain1a);
+                    gain1a.connect(sirenAudioCtx.destination);
+                    osc1a.start(startTime);
+                    osc1a.stop(startTime + 0.87);
 
-                    // Heavy Low Square Bass Harmonic (280Hz -> 650Hz -> 300Hz)
-                    let osc2 = sirenAudioCtx.createOscillator();
-                    let gain2 = sirenAudioCtx.createGain();
-                    osc2.type = 'square';
-                    osc2.frequency.setValueAtTime(280, startTime);
-                    osc2.frequency.linearRampToValueAtTime(650, startTime + 0.35);
-                    osc2.frequency.linearRampToValueAtTime(300, startTime + 0.7);
+                    // High Ring 2 (Sawtooth) - Crossover detuned pitch
+                    let osc1b = sirenAudioCtx.createOscillator();
+                    let gain1b = sirenAudioCtx.createGain();
+                    osc1b.type = 'sawtooth';
+                    osc1b.frequency.setValueAtTime(630, startTime);
+                    osc1b.frequency.linearRampToValueAtTime(1430, startTime + 0.4);
+                    osc1b.frequency.linearRampToValueAtTime(630, startTime + 0.85);
+                    osc1b.detune.setValueAtTime(15, startTime); // detuning crossover chorus
 
-                    gain2.gain.setValueAtTime(0.3, startTime);
-                    gain2.gain.exponentialRampToValueAtTime(0.01, startTime + 0.72);
+                    gain1b.gain.setValueAtTime(0.6, startTime);
+                    gain1b.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
 
-                    osc2.connect(gain2);
-                    gain2.connect(sirenAudioCtx.destination);
-                    osc2.start(startTime);
-                    osc2.stop(startTime + 0.72);
+                    osc1b.connect(gain1b);
+                    gain1b.connect(sirenAudioCtx.destination);
+                    osc1b.start(startTime);
+                    osc1b.stop(startTime + 0.87);
+
+                    // Dual Square Bass Sub-harmonic 1
+                    let osc2a = sirenAudioCtx.createOscillator();
+                    let gain2a = sirenAudioCtx.createGain();
+                    osc2a.type = 'square';
+                    osc2a.frequency.setValueAtTime(280, startTime);
+                    osc2a.frequency.linearRampToValueAtTime(680, startTime + 0.4);
+                    osc2a.frequency.linearRampToValueAtTime(280, startTime + 0.85);
+                    osc2a.detune.setValueAtTime(-8, startTime);
+
+                    gain2a.gain.setValueAtTime(0.4, startTime);
+                    gain2a.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
+
+                    osc2a.connect(gain2a);
+                    gain2a.connect(sirenAudioCtx.destination);
+                    osc2a.start(startTime);
+                    osc2a.stop(startTime + 0.87);
+
+                    // Dual Square Bass Sub-harmonic 2
+                    let osc2b = sirenAudioCtx.createOscillator();
+                    let gain2b = sirenAudioCtx.createGain();
+                    osc2b.type = 'square';
+                    osc2b.frequency.setValueAtTime(285, startTime);
+                    osc2b.frequency.linearRampToValueAtTime(685, startTime + 0.4);
+                    osc2b.frequency.linearRampToValueAtTime(285, startTime + 0.85);
+                    osc2b.detune.setValueAtTime(8, startTime);
+
+                    gain2b.gain.setValueAtTime(0.4, startTime);
+                    gain2b.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
+
+                    osc2b.connect(gain2b);
+                    gain2b.connect(sirenAudioCtx.destination);
+                    osc2b.start(startTime);
+                    osc2b.stop(startTime + 0.87);
                 }
             } catch(e) {}
         }
 
         triggerSirenBurst();
-        // Repeat siren wail every 3.2s while dispatch alert is active
-        sirenRepeatInterval = setInterval(triggerSirenBurst, 3200);
+        // Repeat siren wail every 2.7s while dispatch alert is active
+        sirenRepeatInterval = setInterval(triggerSirenBurst, 2700);
     }
 
     // Dynamic Tab Navigation
@@ -1340,7 +1378,7 @@
     // Real-Time Dispatch Checker
     function pollIncomingDispatchRequests() {
         if (!isOnline || hasActiveJob) return;
-        $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: currentDispatchJobId }, function(res) {
+        $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: currentDispatchJobId, _t: Date.now() }, function(res) {
             if (res.hasJob && !currentDispatchJobId) {
                 currentDispatchJobId = res.jobId;
                 openDispatchModal(res);
@@ -1449,6 +1487,21 @@
             };
             currentDispatchJobId = pingJobId;
             openDispatchModal(initialPingData);
+        }
+
+        // Start watching geolocation to update mechanic location in database
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(function(position) {
+                var lat = position.coords.latitude;
+                var lng = position.coords.longitude;
+                $.post('/Mechanic/UpdateLocation', { lat: lat, lng: lng });
+            }, function(err) {
+                console.warn("Geolocation watch error:", err);
+            }, {
+                enableHighAccuracy: true,
+                maximumAge: 10000,
+                timeout: 5000
+            });
         }
     });
 
@@ -1771,13 +1824,20 @@
                     tableHtml = '<tr><td colspan="5" class="text-muted text-center py-4">No transactions recorded yet.</td></tr>';
                 } else {
                     res.transactions.forEach(function(tx) {
+                        var isDebit = tx.mechanicEarning < 0;
+                        var badgeText = isDebit ? "Platform Fee (Cash)" : "Job Earning";
+                        var badgeClass = isDebit ? "bg-danger-subtle text-danger border border-danger border-opacity-35" : "bg-success-subtle text-success border border-success border-opacity-35";
+                        var textClass = isDebit ? "text-danger font-weight-bold" : "text-success font-weight-bold";
+                        var signPrefix = isDebit ? "-" : "+";
+                        var absEarning = Math.abs(tx.mechanicEarning);
+
                         tableHtml += `
                             <tr>
                                 <td><b>#${tx.jobId}</b></td>
                                 <td class="small text-muted">${tx.createdAt}</td>
-                                <td><span class="badge bg-success-subtle text-success border border-success border-opacity-35 px-2 py-1">Job Earning</span></td>
+                                <td><span class="badge ${badgeClass} px-2 py-1">${badgeText}</span></td>
                                 <td class="text-white">₹${tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td class="text-success font-weight-bold">₹${tx.mechanicEarning.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td class="${textClass}">${signPrefix}₹${absEarning.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
                         `;
                     });
@@ -1914,7 +1974,7 @@
                 $('#qrModalNetCredit').text('₹' + res.mechanicNetEarning.toFixed(2));
 
                 // Generate Dynamic UPI QR Code URL
-                var upiString = encodeURIComponent(`upi://pay?pa=raahsathi@upi&pn=RaahSathi+Assistance&am=${res.totalBillAmount.toFixed(2)}&cu=INR&tn=Job+RS-${res.jobId}`);
+                var upiString = encodeURIComponent(`upi://pay?pa=${res.adminUpiId}&pn=${res.adminAccountHolderName}&am=${res.totalBillAmount.toFixed(2)}&cu=INR&tn=Job+RS-${res.jobId}`);
                 var qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${upiString}`;
                 $('#qrCodeImg').attr('src', qrUrl);
 

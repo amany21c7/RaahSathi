@@ -437,7 +437,7 @@
                     <span id="chat-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
                 </button>
             </div>
-            <button type="button" class="btn btn-outline-info font-weight-bold w-100 py-2.5 shadow-sm" onclick="showCustomerInvoiceModal(@job.Id)">
+            <button type="button" id="sidebarReceiptBtn" class="btn btn-outline-info font-weight-bold w-100 py-2.5 shadow-sm @(job.Status == "Completed" ? "" : "d-none")" onclick="showCustomerInvoiceModal(@job.Id)">
                 <i class="fa-solid fa-receipt me-2"></i> View Itemized Tax Invoice / Receipt
             </button>
         </div>
@@ -520,7 +520,6 @@
             </div>
 
             <button class="btn btn-premium-primary w-100 py-3" onclick="openRazorpayMock()"><i class="fa-solid fa-lock me-1"></i> Pay Now (Escrow Release)</button>
-            <button type="button" class="btn btn-outline-info w-100 mt-2 py-2.5 font-weight-bold" onclick="showCustomerInvoiceModal(@job.Id)"><i class="fa-solid fa-receipt me-2"></i> View Itemized Tax Invoice / Receipt</button>
             <button class="btn btn-premium-danger w-100 mt-2" onclick="fileDispute()"><i class="fa-solid fa-triangle-exclamation"></i> Raise Dispute / Report Fraud</button>
         </div>
 
@@ -743,6 +742,13 @@
                         </div>
                         <i class="fa-solid fa-credit-card fa-lg text-primary"></i>
                     </button>
+                    <button class="btn btn-outline-warning text-start p-3 d-flex align-items-center justify-content-between" onclick="payViaCash()">
+                        <div>
+                            <span class="font-weight-bold text-dark d-block">Pay via Cash (Direct to Mechanic)</span>
+                            <span class="text-muted small">Platform commission will be adjusted</span>
+                        </div>
+                        <i class="fa-solid fa-money-bill-wave fa-lg text-warning"></i>
+                    </button>
                 </div>
                 <div class="text-center text-muted small mb-3">
                     <i class="fa-solid fa-lock me-1"></i> Funds held securely in escrow pending release approval.
@@ -834,8 +840,12 @@
                     
                     <div class="border-top border-secondary pt-3 mb-3">
                         <span class="text-muted small d-block mb-2 font-weight-bold">OR SCAN SECURE ESCROW QR CODE</span>
-                        <div class="pulse-circle mb-3">
-                            <i class="fa-solid fa-qrcode fa-2x text-primary"></i>
+                        <div class="mb-3 p-2 bg-white rounded d-inline-block border border-secondary shadow-sm">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=@(Uri.EscapeDataString($"upi://pay?pa={ViewBag.AdminUpiId}&pn={ViewBag.AdminAccountHolderName}&am={job.FinalBillAmount}&tn=job_{job.Id}&cu=INR"))" style="width: 160px; height: 160px; display: block; margin: 0 auto;" alt="Payment QR Code">
+                        </div>
+                        <div class="small text-muted mb-2">
+                            UPI ID: <strong class="text-dark">@ViewBag.AdminUpiId</strong><br>
+                            Payee: <strong class="text-dark">@ViewBag.AdminAccountHolderName</strong>
                         </div>
                         <button class="btn btn-outline-primary btn-sm font-weight-bold px-3" onclick="simulateQrScan()">Simulate QR Code Scan</button>
                     </div>
@@ -991,7 +1001,7 @@
     });
 
     function pollJobStatus() {
-        $.get('/Customer/GetJobStatus?id=@job.Id', function(res) {
+        $.get('/Customer/GetJobStatus?id=@job.Id&_t=' + Date.now(), function(res) {
             // Update unread chat message badge
             if (res.unreadChatCount > 0 && !$('#liveChatModal').hasClass('show')) {
                 $('#chat-unread-badge').text(res.unreadChatCount).removeClass('d-none');
@@ -1008,6 +1018,13 @@
 
             // Update Timeline steps
             updateTimelineUI(res.status);
+
+            // Show/hide receipt button dynamically in real-time
+            if (res.status === "Completed") {
+                $('#sidebarReceiptBtn').removeClass('d-none');
+            } else {
+                $('#sidebarReceiptBtn').addClass('d-none');
+            }
 
             // Update mechanic details and map
             if (res.mechanicId) {
@@ -1316,6 +1333,19 @@
                     finalizeRzpPayment('pay_upi_' + Math.random().toString(36).substring(7));
                 }, 1000);
             }
+        }, 1000);
+    }
+
+    // Cash payment simulation
+    function payViaCash() {
+        $('#rzpSelectionView').addClass('d-none');
+        $('#rzpProcessingView').removeClass('d-none');
+        $('#processingStatusText').text("Initiating cash payment request...");
+        setTimeout(function() {
+            $('#processingStatusText').text("Verifying payment settlement with mechanic...");
+            setTimeout(function() {
+                finalizeRzpPayment('pay_cash_' + Math.random().toString(36).substring(7));
+            }, 1000);
         }, 1000);
     }
 

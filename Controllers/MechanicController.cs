@@ -590,9 +590,10 @@ namespace RaahSathi.Controllers
                     if (shouldSkip) continue;
                 }
 
-                // Check distance within expanding radius limit
+                // Check distance within expanding radius limit (bypass if mechanic location is uninitialized 0, 0)
                 double distanceKm = _dispatchEngine.CalculateDistance(job.CustomerLat, job.CustomerLng, profile.Latitude, profile.Longitude);
-                if (distanceKm <= maxRadiusKm)
+                bool isLocNotSet = (profile.Latitude == 0.0 && profile.Longitude == 0.0);
+                if (isLocNotSet || distanceKm <= maxRadiusKm)
                 {
                     string rawPhone = job.Customer?.PhoneNumber ?? "9876543210";
                     string maskedPhone = rawPhone.Length >= 4 ? "+91 XXXXX " + rawPhone.Substring(rawPhone.Length - 4) : "+91 XXXXX XXXX";
@@ -784,7 +785,9 @@ namespace RaahSathi.Controllers
                 totalBillAmount = totalBill,
                 adminCommission = adminCommission,
                 mechanicNetEarning = mechanicNetEarning,
-                commissionPercent = effectiveCommRatePct
+                commissionPercent = effectiveCommRatePct,
+                adminUpiId = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminUpiId"))?.SettingValue ?? "raahsathi@upi",
+                adminAccountHolderName = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountHolderName"))?.SettingValue ?? "RaahSathi URA"
             });
         }
 

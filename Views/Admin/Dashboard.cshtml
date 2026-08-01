@@ -98,29 +98,6 @@
     </div>
 </div>
 
-<!-- Admin Tiered Commission Vault Banner -->
-<div class="p-4 rounded-3 bg-gradient bg-dark border border-warning border-opacity-50 mb-4 shadow-lg">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-        <div>
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-warning text-dark font-weight-bold px-3 py-1">ADMIN COMMISSION VAULT</span>
-            </div>
-            <h2 class="text-warning font-weight-extrabold mt-2 mb-1" style="font-family: 'Outfit';">
-                ₹@(((double)(ViewBag.AdminVaultBalance ?? 0.0)).ToString("N2"))
-            </h2>
-            <p class="text-muted small mb-0">
-                Total Commission Earned: <strong class="text-light">₹@(((double)(ViewBag.TotalCommissionEarned ?? 0.0)).ToString("N2"))</strong> | 
-                Total Withdrawn: <strong class="text-light">₹@(((double)(ViewBag.TotalWithdrawn ?? 0.0)).ToString("N2"))</strong>
-            </p>
-        </div>
-        <div>
-            <button type="button" class="btn btn-warning font-weight-bold px-4 py-2 shadow" data-bs-toggle="modal" data-bs-target="#adminWithdrawModal">
-                <i class="fa-solid fa-building-columns me-2"></i> Withdraw Vault Funds
-            </button>
-        </div>
-    </div>
-</div>
-
 <!-- Live India Regional Map & Live Pipeline Stepper Row -->
 <div class="row g-4 mb-4">
     <!-- Live Regional India Network Status -->
@@ -416,46 +393,7 @@
     </div>
 </div>
 
-<!-- Admin Commission Vault Withdrawal Modal -->
-<div class="modal fade" id="adminWithdrawModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark text-light border border-warning">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title text-warning font-weight-bold">
-                    <i class="fa-solid fa-building-columns me-2"></i> Withdraw Admin Commission Vault
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="p-3 bg-dark bg-opacity-60 rounded border border-secondary mb-3">
-                    <span class="text-muted small d-block mb-1">Available Vault Balance</span>
-                    <h3 class="text-warning font-weight-bold mb-0">₹@(((double)(ViewBag.AdminVaultBalance ?? 0.0)).ToString("N2"))</h3>
-                </div>
-                <form id="formAdminWithdraw">
-                    <div class="mb-3">
-                        <label class="form-label text-light small font-weight-bold">Withdrawal Amount (₹)</label>
-                        <input type="number" step="0.01" max="@(ViewBag.AdminVaultBalance ?? 100000)" class="form-control glass-input text-warning font-weight-bold" id="admWithdrawAmount" value="@(ViewBag.AdminVaultBalance ?? 1000)" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-light small font-weight-bold">Payout Destination / Method</label>
-                        <select id="admWithdrawMethod" class="form-select glass-input text-light">
-                            <option value="Bank Direct Transfer">Bank Direct Transfer (HDFC Bank Account)</option>
-                            <option value="UPI Primary Account">UPI Primary Account (raahsathi@upi)</option>
-                            <option value="Escrow Treasury Settlement">Escrow Treasury Settlement</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-light small font-weight-bold">Reference / Transaction Note (Optional)</label>
-                        <input type="text" id="admWithdrawRef" class="form-control glass-input text-light" placeholder="e.g. Monthly Admin Treasury Transfer">
-                    </div>
-                    <button type="submit" class="btn btn-warning w-100 font-weight-bold py-2">
-                        <i class="fa-solid fa-check-circle me-1"></i> Process Vault Withdrawal
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- 📊 Live Telemetry Category Details Grid Modal -->
 <div class="modal fade" id="mdlTelemetryDetails" tabindex="-1" aria-hidden="true">
