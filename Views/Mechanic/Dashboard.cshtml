@@ -1260,9 +1260,15 @@
                     sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
                 if (sirenAudioCtx.state === 'suspended') {
-                    sirenAudioCtx.resume();
+                    sirenAudioCtx.resume().then(runSiren);
+                } else {
+                    runSiren();
                 }
+            } catch(e) {}
+        }
 
+        function runSiren() {
+            try {
                 let now = sirenAudioCtx.currentTime;
 
                 // 3-Pulse Heavy Dual-Ring PCR Siren (Detuned Sawtooths + Thick Bass + Crossover Chorus)
@@ -1361,9 +1367,12 @@
     var hasActiveJob = @(activeJob != null ? "true" : "false");
 
     // General User Interaction Unlock for AudioContext
-    $(document).on('click touchstart', function() {
+    $(document).on('click touchstart mousedown keydown', function() {
         try {
-            if (sirenAudioCtx && sirenAudioCtx.state === 'suspended') {
+            if (!sirenAudioCtx) {
+                sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (sirenAudioCtx.state === 'suspended') {
                 sirenAudioCtx.resume();
             }
         } catch(e) {}
@@ -1413,6 +1422,15 @@
             if (res.hasJob && !currentDispatchJobId) {
                 currentDispatchJobId = res.jobId;
                 openDispatchModal(res);
+            } else if (currentDispatchJobId && (!res.hasJob || res.wasTaken)) {
+                // The job was accepted by another mechanic or cancelled! Hide modal immediately!
+                stopSirenAlert();
+                if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+                currentDispatchJobId = null;
+                
+                var modalEl = document.getElementById('incomingDispatchModal');
+                var instance = bootstrap.Modal.getInstance(modalEl);
+                if (instance) instance.hide();
             }
         });
     }
@@ -1442,7 +1460,7 @@
 
             if (dispatchSecondsLeft <= 0) {
                 clearInterval(dispatchCountdownTimer);
-                declinePing(data.jobId);
+                timeoutPing(data.jobId);
             }
         }, 1000);
 
@@ -1484,6 +1502,20 @@
             if (instance) instance.hide();
             location.reload();
         });
+    }
+
+    function timeoutPing(jobId) {
+        stopSirenAlert();
+        if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+        
+        // Hide the modal instantly in the UI
+        var modalEl = document.getElementById('incomingDispatchModal');
+        var instance = bootstrap.Modal.getInstance(modalEl);
+        if (instance) instance.hide();
+        
+        currentDispatchJobId = null;
+
+        $.post('/Mechanic/TimeoutJob', { jobId: jobId });
     }
 
     function snoozePing(jobId) {
@@ -1835,7 +1867,7 @@
     }
 
     // Start Polling Dispatch Requests & Live Chat
-    setInterval(pollIncomingDispatchRequests, 3000);
+    setInterval(pollIncomingDispatchRequests, 1000);
 
     setInterval(function() {
         if ($('#liveChatMechModal').hasClass('show')) {

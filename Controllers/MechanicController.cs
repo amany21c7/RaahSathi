@@ -207,16 +207,26 @@ namespace RaahSathi.Controllers
                                         shouldSkip = true; // Still within 2 minutes of decline
                                         break;
                                     }
-                                    else
+                                }
+                            }
+                            if (entry.StartsWith(userStrId + "_timeout_"))
+                            {
+                                string countStr = entry.Substring((userStrId + "_timeout_").Length);
+                                if (int.TryParse(countStr, out int timeoutCount) && timeoutCount >= 5)
+                                {
+                                    shouldSkip = true; // Permanently skip after 5 timeouts
+                                    break;
+                                }
+                            }
+                            if (entry.StartsWith(userStrId + "_cooldown_"))
+                            {
+                                string tsStr = entry.Substring((userStrId + "_cooldown_").Length);
+                                if (DateTime.TryParse(tsStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime cooldownUntil))
+                                {
+                                    if (DateTime.UtcNow < cooldownUntil)
                                     {
-                                        // 2 minutes have passed! Check if other mechanics are available
-                                        double jobAgeSeconds = (DateTime.UtcNow - job.CreatedAt).TotalSeconds;
-                                        double maxRadiusKm = jobAgeSeconds < 20 ? 15.0 : (jobAgeSeconds < 30 ? 30.0 : 50.0);
-                                        if (OtherMechanicAvailable(job, maxRadiusKm, user.Id))
-                                        {
-                                            shouldSkip = true; // Another mechanic is available, skip for this mechanic
-                                            break;
-                                        }
+                                        shouldSkip = true; // Still cooling down
+                                        break;
                                     }
                                 }
                             }
@@ -584,14 +594,26 @@ namespace RaahSathi.Controllers
                                     shouldSkip = true; // Still within 2 minutes of decline, skip!
                                     break;
                                 }
-                                else
+                            }
+                        }
+                        if (entry.StartsWith(userStrId + "_timeout_"))
+                        {
+                            string countStr = entry.Substring((userStrId + "_timeout_").Length);
+                            if (int.TryParse(countStr, out int timeoutCount) && timeoutCount >= 5)
+                            {
+                                shouldSkip = true; // Permanently skip after 5 timeouts
+                                break;
+                            }
+                        }
+                        if (entry.StartsWith(userStrId + "_cooldown_"))
+                        {
+                            string tsStr = entry.Substring((userStrId + "_cooldown_").Length);
+                            if (DateTime.TryParse(tsStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime cooldownUntil))
+                            {
+                                if (DateTime.UtcNow < cooldownUntil)
                                 {
-                                    // 2 minutes have passed! Check if other mechanics are available
-                                    if (OtherMechanicAvailable(job, maxRadiusKm, user.Id))
-                                    {
-                                        shouldSkip = true; // Another mechanic is available, skip for this mechanic
-                                        break;
-                                    }
+                                    shouldSkip = true; // Still cooling down
+                                    break;
                                 }
                             }
                         }
@@ -696,6 +718,91 @@ namespace RaahSathi.Controllers
             }
 
             return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TimeoutJob(int jobId)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated" });
+
+            var job = await _dbContext.Jobs.FindAsync(jobId);
+            if (job != null)
+            {
+                string userStrId = user.Id.ToString();
+                
+                int currentTimeoutCount = 0;
+                var ids = new List<string>();
+                if (!string.IsNullOrEmpty(job.DeclinedMechanicIds))
+                {
+                    ids = job.DeclinedMechanicIds.Split(',').Select(i => i.Trim()).ToList();
+                    
+                    var timeoutEntry = ids.FirstOrDefault(id => id.StartsWith(userStrId + "_timeout_"));
+                    if (timeoutEntry != null)
+                    {
+                        string countStr = timeoutEntry.Substring((userStrId + "_timeout_").Length);
+                        int.TryParse(countStr, out currentTimeoutCount);
+                        ids.Remove(timeoutEntry);
+                    }
+                    
+                    ids.RemoveAll(id => id.StartsWith(userStrId + "_cooldown_"));
+                }
+                
+                currentTimeoutCount++;
+                ids.Add($"{userStrId}_timeout_{currentTimeoutCount}");
+                
+                if (currentTimeoutCount < 5)
+                {
+                    string cooldownTimestamp = DateTime.UtcNow.AddSeconds(3).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                    ids.Add($"{userStrId}_cooldown_{cooldownTimestamp}");
+                }
+                else
+                {
+                    ids.Add(userStrId);
+                }
+                
+                job.DeclinedMechanicIds = string.Join(",", ids);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            return Json(new { success = true });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DebugDecline(int jobId, int userId)
+        {
+            var job = await _dbContext.Jobs.FindAsync(jobId);
+            if (job == null) return Content("Job not found");
+            
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+            if (profile == null) return Content("Profile not found");
+
+            string userStrId = userId.ToString();
+            var logs = new List<string>();
+            logs.Add($"Job ID: {job.Id}, Status: {job.Status}, DeclinedMechanicIds: {job.DeclinedMechanicIds}");
+            logs.Add($"UtcNow: {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
+            
+            if (!string.IsNullOrEmpty(job.DeclinedMechanicIds))
+            {
+                var entries = job.DeclinedMechanicIds.Split(',').Select(id => id.Trim()).ToList();
+                foreach (var entry in entries)
+                {
+                    if (entry == userStrId)
+                    {
+                        logs.Add($"Entry '{entry}' == userStrId '{userStrId}': shouldSkip = true");
+                    }
+                    if (entry.StartsWith(userStrId + "_decline_"))
+                    {
+                        string tsStr = entry.Substring((userStrId + "_decline_").Length);
+                        var parseSuccess = DateTime.TryParse(tsStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime declineUntil);
+                        logs.Add($"Entry '{entry}' matches decline. ParseSuccess: {parseSuccess}, Parsed declineUntil: {declineUntil:yyyy-MM-ddTHH:mm:ssZ}, Kind: {declineUntil.Kind}");
+                        var isStillBlocked = DateTime.UtcNow < declineUntil;
+                        logs.Add($"UtcNow < declineUntil: {isStillBlocked} (shouldSkip = {isStillBlocked})");
+                    }
+                }
+            }
+
+            return Content(string.Join("\n", logs));
         }
 
         [HttpPost]
