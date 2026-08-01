@@ -544,18 +544,10 @@ namespace RaahSathi.Controllers
                 int oldMechanicId = job.MechanicId.Value;
                 string oldMechIdStr = oldMechanicId.ToString();
 
-                if (string.IsNullOrEmpty(job.DeclinedMechanicIds))
-                {
-                    job.DeclinedMechanicIds = oldMechIdStr;
-                }
-                else
-                {
-                    var ids = job.DeclinedMechanicIds.Split(',').Select(i => i.Trim()).ToList();
-                    if (!ids.Contains(oldMechIdStr))
-                    {
-                        job.DeclinedMechanicIds += "," + oldMechIdStr;
-                    }
-                }
+                // Clear the declined list so the job rings for all online mechanics,
+                // including the unassigned mechanic who was unassigned due to inactivity/lateness.
+                job.DeclinedMechanicIds = "";
+                job.CreatedAt = DateTime.UtcNow; // Reset creation time to renew search duration/progress bar
 
                 job.MechanicId = null;
                 job.Status = "Requested";
