@@ -689,6 +689,68 @@ body { top: 0px !important; }
 .goog-tooltip:hover { display: none !important; }
 .goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
 
+/* Premium Roadside Tagline Banner */
+.premium-tagline-banner {
+    background: linear-gradient(90deg, rgba(255, 107, 0, 0.08) 0%, rgba(255, 107, 0, 0.02) 50%, rgba(255, 107, 0, 0.08) 100%);
+    border: 1px solid rgba(255, 107, 0, 0.2);
+    border-left: 4px solid var(--primary) !important;
+    border-right: 4px solid var(--primary) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25), inset 0 0 15px rgba(255, 107, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+}
+
+.premium-tagline-banner:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 107, 0, 0.45);
+    box-shadow: 0 8px 25px rgba(255, 107, 0, 0.15), inset 0 0 15px rgba(255, 107, 0, 0.08);
+}
+
+.tagline-text {
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    background: linear-gradient(120deg, #ffffff 0%, #ffe4d1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.tagline-badge {
+    background: rgba(255, 107, 0, 0.12);
+    border: 1px solid rgba(255, 107, 0, 0.25);
+    color: var(--primary) !important;
+    font-size: 0.8rem;
+    font-weight: 750;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 30px;
+    box-shadow: 0 2px 8px rgba(255, 107, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.premium-tagline-banner:hover .tagline-badge {
+    background: rgba(255, 107, 0, 0.20);
+    border-color: rgba(255, 107, 0, 0.4);
+    box-shadow: 0 4px 12px rgba(255, 107, 0, 0.2);
+}
+
+.animate-pulse-slow {
+    display: inline-block;
+    animation: pulse-slow 2.5s infinite ease-in-out;
+}
+
+@keyframes pulse-slow {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(0.95);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}
+
 /* Mobile Optimizations */
 @media (max-width: 768px) {
     .glass-card {
