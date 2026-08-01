@@ -285,8 +285,17 @@ namespace RaahSathi.Controllers
             ViewBag.ActiveWarning = activeWarning;
             ViewBag.SupportMessages = supportMessages;
             ViewBag.UnreadSupportCount = supportMessages.Count(m => !m.IsRead && m.IsFromAdmin);
+            var todayUtc = DateTime.UtcNow.Date;
+            var sevenDaysAgoUtc = DateTime.UtcNow.Date.AddDays(-7);
+            int todayJobsCount = await _dbContext.Jobs
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && j.CompletedAt.HasValue && j.CompletedAt.Value >= todayUtc);
+            int weeklyJobsCount = await _dbContext.Jobs
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && j.CompletedAt.HasValue && j.CompletedAt.Value >= sevenDaysAgoUtc);
+
             ViewBag.TodayEarnings = todayEarnings;
             ViewBag.WeeklyEarnings = weeklyEarnings;
+            ViewBag.TodayJobsCount = todayJobsCount;
+            ViewBag.WeeklyJobsCount = weeklyJobsCount;
             ViewBag.MonthlyVolume = monthlyVolume;
             ViewBag.PendingSettlement = pendingSettlement;
             ViewBag.PendingPayoutAmount = pendingPayout;
@@ -725,6 +734,39 @@ namespace RaahSathi.Controllers
                 commissionPercent = breakdown.CommissionPercent,
                 newWalletBalance = mechProfile.CurrentEarnings
             });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SettleCashPayment(int jobId)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated." });
+
+            var job = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Vehicle)
+                .FirstOrDefaultAsync(j => j.Id == jobId && j.MechanicId == user.Id);
+
+            if (job == null) return Json(new { success = false, message = "Job not found." });
+            if (job.Status == "Completed" || job.Status == "Cancelled")
+                return Json(new { success = false, message = "Job is already completed or cancelled." });
+
+            string cashPaymentId = "pay_cash_" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper();
+            bool success = await _paymentService.ProcessEscrowPaymentForJobAsync(jobId, cashPaymentId);
+
+            if (success)
+            {
+                var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                double balance = mechProfile?.CurrentEarnings ?? 0.0;
+                
+                return Json(new { 
+                    success = true, 
+                    message = "Job successfully settled in Cash! Platform commission fee has been adjusted in your wallet.",
+                    newWalletBalance = balance
+                });
+            }
+
+            return Json(new { success = false, message = "Failed to process cash settlement." });
         }
 
         [HttpGet]
@@ -1177,6 +1219,13 @@ namespace RaahSathi.Controllers
 
             double pendingSettlement = profile.CurrentEarnings;
 
+            var todayUtc = DateTime.UtcNow.Date;
+            var sevenDaysAgoUtc = DateTime.UtcNow.Date.AddDays(-7);
+            int todayJobsCount = await _dbContext.Jobs
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && j.CompletedAt.HasValue && j.CompletedAt.Value >= todayUtc);
+            int weeklyJobsCount = await _dbContext.Jobs
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && j.CompletedAt.HasValue && j.CompletedAt.Value >= sevenDaysAgoUtc);
+
             var transactions = payments
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(10)
@@ -1194,6 +1243,8 @@ namespace RaahSathi.Controllers
                 success = true,
                 todayEarnings = todayEarnings,
                 weeklyEarnings = weeklyEarnings,
+                todayJobsCount = todayJobsCount,
+                weeklyJobsCount = weeklyJobsCount,
                 monthlyVolume = monthlyVolume,
                 pendingSettlement = pendingSettlement,
                 transactions = transactions

@@ -247,8 +247,14 @@
             </div>
             <div class="col-6 col-md">
                 <div class="mech-stat-card text-center">
-                    <span class="text-muted small d-block mb-1 font-weight-medium">Today's Jobs</span>
-                    <h3 class="text-warning font-weight-extrabold mb-0" style="font-family: 'Outfit';">@profile.TotalJobs</h3>
+                    <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+                        <select id="jobStatRangeSelect" class="bg-transparent border-0 text-muted small font-weight-medium p-0 text-center" style="outline: none; cursor: pointer; color: #a0aec0 !important; width: 100px;">
+                            <option value="today" class="bg-dark text-light">Today's Jobs</option>
+                            <option value="weekly" class="bg-dark text-light">Weekly Jobs</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down text-muted" style="font-size:0.6rem;"></i>
+                    </div>
+                    <h3 class="text-warning font-weight-extrabold mb-0" id="topJobsCount" style="font-family: 'Outfit';">@ViewBag.TodayJobsCount</h3>
                 </div>
             </div>
             <div class="col-6 col-md">
@@ -527,9 +533,17 @@
                         </div>
 
                         <div class="d-flex flex-column gap-2">
-                            <button type="button" class="btn btn-warning text-dark btn-lg w-100 py-3 font-weight-bold shadow" onclick="openPaymentQrModal(@activeJob.Id)">
-                                <i class="fa-solid fa-qrcode me-2"></i> Collect Payment (Show Customer QR Code)
-                            </button>
+                            <div class="d-flex align-items-center gap-2 w-100">
+                                <button type="button" class="btn btn-warning text-dark btn-lg flex-grow-1 py-3 font-weight-bold shadow" onclick="openPaymentQrModal(@activeJob.Id)">
+                                    <i class="fa-solid fa-qrcode me-2"></i> Collect Payment (UPI QR)
+                                </button>
+                                @if (activeJob.Status != "Completed")
+                                {
+                                    <button type="button" class="btn btn-info text-dark py-2.5 px-3 font-weight-bold shadow" onclick="settleJobInCash(@activeJob.Id)" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%) !important; border: none; font-size: 0.9rem; min-width: 130px; border-radius: 8px;">
+                                        <i class="fa-solid fa-money-bill-wave me-1"></i> Pay in Cash
+                                    </button>
+                                }
+                            </div>
                             
                             @if (activeJob.Status != "Completed")
                             {
@@ -614,7 +628,24 @@
     <!-- ==================== TAB 3: JOBS ==================== -->
     <div id="tab-jobs" class="mech-tab-content" style="display:none;">
         <div class="glass-card mb-4">
-            <h4 class="text-white font-weight-bold mb-3"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Completed Repair History</h4>
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3 pb-2 border-bottom border-secondary border-opacity-30">
+                <h4 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Completed Repair History</h4>
+                
+                <!-- Date Filter Input Elements -->
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="text-muted small font-weight-medium">Select Range:</span>
+                    <input type="date" id="historyStartDate" class="form-control form-control-sm glass-input text-warning py-1" style="width: 135px; font-size: 0.85rem;" title="Start Date">
+                    <span class="text-muted small">to</span>
+                    <input type="date" id="historyEndDate" class="form-control form-control-sm glass-input text-warning py-1" style="width: 135px; font-size: 0.85rem;" title="End Date">
+                    <button class="btn btn-warning btn-sm font-weight-bold px-3 py-1" onclick="applyHistoryDateFilter()">
+                        <i class="fa-solid fa-filter me-1"></i> Apply
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm p-1 px-2" onclick="resetHistoryDateFilter()" title="Reset to Weekly">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                </div>
+            </div>
+
             @if (pastJobs.Count == 0)
             {
                 <p class="text-muted text-center py-4 mb-0">No completed job history recorded yet.</p>
@@ -622,7 +653,7 @@
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-dark table-hover align-middle">
+                    <table class="table table-dark table-hover align-middle history-table">
                         <thead>
                             <tr>
                                 <th>Job ID</th>
@@ -637,7 +668,7 @@
                         <tbody>
                             @foreach (var j in pastJobs)
                             {
-                                <tr>
+                                <tr class="history-job-row" data-date="@(j.CompletedAt?.ToLocalTime().ToString("yyyy-MM-dd") ?? "")">
                                     <td><b>#@j.Id</b></td>
                                     <td>@j.Vehicle?.Model</td>
                                     <td><span class="badge bg-warning text-dark">@j.ProblemType</span></td>
@@ -1503,6 +1534,9 @@
                 timeout: 5000
             });
         }
+        
+        // Initialize Completed Repair History to show last 7 days (weekly) by default
+        resetHistoryDateFilter();
     });
 
     // Step Status Advances with Payment Validation
@@ -1809,6 +1843,9 @@
         }
     }, 2500);
 
+    var todayJobsCountVal = @(ViewBag.TodayJobsCount ?? 0);
+    var weeklyJobsCountVal = @(ViewBag.WeeklyJobsCount ?? 0);
+
     function updateWalletStats() {
         $.get('/Mechanic/GetWalletStats', function(res) {
             if (res.success) {
@@ -1817,6 +1854,18 @@
                 $('#lblWalletMonthlyVolume').text('₹' + res.monthlyVolume.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
                 $('#lblWalletPendingSettlement').text('₹' + res.pendingSettlement.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
                 $('#topTodayEarnings').text('₹' + Math.round(res.todayEarnings).toLocaleString('en-IN'));
+
+                // Update jobs count variables in real-time
+                todayJobsCountVal = res.todayJobsCount || 0;
+                weeklyJobsCountVal = res.weeklyJobsCount || 0;
+
+                // Update visible count based on current select value
+                var currentRange = $('#jobStatRangeSelect').val();
+                if (currentRange === 'today') {
+                    $('#topJobsCount').text(todayJobsCountVal);
+                } else {
+                    $('#topJobsCount').text(weeklyJobsCountVal);
+                }
 
                 // Update Recent Earnings Statement table
                 var tableHtml = '';
@@ -1836,7 +1885,7 @@
                                 <td><b>#${tx.jobId}</b></td>
                                 <td class="small text-muted">${tx.createdAt}</td>
                                 <td><span class="badge ${badgeClass} px-2 py-1">${badgeText}</span></td>
-                                <td class="text-white">₹${tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td>₹${tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 <td class="${textClass}">${signPrefix}₹${absEarning.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
                         `;
@@ -1850,6 +1899,16 @@
     // Run on load and poll every 3 seconds
     updateWalletStats();
     setInterval(updateWalletStats, 3000);
+
+    // Job Stats Range Toggle Listener
+    $('#jobStatRangeSelect').change(function() {
+        var range = $(this).val();
+        if (range === 'today') {
+            $('#topJobsCount').text(todayJobsCountVal);
+        } else {
+            $('#topJobsCount').text(weeklyJobsCountVal);
+        }
+    });
 
     // Real-Time Active Job Approval Polling for Mechanic
     var currentActiveJobId = "@(activeJob?.Id ?? 0)";
@@ -1901,6 +1960,26 @@
 
                 var newStatus = res.status || "";
                 if (newStatus !== lastJobStatus) {
+                    if (newStatus === "Completed" && $('#paymentQrModal').hasClass('show')) {
+                        // Online payment processed! Show dynamic success box in QR modal
+                        $('#qrCodeImg').parent().hide(); // Hide QR box
+                        
+                        if ($('#qrSuccessContainer').length === 0) {
+                            $(`<div id="qrSuccessContainer" class="p-4 my-3 rounded bg-success bg-opacity-10 border border-success text-center">
+                                <i class="fa-solid fa-circle-check text-success mb-2" style="font-size: 3rem;"></i>
+                                <h5 class="text-success font-weight-bold">Payment Recieved!</h5>
+                                <p class="text-light small mb-0">Please complete the job and dismiss this alert.</p>
+                               </div>`).insertBefore('#btnConfirmQrPayment');
+                        }
+                        
+                        $('#btnConfirmQrPayment').html('<i class="fa-solid fa-circle-check me-2"></i> Dismiss & Complete Job')
+                                                 .removeClass('btn-success')
+                                                 .addClass('btn-primary')
+                                                 .prop('disabled', false);
+                                                 
+                        isOnlinePaymentConfirmed = true;
+                        return;
+                    }
                     location.reload();
                     return;
                 }
@@ -1951,9 +2030,16 @@
 
     // Dynamic Payment QR & Invoice Modal Functions
     var currentQrJobId = 0;
+    var isOnlinePaymentConfirmed = false;
 
     function openPaymentQrModal(jobId) {
         currentQrJobId = jobId;
+        isOnlinePaymentConfirmed = false;
+        $('#qrCodeImg').parent().show();
+        $('#qrSuccessContainer').remove();
+        $('#btnConfirmQrPayment').html('<i class="fa-solid fa-check-circle me-2"></i> Confirm Customer Paid & Credit Wallet')
+                                 .removeClass('btn-primary')
+                                 .addClass('btn-success');
         $.get('/Mechanic/GetJobInvoiceDetails?jobId=' + jobId, function (res) {
             if (res && res.success) {
                 $('#qrModalJobId').text('JOB #' + res.jobId);
@@ -1987,6 +2073,10 @@
     }
 
     $('#btnConfirmQrPayment').click(function () {
+        if (isOnlinePaymentConfirmed) {
+            location.reload();
+            return;
+        }
         if (!currentQrJobId) return;
         $.post('/Mechanic/CollectPaymentWithQr', { jobId: currentQrJobId }, function (res) {
             if (res && res.success) {
@@ -2000,6 +2090,20 @@
             }
         });
     });
+
+    function settleJobInCash(jobId) {
+        if (!confirm("Are you sure you collected the cash payment directly from the customer? Platform commission will be automatically debited from your wallet balance.")) {
+            return;
+        }
+        $.post('/Mechanic/SettleCashPayment', { jobId: jobId }, function (res) {
+            if (res && res.success) {
+                alert(res.message);
+                location.reload();
+            } else {
+                alert(res.message || 'Error processing cash settlement.');
+            }
+        });
+    }
 
     function showJobInvoiceModal(jobId) {
         $.get('/Mechanic/GetJobInvoiceDetails?jobId=' + jobId, function (res) {
@@ -2057,6 +2161,61 @@
 
     function printMechanicInvoice() {
         window.print();
+    }
+
+    function applyHistoryDateFilter() {
+        var startVal = $('#historyStartDate').val();
+        var endVal = $('#historyEndDate').val();
+        
+        if (!startVal || !endVal) {
+            alert('Please select both Start Date and End Date.');
+            return;
+        }
+
+        var startDate = new Date(startVal);
+        startDate.setHours(0,0,0,0);
+        var endDate = new Date(endVal);
+        endDate.setHours(23,59,59,999);
+
+        var visibleCount = 0;
+        $('.history-job-row').each(function() {
+            var rowDateStr = $(this).data('date');
+            if (!rowDateStr) {
+                $(this).addClass('d-none');
+                return;
+            }
+            var rowDate = new Date(rowDateStr);
+            rowDate.setHours(0,0,0,0);
+            
+            if (rowDate >= startDate && rowDate <= endDate) {
+                $(this).removeClass('d-none');
+                visibleCount++;
+            } else {
+                $(this).addClass('d-none');
+            }
+        });
+
+        // Toggle placeholder row
+        if (visibleCount === 0) {
+            if ($('#historyNoJobsRow').length === 0) {
+                $('table.history-table tbody').append('<tr id="historyNoJobsRow"><td colspan="7" class="text-center text-muted py-4">No completed jobs found for the selected date range.</td></tr>');
+            } else {
+                $('#historyNoJobsRow').removeClass('d-none');
+            }
+        } else {
+            $('#historyNoJobsRow').addClass('d-none');
+        }
+    }
+
+    function resetHistoryDateFilter() {
+        var today = new Date();
+        var lastWeek = new Date();
+        lastWeek.setDate(today.getDate() - 7);
+
+        $('#historyStartDate').val(lastWeek.toISOString().split('T')[0]);
+        $('#historyEndDate').val(today.toISOString().split('T')[0]);
+        
+        applyHistoryDateFilter();
     }
 
     $(document).ready(function() {

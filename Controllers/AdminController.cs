@@ -1200,17 +1200,46 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            var upiId = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminUpiId");
-            var holderName = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountHolderName");
-            var bankName = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminBankName");
-            var accNum = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountNumber");
-            var ifsc = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminIfscCode");
+            var accountsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountsJson");
+            List<AdminAccountModel> accounts = new List<AdminAccountModel>();
+            if (accountsSetting != null && !string.IsNullOrEmpty(accountsSetting.SettingValue))
+            {
+                try
+                {
+                    accounts = System.Text.Json.JsonSerializer.Deserialize<List<AdminAccountModel>>(accountsSetting.SettingValue) ?? new List<AdminAccountModel>();
+                }
+                catch
+                {
+                    accounts = new List<AdminAccountModel>();
+                }
+            }
+            else
+            {
+                var upi = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminUpiId");
+                if (upi != null && !string.IsNullOrEmpty(upi.SettingValue))
+                {
+                    var holder = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountHolderName");
+                    var bank = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminBankName");
+                    var num = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountNumber");
+                    var ifsc = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminIfscCode");
 
-            ViewBag.AdminUpiId = upiId?.SettingValue ?? "";
-            ViewBag.AdminAccountHolderName = holderName?.SettingValue ?? "";
-            ViewBag.AdminBankName = bankName?.SettingValue ?? "";
-            ViewBag.AdminAccountNumber = accNum?.SettingValue ?? "";
-            ViewBag.AdminIfscCode = ifsc?.SettingValue ?? "";
+                    accounts.Add(new AdminAccountModel
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        UpiId = upi.SettingValue,
+                        HolderName = holder?.SettingValue ?? "",
+                        BankName = bank?.SettingValue ?? "",
+                        AccountNumber = num?.SettingValue ?? "",
+                        IfscCode = ifsc?.SettingValue ?? "",
+                        IsActive = true
+                    });
+
+                    string json = System.Text.Json.JsonSerializer.Serialize(accounts);
+                    await SaveOrUpdateSettingAsync("AdminAccountsJson", json, "Account");
+                }
+            }
+
+            ViewBag.Accounts = accounts;
 
             var releasedPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").ToListAsync();
             double rate1 = (await GetSettingDoubleAsync("CommissionPhase1", 8)) / 100.0;
@@ -1232,19 +1261,144 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveAdminAccountSettings(string upiId, string holderName, string bankName, string accountNumber, string ifscCode)
+        public async Task<IActionResult> AddAdminAccount(string upiId, string holderName, string bankName, string accountNumber, string ifscCode, bool makeActive)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            await SaveOrUpdateSettingAsync("AdminUpiId", upiId ?? "", "Account");
-            await SaveOrUpdateSettingAsync("AdminAccountHolderName", holderName ?? "", "Account");
-            await SaveOrUpdateSettingAsync("AdminBankName", bankName ?? "", "Account");
-            await SaveOrUpdateSettingAsync("AdminAccountNumber", accountNumber ?? "", "Account");
-            await SaveOrUpdateSettingAsync("AdminIfscCode", ifscCode ?? "", "Account");
+            var accountsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountsJson");
+            List<AdminAccountModel> accounts = new List<AdminAccountModel>();
+            if (accountsSetting != null && !string.IsNullOrEmpty(accountsSetting.SettingValue))
+            {
+                try
+                {
+                    accounts = System.Text.Json.JsonSerializer.Deserialize<List<AdminAccountModel>>(accountsSetting.SettingValue) ?? new List<AdminAccountModel>();
+                }
+                catch
+                {
+                    accounts = new List<AdminAccountModel>();
+                }
+            }
 
-            await LogAdminActionAsync("ADMIN_ACCOUNT_SETTINGS", "Updated Admin Bank Account & UPI Settings");
-            TempData["Success"] = "Admin Account & UPI details saved successfully.";
+            var newAccount = new AdminAccountModel
+            {
+                Id = Guid.NewGuid().ToString(),
+                UpiId = upiId ?? "",
+                HolderName = holderName ?? "",
+                BankName = bankName ?? "",
+                AccountNumber = accountNumber ?? "",
+                IfscCode = ifscCode ?? "",
+                IsActive = makeActive || accounts.Count == 0
+            };
+
+            if (newAccount.IsActive)
+            {
+                foreach (var acc in accounts)
+                {
+                    acc.IsActive = false;
+                }
+            }
+
+            accounts.Add(newAccount);
+
+            string json = System.Text.Json.JsonSerializer.Serialize(accounts);
+            await SaveOrUpdateSettingAsync("AdminAccountsJson", json, "Account");
+
+            if (newAccount.IsActive)
+            {
+                await MirrorActiveAccountSettings(newAccount);
+            }
+
+            await LogAdminActionAsync("ADMIN_ADD_ACCOUNT", $"Added new settlement account: {newAccount.HolderName} ({newAccount.UpiId})");
+            TempData["Success"] = "New settlement account added successfully.";
             return RedirectToAction("Account");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ActivateAdminAccount(string accountId)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Not authenticated" });
+
+            var accountsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountsJson");
+            if (accountsSetting == null || string.IsNullOrEmpty(accountsSetting.SettingValue))
+                return Json(new { success = false, message = "No accounts configured." });
+
+            List<AdminAccountModel> accounts;
+            try
+            {
+                accounts = System.Text.Json.JsonSerializer.Deserialize<List<AdminAccountModel>>(accountsSetting.SettingValue) ?? new List<AdminAccountModel>();
+            }
+            catch
+            {
+                return Json(new { success = false, message = "Failed to parse accounts list." });
+            }
+
+            var targetAcc = accounts.FirstOrDefault(a => a.Id == accountId);
+            if (targetAcc == null) return Json(new { success = false, message = "Account not found." });
+
+            foreach (var acc in accounts)
+            {
+                acc.IsActive = (acc.Id == accountId);
+            }
+
+            string json = System.Text.Json.JsonSerializer.Serialize(accounts);
+            await SaveOrUpdateSettingAsync("AdminAccountsJson", json, "Account");
+
+            await MirrorActiveAccountSettings(targetAcc);
+
+            await LogAdminActionAsync("ADMIN_ACTIVATE_ACCOUNT", $"Activated settlement account: {targetAcc.HolderName} ({targetAcc.UpiId})");
+            return Json(new { success = true, message = $"Account '{targetAcc.HolderName}' activated successfully!" });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteAdminAccount(string accountId)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var accountsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountsJson");
+            if (accountsSetting == null || string.IsNullOrEmpty(accountsSetting.SettingValue))
+                return RedirectToAction("Account");
+
+            List<AdminAccountModel> accounts;
+            try
+            {
+                accounts = System.Text.Json.JsonSerializer.Deserialize<List<AdminAccountModel>>(accountsSetting.SettingValue) ?? new List<AdminAccountModel>();
+            }
+            catch
+            {
+                return RedirectToAction("Account");
+            }
+
+            var targetAcc = accounts.FirstOrDefault(a => a.Id == accountId);
+            if (targetAcc == null) return RedirectToAction("Account");
+
+            bool wasActive = targetAcc.IsActive;
+            accounts.Remove(targetAcc);
+
+            if (wasActive && accounts.Count > 0)
+            {
+                accounts[0].IsActive = true;
+                await MirrorActiveAccountSettings(accounts[0]);
+            }
+            else if (accounts.Count == 0)
+            {
+                await MirrorActiveAccountSettings(new AdminAccountModel());
+            }
+
+            string json = System.Text.Json.JsonSerializer.Serialize(accounts);
+            await SaveOrUpdateSettingAsync("AdminAccountsJson", json, "Account");
+
+            await LogAdminActionAsync("ADMIN_DELETE_ACCOUNT", $"Deleted settlement account: {targetAcc.HolderName}");
+            TempData["Success"] = "Settlement account deleted successfully.";
+            return RedirectToAction("Account");
+        }
+
+        private async Task MirrorActiveAccountSettings(AdminAccountModel acc)
+        {
+            await SaveOrUpdateSettingAsync("AdminUpiId", acc.UpiId ?? "", "Account");
+            await SaveOrUpdateSettingAsync("AdminAccountHolderName", acc.HolderName ?? "", "Account");
+            await SaveOrUpdateSettingAsync("AdminBankName", acc.BankName ?? "", "Account");
+            await SaveOrUpdateSettingAsync("AdminAccountNumber", acc.AccountNumber ?? "", "Account");
+            await SaveOrUpdateSettingAsync("AdminIfscCode", acc.IfscCode ?? "", "Account");
         }
 
         [HttpPost]
@@ -1700,5 +1854,16 @@ namespace RaahSathi.Controllers
                 certification = mechanic.IsCertified ? "Certified Professional" : "Standard Partner"
             });
         }
+    }
+
+    public class AdminAccountModel
+    {
+        public string Id { get; set; } = string.Empty;
+        public string UpiId { get; set; } = string.Empty;
+        public string HolderName { get; set; } = string.Empty;
+        public string BankName { get; set; } = string.Empty;
+        public string AccountNumber { get; set; } = string.Empty;
+        public string IfscCode { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
     }
 }
