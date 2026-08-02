@@ -1452,6 +1452,40 @@
                 mechModal.show();
             });
         }
+
+        // Global Enter Key Behavior: Submit card inputs or trigger primary actions in modals
+        $(document).ready(function() {
+            // 1. Pressing Enter inside any text/password input clicks the primary button in the same card/container
+            $(document).on('keypress', 'input[type="text"], input[type="password"], input[type="tel"], input[type="email"]', function(e) {
+                if (e.which === 13) { // Enter key
+                    e.preventDefault();
+                    var container = $(this).closest('.card, .modal-content, .glass-card, div.mb-3, div.p-4, form, .form-container, .glass-form');
+                    if (container.length) {
+                        var btn = container.find('button.btn-primary, button.btn-warning, button.btn-success, button[id*="Submit"], button[id*="Login"], button[id^="btn"]').first();
+                        if (btn.length) {
+                            btn.click();
+                        }
+                    }
+                }
+            });
+
+            // 2. Pressing Enter when a modal is showing triggers the primary action button of the modal
+            $(document).on('keydown', function(e) {
+                if (e.which === 13) { // Enter key
+                    var openModal = $('.modal.show');
+                    if (openModal.length) {
+                        // Check if the focus is NOT already on a button or inputs
+                        if (!$(document.activeElement).is('button, input, textarea')) {
+                            var primaryBtn = openModal.find('.modal-footer button.btn-primary, .modal-footer button.btn-warning, .modal-footer button.btn-success, .modal-footer button[id*="Accept"], .modal-footer button[id^="btn"]').first();
+                            if (primaryBtn.length) {
+                                e.preventDefault();
+                                primaryBtn.click();
+                            }
+                        }
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>
