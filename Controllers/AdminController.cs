@@ -22,22 +22,7 @@ namespace RaahSathi.Controllers
 
         private bool IsAdmin()
         {
-            string? adminIdStr = Request.Cookies["RaahSathiAdminUserId"];
-            if (!string.IsNullOrEmpty(adminIdStr) && int.TryParse(adminIdStr, out int adminId))
-            {
-                var u = _dbContext.Users.Find(adminId);
-                if (u != null && u.Role == "Admin") return true;
-            }
-
-            string? role = Request.Cookies["RaahSathiUserRole"];
-            string? userIdStr = Request.Cookies["RaahSathiUserId"];
-            if (role == "Admin" && !string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
-            {
-                var u = _dbContext.Users.Find(userId);
-                if (u != null && u.Role == "Admin") return true;
-            }
-
-            return false; // Strict access: Deny access if not logged in as Admin
+            return User.Identity?.IsAuthenticated == true && User.IsInRole("Admin");
         }
 
         public async Task<IActionResult> Dashboard()

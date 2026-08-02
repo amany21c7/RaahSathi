@@ -7,8 +7,8 @@
     var commRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Commercial") ?? new RaahSathi.Models.PricingRule { BaseFee = 199, PerKmRate = 12 };
     var heavyRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Heavy") ?? new RaahSathi.Models.PricingRule { BaseFee = 299, PerKmRate = 15 };
 
-    bool isCustLoggedIn = Context.Request.Cookies.ContainsKey("RaahSathiCustomerUserId");
-    string custName = Context.Request.Cookies["RaahSathiUserName"] ?? "Customer";
+    bool isCustLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Customer");
+    string custName = (Context.User.Identity?.IsAuthenticated == true ? Context.User.Identity.Name : "Customer") ?? "Customer";
     var preSelectedVehicle = ViewBag.PreSelectedVehicle as RaahSathi.Models.Vehicle;
 }
 

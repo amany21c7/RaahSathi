@@ -26,38 +26,24 @@ namespace RaahSathi.Controllers
 
         private async Task<User?> GetActiveMechanicUserAsync()
         {
-            string? mechIdStr = Request.Cookies["RaahSathiMechanicUserId"];
-            if (!string.IsNullOrEmpty(mechIdStr) && int.TryParse(mechIdStr, out int mechId))
+            if (User.Identity?.IsAuthenticated == true)
             {
-                var user = await _dbContext.Users.FindAsync(mechId);
-                if (user != null)
+                string? userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdStr, out int mechId))
                 {
-                    if (user.Role != "Mechanic" && user.Role != "Admin")
+                    var user = await _dbContext.Users.FindAsync(mechId);
+                    if (user != null)
                     {
-                        user.Role = "Mechanic";
-                        await _dbContext.SaveChangesAsync();
+                        if (user.Role != "Mechanic" && user.Role != "Admin")
+                        {
+                            user.Role = "Mechanic";
+                            await _dbContext.SaveChangesAsync();
+                        }
+                        return user;
                     }
-                    return user;
                 }
             }
 
-            string? role = Request.Cookies["RaahSathiUserRole"];
-            string? userIdStr = Request.Cookies["RaahSathiUserId"];
-
-            if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int userId))
-            {
-                var user = await _dbContext.Users.FindAsync(userId);
-                if (user != null)
-                {
-                    if (role == "Mechanic" && user.Role != "Mechanic" && user.Role != "Admin")
-                    {
-                        user.Role = "Mechanic";
-                        await _dbContext.SaveChangesAsync();
-                    }
-                    return user;
-                }
-            }
- 
             return null;
         }
 
@@ -383,13 +369,42 @@ namespace RaahSathi.Controllers
                 _dbContext.MechanicProfiles.Add(profile);
             }
 
+            // Helper to validate files
+            bool IsValidDocument(IFormFile f)
+            {
+                if (f == null || f.Length == 0) return false;
+                var ext = System.IO.Path.GetExtension(f.FileName).ToLowerInvariant();
+                var allowed = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+                if (!allowed.Contains(ext)) return false;
+
+                var mime = f.ContentType.ToLowerInvariant();
+                var allowedMime = new[] { "image/jpeg", "image/jpg", "image/png", "application/pdf" };
+                if (!allowedMime.Contains(mime)) return false;
+
+                return true;
+            }
+
+            // Document validations
+            if ((ProfilePhoto != null && !IsValidDocument(ProfilePhoto)) ||
+                (AadhaarFrontPhoto != null && !IsValidDocument(AadhaarFrontPhoto)) ||
+                (AadhaarBackPhoto != null && !IsValidDocument(AadhaarBackPhoto)) ||
+                (DrivingLicencePhoto != null && !IsValidDocument(DrivingLicencePhoto)) ||
+                (PanCardPhoto != null && !IsValidDocument(PanCardPhoto)) ||
+                (SelfiePhoto != null && !IsValidDocument(SelfiePhoto)) ||
+                (ShopPhoto != null && !IsValidDocument(ShopPhoto)))
+            {
+                TempData["Error"] = "Invalid document file type. Only JPG, JPEG, PNG and PDF formats are allowed.";
+                return RedirectToAction("Dashboard");
+            }
+
             // Helper to save files
             async Task<string> SaveFileAsync(IFormFile file)
             {
                 if (file == null || file.Length == 0) return "";
                 var uploadsFolder = System.IO.Path.Combine(_env.WebRootPath, "uploads");
                 System.IO.Directory.CreateDirectory(uploadsFolder);
-                var uniqueName = Guid.NewGuid().ToString() + "_" + file.FileName;
+                string safeExtension = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
+                var uniqueName = Guid.NewGuid().ToString("N") + safeExtension;
                 var filePath = System.IO.Path.Combine(uploadsFolder, uniqueName);
                 using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
                 {
@@ -1152,70 +1167,83 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated" });
 
-            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
-            if (profile == null) return Json(new { success = false, message = "Profile not found." });
-
-            if (amount <= 0 || amount > profile.CurrentEarnings)
+            using (var transaction = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable))
             {
-                return Json(new { success = false, message = "Invalid withdrawal amount." });
-            }
-
-            payoutMethod = payoutMethod ?? "Bank";
-
-            // Validate mandatory fields
-            if (payoutMethod == "Bank")
-            {
-                if (string.IsNullOrEmpty(accountHolderName) || string.IsNullOrEmpty(accountNumber) ||
-                    string.IsNullOrEmpty(bankName) || string.IsNullOrEmpty(ifscCode))
+                try
                 {
-                    return Json(new { success = false, message = "All bank account details are mandatory for Bank Payout." });
-                }
-            }
-            else if (payoutMethod == "UPI")
-            {
-                if (string.IsNullOrEmpty(upiId))
-                {
-                    return Json(new { success = false, message = "UPI ID is mandatory for UPI Payout." });
-                }
-            }
+                    var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    if (profile == null) return Json(new { success = false, message = "Profile not found." });
 
-            // Deduct the earnings (holding them in the pending request)
-            profile.CurrentEarnings -= amount;
+                    if (amount <= 0 || amount > profile.CurrentEarnings)
+                    {
+                        return Json(new { success = false, message = "Invalid withdrawal amount." });
+                    }
 
-            // Also update the profile settings in the database for future convenience
-            profile.PreferredPayoutMethod = payoutMethod;
-            if (payoutMethod == "Bank")
-            {
-                profile.AccountHolderName = accountHolderName.Trim();
-                profile.BankAccountNumber = accountNumber.Trim();
-                profile.BankName = bankName.Trim();
-                profile.IfscCode = ifscCode.Trim();
-            }
-            else
-            {
-                profile.UpiId = upiId.Trim();
-            }
+                    payoutMethod = payoutMethod ?? "Bank";
 
-            // Create a payout request
-            var payoutRequest = new MechanicPayoutRequest
-            {
-                MechanicId = user.Id,
-                Amount = amount,
-                PayoutMethod = payoutMethod,
-                AccountHolderName = payoutMethod == "Bank" ? accountHolderName.Trim() : string.Empty,
-                BankAccountNumber = payoutMethod == "Bank" ? accountNumber.Trim() : string.Empty,
-                BankName = payoutMethod == "Bank" ? bankName.Trim() : string.Empty,
-                IfscCode = payoutMethod == "Bank" ? ifscCode.Trim() : string.Empty,
-                UpiId = payoutMethod == "UPI" ? upiId.Trim() : string.Empty,
-                Status = "Pending",
-                CreatedAt = DateTime.UtcNow
-            };
+                    // Validate mandatory fields
+                    if (payoutMethod == "Bank")
+                    {
+                        if (string.IsNullOrEmpty(accountHolderName) || string.IsNullOrEmpty(accountNumber) ||
+                            string.IsNullOrEmpty(bankName) || string.IsNullOrEmpty(ifscCode))
+                        {
+                            return Json(new { success = false, message = "All bank account details are mandatory for Bank Payout." });
+                        }
+                    }
+                    else if (payoutMethod == "UPI")
+                    {
+                        if (string.IsNullOrEmpty(upiId))
+                        {
+                            return Json(new { success = false, message = "UPI ID is mandatory for UPI Payout." });
+                        }
+                    }
 
-            _dbContext.MechanicPayoutRequests.Add(payoutRequest);
-            await _dbContext.SaveChangesAsync();
+                    // Deduct the earnings (holding them in the pending request)
+                    profile.CurrentEarnings -= amount;
 
-            return Json(new { success = true, remainingBalance = profile.CurrentEarnings, message = "Withdrawal request submitted successfully! Pending Admin verification and payout release." });
-        }
+                    // Also update the profile settings in the database for future convenience
+                    profile.PreferredPayoutMethod = payoutMethod;
+                    if (payoutMethod == "Bank")
+                    {
+                        profile.AccountHolderName = accountHolderName.Trim();
+                        profile.BankAccountNumber = accountNumber.Trim();
+                        profile.BankName = bankName.Trim();
+                        profile.IfscCode = ifscCode.Trim();
+                    }
+                    else
+                    {
+                        profile.UpiId = upiId.Trim();
+                    }
+
+                    // Create a payout request
+                    var payoutRequest = new MechanicPayoutRequest
+                    {
+                        MechanicId = user.Id,
+                        Amount = amount,
+                        PayoutMethod = payoutMethod,
+                        AccountHolderName = payoutMethod == "Bank" ? accountHolderName.Trim() : string.Empty,
+                        BankAccountNumber = payoutMethod == "Bank" ? accountNumber.Trim() : string.Empty,
+                        BankName = payoutMethod == "Bank" ? bankName.Trim() : string.Empty,
+                        IfscCode = payoutMethod == "Bank" ? ifscCode.Trim() : string.Empty,
+                        UpiId = payoutMethod == "UPI" ? upiId.Trim() : string.Empty,
+                        Status = "Pending",
+                        CreatedAt = DateTime.UtcNow
+                      };
+
+                      _dbContext.MechanicPayoutRequests.Add(payoutRequest);
+                      await _dbContext.SaveChangesAsync();
+
+                      await transaction.CommitAsync();
+
+                      return Json(new { success = true, remainingBalance = profile.CurrentEarnings, message = "Withdrawal request submitted successfully! Pending Admin verification and payout release." });
+                  }
+                  catch (Exception)
+                  {
+                      await transaction.RollbackAsync();
+                      return Json(new { success = false, message = "An error occurred during withdrawal processing. Please try again." });
+                  }
+              }
+          }
 
         [HttpPost]
         public async Task<IActionResult> InstantPayout()
@@ -1228,6 +1256,26 @@ namespace RaahSathi.Controllers
             {
                 double amount = profile.CurrentEarnings;
                 profile.CurrentEarnings = 0; // Payout wallet reset
+
+                // Create a completed payout request for auditing
+                var payoutRequest = new MechanicPayoutRequest
+                {
+                    MechanicId = user.Id,
+                    Amount = amount,
+                    PayoutMethod = profile.PreferredPayoutMethod ?? "UPI",
+                    AccountHolderName = profile.AccountHolderName ?? string.Empty,
+                    BankAccountNumber = profile.BankAccountNumber ?? string.Empty,
+                    BankName = profile.BankName ?? string.Empty,
+                    IfscCode = profile.IfscCode ?? string.Empty,
+                    UpiId = profile.UpiId ?? string.Empty,
+                    Status = "Completed",
+                    CreatedAt = DateTime.UtcNow,
+                    ProcessedAt = DateTime.UtcNow,
+                    AdminRemarks = "Automated Instant Payout",
+                    TransactionReference = "TXN_" + Guid.NewGuid().ToString("N").Substring(0, 12).ToUpper()
+                };
+
+                _dbContext.MechanicPayoutRequests.Add(payoutRequest);
                 await _dbContext.SaveChangesAsync();
                 TempData["Success"] = $"Payout of ₹{amount:F2} successfully deposited to bank account linked via UPI.";
             }

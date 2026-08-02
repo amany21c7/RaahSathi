@@ -18,6 +18,17 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IPricingRepository, PricingRepository>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 
+// Add Cookie Authentication
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Auth/Login";
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    });
+
 // Add services to the container.
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
 
@@ -415,6 +426,13 @@ using (var scope = app.Services.CreateScope())
                     SET NOCOUNT ON;
                     BEGIN TRANSACTION;
                     BEGIN TRY
+                        -- Idempotency Guard: If job is already Completed, exit early
+                        IF EXISTS (SELECT 1 FROM dbo.Jobs WHERE Id = @JobId AND Status = N'Completed')
+                        BEGIN
+                            COMMIT TRANSACTION;
+                            RETURN;
+                        END
+
                         DECLARE @FinalBill FLOAT, @CustomerId INT, @MechanicId INT;
                         DECLARE @VisitingCharge FLOAT, @ServiceMin FLOAT, @BaseEst FLOAT;
 
@@ -590,7 +608,7 @@ using (var scope = app.Services.CreateScope())
                 Name = "Aman yadav", 
                 PhoneNumber = "9536838103", 
                 Role = "Admin", 
-                Password = "aman1234" 
+                Password = PasswordHasher.HashPassword("aman1234") 
             };
             context.Users.Add(admin);
         }
@@ -599,7 +617,7 @@ using (var scope = app.Services.CreateScope())
             admin.Name = "Aman yadav";
             admin.PhoneNumber = "9536838103";
             admin.Role = "Admin";
-            admin.Password = "aman1234";
+            admin.Password = PasswordHasher.HashPassword("aman1234");
         }
         context.SaveChanges();
 
@@ -656,6 +674,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();

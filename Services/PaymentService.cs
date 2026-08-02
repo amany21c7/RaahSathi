@@ -84,6 +84,18 @@ namespace RaahSathi.Services
             var job = await _dbContext.Jobs.FindAsync(jobId);
             if (job == null) return false;
 
+            // Idempotency Check: if job is already Completed/Cancelled, or payment exists, do not process again
+            if (job.Status == "Completed" || job.Status == "Cancelled")
+            {
+                return false;
+            }
+
+            var existingPayment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
+            if (existingPayment != null)
+            {
+                return false;
+            }
+
             string payId = string.IsNullOrWhiteSpace(paymentId) ? "pay_" + Guid.NewGuid().ToString().Substring(0, 14) : paymentId.Trim();
 
             // Try executing Stored Procedure first via Repository

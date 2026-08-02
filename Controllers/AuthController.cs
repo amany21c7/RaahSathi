@@ -3,26 +3,53 @@ using Microsoft.EntityFrameworkCore;
 using RaahSathi.Data;
 using RaahSathi.Models;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using RaahSathi.Services;
 
 namespace RaahSathi.Controllers
 {
     public class AuthController : Controller
     {
         private readonly ApplicationDbContext _dbContext;
+        private readonly IWebHostEnvironment _env;
 
-        public AuthController(ApplicationDbContext dbContext)
+        public AuthController(ApplicationDbContext dbContext, IWebHostEnvironment env)
         {
             _dbContext = dbContext;
+            _env = env;
         }
 
-        private void SetUserCookies(User user)
+        private async Task SetUserCookies(User user)
         {
-            var options = new CookieOptions { Expires = DateTime.UtcNow.AddDays(30), HttpOnly = false, IsEssential = true, SameSite = SameSiteMode.Lax };
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Name),
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim("AdminRole", string.IsNullOrWhiteSpace(user.AdminRole) ? "Super Admin" : user.AdminRole)
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
+            };
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+
+            // Set secure cookies for front-end/view compatibility
+            var options = new CookieOptions { Expires = DateTime.UtcNow.AddDays(30), HttpOnly = true, IsEssential = true, SameSite = SameSiteMode.Lax, Secure = true };
             Response.Cookies.Append("RaahSathiUserRole", user.Role, options);
             Response.Cookies.Append("RaahSathiUserId", user.Id.ToString(), options);
-            Response.Cookies.Append("RaahSathiUserName", user.Name, options);
+            Response.Cookies.Append("RaahSathiUserName", user.Name, new CookieOptions { Expires = DateTime.UtcNow.AddDays(30), HttpOnly = false, IsEssential = true, SameSite = SameSiteMode.Lax });
 
             if (user.Role == "Customer")
             {
@@ -44,25 +71,30 @@ namespace RaahSathi.Controllers
         {
             string? targetRole = role ?? switchRole;
 
-            // Check if user is ALREADY logged in via persistent session cookies
-            string? mechId = Request.Cookies["RaahSathiMechanicUserId"];
-            string? custId = Request.Cookies["RaahSathiCustomerUserId"];
-            string? adminId = Request.Cookies["RaahSathiAdminUserId"];
-            string? activeRole = Request.Cookies["RaahSathiUserRole"];
-            string? activeUserId = Request.Cookies["RaahSathiUserId"];
-
-            // If mechanic is already logged in, redirect directly to Mechanic Dashboard
-            if (!string.IsNullOrEmpty(mechId) || activeRole == "Mechanic")
+            if (User.Identity?.IsAuthenticated == true)
             {
-                return RedirectToAction("Dashboard", "Mechanic");
+                if (User.IsInRole("Mechanic"))
+                {
+                    return RedirectToAction("Dashboard", "Mechanic");
+                }
+                if (User.IsInRole("Customer"))
+                {
+                    return RedirectToAction("Dashboard", "Customer");
+                }
+                if (User.IsInRole("Admin"))
+                {
+                    return RedirectToAction("Dashboard", "Admin");
+                }
             }
-            if (!string.IsNullOrEmpty(custId) || activeRole == "Customer")
+            else
             {
-                return RedirectToAction("Dashboard", "Customer");
-            }
-            if (!string.IsNullOrEmpty(adminId) || activeRole == "Admin")
-            {
-                return RedirectToAction("Dashboard", "Admin");
+                // Clear stale legacy cookies if claims session is not authenticated
+                Response.Cookies.Delete("RaahSathiCustomerUserId");
+                Response.Cookies.Delete("RaahSathiMechanicUserId");
+                Response.Cookies.Delete("RaahSathiAdminUserId");
+                Response.Cookies.Delete("RaahSathiUserRole");
+                Response.Cookies.Delete("RaahSathiUserId");
+                Response.Cookies.Delete("RaahSathiUserName");
             }
 
             ViewBag.TargetRole = targetRole;
@@ -76,11 +108,18 @@ namespace RaahSathi.Controllers
         [Route("AdminRaahSathiLogin")]
         public IActionResult AdminRahiSarhiLogin()
         {
-            string? adminId = Request.Cookies["RaahSathiAdminUserId"];
-            string? activeRole = Request.Cookies["RaahSathiUserRole"];
-            if (!string.IsNullOrEmpty(adminId) || activeRole == "Admin")
+            if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
             {
                 return RedirectToAction("Dashboard", "Admin");
+            }
+            else
+            {
+                Response.Cookies.Delete("RaahSathiCustomerUserId");
+                Response.Cookies.Delete("RaahSathiMechanicUserId");
+                Response.Cookies.Delete("RaahSathiAdminUserId");
+                Response.Cookies.Delete("RaahSathiUserRole");
+                Response.Cookies.Delete("RaahSathiUserId");
+                Response.Cookies.Delete("RaahSathiUserName");
             }
 
             ViewBag.TargetRole = "Admin";
@@ -138,6 +177,12 @@ namespace RaahSathi.Controllers
         [HttpPost]
         public async Task<IActionResult> VerifyOtp(string phoneNumber, string role, string otp)
         {
+            // Dummy OTP restriction for non-development environments
+            if (!_env.IsDevelopment() && otp == "1234")
+            {
+                return Json(new { success = false, message = "OTP verification is restricted to development environments." });
+            }
+
             if (otp != "1234")
             {
                 return Json(new { success = false, message = "Invalid OTP. Use 1234 for testing." });
@@ -149,7 +194,7 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "User not found." });
             }
 
-            SetUserCookies(user);
+            await SetUserCookies(user);
 
             string redirectUrl = user.Role == "Customer" ? "/Customer/Dashboard" 
                                : user.Role == "Mechanic" ? "/Mechanic/Dashboard" 
@@ -169,10 +214,10 @@ namespace RaahSathi.Controllers
             phoneNumber = phoneNumber.Trim();
             password = password.Trim();
 
-            // Find user by phone number & password
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber && u.Password == password);
+            // Find user by phone number and verify password
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
 
-            if (user == null)
+            if (user == null || (!PasswordHasher.VerifyPassword(password, user.Password) && user.Password != password))
             {
                 return Json(new { success = false, message = "Invalid mobile number or password." });
             }
@@ -180,7 +225,7 @@ namespace RaahSathi.Controllers
             // Allow login as Admin automatically if user is Admin, or if role matches
             if (user.Role == "Admin" || string.IsNullOrEmpty(role) || user.Role == role)
             {
-                SetUserCookies(user);
+                await SetUserCookies(user);
 
                 string redirectUrl = user.Role == "Customer" ? "/Customer/Dashboard" 
                                    : user.Role == "Mechanic" ? "/Mechanic/Dashboard" 
@@ -228,7 +273,7 @@ namespace RaahSathi.Controllers
                 Name = name,
                 PhoneNumber = phoneNumber,
                 Role = role,
-                Password = password,
+                Password = PasswordHasher.HashPassword(password),
                 CreatedAt = DateTime.UtcNow
             };
             _dbContext.Users.Add(user);
@@ -249,7 +294,7 @@ namespace RaahSathi.Controllers
                 await _dbContext.SaveChangesAsync();
             }
 
-            SetUserCookies(user);
+            await SetUserCookies(user);
 
             string redirectUrl = user.Role == "Customer" ? "/Customer/Dashboard" 
                                : user.Role == "Mechanic" ? "/Mechanic/Dashboard" 
@@ -299,11 +344,11 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "User not found." });
             }
 
-            user.Password = password;
+            user.Password = PasswordHasher.HashPassword(password);
             await _dbContext.SaveChangesAsync();
 
             // Auto-login after password reset
-            SetUserCookies(user);
+            await SetUserCookies(user);
 
             string redirectUrl = user.Role == "Customer" ? "/Customer/Dashboard" 
                                : user.Role == "Mechanic" ? "/Mechanic/Dashboard" 
@@ -312,8 +357,10 @@ namespace RaahSathi.Controllers
             return Json(new { success = true, redirect = redirectUrl });
         }
 
-        public IActionResult Logout(string? role)
+        public async Task<IActionResult> Logout(string? role)
         {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
             if (string.IsNullOrEmpty(role) || role == "Customer") Response.Cookies.Delete("RaahSathiCustomerUserId");
             if (string.IsNullOrEmpty(role) || role == "Mechanic") Response.Cookies.Delete("RaahSathiMechanicUserId");
             if (string.IsNullOrEmpty(role) || role == "Admin") Response.Cookies.Delete("RaahSathiAdminUserId");

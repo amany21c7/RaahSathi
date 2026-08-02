@@ -29,15 +29,30 @@ namespace RaahSathi.Controllers
 
         private async Task<User?> GetActiveCustomerAsync()
         {
-            string? custIdStr = Request.Cookies["RaahSathiCustomerUserId"];
-            if (!string.IsNullOrEmpty(custIdStr) && int.TryParse(custIdStr, out int custId))
+            if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Customer") || User.IsInRole("Admin")))
             {
-                var user = await _dbContext.Users.FindAsync(custId);
-                if (user != null && (user.Role == "Customer" || user.Role == "Admin"))
-                    return user;
+                string? userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdStr, out int custId))
+                {
+                    return await _dbContext.Users.FindAsync(custId);
+                }
             }
 
             return null;
+        }
+
+        private bool IsValidImageFile(IFormFile? file)
+        {
+            if (file == null || file.Length == 0) return false;
+            var ext = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+            if (!allowedExtensions.Contains(ext)) return false;
+
+            var mime = file.ContentType.ToLowerInvariant();
+            var allowedMimeTypes = new[] { "image/jpeg", "image/jpg", "image/png" };
+            if (!allowedMimeTypes.Contains(mime)) return false;
+
+            return true;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -84,6 +99,12 @@ namespace RaahSathi.Controllers
             string photoUrl = string.Empty;
             if (vehiclePhoto != null && vehiclePhoto.Length > 0)
             {
+                if (!IsValidImageFile(vehiclePhoto))
+                {
+                    TempData["Error"] = "Invalid file type. Only JPG, JPEG, and PNG images are allowed.";
+                    return RedirectToAction("Dashboard");
+                }
+
                 try
                 {
                     string uploadsFolder = System.IO.Path.Combine(_env.WebRootPath, "uploads", "vehicle_photos");
@@ -91,7 +112,8 @@ namespace RaahSathi.Controllers
                     {
                         System.IO.Directory.CreateDirectory(uploadsFolder);
                     }
-                    string uniqueFileName = Guid.NewGuid().ToString("N") + "_" + System.IO.Path.GetFileName(vehiclePhoto.FileName);
+                    string safeExtension = System.IO.Path.GetExtension(vehiclePhoto.FileName).ToLowerInvariant();
+                    string uniqueFileName = Guid.NewGuid().ToString("N") + safeExtension;
                     string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
                     using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
                     {
@@ -246,6 +268,11 @@ namespace RaahSathi.Controllers
             string photoUrl = string.Empty;
             if (problemPhoto != null && problemPhoto.Length > 0)
             {
+                if (!IsValidImageFile(problemPhoto))
+                {
+                    return Json(new { success = false, message = "Invalid file type. Only JPG, JPEG, and PNG images are allowed." });
+                }
+
                 try
                 {
                     string uploadsFolder = System.IO.Path.Combine(_env.WebRootPath, "uploads", "problem_photos");
@@ -253,7 +280,8 @@ namespace RaahSathi.Controllers
                     {
                         System.IO.Directory.CreateDirectory(uploadsFolder);
                     }
-                    string uniqueFileName = Guid.NewGuid().ToString("N") + "_" + System.IO.Path.GetFileName(problemPhoto.FileName);
+                    string safeExtension = System.IO.Path.GetExtension(problemPhoto.FileName).ToLowerInvariant();
+                    string uniqueFileName = Guid.NewGuid().ToString("N") + safeExtension;
                     string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
                     using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
                     {
@@ -356,8 +384,17 @@ namespace RaahSathi.Controllers
             var vehicle = await _dbContext.Vehicles.FindAsync(vehicleId);
             if (vehicle == null) return Json(new { success = false, message = "Vehicle not found." });
 
+            // Calculate distance server-side using nearest mechanic coordinates
+            double serverDistance = 3.5;
+            var rankedMechanics = await _dispatchEngine.FindAndRankMechanicsAsync(lat, lng, vehicle.VehicleType, problemType, customer.Id);
+            if (rankedMechanics != null && rankedMechanics.Count > 0)
+            {
+                serverDistance = rankedMechanics.First().DistanceKm;
+            }
+            if (serverDistance <= 0) serverDistance = 0.1;
+
             // Calculate Upfront Prices
-            var (baseFee, visitingCharge) = await _pricingEngine.CalculateVisitingChargeAsync(vehicle.VehicleType, mockDistance);
+            var (baseFee, visitingCharge) = await _pricingEngine.CalculateVisitingChargeAsync(vehicle.VehicleType, serverDistance);
             var (serviceMin, serviceMax) = _pricingEngine.GetServiceChargeRange(problemType);
 
             // Create Job state: Requested
@@ -717,11 +754,18 @@ namespace RaahSathi.Controllers
             string photoUrl = job.ReviewPhotoUrl ?? string.Empty;
             if (reviewPhoto != null && reviewPhoto.Length > 0)
             {
+                if (!IsValidImageFile(reviewPhoto))
+                {
+                    TempData["Error"] = "Invalid file type. Only JPG, JPEG, and PNG images are allowed.";
+                    return RedirectToAction("Dashboard");
+                }
+
                 try
                 {
                     var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "reviews");
                     if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-                    var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(reviewPhoto.FileName);
+                    string safeExtension = Path.GetExtension(reviewPhoto.FileName).ToLowerInvariant();
+                    string uniqueFileName = Guid.NewGuid().ToString() + safeExtension;
                     var filePath = Path.Combine(uploadsFolder, uniqueFileName);
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {

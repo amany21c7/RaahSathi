@@ -6,7 +6,7 @@
     var commRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Commercial") ?? new RaahSathi.Models.PricingRule { BaseFee = 199, PerKmRate = 12 };
     var heavyRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Heavy") ?? new RaahSathi.Models.PricingRule { BaseFee = 299, PerKmRate = 15 };
     var problemTypes = ViewBag.ProblemTypes as List<RaahSathi.Models.ProblemTypePricing> ?? new List<RaahSathi.Models.ProblemTypePricing>();
-    bool isCustLoggedIn = Context.Request.Cookies.ContainsKey("RaahSathiCustomerUserId");
+    bool isCustLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Customer");
     string targetVehicleUrl = isCustLoggedIn ? "/Customer/Dashboard?action=addVehicle" : "/Auth/Login?role=Customer&returnUrl=/Customer/Dashboard?action=addVehicle";
 }
 

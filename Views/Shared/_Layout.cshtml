@@ -237,21 +237,21 @@
         bool isMechPage = Context.Request.Path.Value?.StartsWith("/Mechanic", StringComparison.OrdinalIgnoreCase) == true;
         bool isAdminPage = Context.Request.Path.Value?.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase) == true;
         
-        bool isCustLoggedIn = Context.Request.Cookies.ContainsKey("RaahSathiCustomerUserId") || Context.Request.Cookies["RaahSathiUserRole"] == "Customer";
-        bool isMechLoggedIn = Context.Request.Cookies.ContainsKey("RaahSathiMechanicUserId") || Context.Request.Cookies["RaahSathiUserRole"] == "Mechanic";
-        bool isAdminLoggedIn = Context.Request.Cookies.ContainsKey("RaahSathiAdminUserId") || Context.Request.Cookies["RaahSathiUserRole"] == "Admin";
+        bool isCustLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Customer");
+        bool isMechLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Mechanic");
+        bool isAdminLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Admin");
         
-        string adminSubRole = Context.Request.Cookies["RaahSathiAdminRole"] ?? "Super Admin";
-        bool isSuperAdmin = (isAdminLoggedIn || isAdminPage) && (string.IsNullOrEmpty(adminSubRole) || adminSubRole.Equals("Super Admin", StringComparison.OrdinalIgnoreCase));
+        string adminSubRole = Context.User.FindFirst("AdminRole")?.Value ?? "Super Admin";
+        bool isSuperAdmin = isAdminLoggedIn && adminSubRole.Equals("Super Admin", StringComparison.OrdinalIgnoreCase);
 
-        var activeRole = isAdminPage || isAdminLoggedIn ? "Admin" 
-                       : isMechPage || isMechLoggedIn ? "Mechanic" 
-                       : isCustPage || isCustLoggedIn ? "Customer" 
-                       : (Context.Request.Cookies.ContainsKey("RaahSathiUserId") ? (Context.Request.Cookies["RaahSathiUserRole"] ?? "Guest") : "Guest");
+        var activeRole = isAdminLoggedIn ? "Admin" 
+                       : isMechLoggedIn ? "Mechanic" 
+                       : isCustLoggedIn ? "Customer" 
+                       : "Guest";
 
-        var rawUserName = activeRole == "Admin" ? "Admin" : (Context.Request.Cookies["RaahSathiUserName"] ?? activeRole);
+        var rawUserName = Context.User.Identity?.IsAuthenticated == true ? Context.User.Identity.Name : "Guest";
 
-        string GetUserInitials(string name)
+        string GetUserInitials(string? name)
         {
             if (string.IsNullOrWhiteSpace(name) || name == "Guest")
                 return "U";

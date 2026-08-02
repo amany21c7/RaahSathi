@@ -273,7 +273,7 @@
                         <i class="fa-solid fa-user text-dark"></i>
                     </div>
                     <div>
-                        <h6 class="text-white font-weight-bold mb-0">@(Context.Request.Cookies["RaahSathiUserName"] ?? "Customer")</h6>
+                        <h6 class="text-white font-weight-bold mb-0">@(Context.User.Identity?.IsAuthenticated == true ? Context.User.Identity.Name : "Customer")</h6>
                         <span class="text-muted small">RaahSathi Verified User</span>
                     </div>
                 </div>
