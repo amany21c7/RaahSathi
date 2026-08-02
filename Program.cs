@@ -426,8 +426,8 @@ using (var scope = app.Services.CreateScope())
                     SET NOCOUNT ON;
                     BEGIN TRANSACTION;
                     BEGIN TRY
-                        -- Idempotency Guard: If job is already Completed, exit early
-                        IF EXISTS (SELECT 1 FROM dbo.Jobs WHERE Id = @JobId AND Status = N'Completed')
+                        -- Idempotency Guard: If payment is already released, exit early
+                        IF EXISTS (SELECT 1 FROM dbo.Payments WHERE JobId = @JobId AND PaymentStatus = N'Released')
                         BEGIN
                             COMMIT TRANSACTION;
                             RETURN;

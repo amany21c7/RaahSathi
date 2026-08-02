@@ -84,14 +84,9 @@ namespace RaahSathi.Services
             var job = await _dbContext.Jobs.FindAsync(jobId);
             if (job == null) return false;
 
-            // Idempotency Check: if job is already Completed/Cancelled, or payment exists, do not process again
-            if (job.Status == "Completed" || job.Status == "Cancelled")
-            {
-                return false;
-            }
-
+            // Idempotency Check: if payment is already processed and released, do not process again
             var existingPayment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
-            if (existingPayment != null)
+            if (existingPayment != null && (existingPayment.PaymentStatus == "Released" || existingPayment.PaymentStatus == "Completed"))
             {
                 return false;
             }

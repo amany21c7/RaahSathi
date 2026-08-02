@@ -497,9 +497,9 @@ namespace RaahSathi.Controllers
             double totalWithdrawn = await _dbContext.AdminWithdrawals.SumAsync(w => (double?)w.Amount) ?? 0.0;
             double currentVaultBalance = Math.Max(0.0, Math.Round(totalCommissionEarned - totalWithdrawn, 2));
 
-            if (amount > currentVaultBalance)
+            if (amount > totalCommissionEarned)
             {
-                return Json(new { success = false, message = $"Requested amount (₹{amount}) exceeds current available commission vault balance (₹{currentVaultBalance:N2})." });
+                return Json(new { success = false, message = $"Requested amount (₹{amount}) exceeds total earned commission (₹{totalCommissionEarned:N2})." });
             }
 
             string method = string.IsNullOrWhiteSpace(payoutMethod) ? "Bank Transfer" : payoutMethod;
@@ -511,7 +511,7 @@ namespace RaahSathi.Controllers
                 amount, method, refNo
             );
 
-            return Json(new { success = true, newVaultBalance = Math.Round(currentVaultBalance - amount, 2), message = $"₹{amount:N2} successfully withdrawn from Admin Commission Vault!" });
+            return Json(new { success = true, newVaultBalance = Math.Round(totalCommissionEarned - amount, 2), message = $"₹{amount:N2} successfully withdrawn from Admin Commission Vault!" });
         }
 
         // ======================= COMMAND CENTER MODULES ======================= //
@@ -1179,6 +1179,16 @@ namespace RaahSathi.Controllers
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
             ViewBag.Settings = await _dbContext.AdminSystemSettings.ToListAsync();
             return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetWithdrawals()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            _dbContext.AdminWithdrawals.RemoveRange(_dbContext.AdminWithdrawals);
+            await _dbContext.SaveChangesAsync();
+            TempData["Success"] = "Test withdrawals cleared successfully! Vault balance reset.";
+            return RedirectToAction("Account");
         }
 
         public async Task<IActionResult> Account()
