@@ -269,12 +269,12 @@ namespace RaahSathi.Controllers
             var todayLocal = DateTime.UtcNow.ToLocalTime().Date;
             double todayEarnings = payments
                 .Where(p => p.CreatedAt.ToLocalTime().Date == todayLocal)
-                .Sum(p => p.MechanicEarningAmount);
+                .Sum(p => p.Amount - p.AdminCommissionAmount);
 
             var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
             double weeklyEarnings = payments
                 .Where(p => p.CreatedAt >= sevenDaysAgo)
-                .Sum(p => p.MechanicEarningAmount);
+                .Sum(p => p.Amount - p.AdminCommissionAmount);
 
             var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
             double monthlyVolume = payments
@@ -1312,12 +1312,12 @@ namespace RaahSathi.Controllers
             var todayLocal = DateTime.UtcNow.ToLocalTime().Date;
             double todayEarnings = payments
                 .Where(p => p.CreatedAt.ToLocalTime().Date == todayLocal)
-                .Sum(p => p.MechanicEarningAmount);
+                .Sum(p => p.Amount - p.AdminCommissionAmount);
 
             var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
             double weeklyEarnings = payments
                 .Where(p => p.CreatedAt >= sevenDaysAgo)
-                .Sum(p => p.MechanicEarningAmount);
+                .Sum(p => p.Amount - p.AdminCommissionAmount);
 
             var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
             double monthlyVolume = payments

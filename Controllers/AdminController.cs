@@ -1023,7 +1023,7 @@ namespace RaahSathi.Controllers
                     totalBill = x.j.FinalBillAmount,
                     adminCommission = x.payment != null ? x.payment.AdminCommissionAmount : 0.0,
                     netCredit = x.payment != null ? x.payment.MechanicEarningAmount : x.j.FinalBillAmount,
-                    isCash = x.payment == null
+                    isCash = x.payment == null || (x.payment.RazorpayPaymentId != null && x.payment.RazorpayPaymentId.StartsWith("pay_cash_"))
                 })
                 .ToListAsync();
 
