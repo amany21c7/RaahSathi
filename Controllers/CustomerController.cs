@@ -856,12 +856,24 @@ namespace RaahSathi.Controllers
             job.DisputeStatus = "Active";
             job.DisputeReason = reason;
 
-            // Hold payment back in escrow
-            var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == id);
-            if (payment != null)
+            await _dbContext.SaveChangesAsync();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SubmitComplaint(int jobId, string mechanicName, string location, string problem, string details)
+        {
+            var user = await GetActiveCustomerAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated" });
+
+            var job = await _dbContext.Jobs.FindAsync(jobId);
+            if (job == null || job.CustomerId != user.Id)
             {
-                payment.PaymentStatus = "Held"; // lock payment
+                return Json(new { success = false, message = "Job record not found or does not belong to your account." });
             }
+
+            job.DisputeStatus = "Active";
+            job.DisputeReason = $"[Reported Mechanic: {mechanicName}] [Location: {location}] [Problem Type: {problem}] [Complaint Details: {details}]";
 
             await _dbContext.SaveChangesAsync();
             return Json(new { success = true });

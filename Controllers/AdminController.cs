@@ -104,7 +104,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ResolveDispute(int jobId, string resolutionText, string outcome)
+        public async Task<IActionResult> ResolveDispute(int jobId, string resolution, string actionType)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
             var job = await _dbContext.Jobs.FindAsync(jobId);
@@ -112,27 +112,40 @@ namespace RaahSathi.Controllers
 
             if (job == null) return NotFound();
 
-            job.DisputeStatus = "Resolved";
-            job.DisputeResolution = resolutionText;
-
-            if (payment != null)
+            if (actionType == "Hold")
             {
-                if (outcome == "Refund")
+                if (payment != null)
                 {
-                    payment.PaymentStatus = "Refunded";
-                    // Refund to customer wallet/UPI (mock)
-                    job.Status = "Cancelled";
+                    payment.PaymentStatus = "Held";
                 }
-                else
+                job.DisputeStatus = "Active"; // remains active
+                job.DisputeResolution = resolution;
+                TempData["Success"] = $"Escrow payment for Job #{jobId} has been placed on HOLD by Admin.";
+            }
+            else
+            {
+                job.DisputeStatus = "Resolved";
+                job.DisputeResolution = resolution;
+
+                if (payment != null)
                 {
-                    payment.PaymentStatus = "Released";
-                    // Release to mechanic wallet (mock)
-                    job.Status = "Completed";
+                    if (actionType == "Refund")
+                    {
+                        payment.PaymentStatus = "Refunded";
+                        // Refund to customer wallet/UPI (mock)
+                        job.Status = "Cancelled";
+                    }
+                    else
+                    {
+                        payment.PaymentStatus = "Released";
+                        // Release to mechanic wallet (mock)
+                        job.Status = "Completed";
+                    }
                 }
+                TempData["Success"] = $"Dispute for Job #{jobId} resolved. Action: {actionType}";
             }
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"Dispute for Job #{jobId} resolved. Action: {outcome}";
             return RedirectToAction("Dashboard");
         }
 

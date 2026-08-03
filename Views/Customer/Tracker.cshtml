@@ -323,6 +323,27 @@
 <div class="row">
     <!-- Map & Route Column -->
     <div class="col-lg-8 mb-4 mb-lg-0">
+        @if (job.DisputeStatus == "Active")
+        {
+            <div class="alert alert-danger bg-dark border-danger text-danger p-3 mb-4 rounded-3 d-flex align-items-center gap-3 shadow-lg">
+                <i class="fa-solid fa-triangle-exclamation text-danger fa-2x animate-pulse"></i>
+                <div>
+                    <h6 class="text-danger mb-0 font-weight-bold">Complaint Logged (Under Investigation)</h6>
+                    <p class="mb-0 small text-muted">You have reported an issue regarding this booking. Our 24x7 Support/Ops team is currently reviewing it. Escrow status is being managed by Admin.</p>
+                </div>
+            </div>
+        }
+        else if (job.DisputeStatus == "Resolved")
+        {
+            <div class="alert alert-success bg-dark border-success text-success p-3 mb-4 rounded-3 d-flex align-items-center gap-3 shadow-lg">
+                <i class="fa-solid fa-circle-check text-success fa-2x"></i>
+                <div>
+                    <h6 class="text-success mb-0 font-weight-bold">Complaint Resolved by Admin</h6>
+                    <p class="mb-0 small text-muted">Resolution: <b>@job.DisputeResolution</b></p>
+                </div>
+            </div>
+        }
+
         <!-- Dispatch Timeout alert card -->
         <div id="dispatch-timeout-alert" class="alert alert-warning bg-dark border-warning text-warning p-4 mb-4 rounded-3 d-none shadow-lg">
             <div class="d-flex align-items-center gap-3 mb-3">
@@ -520,7 +541,6 @@
             </div>
 
             <button class="btn btn-premium-primary w-100 py-3" onclick="openRazorpayMock()"><i class="fa-solid fa-lock me-1"></i> Pay Now (Escrow Release)</button>
-            <button class="btn btn-premium-danger w-100 mt-2" onclick="fileDispute()"><i class="fa-solid fa-triangle-exclamation"></i> Raise Dispute / Report Fraud</button>
         </div>
 
         <!-- Rating & Feedback Panel (Post-Job complete) -->
@@ -1380,15 +1400,6 @@
         });
     }
 
-    function fileDispute() {
-        var reason = prompt("Enter the reason for filing a dispute (escrow funds will be locked):");
-        if (reason) {
-            $.post('/Customer/FileDispute', { id: @job.Id, reason: reason }, function(res) {
-                alert("Escrow funds LOCKED. Admin dispute raised. Our Ops team will verify via photo logs and resolve within 24 hours SLA.");
-                pollJobStatus();
-            });
-        }
-    }
 
     // Live Chat Functionality
     function fetchChatMessages() {

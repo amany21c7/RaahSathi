@@ -158,6 +158,10 @@
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div>
                                         <span class="badge bg-warning text-dark mb-2">@job.Status</span>
+                                        @if (job.DisputeStatus == "Active")
+                                        {
+                                            <span class="badge bg-danger text-white mb-2 ms-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation me-1"></i> Complaint Filed</span>
+                                        }
                                         <h5 class="text-white mb-1">@job.Vehicle?.Model (@job.ProblemType Issue)</h5>
                                         <p class="text-muted small mb-0"><i class="fa-solid fa-map-marker-alt me-1"></i> @job.Address</p>
                                     </div>
@@ -215,7 +219,22 @@
                                         <div class="text-muted" style="font-size:0.75rem;">@jobDate.ToLocalTime().ToString("hh:mm tt")</div>
                                     </td>
                                     <td>@job.Vehicle?.Model</td>
-                                    <td>@job.ProblemType</td>
+                                    <td>
+                                        <div>@job.ProblemType</div>
+                                        @if (job.DisputeStatus == "Active")
+                                        {
+                                            <span class="badge bg-danger text-white mt-1" style="font-size: 0.7rem;"><i class="fa-solid fa-clock me-1"></i> Complaint Under Review</span>
+                                        }
+                                        else if (job.DisputeStatus == "Resolved")
+                                        {
+                                            <span class="badge bg-success text-white mt-1" style="font-size: 0.7rem;" data-bs-toggle="tooltip" title="Resolution: @job.DisputeResolution">
+                                                <i class="fa-solid fa-circle-check me-1"></i> Complaint Resolved
+                                            </span>
+                                            <div class="text-success extra-small mt-0.5" style="font-size: 0.72rem; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                Res: @job.DisputeResolution
+                                            </div>
+                                        }
+                                    </td>
                                     <td>@(job.Mechanic?.Name ?? "Unassigned")</td>
                                     <td class="text-warning font-weight-bold">₹@job.FinalBillAmount</td>
                                     <td>
@@ -289,6 +308,9 @@
                 <a href="/Customer/Dashboard?action=addVehicle" class="btn btn-outline-warning btn-sm font-weight-bold">
                     <i class="fa-solid fa-car-plus me-1"></i> Add / Manage Vehicles
                 </a>
+                <button type="button" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openComplaintModal()">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Report Issue / File Complaint
+                </button>
             </div>
         </div>
     </div>
@@ -393,6 +415,62 @@
                 invModal.show();
             } else {
                 alert('Could not fetch receipt details.');
+            }
+        });
+    }
+
+    function openComplaintModal() {
+        $('#complaintJobSelect').val('');
+        $('#txtComplaintJobId').val('').prop('readonly', false);
+        $('#txtComplaintMechName').val('').prop('readonly', false);
+        $('#txtComplaintLocation').val('').prop('readonly', false);
+        $('#txtComplaintProblem').val('').prop('readonly', false);
+        $('#txtComplaintDetails').val('');
+        
+        var modal = new bootstrap.Modal(document.getElementById('customerComplaintModal'));
+        modal.show();
+    }
+
+    function onComplaintJobChange() {
+        var selected = $('#complaintJobSelect').find(':selected');
+        var val = $('#complaintJobSelect').val();
+
+        if (val === 'other') {
+            $('#txtComplaintJobId').val('').prop('readonly', false);
+            $('#txtComplaintMechName').val('').prop('readonly', false);
+            $('#txtComplaintLocation').val('').prop('readonly', false);
+            $('#txtComplaintProblem').val('').prop('readonly', false);
+        } else if (val) {
+            $('#txtComplaintJobId').val(val).prop('readonly', true);
+            $('#txtComplaintMechName').val(selected.data('mechanic') || '').prop('readonly', true);
+            $('#txtComplaintLocation').val(selected.data('location') || '').prop('readonly', true);
+            $('#txtComplaintProblem').val(selected.data('problem') || '').prop('readonly', true);
+        }
+    }
+
+    function submitComplaintForm(e) {
+        e.preventDefault();
+        var jobId = $('#txtComplaintJobId').val();
+        var mechanicName = $('#txtComplaintMechName').val();
+        var locationName = $('#txtComplaintLocation').val();
+        var problemType = $('#txtComplaintProblem').val();
+        var details = $('#txtComplaintDetails').val();
+
+        $.post('/Customer/SubmitComplaint', {
+            jobId: jobId,
+            mechanicName: mechanicName,
+            location: locationName,
+            problem: problemType,
+            details: details
+        }, function(res) {
+            if (res && res.success) {
+                alert('✅ Complaint filed successfully. Our Ops team has logged this and will resolve it within 24 hours.');
+                var modalEl = document.getElementById('customerComplaintModal');
+                var modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+                window.location.reload();
+            } else {
+                alert('❌ Error: ' + (res.message || 'Could not register complaint. Check if Job ID is correct.'));
             }
         });
     }
@@ -523,6 +601,74 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- CUSTOMER COMPLAINT / REPORT ISSUE MODAL -->
+<div class="modal fade" id="customerComplaintModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border border-danger shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-danger font-weight-bold">
+                    <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Report Mechanic / File Complaint
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="complaintForm" onsubmit="submitComplaintForm(event)">
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">Select your request/job below to pre-populate details, or choose "Other" to enter everything manually.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Select Related Booking / Job <span class="text-danger">*</span></label>
+                        <select id="complaintJobSelect" class="form-select glass-input text-white bg-dark border-secondary" required onchange="onComplaintJobChange()">
+                            <option value="" disabled selected>-- Select a Job / Order --</option>
+                            @foreach (var job in activeJobs)
+                            {
+                                <option value="@job.Id" data-mechanic="@(job.Mechanic?.Name ?? "Unassigned")" data-location="@job.Address" data-problem="@job.ProblemType">
+                                    Job #@job.Id - @job.Vehicle?.Model (@job.ProblemType) - Active
+                                </option>
+                            }
+                            @foreach (var job in pastJobs)
+                            {
+                                <option value="@job.Id" data-mechanic="@(job.Mechanic?.Name ?? "Unassigned")" data-location="@job.Address" data-problem="@job.ProblemType">
+                                    Job #@job.Id - @job.Vehicle?.Model (@job.ProblemType) - Completed
+                                </option>
+                            }
+                            <option value="other">Other (Manual Input)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Job ID / Order ID <span class="text-danger">*</span></label>
+                        <input type="number" id="txtComplaintJobId" name="jobId" class="form-control glass-input text-white" placeholder="e.g. 25" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Mechanic Name <span class="text-danger">*</span></label>
+                        <input type="text" id="txtComplaintMechName" name="mechanicName" class="form-control glass-input text-white" placeholder="e.g. Radhe Kumar" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Location <span class="text-danger">*</span></label>
+                        <input type="text" id="txtComplaintLocation" name="location" class="form-control glass-input text-white" placeholder="e.g. Sector 62 Noida" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Vehicle Problem / Issue Type <span class="text-danger">*</span></label>
+                        <input type="text" id="txtComplaintProblem" name="problem" class="form-control glass-input text-white" placeholder="e.g. Engine Overheating / Brake Failure" required />
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label text-muted small font-weight-bold">Describe Your Complaint Details <span class="text-danger">*</span></label>
+                        <textarea id="txtComplaintDetails" name="details" class="form-control glass-input text-white" rows="3" placeholder="Please explain the fraud, misbehavior, or incomplete work in detail..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm"><i class="fa-solid fa-paper-plane me-1"></i> Submit Complaint</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
