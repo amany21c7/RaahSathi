@@ -647,14 +647,19 @@ namespace RaahSathi.Controllers
             job.CustomEstimateApproved = approve;
             if (approve)
             {
-                double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
-                job.FinalBillAmount = baseEstBill + job.CustomEstimateAmount;
                 job.Status = "Repairing";
             }
             else
             {
                 job.Status = "Inspecting";
             }
+
+            // Recalculate FinalBillAmount robustly
+            double baseBill = job.VisitingCharge + job.ServiceChargeMin;
+            double customEstimate = (job.CustomEstimateApproved == true) ? job.CustomEstimateAmount : 0.0;
+            double partsCharge = (job.PartsApproved == true) ? (job.PartsEstimateAmount + job.ExtraLabourCharge) : 0.0;
+            double towingCharge = (job.TowingApproved == true) ? job.TowingCharge : 0.0;
+            job.FinalBillAmount = baseBill + customEstimate + partsCharge + towingCharge;
 
             await _dbContext.SaveChangesAsync();
             return Json(new { success = true });
@@ -667,16 +672,14 @@ namespace RaahSathi.Controllers
             if (job == null) return NotFound();
 
             job.PartsApproved = approve;
-            
-            if (approve)
-            {
-                job.FinalBillAmount += job.PartsEstimateAmount + job.ExtraLabourCharge;
-                job.Status = "Repairing"; // Advance state
-            }
-            else
-            {
-                job.Status = "Repairing"; // Process without extra parts
-            }
+            job.Status = "Repairing";
+
+            // Recalculate FinalBillAmount robustly
+            double baseBill = job.VisitingCharge + job.ServiceChargeMin;
+            double customEstimate = (job.CustomEstimateApproved == true) ? job.CustomEstimateAmount : 0.0;
+            double partsCharge = (job.PartsApproved == true) ? (job.PartsEstimateAmount + job.ExtraLabourCharge) : 0.0;
+            double towingCharge = (job.TowingApproved == true) ? job.TowingCharge : 0.0;
+            job.FinalBillAmount = baseBill + customEstimate + partsCharge + towingCharge;
 
             await _dbContext.SaveChangesAsync();
             return Json(new { success = true });
@@ -689,18 +692,22 @@ namespace RaahSathi.Controllers
             if (job == null) return NotFound();
 
             job.TowingApproved = approve;
-            
             if (approve)
             {
-                job.FinalBillAmount += job.TowingCharge;
                 job.Status = "Completed"; // Towing finishes job instantly (towed to garage)
                 job.CompletedAt = DateTime.UtcNow;
             }
             else
             {
-                // Towing rejected, job stays in repair or inspection
                 job.Status = "Repairing";
             }
+
+            // Recalculate FinalBillAmount robustly
+            double baseBill = job.VisitingCharge + job.ServiceChargeMin;
+            double customEstimate = (job.CustomEstimateApproved == true) ? job.CustomEstimateAmount : 0.0;
+            double partsCharge = (job.PartsApproved == true) ? (job.PartsEstimateAmount + job.ExtraLabourCharge) : 0.0;
+            double towingCharge = (job.TowingApproved == true) ? job.TowingCharge : 0.0;
+            job.FinalBillAmount = baseBill + customEstimate + partsCharge + towingCharge;
 
             await _dbContext.SaveChangesAsync();
             return Json(new { success = true });

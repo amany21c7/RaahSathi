@@ -1136,10 +1136,14 @@
                     $('#ratingCard').removeClass('d-none');
                 } else {
                     $('#paymentCheckoutCard').removeClass('d-none');
-                    $('#billVisiting').text('₹' + res.finalBillAmount); // final bill contains visiting + approved parts
-                    $('#billParts').text('₹' + (res.partsApproved === true ? res.partsEstimateAmount : 0.0));
-                    $('#billTowing').text('₹' + (res.towingApproved === true ? res.towingCharge : 0.0));
-                    $('#billTotal').text('₹' + res.finalBillAmount);
+                    var partsCost = res.partsApproved === true ? (res.partsEstimateAmount + res.extraLabourCharge) : 0.0;
+                    var towingCost = res.towingApproved === true ? res.towingCharge : 0.0;
+                    var baseServiceCost = res.finalBillAmount - partsCost - towingCost;
+
+                    $('#billVisiting').text('₹' + baseServiceCost.toFixed(2));
+                    $('#billParts').text('₹' + partsCost.toFixed(2));
+                    $('#billTowing').text('₹' + towingCost.toFixed(2));
+                    $('#billTotal').text('₹' + res.finalBillAmount.toFixed(2));
                 }
             } else {
                 $('#paymentCheckoutCard').addClass('d-none');

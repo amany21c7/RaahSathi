@@ -528,6 +528,56 @@
                     }
                     else if (activeJob.Status == "Repairing" || activeJob.Status == "Completed")
                     {
+                        @if (activeJob.Status == "Repairing")
+                        {
+                            <!-- Extra Parts Quote Input for mid-repair discoveries -->
+                            <div class="glass-card p-3 border-secondary mb-3">
+                                <h6 class="text-warning font-weight-bold mb-2"><i class="fa-solid fa-box-open me-1"></i> Add/Update Extra Spare Parts during Repair</h6>
+                                <p class="text-muted small mb-3">If you discover additional issues during repair, specify the spare part details and extra labour below to request customer approval.</p>
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted small">Part Name</label>
+                                        <input type="text" id="txtExtraPartName" class="form-control glass-input text-white font-weight-bold" value="@(activeJob.ExtraPartsName)" placeholder="e.g. Brake Pads">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted small">Part MRP (₹)</label>
+                                        <input type="number" id="txtExtraPartMrp" class="form-control glass-input text-info font-weight-bold" value="@(activeJob.PartsMrp > 0 ? activeJob.PartsMrp.ToString() : "")" placeholder="e.g. 1500">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted small">Offered Part Price (₹)</label>
+                                        <input type="number" id="txtExtraPartPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.PartsEstimateAmount > 0 ? activeJob.PartsEstimateAmount.ToString() : "")" placeholder="e.g. 1200">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted small">Labour Charge (₹)</label>
+                                        <input type="number" id="txtExtraLabourPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.ExtraLabourCharge > 0 ? activeJob.ExtraLabourCharge.ToString() : "")" placeholder="e.g. 300">
+                                    </div>
+                                </div>
+                                <button class="btn btn-outline-warning font-weight-bold w-100 py-2" onclick="submitSparesQuote()">
+                                    <i class="fa-solid fa-plus me-1"></i> Send Extra Parts Quote to Customer
+                                </button>
+
+                                @if (activeJob.PartsApproved == true)
+                                {
+                                    <div class="alert alert-success bg-dark border-success text-success small mt-2 mb-0">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Customer Approved Extra Parts Quote! Added to bill.
+                                    </div>
+                                }
+                                else if (activeJob.PartsApproved == false)
+                                {
+                                    <div class="alert alert-danger bg-dark border-danger text-danger small mt-2 mb-0">
+                                        <i class="fa-solid fa-circle-xmark me-1"></i> Customer Rejected Extra Parts Quote.
+                                    </div>
+                                }
+                                else if (activeJob.PartsApproved == null && activeJob.PartsEstimateAmount > 0)
+                                {
+                                    <div class="alert alert-warning bg-dark border-warning text-warning small mt-2 mb-0">
+                                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Extra Parts quote sent! Awaiting live customer approval...
+                                    </div>
+                                }
+                            </div>
+                        }
+
                         <div class="alert alert-success bg-dark border-success text-success small mb-3">
                             <i class="fa-solid fa-qrcode me-2"></i> Repair in progress. Show QR code to customer to collect total bill payment.
                         </div>
