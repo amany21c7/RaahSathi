@@ -247,25 +247,30 @@ namespace RaahSathi.Controllers
                 .ToListAsync();
 
             // Calculate Wallet Stats
-            var payments = await _dbContext.Payments
+            var allPayments = await _dbContext.Payments
                 .Include(p => p.Job)
-                .Where(p => p.Job != null && p.Job.MechanicId == user.Id && p.PaymentStatus == "Released")
+                .Where(p => p.Job != null && p.Job.MechanicId == user.Id)
                 .ToListAsync();
 
+            var releasedPayments = allPayments.Where(p => p.PaymentStatus == "Released" || p.PaymentStatus == "Completed").ToList();
+            var heldPayments = allPayments.Where(p => p.PaymentStatus == "Held" || p.PaymentStatus == "Pending").ToList();
+
             var todayLocal = DateTime.UtcNow.ToLocalTime().Date;
-            double todayEarnings = payments
+            double todayEarnings = releasedPayments
                 .Where(p => p.CreatedAt.ToLocalTime().Date == todayLocal)
                 .Sum(p => p.Amount - p.AdminCommissionAmount);
 
             var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-            double weeklyEarnings = payments
+            double weeklyEarnings = releasedPayments
                 .Where(p => p.CreatedAt >= sevenDaysAgo)
                 .Sum(p => p.Amount - p.AdminCommissionAmount);
 
             var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-            double monthlyVolume = payments
+            double monthlyVolume = releasedPayments
                 .Where(p => p.CreatedAt >= thirtyDaysAgo)
                 .Sum(p => p.Amount);
+
+            double heldEarnings = heldPayments.Sum(p => p.Amount - p.AdminCommissionAmount);
 
             double pendingSettlement = profile.CurrentEarnings;
 
@@ -293,9 +298,10 @@ namespace RaahSathi.Controllers
             ViewBag.TodayJobsCount = todayJobsCount;
             ViewBag.WeeklyJobsCount = weeklyJobsCount;
             ViewBag.MonthlyVolume = monthlyVolume;
+            ViewBag.HeldEarnings = heldEarnings;
             ViewBag.PendingSettlement = pendingSettlement;
             ViewBag.PendingPayoutAmount = pendingPayout;
-            ViewBag.Payments = payments.OrderByDescending(p => p.CreatedAt).ToList();
+            ViewBag.Payments = allPayments.OrderByDescending(p => p.CreatedAt).ToList();
 
             return View();
         }

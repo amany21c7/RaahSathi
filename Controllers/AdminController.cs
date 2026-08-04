@@ -112,11 +112,77 @@ namespace RaahSathi.Controllers
 
             if (job == null) return NotFound();
 
+            // If payment record doesn't exist but we are resolving it, create it
+            if (payment == null && job.FinalBillAmount > 0)
+            {
+                double baseEst = job.VisitingCharge + job.ServiceChargeMin;
+                double finalBill = job.FinalBillAmount > baseEst ? job.FinalBillAmount : baseEst;
+                double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
+
+                double rate1 = (await GetSettingDoubleAsync("CommissionPhase1", 8)) / 100.0;
+                double rate2 = (await GetSettingDoubleAsync("CommissionPhase2", 10)) / 100.0;
+                double rate3 = (await GetSettingDoubleAsync("CommissionPhase3", 12)) / 100.0;
+                double rateParts = (await GetSettingDoubleAsync("CommissionParts", 5)) / 100.0;
+
+                double serviceAmount = finalBill - partsAmt;
+                if (serviceAmount < 0) serviceAmount = 0;
+
+                double serviceCommRate = 0.08;
+                double serviceCommission = 0;
+
+                if (serviceAmount < 1000)
+                {
+                    serviceCommRate = rate1;
+                    serviceCommission = serviceAmount * rate1;
+                }
+                else if (serviceAmount <= 3000)
+                {
+                    serviceCommRate = rate2;
+                    serviceCommission = serviceAmount * rate2;
+                }
+                else
+                {
+                    serviceCommRate = rate3;
+                    serviceCommission = serviceAmount * rate3;
+                }
+
+                double partsCommission = partsAmt * rateParts;
+                double totalCommission = Math.Round(serviceCommission + partsCommission, 2);
+                double mechanicNetEarning = Math.Round(finalBill - totalCommission, 2);
+                double effectiveRate = finalBill > 0 ? (totalCommission / finalBill) : serviceCommRate;
+
+                payment = new Payment
+                {
+                    JobId = job.Id,
+                    Amount = finalBill,
+                    PaymentStatus = "Held",
+                    RazorpayPaymentId = "pay_escrow_" + Guid.NewGuid().ToString().Substring(0, 14),
+                    AdminCommissionAmount = totalCommission,
+                    MechanicEarningAmount = mechanicNetEarning,
+                    CommissionRateUsed = effectiveRate,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _dbContext.Payments.Add(payment);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            string originalStatus = payment != null ? payment.PaymentStatus : "Held";
+
+            var mechanicProfile = job.MechanicId.HasValue
+                ? await _dbContext.MechanicProfiles.FirstOrDefaultAsync(m => m.UserId == job.MechanicId.Value)
+                : null;
+
             if (actionType == "Hold")
             {
                 if (payment != null)
                 {
                     payment.PaymentStatus = "Held";
+                    
+                    // Claw back from mechanic if it was previously released/completed
+                    if ((originalStatus == "Released" || originalStatus == "Completed") && mechanicProfile != null)
+                    {
+                        mechanicProfile.CurrentEarnings -= payment.MechanicEarningAmount;
+                    }
                 }
                 job.DisputeStatus = "Active"; // remains active
                 job.DisputeResolution = resolution;
@@ -132,20 +198,31 @@ namespace RaahSathi.Controllers
                     if (actionType == "Refund")
                     {
                         payment.PaymentStatus = "Refunded";
-                        // Refund to customer wallet/UPI (mock)
                         job.Status = "Cancelled";
+
+                        // Claw back from mechanic if it was previously released/completed
+                        if ((originalStatus == "Released" || originalStatus == "Completed") && mechanicProfile != null)
+                        {
+                            mechanicProfile.CurrentEarnings -= payment.MechanicEarningAmount;
+                        }
                     }
-                    else
+                    else // Release
                     {
                         payment.PaymentStatus = "Released";
-                        // Release to mechanic wallet (mock)
                         job.Status = "Completed";
+
+                        // Credit mechanic if it was NOT previously released/completed
+                        if (originalStatus != "Released" && originalStatus != "Completed" && mechanicProfile != null)
+                        {
+                            mechanicProfile.CurrentEarnings += payment.MechanicEarningAmount;
+                        }
                     }
                 }
                 TempData["Success"] = $"Dispute for Job #{jobId} resolved. Action: {actionType}";
             }
 
             await _dbContext.SaveChangesAsync();
+            await LogAdminActionAsync("DISPUTE_RESOLUTION", $"Job #{jobId} dispute action: {actionType}. Resolution: {resolution}");
             return RedirectToAction("Dashboard");
         }
 
@@ -825,7 +902,13 @@ namespace RaahSathi.Controllers
         public async Task<IActionResult> Payments()
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
-            var payments = await _dbContext.Payments.OrderByDescending(p => p.Id).ToListAsync();
+            var payments = await _dbContext.Payments
+                .Include(p => p.Job)
+                    .ThenInclude(j => j!.Mechanic)
+                .Include(p => p.Job)
+                    .ThenInclude(j => j!.Customer)
+                .OrderByDescending(p => p.Id)
+                .ToListAsync();
             ViewBag.Withdrawals = await _dbContext.AdminWithdrawals.OrderByDescending(w => w.WithdrawnAt).ToListAsync();
 
             // Load pending and processed payout requests

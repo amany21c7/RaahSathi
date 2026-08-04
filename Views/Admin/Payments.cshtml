@@ -93,6 +93,7 @@
                     <tr class="border-secondary text-muted small">
                         <th class="ps-3">Payment Ref</th>
                         <th>Job ID</th>
+                        <th>Mechanic / Customer</th>
                         <th>Amount Processed</th>
                         <th>Admin Commission</th>
                         <th>Mechanic Net Credit</th>
@@ -103,7 +104,7 @@
                     @if (Model.Count == 0)
                     {
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">No escrow payments logged yet.</td>
+                            <td colspan="7" class="text-center py-4 text-muted">No escrow payments logged yet.</td>
                         </tr>
                     }
                     else
@@ -117,11 +118,37 @@
                                 data-mechanic="@p.MechanicEarningAmount">
                                 <td class="ps-3"><span class="badge bg-secondary text-light">@p.RazorpayPaymentId</span></td>
                                 <td class="font-weight-bold text-white">#RS-@p.JobId</td>
+                                <td>
+                                    @if (p.Job != null)
+                                    {
+                                        <div class="font-weight-bold text-warning small">🛠️ M: @(p.Job.Mechanic?.Name ?? "Unassigned")</div>
+                                        <div class="text-muted extra-small">👤 C: @(p.Job.Customer?.Name ?? "Guest/N/A")</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">N/A</span>
+                                    }
+                                </td>
                                 <td class="text-primary font-weight-bold">₹@p.Amount.ToString("N2")</td>
                                 <td class="text-warning font-weight-bold">₹@p.AdminCommissionAmount.ToString("N2")</td>
                                 <td class="text-success font-weight-bold">₹@p.MechanicEarningAmount.ToString("N2")</td>
                                 <td class="text-end pe-3">
-                                    <span class="badge bg-success text-white">@p.PaymentStatus</span>
+                                    @if (p.PaymentStatus == "Released" || p.PaymentStatus == "Completed")
+                                    {
+                                        <span class="badge bg-success text-white px-2.5 py-1">Released</span>
+                                    }
+                                    else if (p.PaymentStatus == "Held" || p.PaymentStatus == "Pending")
+                                    {
+                                        <span class="badge bg-warning text-dark px-2.5 py-1"><i class="fa-solid fa-lock me-1"></i> Held</span>
+                                    }
+                                    else if (p.PaymentStatus == "Refunded")
+                                    {
+                                        <span class="badge bg-danger text-white px-2.5 py-1"><i class="fa-solid fa-arrow-rotate-left me-1"></i> Refunded</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary text-white px-2.5 py-1">@p.PaymentStatus</span>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -130,6 +157,7 @@
                 <tfoot>
                     <tr class="border-top border-secondary bg-black bg-opacity-40 font-weight-bold" style="font-size:0.95rem;">
                         <td class="ps-3 text-muted font-weight-bold">Total Summary</td>
+                        <td class="text-muted font-weight-normal">-</td>
                         <td class="text-muted font-weight-normal">-</td>
                         <td class="text-primary" id="totalProcessed">₹0.00</td>
                         <td class="text-warning" id="totalCommission">₹0.00</td>

@@ -719,7 +719,17 @@
                             @foreach (var j in pastJobs)
                             {
                                 <tr class="history-job-row" data-date="@(j.CompletedAt?.ToLocalTime().ToString("yyyy-MM-dd") ?? "")">
-                                    <td><b>#@j.Id</b></td>
+                                    <td>
+                                        <b>#@j.Id</b>
+                                        @if (j.DisputeStatus == "Active")
+                                        {
+                                            <span class="badge bg-danger text-white d-block mt-1 font-weight-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-triangle-exclamation"></i> PAYMENT HELD</span>
+                                        }
+                                        else if (j.DisputeStatus == "Resolved")
+                                        {
+                                            <span class="badge bg-success text-white d-block mt-1 font-weight-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-circle-check"></i> DISPUTE RESOLVED</span>
+                                        }
+                                    </td>
                                     <td>@j.Vehicle?.Model</td>
                                     <td><span class="badge bg-warning text-dark">@j.ProblemType</span></td>
                                     <td>@j.Customer?.Name</td>
@@ -806,22 +816,28 @@
             <!-- Right: Wallet Stats & Statement -->
             <div class="col-lg-7">
                 <div class="row g-3 mb-4">
-                    <div class="col-6 col-md-4">
+                    <div class="col-6 col-md-3">
                         <div class="glass-card p-3 border-secondary text-center">
                             <span class="text-muted small d-block mb-1">Today's Earnings</span>
                             <h4 class="text-success font-weight-extrabold mb-0" id="lblWalletTodayEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.TodayEarnings).ToString("N2"))</h4>
                         </div>
                     </div>
-                    <div class="col-6 col-md-4">
+                    <div class="col-6 col-md-3">
                         <div class="glass-card p-3 border-secondary text-center">
                             <span class="text-muted small d-block mb-1">Weekly Earnings</span>
                             <h4 class="text-warning font-weight-extrabold mb-0" id="lblWalletWeeklyEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.WeeklyEarnings).ToString("N2"))</h4>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-6 col-md-3">
                         <div class="glass-card p-3 border-secondary text-center">
                             <span class="text-muted small d-block mb-1">Monthly Volume</span>
                             <h4 class="text-info font-weight-extrabold mb-0" id="lblWalletMonthlyVolume" style="font-family: 'Outfit';">₹@(((double)ViewBag.MonthlyVolume).ToString("N2"))</h4>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="glass-card p-3 border-danger border-opacity-40 text-center bg-danger bg-opacity-10">
+                            <span class="text-muted small d-block mb-1">Held in Escrow</span>
+                            <h4 class="text-danger font-weight-extrabold mb-0" id="lblWalletHeldEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.HeldEarnings).ToString("N2"))</h4>
                         </div>
                     </div>
                 </div>
@@ -854,9 +870,41 @@
                                         <tr class="border-secondary">
                                             <td><b>#@p.JobId</b></td>
                                             <td class="small text-muted">@p.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</td>
-                                            <td><span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-30 px-2.5 py-1">Escrow Released</span></td>
+                                            <td>
+                                                @if (p.PaymentStatus == "Released" || p.PaymentStatus == "Completed")
+                                                {
+                                                    <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-30 px-2.5 py-1">Escrow Released</span>
+                                                }
+                                                else if (p.PaymentStatus == "Held" || p.PaymentStatus == "Pending")
+                                                {
+                                                    <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-30 px-2.5 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Payment Held</span>
+                                                }
+                                                else if (p.PaymentStatus == "Refunded")
+                                                {
+                                                    <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-30 px-2.5 py-1">Refunded (Cancelled)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary bg-opacity-15 text-secondary border border-secondary border-opacity-30 px-2.5 py-1">@p.PaymentStatus</span>
+                                                }
+                                            </td>
                                             <td class="text-white-50">₹@p.Amount.ToString("N2")</td>
-                                            <td class="text-success font-weight-bold text-end">+₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                            @if (p.PaymentStatus == "Released" || p.PaymentStatus == "Completed")
+                                            {
+                                                <td class="text-success font-weight-bold text-end">+₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                            }
+                                            else if (p.PaymentStatus == "Held" || p.PaymentStatus == "Pending")
+                                            {
+                                                <td class="text-warning font-weight-bold text-end">₹@p.MechanicEarningAmount.ToString("N2") (Held)</td>
+                                            }
+                                            else if (p.PaymentStatus == "Refunded")
+                                            {
+                                                <td class="text-danger font-weight-bold text-end">₹0.00 (Refunded)</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-muted text-end">₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                            }
                                         </tr>
                                     }
                                 }
