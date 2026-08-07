@@ -1,4 +1,5 @@
 @using RaahSathi.Models
+@using System.Text.Encodings.Web
 @model List<User>
 @{
     ViewData["Title"] = "Customer Management";
@@ -8,15 +9,26 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
+        <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2">SYSTEM CONSOLE</span>
         <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-users text-warning me-2"></i> Customer Management</h4>
         <p class="text-muted small mb-0">View registered customers, vehicles, booking history, ratings, and block/unblock status.</p>
+    </div>
+</div>
+
+<!-- Search Filter Bar -->
+<div class="row mb-3">
+    <div class="col-md-6 col-lg-4">
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+            <input type="text" id="custSearchFilter" class="form-control bg-dark text-white border-secondary" placeholder="Search by ID, Name, or Mobile...">
+        </div>
     </div>
 </div>
 
 <div class="card bg-dark border-secondary shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-dark table-hover mb-0 align-middle">
+            <table class="table table-dark table-hover mb-0 align-middle" id="customersTable">
                 <thead>
                     <tr class="border-secondary text-muted small">
                         <th class="ps-3">ID & Customer</th>
@@ -30,7 +42,7 @@
                 <tbody>
                     @if (Model.Count == 0)
                     {
-                        <tr>
+                        <tr class="no-data-row">
                             <td colspan="6" class="text-center py-4 text-muted">No customers registered yet.</td>
                         </tr>
                     }
@@ -40,12 +52,16 @@
                         {
                             var custVehicles = vehicles.Where(v => v.UserId == c.Id).ToList();
                             var custJobs = jobs.Where(j => j.CustomerId == c.Id).ToList();
-                            <tr class="border-secondary">
+                            var vehicleListStr = custVehicles.Any() 
+                                ? string.Join(", ", custVehicles.Select(v => $"{v.Model} ({v.RegistrationNumber})"))
+                                : "No vehicles registered";
+                            
+                            <tr class="border-secondary cust-row">
                                 <td class="ps-3">
-                                    <div class="font-weight-bold text-white">@c.Name</div>
+                                    <div class="font-weight-bold text-white">@(c.Name ?? "Customer")</div>
                                     <span class="badge bg-warning text-dark font-weight-bold" style="font-size:0.68rem;">@c.DisplayId</span>
                                 </td>
-                                <td class="text-light">@c.PhoneNumber</td>
+                                <td class="text-light">@(c.PhoneNumber ?? "N/A")</td>
                                 <td>
                                     @if (custVehicles.Count > 0)
                                     {
@@ -71,9 +87,14 @@
                                     }
                                 </td>
                                 <td class="text-end pe-3">
-                                    <button class="btn btn-sm @(c.IsBlocked ? "btn-outline-success" : "btn-outline-danger") font-weight-bold" onclick="toggleUserBlock(@c.Id)">
-                                        <i class="fa-solid @(c.IsBlocked ? "fa-unlock" : "fa-ban") me-1"></i> @(c.IsBlocked ? "Unblock" : "Block User")
-                                    </button>
+                                    <div class="d-flex justify-content-end gap-1">
+                                        <button class="btn btn-sm btn-outline-warning font-weight-bold" onclick="showCustDetails('@c.DisplayId', '@Html.Raw(JavaScriptEncoder.Default.Encode(c.Name ?? "Customer"))', '@(c.PhoneNumber ?? "N/A")', '@custJobs.Count', '@custVehicles.Count', '@(c.IsBlocked ? "Blocked" : "Active")', '@Html.Raw(JavaScriptEncoder.Default.Encode(vehicleListStr))')">
+                                            <i class="fa-solid fa-eye me-1"></i> Details
+                                        </button>
+                                        <button class="btn btn-sm @(c.IsBlocked ? "btn-outline-success" : "btn-outline-danger") font-weight-bold" onclick="toggleUserBlock(@c.Id)">
+                                            <i class="fa-solid @(c.IsBlocked ? "fa-unlock" : "fa-ban") me-1"></i> @(c.IsBlocked ? "Unblock" : "Block")
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -84,8 +105,110 @@
     </div>
 </div>
 
+<!-- Customer Details Modal -->
+<div class="modal fade" id="custDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-user me-2 text-warning"></i> Customer Profile Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="p-3 bg-secondary bg-opacity-20 rounded border border-secondary mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong class="text-warning fs-5" id="lblDetName"></strong>
+                        <span class="badge bg-warning text-dark font-weight-bold" id="lblDetId"></span>
+                    </div>
+                    <div class="text-muted small"><i class="fa-solid fa-phone me-1"></i> <span id="lblDetPhone"></span></div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-2.5 rounded bg-dark border border-secondary text-center">
+                            <span class="text-muted small d-block">Assistance Jobs</span>
+                            <strong class="text-info fs-5" id="lblDetJobs">0</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2.5 rounded bg-dark border border-secondary text-center">
+                            <span class="text-muted small d-block">Vehicles Count</span>
+                            <strong class="text-info fs-5" id="lblDetVehicles">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small font-weight-bold">Status</label>
+                    <div id="lblDetStatus"></div>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label text-muted small font-weight-bold">Registered Vehicle Listing</label>
+                    <div class="p-3 bg-black bg-opacity-40 rounded border border-secondary text-light small" id="lblDetVehList" style="max-height: 120px; overflow-y: auto; line-height: 1.6;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
+    $(document).ready(function() {
+        // Robust direct text matching live search
+        $('#custSearchFilter').on('keyup', function() {
+            var value = $(this).val().toLowerCase().trim();
+            var matches = 0;
+            
+            if (value === "") {
+                $('.cust-row').show();
+                $('.no-data-row').hide();
+                return;
+            }
+
+            $('.cust-row').each(function() {
+                var rowText = $(this).text().toLowerCase();
+                if (rowText.indexOf(value) > -1) {
+                    $(this).show();
+                    matches++;
+                } else {
+                    $(this).hide();
+                }
+            });
+
+            if (matches === 0) {
+                if ($('.no-data-row').length === 0) {
+                    $('#customersTable tbody').append('<tr class="no-data-row"><td colspan="6" class="text-center py-4 text-muted">No matching customers found.</td></tr>');
+                } else {
+                    $('.no-data-row').show().find('td').text('No matching customers found.');
+                }
+            } else {
+                $('.no-data-row').hide();
+            }
+        });
+    });
+
+    function showCustDetails(id, name, phone, jobsCount, vehiclesCount, status, vehiclesList) {
+        $('#lblDetId').text(id);
+        $('#lblDetName').text(name);
+        $('#lblDetPhone').text(phone);
+        $('#lblDetJobs').text(jobsCount);
+        $('#lblDetVehicles').text(vehiclesCount);
+        
+        var statusHtml = status === 'Active' 
+            ? '<span class="badge bg-success">🟢 ACTIVE</span>'
+            : '<span class="badge bg-danger">🔴 BLOCKED</span>';
+        $('#lblDetStatus').html(statusHtml);
+
+        $('#lblDetVehList').text(vehiclesList);
+
+        var modal = new bootstrap.Modal(document.getElementById('custDetailsModal'));
+        modal.show();
+    }
+
     function toggleUserBlock(userId) {
         $.post('/Admin/ToggleUserBlock', { userId: userId }, function(res) {
             if (res && res.success) {
