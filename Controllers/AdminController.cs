@@ -498,7 +498,9 @@ namespace RaahSathi.Controllers
                             [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
                             [Status] nvarchar(50) NOT NULL DEFAULT 'Pending',
                             [AdminNotes] nvarchar(max) NULL,
-                            [ContactedAt] datetime2 NULL
+                            [ContactedAt] datetime2 NULL,
+                            [PhotoUrl] nvarchar(500) NOT NULL DEFAULT '',
+                            [UserRole] nvarchar(50) NOT NULL DEFAULT 'Guest'
                         );
                     END;
                 ");

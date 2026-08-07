@@ -1209,19 +1209,38 @@
                 <h5 class="modal-title text-info"><i class="fa-solid fa-headset me-2"></i> Contact Operations Support</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-3">
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Subject / Title</label>
-                    <input type="text" id="txtSupportTitle" class="form-control glass-input" placeholder="e.g. Payment inquiry / KYC update help">
+            <form id="mechanicSupportForm" onsubmit="submitMechanicSupportForm(event)">
+                <div class="modal-body p-3">
+                    <input type="hidden" name="userRole" value="Mechanic" />
+                    <input type="hidden" name="fullName" value="@(profile?.User?.Name ?? "Mechanic")" />
+                    <input type="hidden" name="phone" value="@(profile?.User?.PhoneNumber ?? "0000000000")" />
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Your Email Address <span class="text-danger">*</span></label>
+                        <input type="email" name="email" class="form-control glass-input" value="@(profile?.Email ?? "")" placeholder="e.g. mechanic@example.com" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Subject / Title <span class="text-danger">*</span></label>
+                        <input type="text" name="subject" class="form-control glass-input" placeholder="e.g. Payment inquiry / KYC update help" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Your Message / Inquiry <span class="text-danger">*</span></label>
+                        <textarea name="message" class="form-control glass-input" rows="4" placeholder="Type your message to RaahSathi Support Team..." required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Attach Screenshot / Photo <span class="text-warning">(Optional)</span></label>
+                        <input type="file" name="photoFile" class="form-control glass-input text-white" accept="image/*">
+                        <span class="text-muted extra-small d-block mt-1">Attach visual proof of payments, bank statements, or issue details.</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-info text-dark font-weight-bold w-100 py-2.5">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Send to Support Team
+                    </button>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Your Message / Inquiry</label>
-                    <textarea id="txtSupportMessage" class="form-control glass-input" rows="4" placeholder="Type your message to RaahSathi Support Team..."></textarea>
-                </div>
-                <button class="btn btn-info text-dark font-weight-bold w-100 py-2.5" onclick="sendReplyToSupport()">
-                    <i class="fa-solid fa-paper-plane me-1"></i> Send to Support Team
-                </button>
-            </div>
+            </form>
         </div>
     </div>
 </div>
@@ -1559,30 +1578,37 @@
 
     // Support Team Inbox & Reply System
     function openSupportReplyModal() {
+        $('#mechanicSupportForm')[0].reset();
         var modal = new bootstrap.Modal(document.getElementById('supportReplyModal'));
         modal.show();
     }
 
-    function sendReplyToSupport() {
-        var title = $('#txtSupportTitle').val();
-        var message = $('#txtSupportMessage').val();
+    function submitMechanicSupportForm(e) {
+        e.preventDefault();
+        var form = $('#mechanicSupportForm')[0];
+        var formData = new FormData(form);
 
-        if (!message || !message.trim()) {
-            alert('Please enter your message text.');
-            return;
-        }
-
-        $.post('/Mechanic/SendReplyToSupport', { title: title, message: message }, function(res) {
-            if (res.success) {
-                alert('✅ ' + res.message);
-                $('#txtSupportTitle').val('');
-                $('#txtSupportMessage').val('');
-                var modalEl = document.getElementById('supportReplyModal');
-                var instance = bootstrap.Modal.getInstance(modalEl);
-                if (instance) instance.hide();
-                loadSupportMessages();
-            } else {
-                alert(res.message);
+        $.ajax({
+            url: '/Home/SubmitSupportTicket',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                if (res && res.success) {
+                    alert('✅ ' + res.message);
+                    var modalEl = document.getElementById('supportReplyModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    if (typeof loadSupportMessages === 'function') {
+                        loadSupportMessages();
+                    }
+                } else {
+                    alert('❌ Error: ' + (res.message || 'Could not submit support ticket.'));
+                }
+            },
+            error: function() {
+                alert('❌ Network error submitting support ticket. Please try again.');
             }
         });
     }

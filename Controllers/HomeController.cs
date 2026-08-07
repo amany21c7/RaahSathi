@@ -163,6 +163,58 @@ namespace RaahSathi.Controllers
             return Json(new { success = true, message = "Your message has been received! Our support desk will reach out within 15 minutes." });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> SubmitSupportTicket(string fullName, string email, string phone, string subject, string message, string userRole, IFormFile? photoFile)
+        {
+            if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(message))
+            {
+                return Json(new { success = false, message = "Name, Phone, and Message are required." });
+            }
+
+            string photoUrl = "";
+            if (photoFile != null && photoFile.Length > 0)
+            {
+                try
+                {
+                    string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "support");
+                    if (!Directory.Exists(uploadsFolder))
+                    {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+
+                    string uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(photoFile.FileName);
+                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await photoFile.CopyToAsync(fileStream);
+                    }
+                    photoUrl = "/uploads/support/" + uniqueFileName;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Support attachment upload error: " + ex.Message);
+                }
+            }
+
+            var contactMsg = new ContactMessage
+            {
+                FullName = fullName.Trim(),
+                Phone = phone.Trim(),
+                Email = email?.Trim() ?? "",
+                Subject = subject?.Trim() ?? "Support Ticket",
+                Message = message.Trim(),
+                CreatedAt = DateTime.UtcNow,
+                Status = "Pending",
+                PhotoUrl = photoUrl,
+                UserRole = string.IsNullOrWhiteSpace(userRole) ? "Guest" : userRole
+            };
+
+            _dbContext.ContactMessages.Add(contactMsg);
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Support ticket submitted successfully! Admin support team will contact you shortly." });
+        }
+
         [HttpGet]
         public IActionResult SwitchIdentity(string role, int userId, string name)
         {

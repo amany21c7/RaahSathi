@@ -279,8 +279,20 @@ using (var scope = app.Services.CreateScope())
                         [Subject] nvarchar(200) NOT NULL DEFAULT 'General Inquiry',
                         [Message] nvarchar(2000) NOT NULL,
                         [Status] nvarchar(50) NOT NULL DEFAULT 'New',
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [PhotoUrl] nvarchar(500) NOT NULL DEFAULT '',
+                        [UserRole] nvarchar(50) NOT NULL DEFAULT 'Guest'
                     );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[ContactMessages]') AND name = N'PhotoUrl')
+                BEGIN
+                    ALTER TABLE [ContactMessages] ADD [PhotoUrl] nvarchar(500) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[ContactMessages]') AND name = N'UserRole')
+                BEGIN
+                    ALTER TABLE [ContactMessages] ADD [UserRole] nvarchar(50) NOT NULL DEFAULT 'Guest';
                 END;
 
                  IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[JobChatMessages]') AND type in (N'U'))

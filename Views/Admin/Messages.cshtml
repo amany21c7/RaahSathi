@@ -123,22 +123,43 @@
                                         </div>
                                     }
                                 </td>
-                                <td>
-                                    <span class="badge bg-dark border border-warning text-warning mb-1">
-                                        @msg.Subject
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="text-light text-truncate" style="max-width: 250px;" title="@msg.Message">
-                                        @msg.Message
-                                    </div>
-                                    @if (!string.IsNullOrEmpty(msg.AdminNotes))
-                                    {
-                                        <div class="small text-info mt-1">
-                                            <i class="fa-solid fa-sticky-note me-1"></i> Note: @msg.AdminNotes
-                                        </div>
-                                    }
-                                </td>
+                                 <td>
+                                     <span class="badge bg-dark border border-warning text-warning mb-1">
+                                         @msg.Subject
+                                     </span>
+                                     @if (!string.IsNullOrEmpty(msg.UserRole))
+                                     {
+                                         var roleBadgeClass = msg.UserRole switch
+                                         {
+                                             "Admin" => "bg-danger text-white",
+                                             "Mechanic" => "bg-info text-dark",
+                                             "Customer" => "bg-success text-white",
+                                             _ => "bg-secondary text-light"
+                                         };
+                                         <span class="badge @roleBadgeClass ms-1 mb-1">
+                                             @msg.UserRole
+                                         </span>
+                                     }
+                                 </td>
+                                 <td>
+                                     <div class="text-light text-truncate" style="max-width: 250px;" title="@msg.Message">
+                                         @msg.Message
+                                     </div>
+                                     @if (!string.IsNullOrEmpty(msg.PhotoUrl))
+                                     {
+                                         <div class="mt-2">
+                                             <a href="@msg.PhotoUrl" target="_blank">
+                                                 <img src="@msg.PhotoUrl" style="max-height: 48px; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer;" alt="Screenshot" />
+                                             </a>
+                                         </div>
+                                     }
+                                     @if (!string.IsNullOrEmpty(msg.AdminNotes))
+                                     {
+                                         <div class="small text-info mt-1">
+                                             <i class="fa-solid fa-sticky-note me-1"></i> Note: @msg.AdminNotes
+                                         </div>
+                                     }
+                                 </td>
                                 <td>
                                     @if (msg.Status == "Pending")
                                     {
@@ -174,7 +195,7 @@
                                         }
 
                                         <!-- Action / Manage Modal Trigger -->
-                                        <button type="button" class="btn btn-primary btn-sm px-2" onclick="openManageModal(@msg.Id, '@msg.FullName', '@msg.Phone', '@msg.Email', '@Uri.EscapeDataString(msg.Subject)', '@Uri.EscapeDataString(msg.Message)', '@msg.Status', '@Uri.EscapeDataString(msg.AdminNotes ?? "")')">
+                                        <button type="button" class="btn btn-primary btn-sm px-2" onclick="openManageModal(@msg.Id, '@msg.FullName', '@msg.Phone', '@msg.Email', '@Uri.EscapeDataString(msg.Subject)', '@Uri.EscapeDataString(msg.Message)', '@msg.Status', '@Uri.EscapeDataString(msg.AdminNotes ?? "")', '@msg.PhotoUrl')">
                                             <i class="fa-solid fa-pen-to-square me-1"></i> Manage
                                         </button>
                                     </div>
@@ -205,7 +226,13 @@
                         <span class="small text-muted" id="modalPhone"></span>
                     </div>
                     <div class="small text-info mb-2" id="modalSubject"></div>
-                    <div class="p-2 bg-dark rounded text-light small" id="modalMessageText" style="max-height: 120px; overflow-y: auto;"></div>
+                    <div class="p-2 bg-dark rounded text-light small mb-2" id="modalMessageText" style="max-height: 120px; overflow-y: auto;"></div>
+                    <div id="modalPhotoContainer" class="text-center d-none">
+                        <span class="text-muted small d-block mb-1">Attached Photo:</span>
+                        <a id="modalPhotoLink" href="" target="_blank">
+                            <img id="modalPhotoImg" src="" style="max-width: 100%; max-height: 150px; border-radius: 8px; border: 1px solid var(--border-color);" />
+                        </a>
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -234,7 +261,7 @@
 
 @section Scripts {
 <script>
-    function openManageModal(id, name, phone, email, subject, message, status, notes) {
+    function openManageModal(id, name, phone, email, subject, message, status, notes, photoUrl) {
         $('#modalMsgId').val(id);
         $('#modalName').text(name);
         $('#modalPhone').text(phone + (email ? ' | ' + email : ''));
@@ -242,6 +269,14 @@
         $('#modalMessageText').text(decodeURIComponent(message));
         $('#modalStatus').val(status);
         $('#modalNotes').val(decodeURIComponent(notes));
+
+        if (photoUrl) {
+            $('#modalPhotoImg').attr('src', photoUrl);
+            $('#modalPhotoLink').attr('href', photoUrl);
+            $('#modalPhotoContainer').removeClass('d-none');
+        } else {
+            $('#modalPhotoContainer').addClass('d-none');
+        }
 
         var modal = new bootstrap.Modal(document.getElementById('manageModal'));
         modal.show();

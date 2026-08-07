@@ -14,5 +14,7 @@ namespace RaahSathi.Models
         public string Status { get; set; } = "Pending"; // Pending, Contacted, Resolved
         public string? AdminNotes { get; set; }
         public DateTime? ContactedAt { get; set; }
+        public string PhotoUrl { get; set; } = string.Empty;
+        public string UserRole { get; set; } = "Guest";
     }
 }

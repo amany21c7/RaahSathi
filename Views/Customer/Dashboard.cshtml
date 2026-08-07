@@ -311,6 +311,9 @@
                 <button type="button" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openComplaintModal()">
                     <i class="fa-solid fa-triangle-exclamation me-1"></i> Report Issue / File Complaint
                 </button>
+                <button type="button" class="btn btn-info btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openSupportTicketModal()">
+                    <i class="fa-solid fa-headset me-1"></i> Support / Help Desk
+                </button>
             </div>
         </div>
     </div>
@@ -471,6 +474,39 @@
                 window.location.reload();
             } else {
                 alert('❌ Error: ' + (res.message || 'Could not register complaint. Check if Job ID is correct.'));
+            }
+        });
+    }
+
+    function openSupportTicketModal() {
+        $('#supportTicketForm')[0].reset();
+        var modal = new bootstrap.Modal(document.getElementById('customerSupportModal'));
+        modal.show();
+    }
+
+    function submitSupportTicketForm(e) {
+        e.preventDefault();
+        var form = $('#supportTicketForm')[0];
+        var formData = new FormData(form);
+
+        $.ajax({
+            url: '/Home/SubmitSupportTicket',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                if (res && res.success) {
+                    alert('✅ ' + res.message);
+                    var modalEl = document.getElementById('customerSupportModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                } else {
+                    alert('❌ Error: ' + (res.message || 'Could not submit support ticket.'));
+                }
+            },
+            error: function() {
+                alert('❌ Network error submitting support ticket. Please try again.');
             }
         });
     }
@@ -667,6 +703,67 @@
                 <div class="modal-footer border-secondary">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm"><i class="fa-solid fa-paper-plane me-1"></i> Submit Complaint</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- CUSTOMER HELP DESK / SUPPORT TICKET MODAL -->
+<div class="modal fade" id="customerSupportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border border-info shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-info font-weight-bold">
+                    <i class="fa-solid fa-headset text-info me-2"></i> RaahSathi Help Desk & Support
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="supportTicketForm" onsubmit="submitSupportTicketForm(event)">
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">Have an issue with booking, payment, or app features? Submit a ticket below along with an optional screenshot/photo.</p>
+                    
+                    <input type="hidden" name="userRole" value="Customer" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Your Name <span class="text-danger">*</span></label>
+                        <input type="text" name="fullName" class="form-control glass-input text-white" value="@(Context.User.Identity?.Name ?? "Customer")" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Phone Number <span class="text-danger">*</span></label>
+                        <input type="text" name="phone" class="form-control glass-input text-white" placeholder="e.g. 9876543210" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" name="email" class="form-control glass-input text-white" placeholder="e.g. customer@example.com" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Subject / Issue Category <span class="text-danger">*</span></label>
+                        <select name="subject" class="form-select glass-input text-white bg-dark border-secondary" required>
+                            <option value="Booking Assistance">Booking / Mechanic Assignment Assistance</option>
+                            <option value="Payment Dispute">Payment or Refund Dispute</option>
+                            <option value="App Bug / Technical Issue">App Bug / Technical Issue</option>
+                            <option value="Feedback / Suggestion">Feedback / Suggestion</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Message Details <span class="text-danger">*</span></label>
+                        <textarea name="message" class="form-control glass-input text-white" rows="3" placeholder="Explain your concern in detail..." required></textarea>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label text-muted small font-weight-bold">Attach Photo / Screenshot <span class="text-warning">(Optional)</span></label>
+                        <input type="file" name="photoFile" class="form-control glass-input text-white" accept="image/*" />
+                        <span class="text-muted extra-small d-block mt-1">Submit visual proof/screenshots for faster resolution.</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info btn-sm font-weight-bold text-white shadow-sm"><i class="fa-solid fa-paper-plane me-1"></i> Submit Ticket</button>
                 </div>
             </form>
         </div>
