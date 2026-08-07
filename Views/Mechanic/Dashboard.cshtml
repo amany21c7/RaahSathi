@@ -293,15 +293,14 @@
                         <p class="text-muted small mb-0"><i class="fa-solid fa-wrench text-warning me-1"></i> Issue: <b class="text-light">@activeJob.ProblemType</b></p>
                     </div>
                     <div class="text-md-end">
-                        <span class="text-muted small d-block font-weight-bold text-light">Estimated Earnings</span>
+                        <span class="text-muted small d-block font-weight-bold text-light">Job Total</span>
                         @{
                             double baseEstBill = activeJob.VisitingCharge + activeJob.ServiceChargeMin;
                             double currentBill = activeJob.FinalBillAmount > baseEstBill ? activeJob.FinalBillAmount : baseEstBill;
-                            double mechEarnings = Math.Round(currentBill * (1 - profile.CommissionRate), 2);
                         }
-                        <h3 class="text-success font-weight-extrabold mb-0" style="font-family: 'Outfit';">₹@mechEarnings.ToString("N2")</h3>
+                        <h3 class="text-success font-weight-extrabold mb-0" style="font-family: 'Outfit';">₹@currentBill.ToString("N2")</h3>
                         <span class="text-muted extra-small d-block mt-1" style="font-size: 0.76rem;" title="Includes Basic Visiting Charge + Per KM Distance + Vehicle Problem Service Charge">
-                            Job Total: ₹@currentBill.ToString("N0") <i class="fa-solid fa-circle-info text-info ms-1" data-bs-toggle="tooltip" title="Basic Visiting Charge + Distance Fee (Per KM) + Vehicle Problem Service Charge"></i>
+                            Platform Fee (deducted after payment): ₹@(Math.Round(currentBill * profile.CommissionRate, 2)) <i class="fa-solid fa-circle-info text-info ms-1" data-bs-toggle="tooltip" title="Platform service fee will be deducted from payout once customer payment completes."></i>
                         </span>
                     </div>
                 </div>
@@ -656,7 +655,7 @@
                             <span class="d-block text-muted small"><i class="fa-solid fa-location-dot text-warning me-1"></i> Sector 62 Noida (Approx 3.8 KM)</span>
                         </div>
                         <div class="col-md-6 text-md-end">
-                            <span class="text-muted small d-block">Estimated Earnings</span>
+                            <span class="text-muted small d-block font-weight-bold">Estimated Job Cost</span>
                             <h3 class="text-success font-weight-bold mb-2">₹450 – ₹650</h3>
                             <button class="btn btn-success btn-lg px-5 font-weight-bold me-2" onclick="acceptPing(@pingJob.Id)">
                                 <i class="fa-solid fa-check me-1"></i> Accept Request
