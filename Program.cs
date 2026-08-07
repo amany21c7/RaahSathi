@@ -376,6 +376,15 @@ using (var scope = app.Services.CreateScope())
                     );
                 END;
 
+                IF (SELECT COUNT(*) FROM [CustomServices]) = 0
+                BEGIN
+                    INSERT INTO [CustomServices] ([ServiceName], [IconClass], [Category], [BasePrice], [MaxPrice], [Description], [IsActive])
+                    VALUES 
+                    (N'EV Mobile Quick Charge', N'fa-charging-station', N'EV Support', 599.0, 1499.0, N'On-demand battery jump and quick charge for electric vehicles using mobile generator vans.', 1),
+                    (N'Heavy Mud Winch Recovery', N'fa-truck-monster', N'Towing & Recovery', 999.0, 3999.0, N'Off-road or deep mud vehicle extraction using heavy duty industrial winch pulls.', 1),
+                    (N'Emergency Fuel Delivery', N'fa-gas-pump', N'Emergency Breakdown', 249.0, 599.0, N'Delivering 5 Liters of emergency Petrol/Diesel straight to your breakdown location.', 1);
+                END;
+
                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[CmsBanners]') AND type in (N'U'))
                 BEGIN
                     CREATE TABLE [CmsBanners] (
