@@ -1108,91 +1108,6 @@
 
 </div>
 
-<!-- 🚨 15-SECOND SIREN DISPATCH NOTIFICATION MODAL -->
-<div class="modal fade" id="incomingDispatchModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content bg-dark text-white border-warning border-2 shadow-lg" style="border-radius: 16px;">
-            <div class="modal-header border-secondary bg-warning bg-opacity-10 py-3">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="dispatch-timer-circle" id="lblDispatchCountdown">15</div>
-                    <div>
-                        <h5 class="modal-title font-weight-bold text-warning mb-0">🚨 New Assistance Request</h5>
-                        <span class="text-muted small" id="lblDispatchHeaderSub">Approx 3.8 KM Away | Estimated Arrival 12 Mins</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-body p-4">
-                <!-- Smart Job Score Badge -->
-                <div class="text-center mb-3">
-                    <span class="smart-score-pill fs-6 py-2 px-4">
-                        <i class="fa-solid fa-star"></i> ⭐⭐⭐⭐⭐ Recommended Job | High Earnings | Battery Expert Match | Acceptance Chance: High
-                    </span>
-                </div>
-
-                <!-- Request Details Grid -->
-                <div class="glass-card p-3 mb-3 border-secondary">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <span class="text-muted small d-block">Vehicle</span>
-                            <h5 class="text-white font-weight-bold mb-2" id="lblDispVehicle">Hyundai i20</h5>
-
-                            <span class="text-muted small d-block">Registration</span>
-                            <h6 class="text-warning font-weight-bold mb-2" id="lblDispReg">UP32 AB 1234</h6>
-
-                            <span class="text-muted small d-block">Customer</span>
-                            <h6 class="text-light mb-2" id="lblDispCustomer">Rahul Sharma</h6>
-
-                            <span class="text-muted small d-block">Problem</span>
-                            <span class="badge bg-warning text-dark fs-6" id="lblDispProblem">Battery Dead</span>
-                        </div>
-
-                        <div class="col-md-6">
-                            <span class="text-muted small d-block">Distance / ETA</span>
-                            <h6 class="text-info font-weight-bold mb-2" id="lblDispDistEta">3.8 KM | 12 Mins</h6>
-
-                            <span class="text-muted small d-block">Estimated Earnings</span>
-                            <h4 class="text-success font-weight-bold mb-2" id="lblDispEarnings">₹450 – ₹650</h4>
-
-                            <span class="text-muted small d-block">Payment Mode</span>
-                            <span class="badge bg-success text-white mb-2">Online Escrow / Cash</span>
-
-                            <span class="text-muted small d-block">Location</span>
-                            <h6 class="text-light mb-0" id="lblDispLocation">Sector 62 Noida (Approximate)</h6>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Map Preview Box -->
-                <div class="p-2 bg-black rounded border border-secondary text-center mb-3">
-                    <span class="text-muted small d-block mb-1"><i class="fa-solid fa-map-location-dot me-1"></i> Approximate Breakdown Location Preview</span>
-                    <div style="height: 140px; background: #0f172a; border-radius: 8px;" class="d-flex align-items-center justify-content-center">
-                        <span class="text-warning font-weight-bold"><i class="fa-solid fa-location-crosshairs fa-2x d-block mb-1"></i> GPS Coordinates Locked to Sector 62</span>
-                    </div>
-                </div>
-
-                <div class="row g-2">
-                    <div class="col-6">
-                        <button type="button" class="btn btn-success btn-lg w-100 py-3 font-weight-bold fs-5 shadow-lg" id="btnAcceptDispatchModal">
-                            <i class="fa-solid fa-check me-2"></i> Accept Request
-                        </button>
-                    </div>
-                    <div class="col-3">
-                        <button type="button" class="btn btn-outline-danger btn-lg w-100 py-3 font-weight-bold" id="btnDeclineDispatchModal" title="Decline job request permanently">
-                            Decline
-                        </button>
-                    </div>
-                    <div class="col-3">
-                        <button type="button" class="btn btn-outline-secondary btn-lg w-100 py-3 font-weight-bold text-light" id="btnSnoozeDispatchModal" title="Close alert for 10 minutes">
-                            Close
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- WITHDRAWAL PAYOUT MODAL -->
 <div class="modal fade" id="withdrawModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
@@ -1334,121 +1249,6 @@
 
 @section Scripts {
 <script>
-    let dispatchCountdownTimer = null;
-    let dispatchSecondsLeft = 15;
-    let currentDispatchJobId = null;
-
-    // Heavy Emergency Dispatch Siren Ringtone Generator
-    let sirenAudioCtx = null;
-    let sirenRepeatInterval = null;
-
-    function stopSirenAlert() {
-        if (sirenRepeatInterval) {
-            clearInterval(sirenRepeatInterval);
-            sirenRepeatInterval = null;
-        }
-    }
-
-    function playSirenAlert() {
-        stopSirenAlert();
-        
-        function triggerSirenBurst() {
-            try {
-                if (!sirenAudioCtx) {
-                    sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (sirenAudioCtx.state === 'suspended') {
-                    sirenAudioCtx.resume().then(runSiren);
-                } else {
-                    runSiren();
-                }
-            } catch(e) {}
-        }
-
-        function runSiren() {
-            try {
-                let now = sirenAudioCtx.currentTime;
-
-                // 3-Pulse Heavy Dual-Ring PCR Siren (Detuned Sawtooths + Thick Bass + Crossover Chorus)
-                for (let i = 0; i < 3; i++) {
-                    let startTime = now + (i * 0.9);
-
-                    // High Ring 1 (Sawtooth)
-                    let osc1a = sirenAudioCtx.createOscillator();
-                    let gain1a = sirenAudioCtx.createGain();
-                    osc1a.type = 'sawtooth';
-                    osc1a.frequency.setValueAtTime(600, startTime);
-                    osc1a.frequency.linearRampToValueAtTime(1400, startTime + 0.4);
-                    osc1a.frequency.linearRampToValueAtTime(600, startTime + 0.85);
-                    osc1a.detune.setValueAtTime(-15, startTime); // detuning wail
-
-                    gain1a.gain.setValueAtTime(0.6, startTime);
-                    gain1a.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-
-                    osc1a.connect(gain1a);
-                    gain1a.connect(sirenAudioCtx.destination);
-                    osc1a.start(startTime);
-                    osc1a.stop(startTime + 0.87);
-
-                    // High Ring 2 (Sawtooth) - Crossover detuned pitch
-                    let osc1b = sirenAudioCtx.createOscillator();
-                    let gain1b = sirenAudioCtx.createGain();
-                    osc1b.type = 'sawtooth';
-                    osc1b.frequency.setValueAtTime(630, startTime);
-                    osc1b.frequency.linearRampToValueAtTime(1430, startTime + 0.4);
-                    osc1b.frequency.linearRampToValueAtTime(630, startTime + 0.85);
-                    osc1b.detune.setValueAtTime(15, startTime); // detuning crossover chorus
-
-                    gain1b.gain.setValueAtTime(0.6, startTime);
-                    gain1b.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-
-                    osc1b.connect(gain1b);
-                    gain1b.connect(sirenAudioCtx.destination);
-                    osc1b.start(startTime);
-                    osc1b.stop(startTime + 0.87);
-
-                    // Dual Square Bass Sub-harmonic 1
-                    let osc2a = sirenAudioCtx.createOscillator();
-                    let gain2a = sirenAudioCtx.createGain();
-                    osc2a.type = 'square';
-                    osc2a.frequency.setValueAtTime(280, startTime);
-                    osc2a.frequency.linearRampToValueAtTime(680, startTime + 0.4);
-                    osc2a.frequency.linearRampToValueAtTime(280, startTime + 0.85);
-                    osc2a.detune.setValueAtTime(-8, startTime);
-
-                    gain2a.gain.setValueAtTime(0.4, startTime);
-                    gain2a.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-
-                    osc2a.connect(gain2a);
-                    gain2a.connect(sirenAudioCtx.destination);
-                    osc2a.start(startTime);
-                    osc2a.stop(startTime + 0.87);
-
-                    // Dual Square Bass Sub-harmonic 2
-                    let osc2b = sirenAudioCtx.createOscillator();
-                    let gain2b = sirenAudioCtx.createGain();
-                    osc2b.type = 'square';
-                    osc2b.frequency.setValueAtTime(285, startTime);
-                    osc2b.frequency.linearRampToValueAtTime(685, startTime + 0.4);
-                    osc2b.frequency.linearRampToValueAtTime(285, startTime + 0.85);
-                    osc2b.detune.setValueAtTime(8, startTime);
-
-                    gain2b.gain.setValueAtTime(0.4, startTime);
-                    gain2b.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-
-                    osc2b.connect(gain2b);
-                    gain2b.connect(sirenAudioCtx.destination);
-                    osc2b.start(startTime);
-                    osc2b.stop(startTime + 0.87);
-                }
-            } catch(e) {}
-        }
-
-        triggerSirenBurst();
-        // Repeat siren wail every 2.7s while dispatch alert is active
-        sirenRepeatInterval = setInterval(triggerSirenBurst, 2700);
-    }
-
     // Dynamic Tab Navigation
     function switchMechTab(tabId) {
         $('.mech-tab-content').hide();
@@ -1463,18 +1263,6 @@
 
     var isOnline = @(profile.IsOnline ? "true" : "false");
     var hasActiveJob = @(activeJob != null ? "true" : "false");
-
-    // General User Interaction Unlock for AudioContext
-    $(document).on('click touchstart mousedown keydown', function() {
-        try {
-            if (!sirenAudioCtx) {
-                sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (sirenAudioCtx.state === 'suspended') {
-                sirenAudioCtx.resume();
-            }
-        } catch(e) {}
-    });
 
     function updateOnlineUI(online) {
         isOnline = online;
@@ -1498,11 +1286,11 @@
     // Toggle Online/Offline State
     function toggleMechanicOnlineState() {
         try {
-            if (!sirenAudioCtx) {
-                sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!window.sirenAudioCtx) {
+                window.sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-            if (sirenAudioCtx.state === 'suspended') {
-                sirenAudioCtx.resume();
+            if (window.sirenAudioCtx.state === 'suspended') {
+                window.sirenAudioCtx.resume();
             }
         } catch(e) {}
 
@@ -1513,143 +1301,7 @@
         });
     }
 
-    // Real-Time Dispatch Checker
-    function pollIncomingDispatchRequests() {
-        if (!isOnline || hasActiveJob) return;
-        $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: currentDispatchJobId, _t: Date.now() }, function(res) {
-            if (res.hasJob && !currentDispatchJobId) {
-                currentDispatchJobId = res.jobId;
-                openDispatchModal(res);
-            } else if (currentDispatchJobId && (!res.hasJob || res.wasTaken)) {
-                // The job was accepted by another mechanic or cancelled! Hide modal immediately!
-                stopSirenAlert();
-                if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
-                currentDispatchJobId = null;
-                
-                var modalEl = document.getElementById('incomingDispatchModal');
-                var instance = bootstrap.Modal.getInstance(modalEl);
-                if (instance) instance.hide();
-            }
-        });
-    }
-
-    function openDispatchModal(data) {
-        playSirenAlert();
-        $('#lblDispVehicle').text(data.vehicleModel + ' (' + data.vehicleType + ')');
-        $('#lblDispReg').text(data.vehicleReg);
-        $('#lblDispCustomer').text(data.customerName);
-        $('#lblDispProblem').text(data.problemType);
-        $('#lblDispDistEta').text(data.distanceKm + ' KM | ' + data.etaMinutes + ' Mins');
-        $('#lblDispEarnings').text('₹' + data.estEarningsMin + ' – ₹' + data.estEarningsMax);
-        $('#lblDispLocation').text(data.approxLocation + ' (Approximate)');
-
-        var modalEl = document.getElementById('incomingDispatchModal');
-        var modal = new bootstrap.Modal(modalEl);
-        modal.show();
-
-        dispatchSecondsLeft = 15;
-        $('#lblDispatchCountdown, #lblCardDispatchCountdown').text(dispatchSecondsLeft);
-
-        if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
-        dispatchCountdownTimer = setInterval(function() {
-            dispatchSecondsLeft--;
-            if (dispatchSecondsLeft < 0) dispatchSecondsLeft = 0;
-            $('#lblDispatchCountdown, #lblCardDispatchCountdown').text(dispatchSecondsLeft);
-
-            if (dispatchSecondsLeft <= 0) {
-                clearInterval(dispatchCountdownTimer);
-                timeoutPing(data.jobId);
-            }
-        }, 1000);
-
-        $('#btnAcceptDispatchModal').off('click').on('click', function() {
-            clearInterval(dispatchCountdownTimer);
-            acceptPing(data.jobId);
-        });
-
-        $('#btnDeclineDispatchModal').off('click').on('click', function() {
-            clearInterval(dispatchCountdownTimer);
-            declinePing(data.jobId);
-        });
-
-        $('#btnSnoozeDispatchModal').off('click').on('click', function() {
-            clearInterval(dispatchCountdownTimer);
-            snoozePing(data.jobId);
-        });
-    }
-
-    function acceptPing(jobId) {
-        stopSirenAlert();
-        if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
-        $.post('/Mechanic/AcceptJob', { jobId: jobId }, function(res) {
-            if (res.success) {
-                location.reload();
-            } else {
-                alert(res.message);
-            }
-        });
-    }
-
-    function declinePing(jobId) {
-        stopSirenAlert();
-        if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
-        $.post('/Mechanic/DeclineJob', { jobId: jobId }, function() {
-            currentDispatchJobId = null;
-            var modalEl = document.getElementById('incomingDispatchModal');
-            var instance = bootstrap.Modal.getInstance(modalEl);
-            if (instance) instance.hide();
-            location.reload();
-        });
-    }
-
-    function timeoutPing(jobId) {
-        stopSirenAlert();
-        if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
-        
-        // Hide the modal instantly in the UI
-        var modalEl = document.getElementById('incomingDispatchModal');
-        var instance = bootstrap.Modal.getInstance(modalEl);
-        if (instance) instance.hide();
-        
-        currentDispatchJobId = null;
-
-        $.post('/Mechanic/TimeoutJob', { jobId: jobId });
-    }
-
-    function snoozePing(jobId) {
-        stopSirenAlert();
-        if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
-        $.post('/Mechanic/SnoozeJob', { jobId: jobId }, function() {
-            currentDispatchJobId = null;
-            var modalEl = document.getElementById('incomingDispatchModal');
-            var instance = bootstrap.Modal.getInstance(modalEl);
-            if (instance) instance.hide();
-            location.reload();
-        });
-    }
-
     $(document).ready(function() {
-        var pingJobId = @(pingJob?.Id ?? 0);
-        hasActiveJob = @(activeJob != null ? "true" : "false");
-
-        if (pingJobId > 0 && !hasActiveJob) {
-            var initialPingData = {
-                jobId: pingJobId,
-                vehicleModel: "@(pingJob?.Vehicle?.Model ?? "Vehicle")",
-                vehicleType: "@(pingJob?.Vehicle?.VehicleType ?? "Car")",
-                vehicleReg: "@(pingJob?.Vehicle?.RegistrationNumber ?? "UP32 AB 1234")",
-                customerName: "@(pingJob?.Customer?.Name ?? "Customer")",
-                problemType: "@(pingJob?.ProblemType ?? "Breakdown Repair")",
-                distanceKm: "3.8",
-                etaMinutes: "12",
-                estEarningsMin: "@((pingJob?.VisitingCharge + pingJob?.ServiceChargeMin) ?? 450)",
-                estEarningsMax: "@(((pingJob?.VisitingCharge + pingJob?.ServiceChargeMin) * 1.5) ?? 650)",
-                approxLocation: "@(pingJob?.Address ?? "Nearby Location")"
-            };
-            currentDispatchJobId = pingJobId;
-            openDispatchModal(initialPingData);
-        }
-
         // Start watching geolocation to update mechanic location in database
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(function(position) {
@@ -1964,8 +1616,7 @@
         });
     }
 
-    // Start Polling Dispatch Requests & Live Chat
-    setInterval(pollIncomingDispatchRequests, 1000);
+    // Start Polling Live Chat
 
     setInterval(function() {
         if ($('#liveChatMechModal').hasClass('show')) {

@@ -1487,5 +1487,404 @@
             });
         });
     </script>
+
+    @if (isMechLoggedIn)
+    {
+        <!-- Mechanic Dispatch Notification Styles -->
+        <style>
+            .dispatch-timer-circle {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                background: #0a1324;
+                border: 3px solid #ef4444;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.3rem;
+                font-weight: 800;
+                color: #ef4444;
+                animation: pulseTimer 1s infinite alternate;
+            }
+            @@keyframes pulseTimer {
+                from { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+                to { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            }
+            .smart-score-pill {
+                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+                color: #ffffff;
+                padding: 6px 14px;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: 700;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+            }
+        </style>
+
+        <!-- 🚨 15-SECOND SIREN DISPATCH NOTIFICATION MODAL -->
+        <div class="modal fade" id="incomingDispatchModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" style="z-index: 10550;">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content bg-dark text-white border-warning border-2 shadow-lg" style="border-radius: 16px;">
+                    <div class="modal-header border-secondary bg-warning bg-opacity-10 py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="dispatch-timer-circle" id="lblDispatchCountdown">15</div>
+                            <div>
+                                <h5 class="modal-title font-weight-bold text-warning mb-0">🚨 New Assistance Request</h5>
+                                <span class="text-muted small" id="lblDispatchHeaderSub">Approx 3.8 KM Away | Estimated Arrival 12 Mins</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-body p-4">
+                        <!-- Smart Job Score Badge -->
+                        <div class="text-center mb-3">
+                            <span class="smart-score-pill fs-6 py-2 px-4">
+                                <i class="fa-solid fa-star"></i> ⭐⭐⭐⭐⭐ Recommended Job | High Earnings | Battery Expert Match | Acceptance Chance: High
+                            </span>
+                        </div>
+
+                        <!-- Request Details Grid -->
+                        <div class="glass-card p-3 mb-3 border-secondary" style="background: rgba(18, 31, 53, 0.85); border: 1px solid rgba(255, 107, 0, 0.2); border-radius: 12px;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <span class="text-muted small d-block">Vehicle</span>
+                                    <h5 class="text-white font-weight-bold mb-2" id="lblDispVehicle">Hyundai i20</h5>
+
+                                    <span class="text-muted small d-block">Registration</span>
+                                    <h6 class="text-warning font-weight-bold mb-2" id="lblDispReg">UP32 AB 1234</h6>
+
+                                    <span class="text-muted small d-block">Customer</span>
+                                    <h6 class="text-light mb-2" id="lblDispCustomer">Rahul Sharma</h6>
+
+                                    <span class="text-muted small d-block">Problem</span>
+                                    <span class="badge bg-warning text-dark fs-6" id="lblDispProblem">Battery Dead</span>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <span class="text-muted small d-block">Distance / ETA</span>
+                                    <h6 class="text-info font-weight-bold mb-2" id="lblDispDistEta">3.8 KM | 12 Mins</h6>
+
+                                    <span class="text-muted small d-block">Estimated Earnings</span>
+                                    <h4 class="text-success font-weight-bold mb-2" id="lblDispEarnings">₹450 – ₹650</h4>
+
+                                    <span class="text-muted small d-block">Payment Mode</span>
+                                    <span class="badge bg-success text-white mb-2">Online Escrow / Cash</span>
+
+                                    <span class="text-muted small d-block">Location</span>
+                                    <h6 class="text-light mb-0" id="lblDispLocation">Sector 62 Noida (Approximate)</h6>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Map Preview Box -->
+                        <div class="p-2 bg-black rounded border border-secondary text-center mb-3">
+                            <span class="text-muted small d-block mb-1"><i class="fa-solid fa-map-location-dot me-1"></i> Approximate Breakdown Location Preview</span>
+                            <div style="height: 140px; background: #0f172a; border-radius: 8px;" class="d-flex align-items-center justify-content-center">
+                                <span class="text-warning font-weight-bold"><i class="fa-solid fa-location-crosshairs fa-2x d-block mb-1"></i> GPS Coordinates Locked to Sector 62</span>
+                            </div>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button type="button" class="btn btn-success btn-lg w-100 py-3 font-weight-bold fs-5 shadow-lg" id="btnAcceptDispatchModal">
+                                    <i class="fa-solid fa-check me-2"></i> Accept Request
+                                </button>
+                            </div>
+                            <div class="col-3">
+                                <button type="button" class="btn btn-outline-danger btn-lg w-100 py-3 font-weight-bold" id="btnDeclineDispatchModal" title="Decline job request permanently">
+                                    Decline
+                                </button>
+                            </div>
+                            <div class="col-3">
+                                <button type="button" class="btn btn-outline-secondary btn-lg w-100 py-3 font-weight-bold text-light" id="btnSnoozeDispatchModal" title="Close alert for 10 minutes">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            $(document).ready(function() {
+                let dispatchCountdownTimer = null;
+                let dispatchSecondsLeft = 15;
+                
+                window.currentDispatchJobId = null;
+                window.sirenAudioCtx = null;
+                window.sirenRepeatInterval = null;
+
+                window.stopSirenAlert = function() {
+                    if (window.sirenRepeatInterval) {
+                        clearInterval(window.sirenRepeatInterval);
+                        window.sirenRepeatInterval = null;
+                    }
+                };
+
+                window.playSirenAlert = function() {
+                    window.stopSirenAlert();
+                    
+                    function triggerSirenBurst() {
+                        try {
+                            if (!window.sirenAudioCtx) {
+                                window.sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            }
+                            if (window.sirenAudioCtx.state === 'suspended') {
+                                window.sirenAudioCtx.resume().then(runSiren);
+                            } else {
+                                runSiren();
+                            }
+                        } catch(e) {}
+                    }
+
+                    function runSiren() {
+                        try {
+                            let now = window.sirenAudioCtx.currentTime;
+
+                            // 3-Pulse Heavy Dual-Ring PCR Siren (Detuned Sawtooths + Thick Bass + Crossover Chorus)
+                            for (let i = 0; i < 3; i++) {
+                                let startTime = now + (i * 0.9);
+
+                                // High Ring 1 (Sawtooth)
+                                let osc1a = window.sirenAudioCtx.createOscillator();
+                                let gain1a = window.sirenAudioCtx.createGain();
+                                osc1a.type = 'sawtooth';
+                                osc1a.frequency.setValueAtTime(600, startTime);
+                                osc1a.frequency.linearRampToValueAtTime(1400, startTime + 0.4);
+                                osc1a.frequency.linearRampToValueAtTime(600, startTime + 0.85);
+                                osc1a.detune.setValueAtTime(-15, startTime);
+
+                                gain1a.gain.setValueAtTime(0.6, startTime);
+                                gain1a.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
+
+                                osc1a.connect(gain1a);
+                                gain1a.connect(window.sirenAudioCtx.destination);
+                                osc1a.start(startTime);
+                                osc1a.stop(startTime + 0.87);
+
+                                // High Ring 2 (Sawtooth)
+                                let osc1b = window.sirenAudioCtx.createOscillator();
+                                let gain1b = window.sirenAudioCtx.createGain();
+                                osc1b.type = 'sawtooth';
+                                osc1b.frequency.setValueAtTime(630, startTime);
+                                osc1b.frequency.linearRampToValueAtTime(1430, startTime + 0.4);
+                                osc1b.frequency.linearRampToValueAtTime(630, startTime + 0.85);
+                                osc1b.detune.setValueAtTime(15, startTime);
+
+                                gain1b.gain.setValueAtTime(0.6, startTime);
+                                gain1b.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
+
+                                osc1b.connect(gain1b);
+                                gain1b.connect(window.sirenAudioCtx.destination);
+                                osc1b.start(startTime);
+                                osc1b.stop(startTime + 0.87);
+
+                                // Dual Square Bass Sub-harmonic 1
+                                let osc2a = window.sirenAudioCtx.createOscillator();
+                                let gain2a = window.sirenAudioCtx.createGain();
+                                osc2a.type = 'square';
+                                osc2a.frequency.setValueAtTime(280, startTime);
+                                osc2a.frequency.linearRampToValueAtTime(680, startTime + 0.4);
+                                osc2a.frequency.linearRampToValueAtTime(280, startTime + 0.85);
+                                osc2a.detune.setValueAtTime(-8, startTime);
+
+                                gain2a.gain.setValueAtTime(0.4, startTime);
+                                gain2a.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
+
+                                osc2a.connect(gain2a);
+                                gain2a.connect(window.sirenAudioCtx.destination);
+                                osc2a.start(startTime);
+                                osc2a.stop(startTime + 0.87);
+
+                                // Dual Square Bass Sub-harmonic 2
+                                let osc2b = window.sirenAudioCtx.createOscillator();
+                                let gain2b = window.sirenAudioCtx.createGain();
+                                osc2b.type = 'square';
+                                osc2b.frequency.setValueAtTime(285, startTime);
+                                osc2b.frequency.linearRampToValueAtTime(685, startTime + 0.4);
+                                osc2b.frequency.linearRampToValueAtTime(285, startTime + 0.85);
+                                osc2b.detune.setValueAtTime(8, startTime);
+
+                                gain2b.gain.setValueAtTime(0.4, startTime);
+                                gain2b.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
+
+                                osc2b.connect(gain2b);
+                                gain2b.connect(window.sirenAudioCtx.destination);
+                                osc2b.start(startTime);
+                                osc2b.stop(startTime + 0.87);
+                            }
+                        } catch(e) {}
+                    }
+
+                    triggerSirenBurst();
+                    window.sirenRepeatInterval = setInterval(triggerSirenBurst, 2700);
+                };
+
+                // Unlock AudioContext on interaction
+                $(document).on('click touchstart mousedown keydown', function() {
+                    try {
+                        if (!window.sirenAudioCtx) {
+                            window.sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        }
+                        if (window.sirenAudioCtx.state === 'suspended') {
+                            window.sirenAudioCtx.resume();
+                        }
+                    } catch(e) {}
+                });
+
+                // Real-Time Dispatch Checker
+                window.pollIncomingDispatchRequests = function() {
+                    $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: window.currentDispatchJobId, _t: Date.now() }, function(res) {
+                        if (res && res.success) {
+                            if (res.hasActiveJob) {
+                                if (window.currentDispatchJobId) {
+                                    window.stopSirenAlert();
+                                    if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+                                    window.currentDispatchJobId = null;
+                                    var modalEl = document.getElementById('incomingDispatchModal');
+                                    if (modalEl) {
+                                        var instance = bootstrap.Modal.getInstance(modalEl);
+                                        if (instance) instance.hide();
+                                    }
+                                }
+                                return;
+                            }
+
+                            if (res.hasJob && !window.currentDispatchJobId) {
+                                window.currentDispatchJobId = res.jobId;
+                                openDispatchModal(res);
+                            } else if (window.currentDispatchJobId && (!res.hasJob || res.wasTaken)) {
+                                window.stopSirenAlert();
+                                if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+                                window.currentDispatchJobId = null;
+                                
+                                var modalEl = document.getElementById('incomingDispatchModal');
+                                if (modalEl) {
+                                    var instance = bootstrap.Modal.getInstance(modalEl);
+                                    if (instance) instance.hide();
+                                }
+                            }
+                        }
+                    });
+                };
+
+                function openDispatchModal(data) {
+                    window.playSirenAlert();
+                    
+                    $('#lblDispVehicle').text(data.vehicleModel + ' (' + data.vehicleType + ')');
+                    $('#lblDispReg').text(data.vehicleReg);
+                    $('#lblDispCustomer').text(data.customerName);
+                    $('#lblDispProblem').text(data.problemType);
+                    $('#lblDispDistEta').text(data.distanceKm + ' KM | ' + data.etaMinutes + ' Mins');
+                    $('#lblDispEarnings').text('₹' + data.estEarningsMin + ' – ₹' + data.estEarningsMax);
+                    $('#lblDispLocation').text(data.approxLocation + ' (Approximate)');
+
+                    var modalEl = document.getElementById('incomingDispatchModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+
+                    dispatchSecondsLeft = 15;
+                    $('#lblDispatchCountdown').text(dispatchSecondsLeft);
+
+                    if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+                    dispatchCountdownTimer = setInterval(function() {
+                        dispatchSecondsLeft--;
+                        if (dispatchSecondsLeft < 0) dispatchSecondsLeft = 0;
+                        $('#lblDispatchCountdown').text(dispatchSecondsLeft);
+
+                        if (dispatchSecondsLeft <= 0) {
+                            clearInterval(dispatchCountdownTimer);
+                            timeoutPing(data.jobId);
+                        }
+                    }, 1000);
+
+                    $('#btnAcceptDispatchModal').off('click').on('click', function() {
+                        clearInterval(dispatchCountdownTimer);
+                        acceptPing(data.jobId);
+                    });
+
+                    $('#btnDeclineDispatchModal').off('click').on('click', function() {
+                        clearInterval(dispatchCountdownTimer);
+                        declinePing(data.jobId);
+                    });
+
+                    $('#btnSnoozeDispatchModal').off('click').on('click', function() {
+                        clearInterval(dispatchCountdownTimer);
+                        snoozePing(data.jobId);
+                    });
+                }
+
+                function acceptPing(jobId) {
+                    window.stopSirenAlert();
+                    if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+                    $.post('/Mechanic/AcceptJob', { jobId: jobId }, function(res) {
+                        if (res.success) {
+                            window.location.href = '/Mechanic/Dashboard';
+                        } else {
+                            alert(res.message);
+                            window.location.reload();
+                        }
+                    });
+                }
+
+                function declinePing(jobId) {
+                    window.stopSirenAlert();
+                    if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+                    $.post('/Mechanic/DeclineJob', { jobId: jobId }, function() {
+                        window.currentDispatchJobId = null;
+                        var modalEl = document.getElementById('incomingDispatchModal');
+                        var instance = bootstrap.Modal.getInstance(modalEl);
+                        if (instance) instance.hide();
+                        window.location.reload();
+                    });
+                }
+
+                function timeoutPing(jobId) {
+                    window.stopSirenAlert();
+                    if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+                    
+                    var modalEl = document.getElementById('incomingDispatchModal');
+                    var instance = bootstrap.Modal.getInstance(modalEl);
+                    if (instance) instance.hide();
+                    
+                    window.currentDispatchJobId = null;
+                    $.post('/Mechanic/TimeoutJob', { jobId: jobId }, function() {
+                        window.location.reload();
+                    });
+                }
+
+                function snoozePing(jobId) {
+                    window.stopSirenAlert();
+                    if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+                    $.post('/Mechanic/SnoozeJob', { jobId: jobId }, function() {
+                        window.currentDispatchJobId = null;
+                        var modalEl = document.getElementById('incomingDispatchModal');
+                        var instance = bootstrap.Modal.getInstance(modalEl);
+                        if (instance) instance.hide();
+                        window.location.reload();
+                    });
+                }
+
+                // Web Worker for background intervals
+                try {
+                    var blob = new Blob([
+                        "setInterval(function() { postMessage('tick'); }, 1000);"
+                    ], { type: "text/javascript" });
+                    var worker = new Worker(URL.createObjectURL(blob));
+                    worker.onmessage = function(e) {
+                        window.pollIncomingDispatchRequests();
+                    };
+                    window.pollIncomingDispatchRequests();
+                } catch (err) {
+                    setInterval(window.pollIncomingDispatchRequests, 1000);
+                    window.pollIncomingDispatchRequests();
+                }
+            });
+        </script>
+    }
 </body>
 </html>
