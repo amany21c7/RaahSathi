@@ -511,6 +511,12 @@ namespace RaahSathi.Controllers
 
             if (job == null) return NotFound();
 
+            if (job.Status == "Requested" && (DateTime.UtcNow - job.CreatedAt).TotalSeconds >= 300)
+            {
+                job.Status = "TimedOut";
+                await _dbContext.SaveChangesAsync();
+            }
+
             MechanicProfile? mechProfile = null;
             if (job.MechanicId.HasValue)
             {
@@ -614,8 +620,9 @@ namespace RaahSathi.Controllers
             var job = await _dbContext.Jobs.FindAsync(id);
             if (job == null) return NotFound();
 
-            if (job.Status == "Requested")
+            if (job.Status == "Requested" || job.Status == "TimedOut")
             {
+                job.Status = "Requested";
                 job.CreatedAt = DateTime.UtcNow; // Reset creation time to renew dispatch wails
                 job.DeclinedMechanicIds = ""; // Reset declined list so previously declined mechanics can get it again
                 await _dbContext.SaveChangesAsync();

@@ -1005,18 +1005,31 @@
                     $('#dispatchProgressBar').css('width', pct + '%').attr('aria-valuenow', Math.round(pct));
 
                     $.get('/Customer/GetJobStatus?id=' + jobId, function(res) {
-                        if (res && res.status && res.status !== "Requested") {
-                            // Mechanic accepted the job!
-                            clearInterval(pollInterval);
-                            clearTimeout(searchTimeoutTimer);
-                            log("🎉 Mechanic " + (res.mechanicName || "RK Singh") + " accepted your request!", "text-success font-weight-bold");
-                            $('#searchAlertText').html("<span class='text-success font-weight-bold'><i class='fa-solid fa-circle-check me-1'></i> Accepted! Redirecting to live tracking...</span>");
-                            
-                            setTimeout(function() {
-                                var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
-                                if (dModal) dModal.hide();
-                                window.location.href = '/Customer/Tracker?id=' + jobId;
-                            }, 1000);
+                        if (res && res.status) {
+                            if (res.status === "TimedOut") {
+                                clearInterval(pollInterval);
+                                clearTimeout(searchTimeoutTimer);
+                                log("⚠️ Connection Timeout: No response from nearby mechanics.", "text-danger");
+                                $('#searchAlertText').html("<span class='text-danger font-weight-bold'><i class='fa-solid fa-triangle-exclamation me-1'></i> Timeout: No response. Redirecting to tracking hub...</span>");
+                                
+                                setTimeout(function() {
+                                    var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
+                                    if (dModal) dModal.hide();
+                                    window.location.href = '/Customer/Tracker?id=' + jobId;
+                                }, 1500);
+                            } else if (res.status !== "Requested") {
+                                // Mechanic accepted the job!
+                                clearInterval(pollInterval);
+                                clearTimeout(searchTimeoutTimer);
+                                log("🎉 Mechanic " + (res.mechanicName || "RK Singh") + " accepted your request!", "text-success font-weight-bold");
+                                $('#searchAlertText').html("<span class='text-success font-weight-bold'><i class='fa-solid fa-circle-check me-1'></i> Accepted! Redirecting to live tracking...</span>");
+                                
+                                setTimeout(function() {
+                                    var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
+                                    if (dModal) dModal.hide();
+                                    window.location.href = '/Customer/Tracker?id=' + jobId;
+                                }, 1000);
+                            }
                         }
                     });
                 }, 1000);

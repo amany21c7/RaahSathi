@@ -1,13 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using RaahSathi.Models;
+using Microsoft.AspNetCore.Http;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RaahSathi.Data
 {
     public class ApplicationDbContext : DbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IHttpContextAccessor httpContextAccessor)
             : base(options)
         {
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public DbSet<User> Users { get; set; }
@@ -95,6 +104,127 @@ namespace RaahSathi.Data
                 .WithMany()
                 .HasForeignKey(w => w.ComplaintId)
                 .OnDelete(DeleteBehavior.SetNull);
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            string userName = "Anonymous";
+            string userRole = "Admin";
+            string ipAddress = "127.0.0.1";
+            string userAgent = "Unknown";
+
+            var httpContext = _httpContextAccessor?.HttpContext;
+            if (httpContext != null)
+            {
+                if (httpContext.User?.Identity?.IsAuthenticated == true)
+                {
+                    userName = httpContext.User.Identity.Name ?? "User";
+                    if (httpContext.User.IsInRole("Admin")) userRole = "Admin";
+                    else if (httpContext.User.IsInRole("Mechanic")) userRole = "Mechanic";
+                    else if (httpContext.User.IsInRole("Customer")) userRole = "Customer";
+                }
+                else
+                {
+                    if (httpContext.Request.Cookies.TryGetValue("RaahSathiUserName", out string? cookieName))
+                    {
+                        userName = cookieName;
+                    }
+                    if (httpContext.Request.Cookies.TryGetValue("RaahSathiUserRole", out string? cookieRole))
+                    {
+                        userRole = cookieRole;
+                    }
+                }
+
+                ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+                userAgent = httpContext.Request.Headers["User-Agent"].ToString();
+                if (userAgent.Length > 200) userAgent = userAgent.Substring(0, 200);
+            }
+
+            var auditEntries = new List<AuditLog>();
+            var entries = ChangeTracker.Entries().ToList();
+
+            foreach (var entry in entries)
+            {
+                if (entry.Entity is AuditLog || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+                    continue;
+
+                string entityName = entry.Entity.GetType().Name;
+                if (entityName.Contains("Proxy"))
+                {
+                    entityName = entry.Entity.GetType().BaseType?.Name ?? entityName;
+                }
+
+                string actionType = entry.State switch
+                {
+                    EntityState.Added => "INSERT",
+                    EntityState.Modified => "UPDATE",
+                    EntityState.Deleted => "DELETE",
+                    _ => "UPDATE"
+                };
+
+                var detailsList = new List<string>();
+                if (entry.State == EntityState.Added)
+                {
+                    foreach (var prop in entry.CurrentValues.Properties)
+                    {
+                        var val = entry.CurrentValues[prop];
+                        if (val != null && prop.Name != "Password")
+                        {
+                            detailsList.Add($"{prop.Name}: '{val}'");
+                        }
+                    }
+                }
+                else if (entry.State == EntityState.Deleted)
+                {
+                    foreach (var prop in entry.OriginalValues.Properties)
+                    {
+                        var val = entry.OriginalValues[prop];
+                        if (val != null && prop.Name != "Password")
+                        {
+                            detailsList.Add($"{prop.Name}: '{val}'");
+                        }
+                    }
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    foreach (var prop in entry.OriginalValues.Properties)
+                    {
+                        var originalVal = entry.OriginalValues[prop];
+                        var currentVal = entry.CurrentValues[prop];
+
+                        if (prop.Name != "Password" && !Equals(originalVal, currentVal))
+                        {
+                            detailsList.Add($"{prop.Name}: '{originalVal}' -> '{currentVal}'");
+                        }
+                    }
+                }
+
+                string details = $"[Low-Level] {actionType} on {entityName}. Changes: {string.Join(", ", detailsList)}";
+                if (details.Length > 2000) details = details.Substring(0, 1997) + "...";
+
+                var audit = new AuditLog
+                {
+                    AdminName = userName,
+                    UserRole = userRole,
+                    ActionType = actionType,
+                    Details = details,
+                    TimeStamp = DateTime.UtcNow,
+                    IpAddress = ipAddress,
+                    UserAgent = userAgent
+                };
+
+                auditEntries.Add(audit);
+            }
+
+            int result = await base.SaveChangesAsync(cancellationToken);
+
+            if (auditEntries.Count > 0)
+            {
+                AuditLogs.AddRange(auditEntries);
+                await base.SaveChangesAsync(cancellationToken);
+            }
+
+            return result;
         }
     }
 }

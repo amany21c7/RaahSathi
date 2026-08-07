@@ -160,6 +160,14 @@ namespace RaahSathi.Controllers
                 string userStrId = user.Id.ToString();
                 foreach (var job in candidates)
                 {
+                    double jobAgeSeconds = (DateTime.UtcNow - job.CreatedAt).TotalSeconds;
+                    if (jobAgeSeconds >= 300)
+                    {
+                        job.Status = "TimedOut";
+                        await _dbContext.SaveChangesAsync();
+                        continue;
+                    }
+
                     bool shouldSkip = false;
                     if (!string.IsNullOrEmpty(job.DeclinedMechanicIds))
                     {
@@ -577,8 +585,17 @@ namespace RaahSathi.Controllers
 
             foreach (var job in requestedJobs)
             {
-                // Dynamic radius expansion based on job age (0-20s: 15km, 20-30s: 30km, 30s+: 50km)
                 double jobAgeSeconds = (DateTime.UtcNow - job.CreatedAt).TotalSeconds;
+
+                // Auto-timeout jobs older than 300 seconds
+                if (jobAgeSeconds >= 300)
+                {
+                    job.Status = "TimedOut";
+                    await _dbContext.SaveChangesAsync();
+                    continue;
+                }
+
+                // Dynamic radius expansion based on job age (0-20s: 15km, 20-30s: 30km, 30s+: 50km)
                 double maxRadiusKm = jobAgeSeconds < 20 ? 15.0 : (jobAgeSeconds < 30 ? 30.0 : 50.0);
 
                 // Skip if mechanic previously declined or snoozed this job

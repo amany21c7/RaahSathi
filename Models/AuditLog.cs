@@ -11,5 +11,6 @@ namespace RaahSathi.Models
         public DateTime TimeStamp { get; set; } = DateTime.UtcNow;
         public string IpAddress { get; set; } = "127.0.0.1";
         public string UserAgent { get; set; } = "Chrome Browser";
+        public string UserRole { get; set; } = "Admin";
     }
 }

@@ -17,6 +17,7 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IPricingRepository, PricingRepository>();
 builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddHttpContextAccessor();
 
 // Add Cookie Authentication
 builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
@@ -397,8 +398,14 @@ using (var scope = app.Services.CreateScope())
                         [Details] nvarchar(max) NOT NULL,
                         [TimeStamp] datetime2 NOT NULL DEFAULT GETUTCDATE(),
                         [IpAddress] nvarchar(50) NOT NULL DEFAULT '127.0.0.1',
-                        [UserAgent] nvarchar(200) NOT NULL DEFAULT 'Chrome Browser'
+                        [UserAgent] nvarchar(200) NOT NULL DEFAULT 'Chrome Browser',
+                        [UserRole] nvarchar(50) NOT NULL DEFAULT 'Admin'
                     );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[AuditLogs]') AND name = N'UserRole')
+                BEGIN
+                    ALTER TABLE [AuditLogs] ADD [UserRole] nvarchar(50) NOT NULL DEFAULT 'Admin';
                 END;
 
                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[AdminSystemSettings]') AND type in (N'U'))
