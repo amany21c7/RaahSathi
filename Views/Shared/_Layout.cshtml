@@ -305,6 +305,18 @@
         bool isCustPage = Context.Request.Path.Value?.StartsWith("/Customer", StringComparison.OrdinalIgnoreCase) == true;
         bool isMechPage = Context.Request.Path.Value?.StartsWith("/Mechanic", StringComparison.OrdinalIgnoreCase) == true;
         bool isAdminPage = Context.Request.Path.Value?.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase) == true;
+        bool isSettingsSubPage = Context.Request.Path.Value?.StartsWith("/Admin/Settings", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Pricing", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/ManagePricing", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Services", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Cities", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Payments", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Notifications", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Cms", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Account", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Admins", StringComparison.OrdinalIgnoreCase) == true;
+        
+        bool isSettingsHubPage = Context.Request.Path.Value?.Equals("/Admin/Settings", StringComparison.OrdinalIgnoreCase) == true;
         
         bool isCustLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Customer");
         bool isMechLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Mechanic");
@@ -434,20 +446,8 @@
                     <a href="/Admin/LiveMap" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/LiveMap", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-map-location-dot"></i> Live Map
                     </a>
-                    <a href="/Admin/Pricing" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Pricing", StringComparison.OrdinalIgnoreCase) == true || Context.Request.Path.Value?.StartsWith("/Admin/ManagePricing", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
-                        <i class="fa-solid fa-tags"></i> Pricing
-                    </a>
-                    <a href="/Admin/Services" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Services", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
-                        <i class="fa-solid fa-screwdriver-wrench"></i> Services
-                    </a>
-                    <a href="/Admin/Cities" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Cities", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
-                        <i class="fa-solid fa-city"></i> Cities
-                    </a>
                     <a href="/Admin/Vehicles" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Vehicles", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-car-side"></i> Vehicles
-                    </a>
-                    <a href="/Admin/Payments" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Payments", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
-                        <i class="fa-solid fa-credit-card"></i> Payments
                     </a>
                     <a href="/Admin/Reports" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Reports", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-chart-line"></i> Reports
@@ -455,20 +455,8 @@
                     <a href="/Admin/Messages" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Messages", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-headset"></i> Support
                     </a>
-                    <a href="/Admin/Notifications" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Notifications", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
-                        <i class="fa-solid fa-bell"></i> Notifications
-                    </a>
-                    <a href="/Admin/Cms" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Cms", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
-                        <i class="fa-solid fa-images"></i> CMS
-                    </a>
-                    <a href="/Admin/Settings" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Settings", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                    <a href="javascript:void(0);" onclick="toggleSettingsMenu(event)" class="noc-nav-item @(isSettingsSubPage ? "active" : "")">
                         <i class="fa-solid fa-sliders"></i> Settings
-                    </a>
-                    <a href="/Admin/Account" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Account", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
-                        <i class="fa-solid fa-building-columns"></i> Admin Account
-                    </a>
-                    <a href="/Admin/Admins" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Admins", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
-                        <i class="fa-solid fa-user-shield"></i> Admins
                     </a>
                     <a href="/Admin/Logs" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Logs", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-rectangle-list"></i> Logs
@@ -559,6 +547,47 @@
                     </div>
                 </header>
 
+                <!-- Settings Drawer Overlay Backdrop -->
+                <div class="noc-settings-overlay" onclick="closeSettingsMenu()"></div>
+
+                <!-- Middle Settings Slide-out Menu Drawer -->
+                <aside class="noc-settings-menu-drawer">
+                    <div class="px-3 py-3 border-bottom border-secondary border-opacity-30 d-flex justify-content-between align-items-center bg-black bg-opacity-30">
+                        <span class="text-white font-weight-bold" style="font-size: 0.88rem; font-family:'Outfit', sans-serif;"><i class="fa-solid fa-gears text-warning me-1.5"></i> Settings Center</span>
+                        <button type="button" class="btn-close btn-close-white btn-sm" onclick="closeSettingsMenu()"></button>
+                    </div>
+                    
+                    <div class="py-2 flex-grow-1 overflow-y-auto">
+                        <a href="/Admin/Settings" class="noc-middle-item @(Context.Request.Path.Value?.Equals("/Admin/Settings", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-key"></i> API Integration
+                        </a>
+                        <a href="/Admin/Pricing" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Pricing", StringComparison.OrdinalIgnoreCase) == true || Context.Request.Path.Value?.StartsWith("/Admin/ManagePricing", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-tags"></i> Pricing
+                        </a>
+                        <a href="/Admin/Services" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Services", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-screwdriver-wrench"></i> Services
+                        </a>
+                        <a href="/Admin/Cities" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Cities", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-city"></i> Cities
+                        </a>
+                        <a href="/Admin/Payments" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Payments", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-credit-card"></i> Payments
+                        </a>
+                        <a href="/Admin/Notifications" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Notifications", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-bell"></i> Notifications
+                        </a>
+                        <a href="/Admin/Cms" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Cms", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-images"></i> CMS
+                        </a>
+                        <a href="/Admin/Account" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Account", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-building-columns"></i> Admin Accounts
+                        </a>
+                        <a href="/Admin/Admins" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Admins", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-user-shield"></i> System Admins
+                        </a>
+                    </div>
+                </aside>
+
                 <main class="p-4 flex-grow-1">
                     @RenderBody()
                 </main>
@@ -647,6 +676,20 @@
             function toggleAdminSidebar() {
                 $('.noc-sidebar').toggleClass('show');
                 $('.noc-sidebar-overlay').toggleClass('show');
+            }
+
+            function toggleSettingsMenu(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                $('.noc-settings-menu-drawer').toggleClass('show');
+                $('.noc-settings-overlay').toggleClass('show');
+            }
+
+            function closeSettingsMenu() {
+                $('.noc-settings-menu-drawer').removeClass('show');
+                $('.noc-settings-overlay').removeClass('show');
             }
 
             function openEmergencySurgeModal() {

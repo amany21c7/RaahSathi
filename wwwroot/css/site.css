@@ -761,3 +761,88 @@ body { top: 0px !important; }
         font-size: 1rem !important;
     }
 }
+
+/* Middle Sub-sidebar Settings Navigation Menu Drawer */
+.noc-settings-menu-drawer { 
+    position: fixed;
+    top: 65px;
+    bottom: 0;
+    left: 260px;
+    width: 250px; 
+    background-color: #111827; 
+    border-right: 1px solid #1E293B; 
+    display: flex; 
+    flex-direction: column; 
+    z-index: 1042;
+    box-shadow: 15px 0 35px rgba(0, 0, 0, 0.6);
+    transform: translateX(-100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.noc-settings-menu-drawer.show {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Settings Overlay Backdrop */
+.noc-settings-overlay {
+    position: fixed;
+    top: 65px;
+    bottom: 0;
+    left: 260px;
+    right: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(3px);
+    z-index: 1038;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.noc-settings-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.noc-middle-item { 
+    display: flex; 
+    align-items: center; 
+    padding: 0.68rem 1.1rem; 
+    color: #94A3B8; 
+    text-decoration: none; 
+    font-weight: 500; 
+    font-size: 0.88rem; 
+    border-radius: 8px; 
+    margin: 3px 10px; 
+    transition: all 0.2s ease; 
+}
+.noc-middle-item:hover, .noc-middle-item.active { 
+    background-color: rgba(245, 158, 11, 0.15); 
+    color: #F59E0B; 
+    font-weight: 600; 
+}
+.noc-middle-item i { 
+    width: 22px; 
+    font-size: 1.05rem; 
+    margin-right: 10px; 
+    text-align: center; 
+}
+
+/* 📱 Mobile & Tablet Responsive Media Queries */
+@media (max-width: 991.98px) {
+    .noc-settings-menu-drawer { 
+        top: 0;
+        left: 0;
+        width: 270px;
+        z-index: 1055;
+        box-shadow: 0 0 35px rgba(0,0,0,0.85);
+    }
+    .noc-settings-overlay { 
+        top: 0;
+        left: 0;
+        z-index: 1052;
+    }
+}

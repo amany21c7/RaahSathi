@@ -1,6 +1,6 @@
 @using RaahSathi.Models
 @{
-    ViewData["Title"] = "System Settings & API Gateways";
+    ViewData["Title"] = "API Integration";
     var settings = ViewBag.Settings as List<AdminSystemSetting> ?? new List<AdminSystemSetting>();
     
     var smsApiKeySetting = settings.FirstOrDefault(s => s.SettingKey == "SmsApiKey")?.SettingValue ?? "F2SMS_LIVE_SEC_882190012";
@@ -11,7 +11,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-sliders text-warning me-2"></i> System Settings & API Integrations</h4>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-key text-warning me-2"></i> API Integration</h4>
         <p class="text-muted small mb-0">Tiered commission settings (&lt;1k: 10%, 1k-3k: 8%, &gt;3k: 5%), SMS, Email, WhatsApp, Google Maps, OTP, and Payment Gateway credentials.</p>
     </div>
 </div>
