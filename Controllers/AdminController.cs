@@ -1683,12 +1683,17 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveSystemSettings(string commissionTierJson, string smsApiKey, string emailSender, string whatsappNo, string googleMapsKey)
+        public async Task<IActionResult> SaveSystemSettings(string smsApiKey, string emailSender, string whatsappNo, string googleMapsKey)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
+            await SaveOrUpdateSettingAsync("SmsApiKey", smsApiKey ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("EmailSender", emailSender ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("WhatsAppNo", whatsappNo ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("GoogleMapsKey", googleMapsKey ?? "", "API Gateway");
+
             await LogAdminActionAsync("SYSTEM_SETTINGS", "Updated Admin System Settings & Tiered Commission Rules");
-            TempData["Success"] = "System API & Commission Settings saved successfully.";
+            TempData["Success"] = "System API Settings saved successfully.";
             return RedirectToAction("Settings");
         }
 

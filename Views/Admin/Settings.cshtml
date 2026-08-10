@@ -2,6 +2,11 @@
 @{
     ViewData["Title"] = "System Settings & API Gateways";
     var settings = ViewBag.Settings as List<AdminSystemSetting> ?? new List<AdminSystemSetting>();
+    
+    var smsApiKeySetting = settings.FirstOrDefault(s => s.SettingKey == "SmsApiKey")?.SettingValue ?? "F2SMS_LIVE_SEC_882190012";
+    var whatsappNoSetting = settings.FirstOrDefault(s => s.SettingKey == "WhatsAppNo")?.SettingValue ?? "+91 9876543210";
+    var googleMapsKeySetting = settings.FirstOrDefault(s => s.SettingKey == "GoogleMapsKey")?.SettingValue ?? "AIzaSyA88921_RS_MAPS_KEY";
+    var emailSenderSetting = settings.FirstOrDefault(s => s.SettingKey == "EmailSender")?.SettingValue ?? "support@raahsathi.com";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -32,7 +37,7 @@
                         <label class="form-label text-muted small">Tier 3: Jobs above ₹3,000</label>
                         <input type="text" class="form-control glass-input text-warning font-weight-bold" value="5% Commission Rate" readonly>
                     </div>
-                    <span class="text-muted small"><i class="fa-solid fa-circle-info text-info me-1"></i> Tiered rates apply automatically during payment escrow settlement.</span>
+                    <span class="text-muted small"><i class="fa-solid fa-circle-info text-info me-1"></i> Tiered rates apply automatically during payment escrow settlement. Configure custom base rates in the "Pricing" panel.</span>
                 </div>
             </div>
         </div>
@@ -46,15 +51,19 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label text-muted small">Fast2SMS / Twilio SMS API Key</label>
-                        <input type="password" name="smsApiKey" class="form-control glass-input text-white" value="F2SMS_LIVE_SEC_882190012">
+                        <input type="password" name="smsApiKey" class="form-control glass-input text-white" value="@smsApiKeySetting" placeholder="Enter SMS gateway secret key...">
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">WhatsApp Business API Phone</label>
-                        <input type="text" name="whatsappNo" class="form-control glass-input text-white" value="+91 9876543210">
+                        <input type="text" name="whatsappNo" class="form-control glass-input text-white" value="@whatsappNoSetting" placeholder="Enter WhatsApp phone number...">
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">Google Maps JavaScript API Key</label>
-                        <input type="password" name="googleMapsKey" class="form-control glass-input text-white" value="AIzaSyA88921_RS_MAPS_KEY">
+                        <input type="password" name="googleMapsKey" class="form-control glass-input text-white" value="@googleMapsKeySetting" placeholder="Enter Maps Javascript API key...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">System SMTP Sender Email Address</label>
+                        <input type="email" name="emailSender" class="form-control glass-input text-white" value="@emailSenderSetting" placeholder="e.g. support@raahsathi.com">
                     </div>
                 </div>
             </div>
