@@ -410,6 +410,11 @@ using (var scope = app.Services.CreateScope())
                     );
                 END;
 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[PushNotificationLogs]') AND name = N'ExpiresAt')
+                BEGIN
+                    ALTER TABLE [PushNotificationLogs] ADD [ExpiresAt] datetime2 NULL;
+                END;
+
                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[AuditLogs]') AND type in (N'U'))
                 BEGIN
                     CREATE TABLE [AuditLogs] (

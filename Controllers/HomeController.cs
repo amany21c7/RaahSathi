@@ -473,6 +473,75 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             return Content(robots.ToString(), "text/plain", System.Text.Encoding.UTF8);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetActiveNotifications()
+        {
+            string role = "Guest";
+            string? userCity = null;
+
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                if (User.IsInRole("Admin")) role = "Admin";
+                else if (User.IsInRole("Mechanic"))
+                {
+                    role = "Mechanic";
+                    var userPhone = User.Identity.Name;
+                    var mechUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == userPhone);
+                    if (mechUser != null)
+                    {
+                        var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == mechUser.Id);
+                        if (mechProfile != null)
+                        {
+                            userCity = mechProfile.City;
+                        }
+                    }
+                }
+                else if (User.IsInRole("Customer"))
+                {
+                    role = "Customer";
+                    if (Request.Cookies.TryGetValue("UserSelectedCity", out string? cookieCity))
+                    {
+                        userCity = cookieCity;
+                    }
+                }
+            }
+
+            var cutoffDate = DateTime.UtcNow.AddDays(-7);
+            var query = _dbContext.PushNotificationLogs.Where(n => n.SentAt >= cutoffDate && (n.ExpiresAt == null || n.ExpiresAt > DateTime.UtcNow));
+
+            if (role == "Customer")
+            {
+                query = query.Where(n => n.TargetAudience == "All Users" || n.TargetAudience == "Customers");
+            }
+            else if (role == "Mechanic")
+            {
+                query = query.Where(n => n.TargetAudience == "All Users" || n.TargetAudience == "Mechanics");
+            }
+            else if (role == "Admin")
+            {
+                query = query.Where(n => n.TargetAudience == "All Users");
+            }
+            else
+            {
+                query = query.Where(n => n.TargetAudience == "All Users");
+            }
+
+            var allNotifs = await query.OrderByDescending(n => n.SentAt).ToListAsync();
+
+            var filteredNotifs = allNotifs.Where(n =>
+                n.SelectedCity.Equals("All", StringComparison.OrdinalIgnoreCase) ||
+                (userCity != null && n.SelectedCity.Equals(userCity, StringComparison.OrdinalIgnoreCase))
+            ).Select(n => new
+            {
+                n.Id,
+                n.Title,
+                n.Message,
+                SentAt = n.SentAt.ToLocalTime().ToString("MMM dd, yyyy hh:mm tt")
+            }).ToList();
+
+            return Json(new { success = true, notifications = filteredNotifs });
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

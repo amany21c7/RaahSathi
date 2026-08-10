@@ -11,5 +11,6 @@ namespace RaahSathi.Models
         public string Message { get; set; } = string.Empty;
         public int SentCount { get; set; } = 1;
         public DateTime SentAt { get; set; } = DateTime.UtcNow;
+        public DateTime? ExpiresAt { get; set; }
     }
 }

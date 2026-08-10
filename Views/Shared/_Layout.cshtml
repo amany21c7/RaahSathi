@@ -523,6 +523,26 @@
                             </ul>
                         </div>
 
+                        <!-- Admin Action Items Notification Bell Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-warning btn-sm position-relative px-2.5 py-1.5 text-warning d-flex align-items-center justify-content-center" type="button" id="adminNotifBellBtn" data-bs-toggle="dropdown" style="font-size: 0.95rem; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); width: 34px; height: 34px; border-radius: 50%;">
+                                <i class="fa-solid fa-bell"></i>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light d-none" id="adminNotifBadge" style="font-size: 0.65rem; padding: 0.25em 0.4em;">0</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg p-0" id="adminNotifDropdownMenu" style="width: 340px; max-height: 420px; overflow-y: auto; z-index: 1050; border-radius: 12px;">
+                                <div class="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
+                                    <h6 class="text-white font-weight-bold mb-0" style="font-family:'Outfit';"><i class="fa-solid fa-bell text-warning me-1.5"></i> Pending Operations</h6>
+                                    <span class="badge bg-danger text-white small" id="adminNotifCountBadge">0 Pending</span>
+                                </div>
+                                <div class="p-1" id="adminNotifItemsList">
+                                    <div class="text-center py-4 text-muted small">
+                                        <i class="fa-solid fa-circle-check fa-2x mb-2 text-success opacity-80"></i>
+                                        <p class="mb-0">All clear! No pending tasks.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <span class="badge bg-dark border border-secondary text-warning px-2.5 py-2 font-weight-bold noc-topbar-clock">
                             <i class="fa-regular fa-clock me-1"></i> IST NOC Live
                         </span>
@@ -829,6 +849,26 @@
                                     <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('kn')">🇮🇳 Kannada (ಕನ್ನಡ)</a></li>
                                     <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('ml')">🇮🇳 Malayalam (മലയാളം)</a></li>
                                 </ul>
+                            </div>
+
+                            <!-- Notification Bell Dropdown -->
+                            <div class="dropdown ms-lg-2">
+                                <button class="btn btn-outline-warning btn-sm position-relative px-2.5 py-1.5 text-warning d-flex align-items-center justify-content-center" type="button" id="notificationBellBtn" data-bs-toggle="dropdown" style="font-size: 0.95rem; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); width: 34px; height: 34px; border-radius: 50%;">
+                                    <i class="fa-solid fa-bell"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light d-none" id="notificationBadge" style="font-size: 0.65rem; padding: 0.25em 0.4em;">0</span>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg p-0" id="notificationDropdownMenu" style="width: 320px; max-height: 400px; overflow-y: auto; z-index: 1050; border-radius: 12px;">
+                                    <div class="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
+                                        <h6 class="text-white font-weight-bold mb-0" style="font-family:'Outfit';"><i class="fa-solid fa-bell text-warning me-1.5"></i> Live Announcements</h6>
+                                        <span class="badge bg-secondary text-light small" id="notificationCountBadge">0 New</span>
+                                    </div>
+                                    <div class="p-1" id="notificationItemsList">
+                                        <div class="text-center py-4 text-muted small">
+                                            <i class="fa-solid fa-bell-slash fa-2x mb-2 text-secondary opacity-50"></i>
+                                            <p class="mb-0">No active notifications.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             @if (activeRole != "Guest")
@@ -1554,6 +1594,160 @@
                     }
                 }
             });
+
+            // Real-Time Push Notifications fetcher
+            window.pollPushNotifications = function() {
+                $.get('/Home/GetActiveNotifications', { _t: Date.now() }, function(res) {
+                    if (res && res.success && res.notifications) {
+                        var notifications = res.notifications;
+                        var newCount = 0;
+                        var lastSeenId = parseInt(localStorage.getItem('raahsathi_last_seen_notif_id') || '0');
+                        var maxId = lastSeenId;
+                        
+                        var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
+                        var showPopupNotif = null;
+                        
+                        var listHtml = '';
+                        if (notifications.length === 0) {
+                            listHtml = '<div class="text-center py-4 text-muted small">' +
+                                '<i class="fa-solid fa-bell-slash fa-2x mb-2 text-secondary opacity-50"></i>' +
+                                '<p class="mb-0">No active notifications.</p>' +
+                                '</div>';
+                        } else {
+                            $.each(notifications, function(idx, n) {
+                                if (n.id > lastSeenId) {
+                                    newCount++;
+                                    if (n.id > maxId) {
+                                        maxId = n.id;
+                                    }
+                                }
+                                
+                                // Priority popup checking: newest un-dismissed active notification
+                                if (dismissedNotifs.indexOf(n.id) === -1) {
+                                    if (!showPopupNotif || n.id > showPopupNotif.id) {
+                                        showPopupNotif = n;
+                                    }
+                                }
+                                
+                                listHtml += '<div class="p-3 border-bottom border-secondary border-opacity-30 hover-lift" style="cursor: pointer;" onclick="openBroadcastModalDirect(' + n.id + ', \'' + encodeURIComponent(n.title) + '\', \'' + encodeURIComponent(n.message) + '\', \'' + n.sentAt + '\')">' +
+                                    '<div class="d-flex justify-content-between align-items-start mb-1">' +
+                                        '<strong class="text-white small" style="font-family:\'Outfit\';">' + n.title + '</strong>' +
+                                        '<span class="text-muted extra-small" style="font-size: 0.68rem;">' + n.sentAt + '</span>' +
+                                    '</div>' +
+                                    '<p class="text-muted small mb-0" style="font-size: 0.78rem; line-height: 1.35;">' + n.message + '</p>' +
+                                    '</div>';
+                            });
+                        }
+                        
+                        // Update DOM elements if they exist
+                        $('#notificationItemsList').html(listHtml);
+                        $('#notificationCountBadge').text(newCount + ' New');
+                        
+                        if (newCount > 0) {
+                            $('#notificationBadge').text(newCount).removeClass('d-none');
+                        } else {
+                            $('#notificationBadge').addClass('d-none');
+                        }
+                        
+                        // Auto popup when loaded if there is an active undismissed notification
+                        if (showPopupNotif) {
+                            showBroadcastModal(showPopupNotif.id, showPopupNotif.title, showPopupNotif.message, showPopupNotif.sentAt);
+                        }
+                        
+                        // Save last seen ID on dropdown open
+                        $('#notificationBellBtn').off('click').on('click', function() {
+                            localStorage.setItem('raahsathi_last_seen_notif_id', maxId);
+                            $('#notificationBadge').addClass('d-none');
+                            $('#notificationCountBadge').text('0 New');
+                        });
+                    }
+                });
+            };
+
+            function showBroadcastModal(id, title, message, sentAt) {
+                $('#broadcastModalTitle').text(title);
+                $('#broadcastModalMessage').text(message);
+                $('#broadcastModalTime').html('<i class="fa-regular fa-clock me-1"></i> ' + sentAt);
+                
+                $('#btnDismissBroadcastModal').off('click').on('click', function() {
+                    var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
+                    if (dismissedNotifs.indexOf(id) === -1) {
+                        dismissedNotifs.push(id);
+                        localStorage.setItem('raahsathi_dismissed_notifs', JSON.stringify(dismissedNotifs));
+                    }
+                    
+                    var modalEl = document.getElementById('raahSathiBroadcastModal');
+                    var instance = bootstrap.Modal.getInstance(modalEl);
+                    if (instance) {
+                        instance.hide();
+                    }
+                });
+
+                var modalEl = document.getElementById('raahSathiBroadcastModal');
+                var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                instance.show();
+            }
+
+            window.openBroadcastModalDirect = function(id, titleEnc, messageEnc, sentAt) {
+                showBroadcastModal(id, decodeURIComponent(titleEnc), decodeURIComponent(messageEnc), sentAt);
+            };
+
+            // Start polling if the notification bell exists and user is NOT an admin
+            var isAdminLoggedIn = @(isAdminLoggedIn.ToString().ToLower());
+            if ($('#notificationBellBtn').length && !isAdminLoggedIn) {
+                window.pollPushNotifications();
+                // Check for new broadcasts every 30 seconds
+                setInterval(window.pollPushNotifications, 30000);
+            }
+
+            // Real-Time Admin Operations Notification fetcher
+            window.pollAdminNotifications = function() {
+                $.get('/Admin/GetAdminNotifications', { _t: Date.now() }, function(res) {
+                    if (res && res.success && res.notifications) {
+                        var notifications = res.notifications;
+                        var count = notifications.length;
+                        
+                        var listHtml = '';
+                        if (count === 0) {
+                            listHtml = '<div class="text-center py-4 text-muted small">' +
+                                '<i class="fa-solid fa-circle-check fa-2x mb-2 text-success opacity-80"></i>' +
+                                '<p class="mb-0">All clear! No pending tasks.</p>' +
+                                '</div>';
+                        } else {
+                            $.each(notifications, function(idx, n) {
+                                listHtml += '<a href="' + n.url + '" class="text-decoration-none d-block p-3 border-bottom border-secondary border-opacity-35 hover-lift" style="transition: background 0.15s ease;">' +
+                                    '<div class="d-flex align-items-start gap-2.5">' +
+                                        '<div class="fs-5 mt-0.5"><i class="' + n.icon + '"></i></div>' +
+                                        '<div class="flex-grow-1" style="min-width: 0;">' +
+                                            '<div class="d-flex justify-content-between align-items-center mb-0.5">' +
+                                                '<strong class="text-white small" style="font-family:\'Outfit\'; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 140px;">' + n.title + '</strong>' +
+                                                '<span class="text-muted extra-small" style="font-size: 0.68rem; flex-shrink: 0;">' + n.createdAt + '</span>' +
+                                            '</div>' +
+                                            '<p class="text-muted small mb-0" style="font-size: 0.78rem; line-height: 1.35; text-overflow: ellipsis; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">' + n.message + '</p>' +
+                                        '</div>' +
+                                    '</div>' +
+                                    '</a>';
+                            });
+                        }
+                        
+                        $('#adminNotifItemsList').html(listHtml);
+                        $('#adminNotifCountBadge').text(count + ' Pending');
+                        
+                        if (count > 0) {
+                            $('#adminNotifBadge').text(count).removeClass('d-none');
+                        } else {
+                            $('#adminNotifBadge').addClass('d-none');
+                        }
+                    }
+                });
+            };
+
+            // Start polling if Admin bell icon exists and user is Admin
+            if ($('#adminNotifBellBtn').length && isAdminLoggedIn) {
+                window.pollAdminNotifications();
+                // Check for new pending items every 20 seconds
+                setInterval(window.pollAdminNotifications, 20000);
+            }
         });
     </script>
 
@@ -2013,5 +2207,33 @@
             });
         </script>
     }
+
+    <!-- Premium Custom Broadcast Alert Modal -->
+    <div class="modal fade" id="raahSathiBroadcastModal" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(8px); z-index: 106000;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="background: linear-gradient(145deg, #101c36, #090e1c); border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.6);">
+                <div class="modal-body p-4 text-center">
+                    <!-- Glowing Alert Icon Header -->
+                    <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10 border border-warning border-opacity-30 rounded-circle mb-3" style="width: 76px; height: 76px; box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);">
+                        <i class="fa-solid fa-bell text-warning fa-2x animate-bounce"></i>
+                    </div>
+                    
+                    <span class="badge bg-warning text-dark font-weight-extrabold px-3 py-1 mb-2" style="font-size: 0.72rem; letter-spacing: 1px;">IMPORTANT BROADCAST</span>
+                    
+                    <h4 class="text-white font-weight-bold mb-2" id="broadcastModalTitle" style="font-family: 'Outfit';">Live Announcement</h4>
+                    <p class="text-muted small mb-4" id="broadcastModalMessage" style="font-size: 0.88rem; line-height: 1.5; color: #cbd5e1 !important;">Notification details...</p>
+                    
+                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-black bg-opacity-30 border border-secondary border-opacity-20 mb-4">
+                        <span class="small text-muted"><i class="fa-regular fa-clock me-1"></i> Broadcast Date:</span>
+                        <span class="small text-warning font-weight-bold" id="broadcastModalTime">N/A</span>
+                    </div>
+
+                    <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5" id="btnDismissBroadcastModal" style="border-radius: 10px; font-family: 'Outfit'; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);">
+                        <i class="fa-solid fa-circle-check me-1"></i> Okay, Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

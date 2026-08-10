@@ -1238,7 +1238,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendPushNotification(string targetAudience, string selectedCity, string title, string message)
+        public async Task<IActionResult> SendPushNotification(string targetAudience, string selectedCity, string title, string message, DateTime? expiresAt)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
             var notif = new PushNotificationLog
@@ -1248,7 +1248,8 @@ namespace RaahSathi.Controllers
                 Title = title,
                 Message = message,
                 SentCount = new Random().Next(120, 850),
-                SentAt = DateTime.UtcNow
+                SentAt = DateTime.UtcNow,
+                ExpiresAt = expiresAt
             };
             _dbContext.PushNotificationLogs.Add(notif);
             await _dbContext.SaveChangesAsync();
@@ -1256,6 +1257,142 @@ namespace RaahSathi.Controllers
 
             TempData["Success"] = $"Push notification '{title}' broadcasted successfully to {notif.SentCount} devices!";
             return RedirectToAction("Notifications");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePushNotification(int id, string targetAudience, string selectedCity, string title, string message, DateTime? expiresAt)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var notif = await _dbContext.PushNotificationLogs.FindAsync(id);
+            if (notif == null) return NotFound();
+
+            notif.TargetAudience = targetAudience ?? "All Users";
+            notif.SelectedCity = selectedCity ?? "All";
+            notif.Title = title;
+            notif.Message = message;
+            notif.ExpiresAt = expiresAt;
+
+            await _dbContext.SaveChangesAsync();
+            await LogAdminActionAsync("UPDATE_PUSH_NOTIFICATION", $"Updated Push Notification ID {id}: {title}");
+
+            TempData["Success"] = "Push notification updated successfully!";
+            return RedirectToAction("Notifications");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeletePushNotification(int id)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var notif = await _dbContext.PushNotificationLogs.FindAsync(id);
+            if (notif != null)
+            {
+                _dbContext.PushNotificationLogs.Remove(notif);
+                await _dbContext.SaveChangesAsync();
+                await LogAdminActionAsync("DELETE_PUSH_NOTIFICATION", $"Deleted Push Notification ID {id}");
+                TempData["Success"] = "Broadcast notification deleted/ended successfully.";
+            }
+
+            return RedirectToAction("Notifications");
+        }
+
+        public class AdminNotificationDto
+        {
+            public string Title { get; set; } = string.Empty;
+            public string Message { get; set; } = string.Empty;
+            public string Url { get; set; } = string.Empty;
+            public string Icon { get; set; } = string.Empty;
+            public string CreatedAt { get; set; } = string.Empty;
+            public DateTime RawDate { get; set; }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAdminNotifications()
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
+
+            var list = new List<AdminNotificationDto>();
+
+            // 1. Pending Support Enquiries
+            var supportMsgs = await _dbContext.ContactMessages
+                .Where(m => m.Status == "Pending")
+                .OrderByDescending(m => m.Id)
+                .Take(10)
+                .ToListAsync();
+            foreach (var m in supportMsgs)
+            {
+                list.Add(new AdminNotificationDto
+                {
+                    Title = "Support Inquiry",
+                    Message = $"New message from {m.FullName}: '{m.Subject}'",
+                    Url = "/Admin/Messages",
+                    Icon = "fa-solid fa-headset text-warning",
+                    CreatedAt = m.CreatedAt.ToLocalTime().ToString("MMM dd, hh:mm tt"),
+                    RawDate = m.CreatedAt
+                });
+            }
+
+            // 2. Pending Payout Requests
+            var payoutRequests = await _dbContext.MechanicPayoutRequests
+                .Where(p => p.Status == "Pending")
+                .OrderByDescending(p => p.Id)
+                .Take(10)
+                .ToListAsync();
+            foreach (var p in payoutRequests)
+            {
+                var mech = await _dbContext.Users.FindAsync(p.MechanicId);
+                var mechName = mech?.Name ?? "Mechanic";
+                list.Add(new AdminNotificationDto
+                {
+                    Title = "Payout Request",
+                    Message = $"{mechName} requested payout of ₹{p.Amount:N0}",
+                    Url = "/Admin/Payments",
+                    Icon = "fa-solid fa-indian-rupee-sign text-success",
+                    CreatedAt = p.CreatedAt.ToLocalTime().ToString("MMM dd, hh:mm tt"),
+                    RawDate = p.CreatedAt
+                });
+            }
+
+            // 3. Pending Job Complaints
+            var complaints = await _dbContext.MechanicComplaints
+                .Include(c => c.Customer)
+                .Where(c => c.Status == "Pending")
+                .OrderByDescending(c => c.Id)
+                .Take(10)
+                .ToListAsync();
+            foreach (var c in complaints)
+            {
+                list.Add(new AdminNotificationDto
+                {
+                    Title = "Customer Complaint",
+                    Message = $"Complaint from {c.Customer?.Name ?? "Customer"} ({c.Rating}★)",
+                    Url = "/Admin/Messages",
+                    Icon = "fa-solid fa-triangle-exclamation text-danger",
+                    CreatedAt = c.CreatedAt.ToLocalTime().ToString("MMM dd, hh:mm tt"),
+                    RawDate = c.CreatedAt
+                });
+            }
+
+            // 4. Pending Mechanic KYCs
+            var pendingProfiles = await _dbContext.MechanicProfiles
+                .Include(p => p.User)
+                .Where(p => p.KycStatus == "Pending")
+                .Take(10)
+                .ToListAsync();
+            foreach (var p in pendingProfiles)
+            {
+                list.Add(new AdminNotificationDto
+                {
+                    Title = "KYC Verification Needed",
+                    Message = $"New KYC submitted by {p.User?.Name ?? "Mechanic"}",
+                    Url = "/Admin/Mechanics",
+                    Icon = "fa-solid fa-id-card text-info",
+                    CreatedAt = DateTime.Now.ToString("MMM dd, hh:mm tt"),
+                    RawDate = DateTime.UtcNow
+                });
+            }
+
+            var sortedList = list.OrderByDescending(x => x.RawDate).Take(15).ToList();
+            return Json(new { success = true, notifications = sortedList });
         }
 
         public async Task<IActionResult> Cms()
