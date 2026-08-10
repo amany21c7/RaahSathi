@@ -1,11 +1,52 @@
+@inject RaahSathi.Data.ApplicationDbContext _dbContext
 @{
     ViewData["Title"] = "Customer Operations Dashboard";
     var vehicles = ViewBag.Vehicles as List<RaahSathi.Models.Vehicle> ?? new List<RaahSathi.Models.Vehicle>();
     var activeJobs = ViewBag.ActiveJobs as List<RaahSathi.Models.Job> ?? new List<RaahSathi.Models.Job>();
     var pastJobs = ViewBag.PastJobs as List<RaahSathi.Models.Job> ?? new List<RaahSathi.Models.Job>();
+
+    var now = DateTime.UtcNow;
+    var customerBanners = _dbContext.CmsBanners
+        .Where(b => b.IsActive 
+                 && (b.TargetPage == "Customer Dashboard" || b.TargetPage == "Homepage")
+                 && (b.TargetAudience == "All Users" || b.TargetAudience == "Customers")
+                 && (b.ExpiresAt == null || b.ExpiresAt > now))
+        .OrderByDescending(b => b.Id)
+        .ToList();
 }
 
 <div class="row">
+    @if (customerBanners.Count > 0)
+    {
+        <div class="col-12 mb-4">
+            <div id="customerDashboardCarousel" class="carousel slide" data-bs-ride="carousel" style="border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.06);">
+                <div class="carousel-inner">
+                    @for (int i = 0; i < customerBanners.Count; i++)
+                    {
+                        var b = customerBanners[i];
+                        <div class="carousel-item @(i == 0 ? "active" : "")" style="height: 180px; position: relative;">
+                            <img src="@b.ImageUrl" class="d-block w-100 h-100" style="object-fit: cover; filter: brightness(0.45) contrast(1.1);" alt="@b.Title">
+                            <div class="carousel-caption d-flex flex-column align-items-start justify-content-center text-start h-100" style="left: 6%; right: 6%; bottom: 0; padding-top: 0; padding-bottom: 0;">
+                                <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">PROMOTION / ANNOUNCEMENT</span>
+                                <h3 class="text-white font-weight-bold mb-1" style="font-family: 'Outfit'; font-size: 1.62rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">@b.Title</h3>
+                                <p class="text-muted small mb-0 d-none d-sm-block" style="color: #e2e8f0 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">RaahSathi offers best-in-class roadside assistance services 24/7.</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (customerBanners.Count > 1)
+                {
+                    <button class="carousel-control-prev" type="button" data-bs-target="#customerDashboardCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#customerDashboardCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
     <!-- Quick Emergency Request for Registered Vehicles Card -->
     <div class="col-12">
         <div class="glass-card mb-4 border border-warning border-opacity-40" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));">

@@ -10,5 +10,7 @@ namespace RaahSathi.Models
         public string TargetPage { get; set; } = "Homepage";
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string TargetAudience { get; set; } = "All Users";
+        public DateTime? ExpiresAt { get; set; }
     }
 }

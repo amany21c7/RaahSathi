@@ -1403,7 +1403,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddCmsBanner(string title, string imageUrl, string targetPage)
+        public async Task<IActionResult> AddCmsBanner(string title, string imageUrl, string targetPage, string targetAudience, DateTime? expiresAt)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
             var banner = new CmsBanner
@@ -1411,14 +1411,52 @@ namespace RaahSathi.Controllers
                 Title = title,
                 ImageUrl = imageUrl,
                 TargetPage = string.IsNullOrWhiteSpace(targetPage) ? "Homepage" : targetPage,
+                TargetAudience = targetAudience ?? "All Users",
+                ExpiresAt = expiresAt,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
             _dbContext.CmsBanners.Add(banner);
             await _dbContext.SaveChangesAsync();
-            await LogAdminActionAsync("CMS_BANNER", $"Added CMS banner: {title}");
+            await LogAdminActionAsync("CMS_BANNER_ADD", $"Added CMS banner: {title}");
 
-            TempData["Success"] = $"Homepage banner '{title}' updated.";
+            TempData["Success"] = $"CMS Banner '{title}' added successfully.";
+            return RedirectToAction("Cms");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateCmsBanner(int id, string title, string imageUrl, string targetPage, string targetAudience, DateTime? expiresAt, bool isActive)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var banner = await _dbContext.CmsBanners.FindAsync(id);
+            if (banner == null) return NotFound();
+
+            banner.Title = title;
+            banner.ImageUrl = imageUrl;
+            banner.TargetPage = string.IsNullOrWhiteSpace(targetPage) ? "Homepage" : targetPage;
+            banner.TargetAudience = targetAudience ?? "All Users";
+            banner.ExpiresAt = expiresAt;
+            banner.IsActive = isActive;
+
+            await _dbContext.SaveChangesAsync();
+            await LogAdminActionAsync("CMS_BANNER_UPDATE", $"Updated CMS banner: {title}");
+
+            TempData["Success"] = $"CMS Banner '{title}' updated successfully.";
+            return RedirectToAction("Cms");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteCmsBanner(int id)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+            var banner = await _dbContext.CmsBanners.FindAsync(id);
+            if (banner != null)
+            {
+                _dbContext.CmsBanners.Remove(banner);
+                await _dbContext.SaveChangesAsync();
+                await LogAdminActionAsync("CMS_BANNER_DELETE", $"Deleted CMS banner ID {id}");
+                TempData["Success"] = "CMS Banner deleted successfully.";
+            }
             return RedirectToAction("Cms");
         }
 

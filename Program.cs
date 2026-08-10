@@ -397,6 +397,16 @@ using (var scope = app.Services.CreateScope())
                     );
                 END;
 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[CmsBanners]') AND name = N'TargetAudience')
+                BEGIN
+                    ALTER TABLE [CmsBanners] ADD [TargetAudience] nvarchar(100) NOT NULL DEFAULT 'All Users';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[CmsBanners]') AND name = N'ExpiresAt')
+                BEGIN
+                    ALTER TABLE [CmsBanners] ADD [ExpiresAt] datetime2 NULL;
+                END;
+
                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[PushNotificationLogs]') AND type in (N'U'))
                 BEGIN
                     CREATE TABLE [PushNotificationLogs] (
