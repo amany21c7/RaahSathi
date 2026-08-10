@@ -74,6 +74,10 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-vault text-warning me-2"></i> Escrow Transactions</h5>
             <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="d-flex align-items-center bg-dark bg-opacity-40 p-1 rounded-3 border border-secondary" style="height: 38px;">
+                    <i class="fa-solid fa-magnifying-glass text-muted ms-2 me-1.5" style="font-size: 0.85rem;"></i>
+                    <input type="text" id="searchEscrow" class="form-control form-control-sm bg-transparent text-white border-0 shadow-none ps-0" placeholder="Search Job ID, name..." style="width: 200px;" onkeyup="applyCalendarFilter()">
+                </div>
                 <div class="d-flex align-items-center gap-1.5 bg-dark bg-opacity-40 p-1.5 rounded-3 border border-secondary">
                     <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">From:</label>
                     <input type="date" id="filterStartDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="applyCalendarFilter()">
@@ -115,7 +119,8 @@
                                 data-created-at="@p.CreatedAt.ToString("o")" 
                                 data-amount="@p.Amount" 
                                 data-commission="@p.AdminCommissionAmount" 
-                                data-mechanic="@p.MechanicEarningAmount">
+                                data-mechanic="@p.MechanicEarningAmount"
+                                data-search-text="#rs-@p.JobId rs-@p.JobId @(p.Job?.Mechanic?.Name ?? "") @(p.Job?.Customer?.Name ?? "")">
                                 <td class="ps-3"><span class="badge bg-secondary text-light">@p.RazorpayPaymentId</span></td>
                                 <td class="font-weight-bold text-white">#RS-@p.JobId</td>
                                 <td>
@@ -171,7 +176,21 @@
 
     <!-- Tab 2: Payout Approval Queue -->
     <div class="tab-pane fade glass-tab-content" id="requests-panel" role="tabpanel">
-        <h5 class="text-white font-weight-bold mb-3"><i class="fa-solid fa-list-check text-success me-2"></i> Mechanic Payout Requests</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-list-check text-success me-2"></i> Mechanic Payout Requests</h5>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="d-flex align-items-center gap-1.5 bg-dark bg-opacity-40 p-1.5 rounded-3 border border-secondary">
+                    <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">From:</label>
+                    <input type="date" id="filterRequestsStartDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="applyRequestsCalendarFilter()">
+                    
+                    <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">To:</label>
+                    <input type="date" id="filterRequestsEndDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="applyRequestsCalendarFilter()">
+                </div>
+                <button class="btn btn-outline-secondary btn-sm font-weight-bold" onclick="resetRequestsCalendarFilter()">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+            </div>
+        </div>
         
         <div class="table-responsive rounded-3 border border-secondary border-opacity-30">
             <table class="table table-dark table-hover mb-0 align-middle">
@@ -198,7 +217,7 @@
                     {
                         @foreach (var req in payoutRequests)
                         {
-                            <tr class="border-secondary">
+                            <tr class="border-secondary payout-request-row" data-created-at="@req.Request.CreatedAt.ToString("o")">
                                 <td class="ps-3"><b>#PR-@req.Request.Id</b></td>
                                 <td>
                                     <div class="text-white font-weight-bold">@req.MechanicName</div>
@@ -271,18 +290,30 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-map-location-dot text-info me-2"></i> City-Wise Mechanics Directory</h5>
             
-            <div class="d-flex align-items-center gap-2">
-                <label class="text-muted small font-weight-bold mb-0 text-nowrap">Filter City:</label>
-                <select id="selFilterCity" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 180px;" onchange="filterMechanicsByCity()">
-                    <option value="All">All Cities</option>
-                    @foreach (var city in cities)
-                    {
-                        <option value="@city">@city</option>
-                    }
-                </select>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 me-2">
+                    <label class="text-muted small font-weight-bold mb-0 text-nowrap">Filter City:</label>
+                    <select id="selFilterCity" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 180px;" onchange="filterMechanicsByCityAndDate()">
+                        <option value="All">All Cities</option>
+                        @foreach (var city in cities)
+                        {
+                            <option value="@city">@city</option>
+                        }
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-1.5 bg-dark bg-opacity-40 p-1.5 rounded-3 border border-secondary">
+                    <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">From:</label>
+                    <input type="date" id="filterMechanicsStartDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="filterMechanicsByCityAndDate()">
+                    
+                    <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">To:</label>
+                    <input type="date" id="filterMechanicsEndDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="filterMechanicsByCityAndDate()">
+                </div>
+                <button class="btn btn-outline-secondary btn-sm font-weight-bold" onclick="resetMechanicsCalendarFilter()">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
             </div>
         </div>
-
+ 
         <div class="table-responsive rounded-3 border border-secondary border-opacity-30">
             <table class="table table-dark table-hover mb-0 align-middle">
                 <thead>
@@ -307,7 +338,7 @@
                     {
                         @foreach (var m in mechanics)
                         {
-                            <tr class="border-secondary mech-ledger-row" data-city="@m.City">
+                            <tr class="border-secondary mech-ledger-row" data-city="@m.City" data-created-at="@m.CreatedAt.ToString("o")">
                                 <td class="ps-3"><b>@m.DisplayId</b></td>
                                 <td>
                                     <div class="text-white font-weight-bold">@m.Name</div>
@@ -680,21 +711,50 @@
         });
     }
 
-    // Filter mechanics list by City
-    function filterMechanicsByCity() {
+    // Filter mechanics list by City and Date
+    function filterMechanicsByCityAndDate() {
         var selectedCity = document.getElementById('selFilterCity').value;
-        var rows = document.getElementsByClassName('mech-ledger-row');
+        var startDateVal = document.getElementById('filterMechanicsStartDate').value;
+        var endDateVal = document.getElementById('filterMechanicsEndDate').value;
         
+        var start = startDateVal ? new Date(startDateVal) : null;
+        var end = endDateVal ? new Date(endDateVal) : null;
+        
+        if (start) {
+            start.setHours(0, 0, 0, 0);
+        }
+        if (end) {
+            end.setHours(23, 59, 59, 999);
+        }
+        
+        var rows = document.getElementsByClassName('mech-ledger-row');
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
             var city = row.getAttribute('data-city');
+            var rowDateStr = row.getAttribute('data-created-at');
+            var rowDate = new Date(rowDateStr);
             
-            if (selectedCity === 'All' || city === selectedCity) {
+            var matchCity = (selectedCity === 'All' || city === selectedCity);
+            var matchDate = true;
+            if (start && rowDate < start) {
+                matchDate = false;
+            }
+            if (end && rowDate > end) {
+                matchDate = false;
+            }
+            
+            if (matchCity && matchDate) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';
             }
         }
+    }
+
+    function resetMechanicsCalendarFilter() {
+        document.getElementById('filterMechanicsStartDate').value = '';
+        document.getElementById('filterMechanicsEndDate').value = '';
+        filterMechanicsByCityAndDate();
     }
 
     function checkMechanicEstimates(id, name) {
@@ -810,10 +870,11 @@
         });
     }
 
-    // Escrow Calendar filters
+    // Escrow Calendar and Text search filters
     function applyCalendarFilter() {
         var startDateVal = document.getElementById('filterStartDate').value;
         var endDateVal = document.getElementById('filterEndDate').value;
+        var searchQuery = document.getElementById('searchEscrow').value.toLowerCase().trim();
         
         var start = startDateVal ? new Date(startDateVal) : null;
         var end = endDateVal ? new Date(endDateVal) : null;
@@ -834,6 +895,7 @@
             var row = rows[i];
             var rowDateStr = row.getAttribute('data-created-at');
             var rowDate = new Date(rowDateStr);
+            var searchText = row.getAttribute('data-search-text').toLowerCase();
             
             var rowAmount = parseFloat(row.getAttribute('data-amount') || 0);
             var rowCommission = parseFloat(row.getAttribute('data-commission') || 0);
@@ -844,6 +906,9 @@
                 show = false;
             }
             if (end && rowDate > end) {
+                show = false;
+            }
+            if (searchQuery && !searchText.includes(searchQuery)) {
                 show = false;
             }
             
@@ -862,13 +927,84 @@
         document.getElementById('totalMechanic').innerText = '₹' + totalMechanic.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    // Requests Calendar filters
+    function applyRequestsCalendarFilter() {
+        var startDateVal = document.getElementById('filterRequestsStartDate').value;
+        var endDateVal = document.getElementById('filterRequestsEndDate').value;
+        
+        var start = startDateVal ? new Date(startDateVal) : null;
+        var end = endDateVal ? new Date(endDateVal) : null;
+        
+        if (start) {
+            start.setHours(0, 0, 0, 0);
+        }
+        if (end) {
+            end.setHours(23, 59, 59, 999);
+        }
+        
+        var rows = document.getElementsByClassName('payout-request-row');
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var rowDateStr = row.getAttribute('data-created-at');
+            var rowDate = new Date(rowDateStr);
+            
+            var show = true;
+            if (start && rowDate < start) {
+                show = false;
+            }
+            if (end && rowDate > end) {
+                show = false;
+            }
+            
+            if (show) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    function resetRequestsCalendarFilter() {
+        document.getElementById('filterRequestsStartDate').value = '';
+        document.getElementById('filterRequestsEndDate').value = '';
+        applyRequestsCalendarFilter();
+    }
+
     function resetCalendarFilter() {
+        document.getElementById('searchEscrow').value = '';
         document.getElementById('filterStartDate').value = '';
         document.getElementById('filterEndDate').value = '';
         applyCalendarFilter();
     }
 
+    function getLocalDateString(date) {
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var day = String(date.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
+        var today = new Date();
+        var oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(today.getMonth() - 1);
+        
+        var todayStr = getLocalDateString(today);
+        var oneMonthAgoStr = getLocalDateString(oneMonthAgo);
+        
+        // Tab 1 (Escrow Transactions)
+        document.getElementById('filterStartDate').value = oneMonthAgoStr;
+        document.getElementById('filterEndDate').value = todayStr;
+        
+        // Tab 2 (Payout Approval Queue)
+        document.getElementById('filterRequestsStartDate').value = oneMonthAgoStr;
+        document.getElementById('filterRequestsEndDate').value = todayStr;
+        
+        // Tab 3 (City-Wise Mechanics)
+        document.getElementById('filterMechanicsStartDate').value = oneMonthAgoStr;
+        document.getElementById('filterMechanicsEndDate').value = todayStr;
+
         applyCalendarFilter();
-    });
-</script>
+        applyRequestsCalendarFilter();
+        filterMechanicsByCityAndDate();
+    });</script>

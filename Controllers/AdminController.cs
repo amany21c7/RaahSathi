@@ -957,7 +957,8 @@ namespace RaahSathi.Controllers
                           BankAccountNumber = p.BankAccountNumber ?? string.Empty,
                           IfscCode = p.IfscCode ?? string.Empty,
                           UpiId = p.UpiId ?? string.Empty,
-                          AccountHolderName = p.AccountHolderName ?? string.Empty
+                          AccountHolderName = p.AccountHolderName ?? string.Empty,
+                          CreatedAt = u.CreatedAt
                       })
                 .OrderBy(m => m.City)
                 .ThenBy(m => m.Name)

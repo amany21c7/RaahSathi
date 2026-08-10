@@ -75,5 +75,6 @@ namespace RaahSathi.Models
         public string UpiId { get; set; } = string.Empty;
         public string AccountHolderName { get; set; } = string.Empty;
         public double PendingPayoutAmount { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }
