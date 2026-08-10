@@ -279,7 +279,7 @@ namespace RaahSathi.Controllers
 
             await _dbContext.SaveChangesAsync();
             TempData["Success"] = $"Warning successfully issued to Mechanic {mechanic.Name} (URA-{mechanic.Id}). Red Alert Popup will trigger on their dashboard.";
-            return RedirectToAction("ManageUsers");
+            return RedirectToAction("Messages");
         }
 
         [HttpPost]
@@ -295,7 +295,7 @@ namespace RaahSathi.Controllers
                 TempData["Success"] = "Complaint marked as dismissed.";
             }
 
-            return RedirectToAction("ManageUsers");
+            return RedirectToAction("Messages");
         }
 
         [HttpPost]
@@ -520,6 +520,18 @@ namespace RaahSathi.Controllers
             }
 
             ViewBag.StatusFilter = statusFilter ?? "All";
+
+            ViewBag.Complaints = await _dbContext.MechanicComplaints
+                .Include(c => c.Customer)
+                .Include(c => c.Mechanic)
+                .Include(c => c.Job)
+                .OrderByDescending(c => c.Id)
+                .ToListAsync();
+
+            ViewBag.Warnings = await _dbContext.MechanicWarnings
+                .Include(w => w.Mechanic)
+                .OrderByDescending(w => w.Id)
+                .ToListAsync();
 
             var messages = await query.OrderByDescending(m => m.CreatedAt).ToListAsync();
             return View(messages);

@@ -1,22 +1,55 @@
 @model IEnumerable<RaahSathi.Models.ContactMessage>
+@using RaahSathi.Models
 @{
-    ViewData["Title"] = "Customer Contact Messages - Admin Console";
+    ViewData["Title"] = "Analytics & Support Center - Admin Console";
     string currentFilter = ViewBag.StatusFilter as string ?? "All";
     int totalCount = ViewBag.TotalCount ?? 0;
     int pendingCount = ViewBag.PendingCount ?? 0;
     int contactedCount = ViewBag.ContactedCount ?? 0;
     int resolvedCount = ViewBag.ResolvedCount ?? 0;
+
+    var complaints = ViewBag.Complaints as List<MechanicComplaint> ?? new List<MechanicComplaint>();
+    var warnings = ViewBag.Warnings as List<MechanicWarning> ?? new List<MechanicWarning>();
 }
+
+<style>
+    .btn-tab-pill {
+        border-radius: 20px;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(30, 41, 59, 0.4);
+    }
+    .btn-tab-pill.active {
+        background: #ff6b00 !important;
+        border-color: #ff6b00 !important;
+        color: #fff !important;
+        box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .glass-card {
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+</style>
 
 <div class="container-fluid py-4">
     <!-- Header & Navigation -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom border-secondary">
         <div>
-            <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2">ADMIN CONSOLE</span>
+            <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2">ADMIN NOC</span>
             <h2 class="text-white font-weight-bold mb-0" style="font-family: 'Outfit', sans-serif;">
-                <i class="fa-solid fa-headset text-warning me-2"></i> Customer Contact Enquiries
+                <i class="fa-solid fa-headset text-warning me-2"></i> Support & Complaint Center
             </h2>
-            <p class="text-muted small mb-0">Read customer breakdown &amp; partnership messages, manage follow-ups, and contact directly.</p>
+            <p class="text-muted small mb-0">Manage customer/partner support tickets, track user complaints, and issue warning alerts.</p>
         </div>
         <div class="mt-3 mt-md-0 d-flex gap-2">
             <a href="/Admin/Dashboard" class="btn btn-outline-light btn-sm px-3">
@@ -28,188 +61,370 @@
         </div>
     </div>
 
-    <!-- Summary Stat Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <a href="/Admin/Messages?statusFilter=All" class="text-decoration-none">
-                <div class="glass-card p-3 border-secondary text-center hover-lift @(currentFilter == "All" ? "border-warning bg-dark" : "")">
-                    <div class="text-muted small">Total Messages</div>
-                    <h3 class="text-white font-weight-bold mb-0 mt-1">@totalCount</h3>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a href="/Admin/Messages?statusFilter=Pending" class="text-decoration-none">
-                <div class="glass-card p-3 border-warning text-center hover-lift @(currentFilter == "Pending" ? "border-warning bg-dark" : "")">
-                    <div class="text-warning small font-weight-bold"><i class="fa-solid fa-clock me-1"></i> Pending Follow-up</div>
-                    <h3 class="text-warning font-weight-bold mb-0 mt-1">@pendingCount</h3>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a href="/Admin/Messages?statusFilter=Contacted" class="text-decoration-none">
-                <div class="glass-card p-3 border-info text-center hover-lift @(currentFilter == "Contacted" ? "border-info bg-dark" : "")">
-                    <div class="text-info small font-weight-bold"><i class="fa-solid fa-phone me-1"></i> Contacted</div>
-                    <h3 class="text-info font-weight-bold mb-0 mt-1">@contactedCount</h3>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a href="/Admin/Messages?statusFilter=Resolved" class="text-decoration-none">
-                <div class="glass-card p-3 border-success text-center hover-lift @(currentFilter == "Resolved" ? "border-success bg-dark" : "")">
-                    <div class="text-success small font-weight-bold"><i class="fa-solid fa-circle-check me-1"></i> Resolved</div>
-                    <h3 class="text-success font-weight-bold mb-0 mt-1">@resolvedCount</h3>
-                </div>
-            </a>
-        </div>
-    </div>
+    <!-- Tab Selection Navigation -->
+    <ul class="nav nav-pills mb-4 gap-2" id="supportTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active btn-tab-pill text-white px-4" id="enquiries-tab" data-bs-toggle="pill" data-bs-target="#enquiries-panel" type="button" role="tab">
+                <i class="fa-solid fa-envelope me-1.5 text-warning"></i> Support Enquiries
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link btn-tab-pill text-white position-relative px-4" id="complaints-tab" data-bs-toggle="pill" data-bs-target="#complaints-panel" type="button" role="tab">
+                <i class="fa-solid fa-triangle-exclamation text-danger me-1.5"></i> Job Complaints & Warnings
+                @if (complaints.Any(c => c.Status == "Pending"))
+                {
+                    <span class="badge bg-danger rounded-pill ms-1 font-weight-bold" style="font-size: 0.75rem;">@complaints.Count(c => c.Status == "Pending")</span>
+                }
+            </button>
+        </li>
+    </ul>
 
-    <!-- Filter Buttons Toolbar -->
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div class="btn-group" role="group">
-            <a href="/Admin/Messages?statusFilter=All" class="btn btn-sm @(currentFilter == "All" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">All (@totalCount)</a>
-            <a href="/Admin/Messages?statusFilter=Pending" class="btn btn-sm @(currentFilter == "Pending" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Pending (@pendingCount)</a>
-            <a href="/Admin/Messages?statusFilter=Contacted" class="btn btn-sm @(currentFilter == "Contacted" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Contacted (@contactedCount)</a>
-            <a href="/Admin/Messages?statusFilter=Resolved" class="btn btn-sm @(currentFilter == "Resolved" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Resolved (@resolvedCount)</a>
-        </div>
-    </div>
-
-    <!-- Messages Table -->
-    <div class="glass-card p-3 border-secondary">
-        @if (!Model.Any())
-        {
-            <div class="text-center py-5">
-                <i class="fa-solid fa-inbox text-muted fa-3x mb-3"></i>
-                <h5 class="text-white">No Messages Found</h5>
-                <p class="text-muted small">There are no customer contact messages matching filter "@currentFilter".</p>
+    <!-- Tab Contents -->
+    <div class="tab-content" id="supportTabsContent">
+        
+        <!-- PANEL 1: SUPPORT ENQUIRIES -->
+        <div class="tab-pane fade show active" id="enquiries-panel" role="tabpanel" aria-labelledby="enquiries-tab">
+            <!-- Summary Stat Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <a href="/Admin/Messages?statusFilter=All" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "All" ? "border-warning bg-dark bg-opacity-60" : "")">
+                            <div class="text-muted small">Total Messages</div>
+                            <h3 class="text-white font-weight-bold mb-0 mt-1">@totalCount</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="/Admin/Messages?statusFilter=Pending" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "Pending" ? "border-warning bg-dark bg-opacity-60" : "")">
+                            <div class="text-warning small font-weight-bold"><i class="fa-solid fa-clock me-1"></i> Pending Follow-up</div>
+                            <h3 class="text-warning font-weight-bold mb-0 mt-1">@pendingCount</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="/Admin/Messages?statusFilter=Contacted" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "Contacted" ? "border-info bg-dark bg-opacity-60" : "")">
+                            <div class="text-info small font-weight-bold"><i class="fa-solid fa-phone me-1"></i> Contacted</div>
+                            <h3 class="text-info font-weight-bold mb-0 mt-1">@contactedCount</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="/Admin/Messages?statusFilter=Resolved" class="text-decoration-none">
+                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "Resolved" ? "border-success bg-dark bg-opacity-60" : "")">
+                            <div class="text-success small font-weight-bold"><i class="fa-solid fa-circle-check me-1"></i> Resolved</div>
+                            <h3 class="text-success font-weight-bold mb-0 mt-1">@resolvedCount</h3>
+                        </div>
+                    </a>
+                </div>
             </div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-dark table-hover align-middle mb-0" style="background: transparent;">
-                    <thead>
-                        <tr class="text-muted small border-bottom border-secondary">
-                            <th>ID &amp; Date</th>
-                            <th>Customer Info</th>
-                            <th>Subject &amp; Inquiry</th>
-                            <th>Message Snippet</th>
-                            <th>Status</th>
-                            <th class="text-end">Direct Contact Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var msg in Model)
-                        {
-                            var cleanPhone = msg.Phone.Replace(" ", "").Replace("-", "").Replace("+", "");
-                            if (cleanPhone.Length == 10) cleanPhone = "91" + cleanPhone;
 
-                            <tr class="border-bottom border-secondary border-opacity-30">
-                                <td>
-                                    <div class="font-weight-bold text-white">#MSG-@msg.Id</div>
-                                    <div class="text-muted style-small" style="font-size: 0.75rem;">
-                                        @msg.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy hh:mm tt")
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="font-weight-bold text-white">@msg.FullName</div>
-                                    <div class="small text-warning">
-                                        <i class="fa-solid fa-phone me-1"></i> @msg.Phone
-                                    </div>
-                                    @if (!string.IsNullOrEmpty(msg.Email))
-                                    {
-                                        <div class="small text-muted">
-                                            <i class="fa-solid fa-envelope me-1"></i> @msg.Email
-                                        </div>
-                                    }
-                                </td>
-                                 <td>
-                                     <span class="badge bg-dark border border-warning text-warning mb-1">
-                                         @msg.Subject
-                                     </span>
-                                     @if (!string.IsNullOrEmpty(msg.UserRole))
-                                     {
-                                         var roleBadgeClass = msg.UserRole switch
-                                         {
-                                             "Admin" => "bg-danger text-white",
-                                             "Mechanic" => "bg-info text-dark",
-                                             "Customer" => "bg-success text-white",
-                                             _ => "bg-secondary text-light"
-                                         };
-                                         <span class="badge @roleBadgeClass ms-1 mb-1">
-                                             @msg.UserRole
-                                         </span>
-                                     }
-                                 </td>
-                                 <td>
-                                     <div class="text-light text-truncate" style="max-width: 250px;" title="@msg.Message">
-                                         @msg.Message
-                                     </div>
-                                     @if (!string.IsNullOrEmpty(msg.PhotoUrl))
-                                     {
-                                         <div class="mt-2">
-                                             <a href="@msg.PhotoUrl" target="_blank">
-                                                 <img src="@msg.PhotoUrl" style="max-height: 48px; border-radius: 4px; border: 1px solid var(--border-color); cursor: pointer;" alt="Screenshot" />
-                                             </a>
-                                         </div>
-                                     }
-                                     @if (!string.IsNullOrEmpty(msg.AdminNotes))
-                                     {
-                                         <div class="small text-info mt-1">
-                                             <i class="fa-solid fa-sticky-note me-1"></i> Note: @msg.AdminNotes
-                                         </div>
-                                     }
-                                 </td>
-                                <td>
-                                    @if (msg.Status == "Pending")
-                                    {
-                                        <span class="badge bg-warning text-dark font-weight-bold px-2 py-1"><i class="fa-solid fa-clock me-1"></i> Pending</span>
-                                    }
-                                    else if (msg.Status == "Contacted")
-                                    {
-                                        <span class="badge bg-info text-dark font-weight-bold px-2 py-1"><i class="fa-solid fa-phone me-1"></i> Contacted</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success text-white font-weight-bold px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i> Resolved</span>
-                                    }
-                                </td>
-                                <td class="text-end">
-                                    <div class="d-flex justify-content-end gap-1">
-                                        <!-- Call Button -->
-                                        <a href="tel:@msg.Phone" class="btn btn-outline-warning btn-sm" title="Call Customer">
-                                            <i class="fa-solid fa-phone"></i>
-                                        </a>
-
-                                        <!-- WhatsApp Button -->
-                                        <a href="https://wa.me/@cleanPhone?text=Hello%20@Uri.EscapeDataString(msg.FullName),%20this%20is%20RaahSathi%20Support%20regarding%20your%20inquiry:%20@Uri.EscapeDataString(msg.Subject)" target="_blank" class="btn btn-outline-success btn-sm" title="WhatsApp Customer">
-                                            <i class="fa-brands fa-whatsapp"></i>
-                                        </a>
-
-                                        <!-- Email Button -->
-                                        @if (!string.IsNullOrEmpty(msg.Email))
-                                        {
-                                            <a href="mailto:@msg.Email?subject=Re:%20RaahSathi%20Inquiry%20-%20@Uri.EscapeDataString(msg.Subject)" class="btn btn-outline-info btn-sm" title="Send Email">
-                                                <i class="fa-solid fa-envelope"></i>
-                                            </a>
-                                        }
-
-                                        <!-- Action / Manage Modal Trigger -->
-                                        <button type="button" class="btn btn-primary btn-sm px-2" onclick="openManageModal(@msg.Id, '@msg.FullName', '@msg.Phone', '@msg.Email', '@Uri.EscapeDataString(msg.Subject)', '@Uri.EscapeDataString(msg.Message)', '@msg.Status', '@Uri.EscapeDataString(msg.AdminNotes ?? "")', '@msg.PhotoUrl')">
-                                            <i class="fa-solid fa-pen-to-square me-1"></i> Manage
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <!-- Filter Buttons Toolbar -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="btn-group" role="group">
+                    <a href="/Admin/Messages?statusFilter=All" class="btn btn-sm @(currentFilter == "All" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">All (@totalCount)</a>
+                    <a href="/Admin/Messages?statusFilter=Pending" class="btn btn-sm @(currentFilter == "Pending" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Pending (@pendingCount)</a>
+                    <a href="/Admin/Messages?statusFilter=Contacted" class="btn btn-sm @(currentFilter == "Contacted" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Contacted (@contactedCount)</a>
+                    <a href="/Admin/Messages?statusFilter=Resolved" class="btn btn-sm @(currentFilter == "Resolved" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Resolved (@resolvedCount)</a>
+                </div>
             </div>
-        }
+
+            <!-- Messages Table -->
+            <div class="glass-card p-3 border-secondary border-opacity-35">
+                @if (!Model.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-inbox text-muted fa-3x mb-3"></i>
+                        <h5 class="text-white">No Messages Found</h5>
+                        <p class="text-muted small mb-0">There are no customer contact messages matching filter "@currentFilter".</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover align-middle mb-0" style="background: transparent;">
+                            <thead>
+                                <tr class="text-muted small border-bottom border-secondary">
+                                    <th>ID &amp; Date</th>
+                                    <th>Customer Info</th>
+                                    <th>Subject &amp; Inquiry</th>
+                                    <th>Message &amp; Attachment</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Direct Contact Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var msg in Model)
+                                {
+                                    var cleanPhone = msg.Phone.Replace(" ", "").Replace("-", "").Replace("+", "");
+                                    if (cleanPhone.Length == 10) cleanPhone = "91" + cleanPhone;
+
+                                    <tr class="border-bottom border-secondary border-opacity-30">
+                                        <td>
+                                            <div class="font-weight-bold text-white">#MSG-@msg.Id</div>
+                                            <div class="text-muted extra-small" style="font-size: 0.75rem;">
+                                                @msg.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy hh:mm tt")
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="font-weight-bold text-white">@msg.FullName</div>
+                                            <div class="small text-warning">
+                                                <i class="fa-solid fa-phone me-1"></i> @msg.Phone
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(msg.Email))
+                                            {
+                                                <div class="small text-muted">
+                                                    <i class="fa-solid fa-envelope me-1"></i> @msg.Email
+                                                </div>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-dark border border-warning text-warning mb-1">
+                                                @msg.Subject
+                                            </span>
+                                            @if (!string.IsNullOrEmpty(msg.UserRole))
+                                            {
+                                                var roleBadgeClass = msg.UserRole switch
+                                                {
+                                                    "Admin" => "bg-danger text-white",
+                                                    "Mechanic" => "bg-info text-dark",
+                                                    "Customer" => "bg-success text-white",
+                                                    _ => "bg-secondary text-light"
+                                                };
+                                                <span class="badge @roleBadgeClass ms-1 mb-1">
+                                                    @msg.UserRole
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="text-light text-truncate" style="max-width: 250px;" title="@msg.Message">
+                                                @msg.Message
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(msg.PhotoUrl))
+                                            {
+                                                <div class="mt-2">
+                                                    <a href="@msg.PhotoUrl" target="_blank">
+                                                        <img src="@msg.PhotoUrl" style="max-height: 48px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;" alt="Screenshot" />
+                                                    </a>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(msg.AdminNotes))
+                                            {
+                                                <div class="small text-info mt-1">
+                                                    <i class="fa-solid fa-sticky-note me-1"></i> Note: @msg.AdminNotes
+                                                </div>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (msg.Status == "Pending")
+                                            {
+                                                <span class="badge bg-warning text-dark font-weight-bold px-2 py-1"><i class="fa-solid fa-clock me-1"></i> Pending</span>
+                                            }
+                                            else if (msg.Status == "Contacted")
+                                            {
+                                                <span class="badge bg-info text-dark font-weight-bold px-2 py-1"><i class="fa-solid fa-phone me-1"></i> Contacted</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success text-white font-weight-bold px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i> Resolved</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex justify-content-end gap-1">
+                                                <!-- Call Button -->
+                                                <a href="tel:@msg.Phone" class="btn btn-outline-warning btn-sm" title="Call Customer">
+                                                    <i class="fa-solid fa-phone"></i>
+                                                </a>
+
+                                                <!-- WhatsApp Button -->
+                                                <a href="https://wa.me/@cleanPhone?text=Hello%20@Uri.EscapeDataString(msg.FullName),%20this%20is%20RaahSathi%20Support%20regarding%20your%20inquiry:%20@Uri.EscapeDataString(msg.Subject)" target="_blank" class="btn btn-outline-success btn-sm" title="WhatsApp Customer">
+                                                    <i class="fa-brands fa-whatsapp"></i>
+                                                </a>
+
+                                                <!-- Email Button -->
+                                                @if (!string.IsNullOrEmpty(msg.Email))
+                                                {
+                                                    <a href="mailto:@msg.Email?subject=Re:%20RaahSathi%20Inquiry%20-%20@Uri.EscapeDataString(msg.Subject)" class="btn btn-outline-info btn-sm" title="Send Email">
+                                                        <i class="fa-solid fa-envelope"></i>
+                                                    </a>
+                                                }
+
+                                                <!-- Action / Manage Modal Trigger -->
+                                                <button type="button" class="btn btn-primary btn-sm px-2 font-weight-bold" onclick="openManageModal(@msg.Id, '@msg.FullName', '@msg.Phone', '@msg.Email', '@Uri.EscapeDataString(msg.Subject)', '@Uri.EscapeDataString(msg.Message)', '@msg.Status', '@Uri.EscapeDataString(msg.AdminNotes ?? "")', '@msg.PhotoUrl')">
+                                                    <i class="fa-solid fa-pen-to-square me-1"></i> Manage
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- PANEL 2: JOB COMPLAINTS & WARNINGS -->
+        <div class="tab-pane fade" id="complaints-panel" role="tabpanel" aria-labelledby="complaints-tab">
+            <h5 class="text-white mb-3"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Mechanic Complaints & Warning Management Console</h5>
+            
+            <div class="glass-card p-3 border-secondary border-opacity-35">
+                @if (!complaints.Any())
+                {
+                    <div class="p-4 text-center text-muted">
+                        <i class="fa-solid fa-circle-check text-success fa-2x mb-2"></i>
+                        <p class="mb-0">No complaints logged yet. All mechanic ratings are satisfactory.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive mb-4">
+                        <table class="table table-dark table-hover align-middle mb-0" id="complaintsTable">
+                            <thead>
+                                <tr class="text-muted small border-bottom border-secondary">
+                                    <th>CMP ID</th>
+                                    <th>Mechanic Details</th>
+                                    <th>Customer Details</th>
+                                    <th>Rating</th>
+                                    <th>Category & Reasons</th>
+                                    <th>Details</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in complaints)
+                                {
+                                    <tr class="border-bottom border-secondary border-opacity-30">
+                                        <td><span class="badge bg-secondary">#CMP-@c.Id</span></td>
+                                        <td>
+                                            <div class="font-weight-bold text-white">@(c.Mechanic?.Name ?? "Mechanic")</div>
+                                            <span class="badge bg-warning text-dark font-weight-bold">URA-@c.MechanicId</span>
+                                            <span class="text-muted small d-block">@(c.Mechanic?.PhoneNumber)</span>
+                                        </td>
+                                        <td>
+                                            <div class="font-weight-bold text-light">@(c.Customer?.Name ?? "Customer")</div>
+                                            <span class="text-muted small">Job #@c.JobId</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-danger text-white px-2 py-1"><i class="fa-solid fa-star me-1"></i>@c.Rating ★</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info text-dark mb-1">@c.Category</span><br>
+                                            @if (!string.IsNullOrEmpty(c.SelectedReasons))
+                                            {
+                                                @foreach (var r in c.SelectedReasons.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                                                {
+                                                    <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30 me-1 mb-1" style="font-size: 0.7rem;">@r.Trim()</span>
+                                                }
+                                            }
+                                        </td>
+                                        <td style="max-width: 250px;" class="small text-light">
+                                            @(string.IsNullOrEmpty(c.CustomerDetails) ? "No additional text provided." : c.CustomerDetails)
+                                        </td>
+                                        <td>
+                                            @if (c.Status == "Pending")
+                                            {
+                                                <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Pending Action</span>
+                                            }
+                                            else if (c.Status == "WarningSent")
+                                            {
+                                                <span class="badge bg-danger text-white"><i class="fa-solid fa-triangle-exclamation me-1"></i> Warning Issued</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary"><i class="fa-solid fa-xmark me-1"></i> Dismissed</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex justify-content-end gap-2">
+                                                @if (c.Status == "Pending")
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-danger open-warning-modal font-weight-bold"
+                                                            data-complaint-id="@c.Id"
+                                                            data-mechanic-id="@c.MechanicId"
+                                                            data-mechanic-name="@(c.Mechanic?.Name ?? "Mechanic")"
+                                                            data-mechanic-uid="URA-@c.MechanicId"
+                                                            data-reasons="@c.SelectedReasons">
+                                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Issue Warning
+                                                    </button>
+                                                    <form action="/Admin/DismissComplaint" method="post" class="d-inline">
+                                                        <input type="hidden" name="complaintId" value="@c.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-secondary font-weight-bold" onclick="return confirm('Dismiss this complaint?');">Dismiss</button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary open-warning-modal font-weight-bold"
+                                                            data-complaint-id="@c.Id"
+                                                            data-mechanic-id="@c.MechanicId"
+                                                            data-mechanic-name="@(c.Mechanic?.Name ?? "Mechanic")"
+                                                            data-mechanic-uid="URA-@c.MechanicId"
+                                                            data-reasons="@c.SelectedReasons">
+                                                        Send Another Warning
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                <h6 class="text-warning mt-4 mb-3"><i class="fa-solid fa-clock-rotate-left me-1"></i> Issued Warnings History (@warnings.Count)</h6>
+                @if (!warnings.Any())
+                {
+                    <div class="p-3 text-center text-muted small border border-secondary border-opacity-20 rounded bg-black bg-opacity-20">
+                        No official warnings issued to partners yet.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-dark table-sm table-striped align-middle mb-0" style="font-size: 0.8rem;">
+                            <thead>
+                                <tr class="text-muted border-bottom border-secondary border-opacity-35">
+                                    <th>Date</th>
+                                    <th>Mechanic Details</th>
+                                    <th>Severity Level</th>
+                                    <th>Message</th>
+                                    <th>Acknowledgment Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var w in warnings)
+                                {
+                                    <tr class="border-bottom border-secondary border-opacity-20">
+                                        <td class="text-muted">@w.CreatedAt.ToLocalTime().ToString("dd MMM, hh:mm tt")</td>
+                                        <td><strong class="text-white">@(w.Mechanic?.Name ?? "Mechanic")</strong> <span class="badge bg-warning text-dark">URA-@w.MechanicId</span></td>
+                                        <td><span class="badge bg-danger">@w.WarningType</span></td>
+                                        <td class="text-light">@w.Message</td>
+                                        <td>
+                                            @if (w.IsAcknowledged)
+                                            {
+                                                <span class="badge bg-success text-white"><i class="fa-solid fa-circle-check me-1"></i> Acknowledged</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark"><i class="fa-solid fa-bell fa-bounce me-1"></i> Pending Acknowledgment</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
     </div>
 </div>
 
-<!-- Manage Status & Notes Modal -->
+<!-- MODAL: MANAGE SUPPORT ENQUIRY -->
 <div class="modal fade" id="manageModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark border-secondary text-white">
@@ -259,6 +474,51 @@
     </div>
 </div>
 
+<!-- MODAL: ISSUE WARNING RED ALERT -->
+<div class="modal fade" id="sendWarningModal" tabindex="-1" aria-labelledby="sendWarningModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-danger text-light shadow-lg">
+            <div class="modal-header border-danger bg-danger bg-opacity-20 text-danger">
+                <h5 class="modal-title font-weight-bold" id="sendWarningModalLabel">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> Send Red Alert Warning to Mechanic
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/Admin/SendMechanicWarning" method="post">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="complaintId" id="warnComplaintId" value="0">
+                    <input type="hidden" name="mechanicId" id="warnMechanicId" value="0">
+
+                    <div class="p-3 bg-danger bg-opacity-10 border border-danger rounded mb-3">
+                        <span class="d-block small text-muted">TARGET MECHANIC:</span>
+                        <h5 class="text-white mb-0" id="warnMechanicDisplay">Mechanic Name (URA-X)</h5>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small">Warning Severity / Level</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="warningType" required>
+                            <option value="Official Warning" selected>Official Warning</option>
+                            <option value="Notice">Notice / First Reminder</option>
+                            <option value="Final Warning">Final Warning (Pre-Suspension)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small">Warning Message (Will trigger Red Alert Popup on Mechanic Dashboard):</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="message" id="warnMessageInput" rows="4" required placeholder="Type warning instructions for mechanic..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger font-weight-bold px-4">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Send Red Alert Warning
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
     function openManageModal(id, name, phone, email, subject, message, status, notes, photoUrl) {
@@ -297,5 +557,26 @@
             alert('Failed to update status. Please try again.');
         });
     }
+
+    $(document).ready(function() {
+        // Handle opening of Issue Warning Modal
+        $('.open-warning-modal').on('click', function() {
+            var cid = $(this).data('complaint-id');
+            var mid = $(this).data('mechanic-id');
+            var mname = $(this).data('mechanic-name');
+            var muid = $(this).data('mechanic-uid');
+            var reasons = $(this).data('reasons');
+
+            $('#warnComplaintId').val(cid);
+            $('#warnMechanicId').val(mid);
+            $('#warnMechanicDisplay').text(mname + ' (' + muid + ')');
+
+            var defaultMsg = "Aapki customer complaint aayi hai: '" + (reasons || "Unsatisfactory Service") + "'. Kripya time par pahunche aur professional tarike se service dein. Agli baar aisi shikayat milne par aapki ID suspend kar di jayegi.";
+            $('#warnMessageInput').val(defaultMsg);
+
+            var modal = new bootstrap.Modal(document.getElementById('sendWarningModal'));
+            modal.show();
+        });
+    });
 </script>
 }
