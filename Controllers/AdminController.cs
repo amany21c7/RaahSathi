@@ -81,6 +81,23 @@ namespace RaahSathi.Controllers
                 .Where(j => j.DisputeStatus == "Active")
                 .ToListAsync();
 
+            // Active Pipeline Jobs for Live Assistance Stepper
+            var activePipelineJobs = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Mechanic)
+                .Include(j => j.Vehicle)
+                .Where(j => j.Status != "Completed" && j.Status != "Cancelled")
+                .OrderByDescending(j => j.Id)
+                .ToListAsync();
+
+            var availableMechanics = await _dbContext.MechanicProfiles
+                .Include(m => m.User)
+                .Where(m => m.IsOnline && m.KycStatus == "Approved")
+                .ToListAsync();
+
+            ViewBag.ActivePipelineJobs = activePipelineJobs;
+            ViewBag.AvailableMechanics = availableMechanics;
+
             ViewBag.OnlineMechanics = onlineMechanics;
             ViewBag.ActiveRequests = activeRequests;
             ViewBag.TotalJobs = totalJobs;
@@ -97,6 +114,89 @@ namespace RaahSathi.Controllers
             ViewBag.IsGlobalEmergency = emergencySetting?.SettingValue?.Equals("ON", StringComparison.OrdinalIgnoreCase) == true || emergencySetting?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
 
             return View();
+        }
+
+        [HttpGet("/Admin/GetLivePipelineJobs")]
+        public async Task<IActionResult> GetLivePipelineJobs()
+        {
+            if (!IsAdmin()) return Unauthorized();
+
+            var activeJobs = await _dbContext.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Mechanic)
+                .Include(j => j.Vehicle)
+                .Where(j => j.Status != "Completed" && j.Status != "Cancelled")
+                .OrderByDescending(j => j.Id)
+                .ToListAsync();
+
+            var result = activeJobs.Select(j => new
+            {
+                id = j.Id,
+                displayId = $"#JOB-{j.Id:D4}",
+                customerName = j.Customer?.Name ?? "Guest Customer",
+                customerPhone = j.Customer?.PhoneNumber ?? "N/A",
+                vehicle = j.Vehicle != null ? $"{j.Vehicle.Model} ({j.Vehicle.RegistrationNumber})" : "Vehicle Info N/A",
+                problem = j.ProblemType,
+                problemDescription = string.IsNullOrWhiteSpace(j.ProblemDescription) ? j.ProblemType : j.ProblemDescription,
+                status = j.Status,
+                address = j.Address,
+                landmark = j.Landmark,
+                mechanicId = j.MechanicId,
+                mechanicName = j.Mechanic?.Name ?? "Unassigned",
+                mechanicPhone = j.Mechanic?.PhoneNumber ?? "N/A",
+                createdAt = j.CreatedAt.ToString("g"),
+                elapsedMinutes = (int)Math.Max(0, (DateTime.UtcNow - j.CreatedAt).TotalMinutes),
+                etaMins = j.Status == "Requested" ? "Searching Match..." : j.Status == "Assigned" || j.Status == "Accepted" ? "10-15 mins" : j.Status == "In Progress" || j.Status == "Repairing" ? "On-Site Service" : "N/A"
+            }).ToList();
+
+            return Json(new { success = true, count = result.Count, jobs = result });
+        }
+
+        [HttpPost("/Admin/AssignMechanicToJob")]
+        public async Task<IActionResult> AssignMechanicToJob(int jobId, int mechanicUserId)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
+
+            var job = await _dbContext.Jobs.FindAsync(jobId);
+            if (job == null) return Json(new { success = false, message = "Job not found." });
+
+            var mechanic = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == mechanicUserId && u.Role == "Mechanic");
+            if (mechanic == null) return Json(new { success = false, message = "Mechanic not found." });
+
+            job.MechanicId = mechanicUserId;
+            job.Status = "Assigned";
+            await _dbContext.SaveChangesAsync();
+
+            try
+            {
+                await _notificationService.SendNotificationAsync(
+                    "Mechanic",
+                    "All",
+                    "New Job Assigned",
+                    $"Admin assigned Job #{job.Id} ({job.ProblemType}) to {mechanic.Name}."
+                );
+            }
+            catch { }
+
+            return Json(new { success = true, message = $"Successfully assigned {mechanic.Name} to Job #{job.Id}" });
+        }
+
+        [HttpPost("/Admin/UpdateJobStatusDirect")]
+        public async Task<IActionResult> UpdateJobStatusDirect(int jobId, string status)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
+
+            var job = await _dbContext.Jobs.FindAsync(jobId);
+            if (job == null) return Json(new { success = false, message = "Job not found." });
+
+            job.Status = status;
+            if (status == "Completed")
+            {
+                job.CompletedAt = DateTime.UtcNow;
+            }
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { success = true, message = $"Job #{job.Id} status updated to '{status}'" });
         }
 
 
