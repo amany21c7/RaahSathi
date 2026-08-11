@@ -1,0 +1,57 @@
+@using RaahSathi.Models
+@model List<Job>
+@{
+    ViewData["Title"] = "Assistance Requests";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Assistance Requests Queue</h4>
+        <p class="text-muted small mb-0">Pending, Accepted, Rejected, Timed Out, and Emergency breakdown dispatch requests.</p>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Req ID</th>
+                        <th>Customer</th>
+                        <th>Problem Type</th>
+                        <th>Vehicle</th>
+                        <th>Estimated Amount</th>
+                        <th>Status</th>
+                        <th class="text-end pe-3">Assigned Mechanic</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No active assistance requests in dispatch queue.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var r in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3"><span class="badge bg-warning text-dark font-weight-bold">#RS-@r.Id</span></td>
+                                <td class="text-light">@(r.Customer?.Name ?? "Customer")</td>
+                                <td><span class="badge bg-info text-dark">@r.ProblemType</span></td>
+                                <td class="text-muted small">@(r.Vehicle?.Model ?? "Car") (@(r.Vehicle?.RegistrationNumber ?? ""))</td>
+                                <td class="text-success font-weight-bold">₹@r.FinalBillAmount.ToString("N2")</td>
+                                <td><span class="badge bg-warning text-dark">@r.Status</span></td>
+                                <td class="text-end pe-3">
+                                    <span class="text-light small">@(r.Mechanic?.Name ?? "Awaiting Partner Match (15s)")</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

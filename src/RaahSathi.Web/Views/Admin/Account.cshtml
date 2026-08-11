@@ -1,0 +1,299 @@
+@using RaahSathi.Models
+@using RaahSathi.Controllers
+@{
+    ViewData["Title"] = "Admin Account & Treasury Vault";
+    var withdrawalHistory = ViewBag.WithdrawalHistory as List<AdminWithdrawal> ?? new List<AdminWithdrawal>();
+    var accounts = ViewBag.Accounts as List<RaahSathi.Controllers.AdminAccountModel> ?? new List<RaahSathi.Controllers.AdminAccountModel>();
+    var activeAccount = accounts.FirstOrDefault(a => a.IsActive);
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 border-bottom border-secondary border-opacity-30 pb-3">
+    <div>
+        <h3 class="text-white font-weight-bold mb-1" style="font-family: 'Outfit', sans-serif;">
+            <i class="fa-solid fa-building-columns text-warning me-2"></i> Admin Account & Treasury Vault
+        </h3>
+        <p class="text-muted small mb-0">Configure platform settlement destinations, manage your commission vault, and execute treasury withdrawals.</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success border-success bg-success bg-opacity-10 text-white alert-dismissible fade show mb-4 font-weight-bold shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-check me-2 text-success"></i> @TempData["Success"]
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Admin Tiered Commission Vault Banner -->
+<div class="p-4 rounded-3 bg-gradient bg-dark border border-warning border-opacity-50 mb-4 shadow-lg">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-warning text-dark font-weight-bold px-3 py-1">TOTAL ADMIN COMMISSION EARNED</span>
+            </div>
+            <h2 class="text-warning font-weight-extrabold mt-2 mb-1" style="font-family: 'Outfit';">
+                ₹@(((double)(ViewBag.TotalCommissionEarned ?? 0.0)).ToString("N2"))
+            </h2>
+            <p class="text-muted small mb-0">
+                Total Commission Earned: <strong class="text-light">₹@(((double)(ViewBag.TotalCommissionEarned ?? 0.0)).ToString("N2"))</strong> | 
+                Total Withdrawn: <strong class="text-light">₹@(((double)(ViewBag.TotalWithdrawn ?? 0.0)).ToString("N2"))</strong>
+            </p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-warning font-weight-bold px-4 py-2 shadow" data-bs-toggle="modal" data-bs-target="#adminWithdrawModal">
+                <i class="fa-solid fa-money-bill-transfer me-2"></i> Withdraw Vault Funds
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Payout Details Setup (Multiple accounts listing) -->
+    <div class="col-lg-7">
+        <div class="card bg-dark border-secondary shadow-sm h-100">
+            <div class="card-header border-secondary bg-transparent py-3 d-flex align-items-center justify-content-between">
+                <h5 class="text-warning mb-0"><i class="fa-solid fa-address-card me-2"></i> Payout Details Setup</h5>
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold px-3 py-1.5 shadow" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                    <i class="fa-solid fa-plus me-1"></i> Add Account
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="p-3 border-bottom border-secondary border-opacity-30">
+                    <p class="text-muted small mb-0">Select the checkbox of the account you want to mark active. Incoming customer scan payments will be dynamically routed to the active account.</p>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0 align-middle small" style="border-color: rgba(255,255,255,0.05);">
+                        <thead>
+                            <tr class="text-muted" style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+                                <th class="text-center" style="width: 80px;">Active</th>
+                                <th>Account Holder / UPI ID</th>
+                                <th>Bank Settlement Info</th>
+                                <th class="text-center" style="width: 80px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (accounts.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No accounts added yet. Please click 'Add Account' to setup.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var acc in accounts)
+                                {
+                                    <tr class="@(acc.IsActive ? "bg-warning bg-opacity-5" : "")">
+                                        <td class="text-center">
+                                            <div class="form-check d-inline-block">
+                                                <input class="form-check-input active-account-selector" type="radio" name="activeAccount" value="@acc.Id" @(acc.IsActive ? "checked" : "") style="cursor: pointer;">
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <strong class="text-white">@acc.HolderName</strong>
+                                            <div class="text-warning font-monospace mt-0.5" style="font-size:0.8rem;">@acc.UpiId</div>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(acc.BankName))
+                                            {
+                                                <div class="text-light font-weight-medium">@acc.BankName</div>
+                                                <div class="text-muted extra-small" style="font-size:0.75rem;">A/C: @acc.AccountNumber | IFSC: @acc.IfscCode</div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">UPI Settlement Only</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <form action="/Admin/DeleteAdminAccount" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this account?');">
+                                                <input type="hidden" name="accountId" value="@acc.Id">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm p-1.5 border-0 hover-danger-bg">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Recent Withdrawals Transaction Ledger -->
+    <div class="col-lg-5">
+        <div class="card bg-dark border-secondary shadow-sm h-100">
+            <div class="card-header border-secondary bg-transparent py-3">
+                <h5 class="text-info mb-0"><i class="fa-solid fa-clock-rotate-left me-2"></i> Recent Treasury Withdrawals</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0 align-middle small" style="border-color: rgba(255,255,255,0.05);">
+                        <thead>
+                            <tr class="text-muted" style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+                                <th class="ps-3">Date / Time</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Reference Number</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (withdrawalHistory.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No withdrawals recorded yet.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var w in withdrawalHistory)
+                                {
+                                    <tr>
+                                        <td class="ps-3 text-light">@w.WithdrawnAt.ToString("dd MMM yyyy, hh:mm tt")</td>
+                                        <td class="text-warning font-weight-bold">₹@w.Amount.ToString("N2")</td>
+                                        <td><span class="badge bg-secondary text-light">@w.PayoutMethod</span></td>
+                                        <td class="text-muted font-monospace">@w.ReferenceNumber</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Admin Account -->
+<div class="modal fade" id="addAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border border-warning shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold">
+                    <i class="fa-solid fa-plus-circle me-2"></i> Add Settlement Account
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="/Admin/AddAdminAccount" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label text-light small font-weight-bold">UPI ID (VPA) <span class="text-danger">*</span></label>
+                        <input type="text" name="upiId" class="form-control glass-input text-warning font-weight-bold" placeholder="e.g. raahsathi@upi" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-light small font-weight-bold">Account Holder Name <span class="text-danger">*</span></label>
+                        <input type="text" name="holderName" class="form-control glass-input text-light" placeholder="e.g. RaahSathi Private Limited" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small font-weight-bold">Bank Name (Optional)</label>
+                        <input type="text" name="bankName" class="form-control glass-input text-light" placeholder="e.g. HDFC Bank">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small font-weight-bold">Bank Account Number (Optional)</label>
+                        <input type="text" name="accountNumber" class="form-control glass-input text-light" placeholder="e.g. 50100293847261">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small font-weight-bold">IFSC Code (Optional)</label>
+                        <input type="text" name="ifscCode" class="form-control glass-input text-light text-uppercase" placeholder="e.g. HDFC0000102">
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="makeActive" value="true" id="chkMakeActive" checked>
+                        <label class="form-check-label text-muted small" for="chkMakeActive" style="cursor: pointer;">
+                            Mark this account as primary active receiver immediately
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 shadow">
+                        <i class="fa-solid fa-plus-circle me-1"></i> Add Account Details
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Admin Commission Vault Withdrawal -->
+<div class="modal fade" id="adminWithdrawModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border border-warning">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold">
+                    <i class="fa-solid fa-building-columns me-2"></i> Withdraw Admin Commission Vault
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="p-3 bg-dark bg-opacity-60 rounded border border-secondary mb-3">
+                    <span class="text-muted small d-block mb-1">Available Vault Balance</span>
+                    <h3 class="text-warning font-weight-bold mb-0">₹@(((double)(ViewBag.AdminVaultBalance ?? 0.0)).ToString("N2"))</h3>
+                </div>
+                <form id="formAdminWithdraw">
+                    <div class="mb-3">
+                        <label class="form-label text-light small font-weight-bold">Withdrawal Amount (₹)</label>
+                        <input type="number" step="0.01" max="@(ViewBag.AdminVaultBalance ?? 100000)" class="form-control glass-input text-warning font-weight-bold" id="admWithdrawAmount" value="@(ViewBag.AdminVaultBalance ?? 1000)" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light small font-weight-bold">Payout Destination / Method</label>
+                        <select id="admWithdrawMethod" class="form-select glass-input text-light">
+                            <option value="Bank Direct Transfer">Bank Direct Transfer (@(activeAccount != null && !string.IsNullOrEmpty(activeAccount.BankName) ? activeAccount.BankName : "Active Bank"))</option>
+                            <option value="UPI Primary Account">UPI Primary Account (@(activeAccount != null ? activeAccount.UpiId : "Active UPI"))</option>
+                            <option value="Escrow Treasury Settlement">Escrow Treasury Settlement</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light small font-weight-bold">Reference / Transaction Note (Optional)</label>
+                        <input type="text" id="admWithdrawRef" class="form-control glass-input text-light" placeholder="e.g. Monthly Admin Treasury Transfer">
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 font-weight-bold py-2">
+                        <i class="fa-solid fa-check-circle me-1"></i> Process Vault Withdrawal
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // AJAX activation trigger
+    $('.active-account-selector').on('change', function () {
+        var accountId = $(this).val();
+        $.post('/Admin/ActivateAdminAccount', { accountId: accountId }, function (res) {
+            if (res.success) {
+                alert(res.message);
+                window.location.reload();
+            } else {
+                alert(res.message || 'Activation failed.');
+            }
+        });
+    });
+
+    $('#formAdminWithdraw').on('submit', function (e) {
+        e.preventDefault();
+        var amount = parseFloat($('#admWithdrawAmount').val());
+        var method = $('#admWithdrawMethod').val();
+        var ref = $('#admWithdrawRef').val();
+
+        if (!amount || amount <= 0) {
+            alert('Please enter a valid withdrawal amount.');
+            return;
+        }
+
+        $.post('/Admin/WithdrawAdminCommission', { amount: amount, payoutMethod: method, referenceNumber: ref }, function (res) {
+            if (res.success) {
+                alert(res.message);
+                window.location.reload();
+            } else {
+                alert(res.message || 'Error executing withdrawal.');
+            }
+        });
+    });
+</script>
+}

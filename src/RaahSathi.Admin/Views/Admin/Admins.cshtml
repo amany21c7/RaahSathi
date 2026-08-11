@@ -1,0 +1,97 @@
+@using RaahSathi.Models
+@model List<User>
+@{
+    ViewData["Title"] = "Admin Roles & Permissions";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-user-shield text-warning me-2"></i> Admin Roles & Access Control</h4>
+        <p class="text-muted small mb-0">Role permissions: Super Admin, Finance, Support, Operations, Marketing, and Moderators.</p>
+    </div>
+    <button type="button" class="btn btn-warning text-dark font-weight-bold" data-bs-toggle="modal" data-bs-target="#addAdminModal">
+        <i class="fa-solid fa-plus me-1"></i> Add Admin User
+    </button>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Admin ID & Name</th>
+                        <th>Phone Number</th>
+                        <th>Assigned Role</th>
+                        <th>Permissions Level</th>
+                        <th class="text-end pe-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No admin users configured.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var a in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3 font-weight-bold text-white">
+                                    @a.Name
+                                    <div><span class="badge bg-warning text-dark font-weight-bold" style="font-size:0.68rem;">@a.DisplayId</span></div>
+                                </td>
+                                <td class="text-light">@a.PhoneNumber</td>
+                                <td><span class="badge bg-info text-dark font-weight-bold">@a.AdminRole</span></td>
+                                <td><span class="badge bg-secondary text-light">Full Operational Access</span></td>
+                                <td class="text-end pe-3">
+                                    <span class="badge bg-success text-white">ACTIVE</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Admin User -->
+<div class="modal fade" id="addAdminModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold">Add New Admin User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/Admin/AddAdminUser" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Admin Name</label>
+                        <input type="text" name="name" class="form-control glass-input text-white" placeholder="e.g. Vikram Malhotra" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Phone Number</label>
+                        <input type="text" name="phoneNumber" class="form-control glass-input text-white" placeholder="e.g. 9876543210" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Admin Role</label>
+                        <select name="adminRole" class="form-select glass-input text-white">
+                            <option value="Super Admin">Super Admin</option>
+                            <option value="Finance">Finance Officer</option>
+                            <option value="Support">Support Desk Lead</option>
+                            <option value="Operations">Operations Dispatch Head</option>
+                            <option value="Marketing">Marketing Manager</option>
+                            <option value="Moderator">Moderator</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100">Create Admin Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

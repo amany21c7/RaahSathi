@@ -1,0 +1,516 @@
+@{
+    ViewData["Title"] = "Mechanic KYC Verification";
+    var profile = ViewBag.Profile as RaahSathi.Models.MechanicProfile;
+    bool isResubmission = (ViewBag.KycStatus == "Suspended" || ViewBag.KycStatus == "Rejected" || (profile != null && profile.KycStatus != "Incomplete"));
+    bool hasPhoto = profile != null && !string.IsNullOrEmpty(profile.ProfilePhotoUrl);
+    bool hasAadhaar = profile != null && !string.IsNullOrEmpty(profile.AadhaarFrontUrl);
+    bool hasShop = profile != null && !string.IsNullOrEmpty(profile.ShopPhotoUrl);
+}
+
+<div class="row justify-content-center py-3 py-md-4">
+    <div class="col-12 col-lg-10">
+        <div class="glass-card p-3 p-md-5 mx-2 mx-md-0">
+            <div class="d-flex align-items-center justify-content-between mb-4 border-bottom border-secondary pb-3">
+                <div>
+                    <h2 class="text-white font-weight-bold mb-1">
+                        <i class="fa-solid fa-clipboard-user text-warning me-2"></i> Mechanic Verification
+                    </h2>
+                    <p class="text-muted mb-0">Complete your profile to get verified and start accepting bookings.</p>
+                </div>
+                <span class="badge bg-@((ViewBag.KycStatus == "Suspended" || ViewBag.KycStatus == "Rejected") ? "danger" : "warning") text-@((ViewBag.KycStatus == "Suspended" || ViewBag.KycStatus == "Rejected") ? "light" : "dark") px-3 py-2 font-weight-bold">KYC Status: @ViewBag.KycStatus</span>
+            </div>
+            
+            @if (ViewBag.KycStatus == "Pending")
+            {
+                <div class="alert alert-info bg-dark border-info text-info p-4 text-center my-4">
+                    <i class="fa-solid fa-clock fa-3x mb-3 text-info"></i>
+                    <h4>KYC Under Review</h4>
+                    <p class="mb-0">Your profile and identity documents have been submitted and are currently being reviewed by the RaahSathi operations team. We will notify you as soon as you are verified.</p>
+                </div>
+            }
+            else
+            {
+                @if (ViewBag.KycStatus == "Rejected" || ViewBag.KycStatus == "Suspended")
+                {
+                    <div class="alert alert-danger bg-dark border-danger text-light p-3 mb-4 d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-triangle-exclamation text-danger fa-2x"></i>
+                        <div>
+                            <h6 class="text-danger mb-0 font-weight-bold">Aapki Mechanic ID Suspend Ho Chuki Hai</h6>
+                            <p class="mb-0 small text-muted">Aapki KYC request suspend/reject kar di gayi hai. Aap apni jaankari check/update karke verification ke liye fir se request submit kar sakte hain.</p>
+                        </div>
+                    </div>
+                }
+                
+                <form id="kycForm" action="/Mechanic/SubmitKycForm" method="post" enctype="multipart/form-data">
+                
+                <!-- Progress Wizard Header (4 Steps) -->
+                <div class="row mb-5 justify-content-center">
+                    <div class="col-md-11">
+                        <div class="d-flex justify-content-between align-items-center position-relative">
+                            <!-- Progress Line -->
+                            <div class="progress position-absolute top-50 start-0 w-100 translate-middle-y" style="height: 3px; z-index: 0; background-color: var(--border-color);">
+                                <div class="progress-bar bg-warning" id="progressBar" role="progressbar" style="width: 25%; transition: width 0.3s ease;"></div>
+                            </div>
+                            
+                            <!-- Steps Indicators -->
+                            <div class="step-indicator bg-dark border border-warning rounded-circle d-flex align-items-center justify-content-center position-relative" style="width: 45px; height: 45px; z-index: 1;" id="stepInd-1">
+                                <i class="fa-solid fa-user text-warning"></i>
+                            </div>
+                            <div class="step-indicator bg-dark border border-secondary rounded-circle d-flex align-items-center justify-content-center position-relative" style="width: 45px; height: 45px; z-index: 1;" id="stepInd-2">
+                                <i class="fa-solid fa-id-card text-muted"></i>
+                            </div>
+                            <div class="step-indicator bg-dark border border-secondary rounded-circle d-flex align-items-center justify-content-center position-relative" style="width: 45px; height: 45px; z-index: 1;" id="stepInd-3">
+                                <i class="fa-solid fa-shop text-muted"></i>
+                            </div>
+                            <div class="step-indicator bg-dark border border-secondary rounded-circle d-flex align-items-center justify-content-center position-relative" style="width: 45px; height: 45px; z-index: 1;" id="stepInd-4">
+                                <i class="fa-solid fa-screwdriver-wrench text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2 px-1">
+                            <span class="small font-weight-bold text-warning" id="stepLabel-1">1. Personal Details</span>
+                            <span class="small text-muted" id="stepLabel-2">2. ID Verification</span>
+                            <span class="small text-muted" id="stepLabel-3">3. Shop & Experience</span>
+                            <span class="small text-muted" id="stepLabel-4">4. Skills & Service</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Personal Information -->
+                <div class="kyc-step" id="step-1">
+                    <h5 class="text-warning mb-4"><i class="fa-solid fa-user me-2"></i> Step 1: Personal Details</h5>
+                    
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label text-light">Full Name</label>
+                            <input type="text" class="form-control glass-input" value="@ViewBag.UserName" disabled>
+                            <span class="text-muted small">Linked to registration</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-light">Mobile Number</label>
+                            <input type="text" class="form-control glass-input text-success" value="@ViewBag.UserPhone" disabled>
+                            <span class="text-success small"><i class="fa-solid fa-circle-check"></i> Verified</span>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Email Address <span class="text-muted">(Optional)</span></label>
+                            <input type="email" name="Email" class="form-control glass-input" placeholder="e.g. mechanic@example.com">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Date of Birth</label>
+                            <input type="date" name="DateOfBirth" class="form-control glass-input" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Gender</label>
+                            <select name="Gender" class="form-select glass-input" required>
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label class="form-label text-light">Profile Photo (Portrait / Face Closeup)</label>
+                            <input type="file" name="ProfilePhoto" class="form-control glass-input" accept="image/*" required>
+                            <span class="text-muted small">Upload a clear photo of your face.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Identity Verification (KYC) -->
+                <div class="kyc-step" id="step-2" style="display:none;">
+                    <h5 class="text-warning mb-4"><i class="fa-solid fa-id-card me-2"></i> Step 2: Identity Verification</h5>
+                    
+                    <div class="row g-4">
+                        <div class="col-md-12">
+                            <label class="form-label text-light">Aadhaar Number (12 Digit)</label>
+                            <input type="text" name="AadhaarNumber" class="form-control glass-input" placeholder="e.g. 123456789012" maxlength="12" pattern="\d{12}" required>
+                            <span class="text-muted small">Your unique 12-digit identification number</span>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label text-light">Aadhaar Card Front Photo</label>
+                            <input type="file" name="AadhaarFrontPhoto" class="form-control glass-input" accept="image/*" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-light">Aadhaar Card Back Photo</label>
+                            <input type="file" name="AadhaarBackPhoto" class="form-control glass-input" accept="image/*" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label text-light">Driving Licence Photo <span class="text-muted">(Optional)</span></label>
+                            <input type="file" name="DrivingLicencePhoto" class="form-control glass-input" accept="image/*">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-light">Selfie Verification Photo</label>
+                            <div class="input-group">
+                                <input type="file" name="SelfiePhoto" id="selfieFileInput" class="form-control glass-input" accept="image/*" required>
+                                <button type="button" class="btn btn-premium-primary" id="btnOpenSelfieCamera">
+                                    <i class="fa-solid fa-camera"></i> Live Camera
+                                </button>
+                            </div>
+                            <span class="text-muted small d-block mt-1" id="selfieHelpText">Take a selfie holding your Aadhaar card close to your face.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Shop Details & Work Experience -->
+                <div class="kyc-step" id="step-3" style="display:none;">
+                    <h5 class="text-warning mb-4"><i class="fa-solid fa-shop me-2"></i> Step 3: Shop Details & Work Experience</h5>
+                    
+                    <div class="row g-4">
+                        <div class="col-md-8">
+                            <label class="form-label text-light">Shop / Garage Name</label>
+                            <input type="text" name="ShopName" class="form-control glass-input" placeholder="e.g. Verma Auto Garage" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Shop Timings</label>
+                            <select name="ShopTiming" class="form-select glass-input" required>
+                                <option value="">Select Timing</option>
+                                <option value="9:00 AM - 8:00 PM">9:00 AM - 8:00 PM</option>
+                                <option value="8:00 AM - 8:00 PM">8:00 AM - 8:00 PM</option>
+                                <option value="9:00 AM - 9:00 PM">9:00 AM - 9:00 PM</option>
+                                <option value="10:00 AM - 9:00 PM">10:00 AM - 9:00 PM</option>
+                                <option value="24 Hours Open">24 Hours Open</option>
+                                <option value="Flexible / Custom">Flexible / Custom</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <label class="form-label text-light">Shop Address</label>
+                            <input type="text" name="ShopAddress" class="form-control glass-input" placeholder="Complete address of your shop" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Pincode</label>
+                            <input type="text" name="Pincode" class="form-control glass-input" placeholder="6-digit PIN" maxlength="6" pattern="\d{6}" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Years of Experience</label>
+                            <input type="number" name="ExperienceYears" class="form-control glass-input" min="0" max="50" placeholder="e.g. 5" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Certified Mechanic?</label>
+                            <select name="IsCertified" class="form-select glass-input" required>
+                                <option value="false">No (Self-taught / Experienced)</option>
+                                <option value="true">Yes (I have professional certifications)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Previous Garage Name <span class="text-muted">(Optional)</span></label>
+                            <input type="text" name="GarageName" class="form-control glass-input" placeholder="Where did you work before?">
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label class="form-label text-light">Shop / Garage Front Photo</label>
+                            <input type="file" name="ShopPhoto" class="form-control glass-input" accept="image/*" required>
+                            <span class="text-muted small">Upload a photo showing the front signboard of your shop/garage.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Vehicle Expertise & Specializations -->
+                <div class="kyc-step" id="step-4" style="display:none;">
+                    <h5 class="text-warning mb-4"><i class="fa-solid fa-screwdriver-wrench me-2"></i> Step 4: Skills & Service Settings</h5>
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-12">
+                            <label class="form-label text-light font-weight-bold mb-2">1. Vehicle Expertise (Select all you can service)</label>
+                            <div class="d-flex flex-wrap gap-2 p-3 bg-dark bg-opacity-40 rounded border border-secondary">
+                                @foreach(var v in new[]{"Bike", "Scooter", "EV Bike", "Car", "SUV", "Auto", "E-Rickshaw", "Tractor", "Truck", "Bus", "JCB", "Crane"}) {
+                                    <input type="checkbox" class="btn-check" name="VehicleExpertise" id="veh-@v" value="@v" autocomplete="off">
+                                    <label class="btn btn-outline-warning rounded-pill px-3 py-1 text-sm font-weight-medium" for="veh-@v">@v</label>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label text-light font-weight-bold mb-2">2. Specializations (Select your specific skills)</label>
+                            <div class="d-flex flex-wrap gap-2 p-3 bg-dark bg-opacity-40 rounded border border-secondary">
+                                @foreach(var s in new[]{"Engine", "Electrical", "Battery", "Clutch", "Gearbox", "Suspension", "Brake", "AC", "Tyre", "Puncture", "Denting", "Painting", "EV Repair", "OBD Diagnostics", "Lockout Specialist", "Cooling System", "Wheel Alignment", "Fuel System", "Exhaust & Muffler", "Windshield & Glass"}) {
+                                    var idSafe = s.Replace(" ", "-").Replace("&", "and");
+                                    <input type="checkbox" class="btn-check" name="Specialization" id="spec-@idSafe" value="@s" autocomplete="off">
+                                    <label class="btn btn-outline-warning rounded-pill px-3 py-1 text-sm font-weight-medium" for="spec-@idSafe">@s</label>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label text-light font-weight-bold">3. Service Radius (Breakdown coverage distance)</label>
+                            <select name="ServiceRadiusKm" class="form-select glass-input form-select-lg" required>
+                                <option value="5">5 KM (Local neighborhood)</option>
+                                <option value="10" selected>10 KM (Standard coverage)</option>
+                                <option value="20">20 KM (Extended city area)</option>
+                                <option value="30">30 KM (Inter-city highways)</option>
+                                <option value="50">50 KM (Maximum radius)</option>
+                            </select>
+                            <span class="text-muted small">Jobs will be dispatched to you within this service radius from your location.</span>
+                        </div>
+                        
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="alert alert-success bg-dark border-success w-100 mb-0 d-flex align-items-start gap-2 py-3 mt-3">
+                                <i class="fa-solid fa-circle-check text-success fa-xl mt-1"></i>
+                                <div>
+                                    <h6 class="text-success mb-1">Ready to Submit!</h6>
+                                    <p class="text-muted small mb-0">Check your entries carefully before submitting. Verification usually takes 12-24 working hours.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Controls Navigation (Side-by-side at the bottom-right) -->
+                <div class="d-flex justify-content-end gap-2 mt-5 pt-3 border-top border-secondary">
+                    <button type="button" class="btn btn-premium-secondary px-4 font-weight-bold" id="btnPrev" style="display:none;">
+                        <i class="fa-solid fa-arrow-left me-2"></i> Previous
+                    </button>
+                    <button type="button" class="btn btn-premium-primary px-4 font-weight-bold" id="btnNext">
+                        Next <i class="fa-solid fa-arrow-right ms-2"></i>
+                    </button>
+                    <button type="submit" class="btn btn-success px-4 font-weight-bold" id="btnSubmit" style="display:none;">
+                        Submit Registration <i class="fa-solid fa-check ms-2"></i>
+                    </button>
+                </div>
+            </form>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Live Selfie Camera Capture Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-white"><i class="fa-solid fa-camera text-warning me-2"></i> Live Selfie Capture</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btnCloseCameraModal"></button>
+            </div>
+            <div class="modal-body text-center p-3">
+                <!-- Live Video Stream / Preview Snapshot -->
+                <div class="position-relative bg-black rounded mb-3" style="aspect-ratio: 4/3; overflow: hidden; border: 1px solid var(--border-color);">
+                    <video id="webcamVideo" autoplay playsinline class="w-100 h-100" style="object-fit: cover; transform: scaleX(-1);"></video>
+                    <canvas id="photoCanvas" class="position-absolute top-0 start-0 w-100 h-100 d-none" style="object-fit: cover; transform: scaleX(-1);"></canvas>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-premium-primary px-4" id="btnCapturePhoto">
+                        <i class="fa-solid fa-circle text-danger me-1"></i> Capture Snapshot
+                    </button>
+                    <button type="button" class="btn btn-premium-secondary px-4 d-none" id="btnRetakePhoto">
+                        <i class="fa-solid fa-rotate-right me-1"></i> Retake
+                    </button>
+                    <button type="button" class="btn btn-success px-4 d-none" id="btnUsePhoto">
+                        <i class="fa-solid fa-check me-1"></i> Use This Photo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentStep = 1;
+    const totalSteps = 4;
+
+    function updateUI() {
+        // Toggle Steps visibility
+        $('.kyc-step').hide();
+        $('#step-' + currentStep).show();
+
+        // Control Buttons visibility (Prev and Next side by side)
+        if (currentStep === 1) {
+            $('#btnPrev').hide();
+        } else {
+            $('#btnPrev').show();
+        }
+
+        if (currentStep === totalSteps) {
+            $('#btnNext').hide();
+            $('#btnSubmit').show();
+        } else {
+            $('#btnNext').show();
+            $('#btnSubmit').hide();
+        }
+
+        // Progress bar percentage calculation
+        let progress = 25; // step 1
+        if (currentStep === 2) progress = 50;
+        if (currentStep === 3) progress = 75;
+        if (currentStep === 4) progress = 100;
+        $('#progressBar').css('width', progress + '%');
+
+        // Reset step indicators
+        for(let i=1; i<=totalSteps; i++) {
+            let indicator = $('#stepInd-' + i);
+            let icon = indicator.find('i');
+            let label = $('#stepLabel-' + i);
+            
+            if (i < currentStep) {
+                // Completed step
+                indicator.removeClass('border-warning border-secondary bg-dark').addClass('bg-success border-success');
+                icon.removeClass('text-warning text-muted').addClass('text-dark').html('<i class="fa-solid fa-check"></i>');
+                label.removeClass('text-warning text-muted').addClass('text-success font-weight-bold');
+            } else if (i === currentStep) {
+                // Current active step
+                indicator.removeClass('bg-success border-success border-secondary bg-dark').addClass('border-warning bg-dark');
+                icon.removeClass('text-muted text-dark').addClass('text-warning');
+                // Restore original icon representation depending on step index
+                if(i===1) icon.removeClass('fa-check').addClass('fa-user');
+                if(i===2) icon.removeClass('fa-check').addClass('fa-id-card');
+                if(i===3) icon.removeClass('fa-check').addClass('fa-shop');
+                if(i===4) icon.removeClass('fa-check').addClass('fa-screwdriver-wrench');
+                label.removeClass('text-success text-muted').addClass('text-warning font-weight-bold');
+            } else {
+                // Future step
+                indicator.removeClass('bg-success border-success border-warning').addClass('border-secondary bg-dark');
+                icon.removeClass('text-warning text-dark').addClass('text-muted');
+                if(i===2) icon.removeClass('fa-check').addClass('fa-id-card');
+                if(i===3) icon.removeClass('fa-check').addClass('fa-shop');
+                if(i===4) icon.removeClass('fa-check').addClass('fa-screwdriver-wrench');
+                label.removeClass('text-success text-warning font-weight-bold').addClass('text-muted');
+            }
+        }
+    }
+
+    $('#btnNext').click(function() {
+        // Run standard HTML5 validity validation on inputs of the active step container
+        const stepInputs = $('#step-' + currentStep).find('input[required], select[required], textarea[required]');
+        let isValid = true;
+        stepInputs.each(function() {
+            if (!this.checkValidity()) {
+                this.reportValidity();
+                isValid = false;
+                return false; // break loop
+            }
+        });
+
+        if(isValid && currentStep < totalSteps) {
+            currentStep++;
+            updateUI();
+            // Scroll back up to the wizard top
+            $('html, body').animate({
+                scrollTop: $(".glass-card").offset().top - 20
+            }, 200);
+        }
+    });
+
+    $('#btnPrev').click(function() {
+        if(currentStep > 1) {
+            currentStep--;
+            updateUI();
+            // Scroll back up to the wizard top
+            $('html, body').animate({
+                scrollTop: $(".glass-card").offset().top - 20
+            }, 200);
+        }
+    });
+
+    // Live Webcam Selfie logic
+    var videoStream = null;
+    var cameraModal = null;
+
+    $('#btnOpenSelfieCamera').click(async function() {
+        if (!cameraModal) {
+            cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+        }
+        cameraModal.show();
+
+        // Reset UI inside modal
+        $('#webcamVideo').removeClass('d-none');
+        $('#photoCanvas').addClass('d-none');
+        $('#btnCapturePhoto').removeClass('d-none');
+        $('#btnRetakePhoto, #btnUsePhoto').addClass('d-none');
+
+        try {
+            videoStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "user",
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            });
+            document.getElementById('webcamVideo').srcObject = videoStream;
+        } catch (err) {
+            console.error("Camera access failed: ", err);
+            alert("Could not access camera. Please check permissions or upload a file directly.");
+            cameraModal.hide();
+        }
+    });
+
+    $('#btnCapturePhoto').click(function() {
+        var video = document.getElementById('webcamVideo');
+        var canvas = document.getElementById('photoCanvas');
+        var context = canvas.getContext('2d');
+
+        // Match dimensions
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+
+        // Draw video frame on canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Toggle UI
+        $('#webcamVideo').addClass('d-none');
+        $('#photoCanvas').removeClass('d-none');
+        $('#btnCapturePhoto').addClass('d-none');
+        $('#btnRetakePhoto, #btnUsePhoto').removeClass('d-none');
+    });
+
+    $('#btnRetakePhoto').click(function() {
+        // Toggle back to stream
+        $('#webcamVideo').removeClass('d-none');
+        $('#photoCanvas').addClass('d-none');
+        $('#btnCapturePhoto').removeClass('d-none');
+        $('#btnRetakePhoto, #btnUsePhoto').addClass('d-none');
+    });
+
+    $('#btnUsePhoto').click(function() {
+        var canvas = document.getElementById('photoCanvas');
+        
+        // Convert canvas drawing to Blob
+        canvas.toBlob(function(blob) {
+            var file = new File([blob], "live_selfie.jpg", { type: "image/jpeg" });
+            
+            // Programmatically set input files
+            var dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            document.getElementById('selfieFileInput').files = dataTransfer.files;
+
+            // Update UI preview state
+            $('#selfieHelpText').html('<span class="text-success font-weight-bold"><i class="fa-solid fa-circle-check"></i> Live Selfie Captured successfully!</span>');
+            
+            // Close camera stream and modal
+            stopWebcam();
+            cameraModal.hide();
+        }, 'image/jpeg', 0.95);
+    });
+
+    function stopWebcam() {
+        if (videoStream) {
+            videoStream.getTracks().forEach(function(track) {
+                track.stop();
+            });
+            videoStream = null;
+        }
+    }
+
+    // Stop tracks on modal exit
+    $('#btnCloseCameraModal, #cameraModal').click(function(e) {
+        if (e.target.id === 'btnCloseCameraModal' || $(e.target).hasClass('modal')) {
+            stopWebcam();
+        }
+    });
+    // Live KYC Approval Polling
+    var currentKycStatus = "@ViewBag.KycStatus";
+    if (currentKycStatus === "Pending" || currentKycStatus === "Incomplete") {
+        setInterval(function() {
+            $.get('/Mechanic/GetKycStatus', function(res) {
+                if (res && res.success && res.isApproved) {
+                    window.location.href = '/Mechanic/Dashboard';
+                }
+            });
+        }, 3000);
+    }
+</script>
+}

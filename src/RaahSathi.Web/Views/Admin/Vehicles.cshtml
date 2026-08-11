@@ -1,0 +1,149 @@
+@using RaahSathi.Models
+@model List<Vehicle>
+@{
+    ViewData["Title"] = "Vehicle Registry";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2">SYSTEM CONSOLE</span>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-car-side text-warning me-2"></i> Vehicle Types & Registry</h4>
+        <p class="text-muted small mb-0">Registered customer vehicles, categories (Car, TwoWheeler, Commercial), registration numbers, and photo logs.</p>
+    </div>
+</div>
+
+<!-- Search & Date Range Filters Bar -->
+<div class="row g-2 mb-3 align-items-end">
+    <div class="col-md-4 col-lg-3">
+        <label class="form-label text-muted small font-weight-bold mb-1">Search ID, Name, or Reg No</label>
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+            <input type="text" id="vehSearchFilter" class="form-control bg-dark text-white border-secondary" placeholder="Search ID, Name, Reg Number...">
+        </div>
+    </div>
+    <div class="col-md-3 col-lg-2">
+        <label class="form-label text-muted small font-weight-bold mb-1">From Date</label>
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-calendar-alt"></i></span>
+            <input type="date" id="fromDateFilter" class="form-control bg-dark text-white border-secondary">
+        </div>
+    </div>
+    <div class="col-md-3 col-lg-2">
+        <label class="form-label text-muted small font-weight-bold mb-1">To Date</label>
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-calendar-alt"></i></span>
+            <input type="date" id="toDateFilter" class="form-control bg-dark text-white border-secondary">
+        </div>
+    </div>
+    <div class="col-md-2 col-lg-1">
+        <button type="button" class="btn btn-outline-secondary w-100 border-secondary text-muted font-weight-bold py-2 shadow-sm" onclick="clearAllFilters()">
+            <i class="fa-solid fa-arrow-rotate-left me-1"></i> Reset
+        </button>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle" id="vehiclesTable">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Vehicle ID & Date</th>
+                        <th>Owner / Customer</th>
+                        <th>Type / Category</th>
+                        <th>Make & Model</th>
+                        <th class="text-end pe-3">Registration Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr class="no-data-row">
+                            <td colspan="5" class="text-center py-4 text-muted">No registered vehicles found in system.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var v in Model)
+                        {
+                            var dateVal = v.CreatedAt.ToString("yyyy-MM-dd");
+                            
+                            <tr class="border-secondary veh-row" data-date="@dateVal">
+                                <td class="ps-3">
+                                    <span class="badge bg-secondary text-light">#V-@v.Id</span>
+                                    <div class="text-muted extra-small mt-1" style="font-size: 0.74rem;">@v.CreatedAt.ToString("dd-MMM-yyyy")</div>
+                                </td>
+                                <td class="text-light">@(v.User?.Name ?? "Customer")</td>
+                                <td><span class="badge bg-info text-dark font-weight-bold">@v.VehicleType</span></td>
+                                <td class="font-weight-bold text-white fs-6">@v.Model</td>
+                                <td class="text-end pe-3">
+                                    <span class="badge bg-warning text-dark font-weight-bold">@v.RegistrationNumber</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        // Robust direct text-content and date range filter matching
+        function filterVehiclesTable() {
+            var searchVal = $('#vehSearchFilter').val().toLowerCase().trim();
+            var fromDateVal = $('#fromDateFilter').val();
+            var toDateVal = $('#toDateFilter').val();
+            var matches = 0;
+
+            $('.veh-row').each(function() {
+                var rowText = $(this).text().toLowerCase();
+                var rowDateStr = $(this).data('date') || ''; // "yyyy-MM-dd"
+
+                var textMatch = (searchVal === "") || (rowText.indexOf(searchVal) > -1);
+                
+                var dateMatch = true;
+                if (rowDateStr) {
+                    if (fromDateVal && rowDateStr < fromDateVal) {
+                        dateMatch = false;
+                    }
+                    if (toDateVal && rowDateStr > toDateVal) {
+                        dateMatch = false;
+                    }
+                }
+
+                if (textMatch && dateMatch) {
+                    $(this).show();
+                    matches++;
+                } else {
+                    $(this).hide();
+                }
+            });
+
+            if (matches === 0) {
+                if ($('.no-data-row').length === 0) {
+                    $('#vehiclesTable tbody').append('<tr class="no-data-row"><td colspan="5" class="text-center py-4 text-muted">No matching vehicles found.</td></tr>');
+                } else {
+                    $('.no-data-row').show().find('td').text('No matching vehicles found.');
+                }
+            } else {
+                $('.no-data-row').hide();
+            }
+        }
+
+        $('#vehSearchFilter').on('keyup', filterVehiclesTable);
+        $('#fromDateFilter').on('change', filterVehiclesTable);
+        $('#toDateFilter').on('change', filterVehiclesTable);
+
+        // Reset export helper
+        window.clearAllFilters = function() {
+            $('#vehSearchFilter').val('');
+            $('#fromDateFilter').val('');
+            $('#toDateFilter').val('');
+            filterVehiclesTable();
+        };
+    });
+</script>
+}

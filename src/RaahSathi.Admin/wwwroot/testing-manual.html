@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RaahSathi - Complete Functional Manual & Testing Guide</title>
+    <script>
+        (function() {
+            function getCookie(name) {
+                let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+                return match ? match[2] : null;
+            }
+            const isAdmin = getCookie('RaahSathiAdminUserId') || getCookie('RaahSathiUserRole') === 'Admin';
+            if (!isAdmin) {
+                alert('Access Restricted: Testing Manual is available for Admin & SuperAdmin users only.');
+                window.location.href = '/Auth/Login?role=Admin';
+            }
+        })();
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0A1324;
+            color: #F8FAFC;
+            margin: 0;
+            padding: 24px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .glass-card {
+            background: #121F35;
+            border: 1px solid #243552;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .border-warning-custom {
+            border-color: rgba(255, 107, 0, 0.4) !important;
+        }
+
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .badge-tag {
+            background: #FF6B00;
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        h1, h2, h3, h4, h5 {
+            font-family: 'Outfit', sans-serif;
+            margin: 0 0 10px 0;
+        }
+
+        h2 {
+            color: #FFFFFF;
+            font-size: 28px;
+        }
+
+        h4 {
+            color: #FF6B00;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #243552;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+
+        h5 {
+            color: #38BDF8;
+            font-size: 16px;
+            margin-top: 16px;
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #FF6B00 0%, #E05D00 100%);
+            color: #FFFFFF;
+            font-weight: 700;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 4px 14px rgba(255, 107, 0, 0.4);
+            transition: transform 0.2s ease;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+        }
+
+        .text-muted { color: #94A3B8; }
+        .text-warning { color: #FF6B00; }
+        .text-danger { color: #EF4444; }
+        .text-success { color: #10B981; }
+        .text-info { color: #38BDF8; }
+
+        ul, ol {
+            padding-left: 22px;
+            margin: 8px 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .step-box {
+            background: rgba(7, 13, 24, 0.6);
+            border-left: 4px solid #FF6B00;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        .table-custom th, .table-custom td {
+            border: 1px solid #243552;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .table-custom th {
+            background: #070D18;
+            color: #FF6B00;
+        }
+
+        .table-custom tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .flag-badge {
+            background: #070D18;
+            border: 1px solid #243552;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 12px;
+        }
+
+        .saffron { color: #FF9933; }
+        .white { color: #FFFFFF; }
+        .green { color: #00E676; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #38BDF8;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/" class="back-link">&larr; Back to RaahSathi Main Homepage</a>
+
+    <!-- Header Banner -->
+    <div class="glass-card border-warning-custom">
+        <div class="header-flex">
+            <div>
+                <span class="badge-tag">ENTERPRISE FUNCTIONAL & MANUAL TESTING SPECIFICATION</span>
+                <h2><span style="color:#FF6B00;">Raah</span>Sathi End-to-End Operational Manual</h2>
+                <p class="text-muted" style="margin:0;">Detailed function-by-function execution guide, testing procedures, expected outcomes, and fail-safe checks for all portals.</p>
+            </div>
+            <div>
+                <button onclick="window.print()" class="btn-print">
+                    Print / Save as PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tech Stack & Architecture -->
+    <div class="glass-card" style="padding: 18px;">
+        <strong style="color: #FF6B00;">System Architecture:</strong>
+        <span class="text-muted" style="font-size: 13px;">Controller &rarr; Service &rarr; Repository Layered Pattern &bull; ASP.NET Core 9.0 &bull; Entity Framework Core &bull; SQL Server Stored Procedures with C# Transaction Fallback &bull; Leaflet.js GPS Radar &bull; Dynamic Pricing Engine</span>
+    </div>
+
+    <!-- Section 1: Customer Breakdown Request & Booking Flow -->
+    <div class="glass-card">
+        <h4>1. Customer Assistance Booking & Live GPS Dispatch Flow (`/Customer/Book`)</h4>
+        <p class="text-muted">Yeh module stranded vehicle owners (Customers) ko 10 second me breakdown mechanic request submit karne deta hai.</p>
+
+        <h5>A. Browser GPS Geolocation Auto-Detection</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> User jab `/Customer/Book` page kholta hai, toh browser ka Native HTML5 Geolocation API (`navigator.geolocation.getCurrentPosition`) automatic Latitude aur Longitude capture karta hai aur OpenStreetMap Nominatim reverse-geocoding se exact street address fill karta hai.</li>
+            <li><strong>Testing Step:</strong> Page load hone par Browser location permission "Allow" karein. Input box me aapka live area address automatic populate ho jayega.</li>
+            <li><strong>Expected Outcome:</strong> Latitude/Longitude map pins accurate set honge aur Form input field me location text show hoga.</li>
+        </ul>
+
+        <h5>B. 2-Layer Upfront Price Estimation</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> Upfront Estimate 2 layers se milkar banta hai:
+                <ul>
+                    <li><strong>Layer 1 (Visiting Fee):</strong> Category Base Fee + (Haversine GPS Distance in KM * 2 * Per-KM Rate) (round trip).</li>
+                    <li><strong>Layer 2 (Service Fix Fee Range):</strong> Database `ProblemTypePricings` table se live Min/Max range (e.g., Flat Tyre ₹200-800).</li>
+                </ul>
+            </li>
+            <li><strong>Testing Step:</strong> Vehicle Category ("Car") aur Problem ("Flat Tyre / Puncture") select karein. Live price estimate breakdown change hoga.</li>
+            <li><strong>Expected Outcome:</strong> Final Estimated Bill auto-calculate hoga aur user ko upfront estimate show karega.</li>
+        </ul>
+
+        <h5>C. Guest User Auto-Registration (Verification Code `1234`)</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> Agar user logged-in nahi hai, toh Phone Number aur Name daalte hi system background me Auto-Account create karta hai aur instant authentication cookies set kar deta hai. Verification code strictly `1234` hai.</li>
+            <li><strong>Testing Step:</strong> Unauthenticated window me Phone `9876543210` daalkar "Request Patrol Mechanic Now" click karein.</li>
+            <li><strong>Expected Outcome:</strong> Account create hokar request DB me `Status = 'Requested'` save hogi aur user automatically `/Customer/Tracker` page par redirect ho jayega.</li>
+        </ul>
+
+        <div class="step-box">
+            <strong>Key Endpoints Tested:</strong> `POST /Customer/Book`, `GET /Customer/Tracker`, `GET /Customer/GetJobInvoiceDetails`
+        </div>
+    </div>
+
+    <!-- Section 2: Mechanic Field Operations Portal -->
+    <div class="glass-card">
+        <h4>2. Mechanic Field Operations Portal (`/Mechanic/...`)</h4>
+        <p class="text-muted">Patrol mechanics ke mobile dashboard me jobs accept karne, emergency alerts receive karne, aur payment QR generate karne ki poori functionality.</p>
+
+        <h5>A. Duty Status Toggle (Online / Offline)</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> Mechanic dashboard par `Online / Offline` switch hota hai. Tabhi `MechanicProfiles.IsOnline = true` update hota hai. Dispatch Engine strictly sirf Online mechanics ko hi nearest job assign karta hai.</li>
+            <li><strong>Testing Step:</strong> `/Mechanic/Dashboard` me toggle switch click karein.</li>
+            <li><strong>Expected Outcome:</strong> Switch color Green (Online) ho jayega aur badge "PATROL ACTIVE" display karega.</li>
+        </ul>
+
+        <h5>B. Broadcast Emergency Alert & Job Lifecycle Execution</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> Nearby request aate hi mechanic ke mobile screen par distance, customer location, aur visiting fee ka alert pop-up hota hai. Mechanic lifecycle status change karta hai:
+                <div style="font-weight: 700; color: #10B981; margin-top: 5px;">Requested &rarr; Accepted &rarr; En Route &rarr; In Progress &rarr; Completed</div>
+            </li>
+            <li><strong>Testing Step:</strong>
+                <ol>
+                    <li>Customer side se Job Request submit karein.</li>
+                    <li>Mechanic dashboard refresh karein aur "Accept Job" button dabayein.</li>
+                    <li>"Start Journey" &rarr; "Arrived at Location" &rarr; "Submit Parts Estimate" (if needed) &rarr; "Complete Job" steps execute karein.</li>
+                </ol>
+            </li>
+            <li><strong>Expected Outcome:</strong> Job status database aur customer Live Tracker page par in real-time update ho jata hai.</li>
+        </ul>
+
+        <h5>C. QR Code Payment Generation & Wallet Escrow Credit (`/Mechanic/ProcessQrPayment`)</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> Job completion par Mechanic customer ko QR code show karke payment collect karta hai. Backend me `IPaymentService.ProcessEscrowPaymentForJobAsync` trigger hota hai:
+                <ul>
+                    <li>Tiered Commission Calculate hota hai (8% for &lt; ₹1000, 10% for &ge; ₹1000).</li>
+                    <li>Net earnings Mechanic Wallet Balance (`CurrentEarnings`) me automatically credit hoti hain.</li>
+                </ul>
+            </li>
+            <li><strong>Testing Step:</strong> Mechanic Dashboard me "Generate Payment QR" par click karein aur confirm payment karein.</li>
+            <li><strong>Expected Outcome:</strong> Wallet Balance instant update ho jata hai aur Commission deduct hone ke baad breakdown message alert milta hai.</li>
+        </ul>
+
+        <div class="step-box">
+            <strong>Key Endpoints Tested:</strong> `POST /Mechanic/ToggleDuty`, `POST /Mechanic/AcceptJob`, `POST /Mechanic/ProcessQrPayment`
+        </div>
+    </div>
+
+    <!-- Section 3: 100% Fail-Safe Escrow Payment Architecture -->
+    <div class="glass-card">
+        <h4>3. 100% Fail-Safe Escrow Payment Architecture (`Controllers/PaymentController.cs`)</h4>
+        <p class="text-muted">Platform ka payment engine Layered Architecture (Controller &rarr; Service &rarr; Repository) follow karta hai with 100% zero-crash guarantee.</p>
+
+        <h5>A. Double-Layer Transaction Fallback Mechanism</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> When payment processing is invoked (`ProcessEscrowPaymentForJobAsync`):
+                <ol>
+                    <li><strong>Layer 1 (Stored Procedure):</strong> System executes SQL Server Stored Procedure `dbo.rs_payments_process_escrow`.</li>
+                    <li><strong>Layer 2 (C# EF Core Transaction Fallback):</strong> Agar SQL Procedure missing ho ya DB error aaye, catch block auto-trigger hokar C# EF Core direct database transaction se Payment status, Escrow lock, Admin Commission, aur Mechanic earnings complete karta hai.</li>
+                </ol>
+            </li>
+            <li><strong>Testing Step:</strong> `/Payment/ProcessEscrowPayment?jobId=1` execute karein.</li>
+            <li><strong>Expected Outcome:</strong> Payment record `PaymentStatus = 'Released'` save hoga aur overall system me koi crash ya null-pointer error nahi aayega.</li>
+        </ul>
+
+        <div class="step-box">
+            <strong>Key Classes:</strong> `IPaymentRepository`, `PaymentRepository`, `IPaymentService`, `PaymentService`, `PaymentController`
+        </div>
+    </div>
+
+    <!-- Section 4: City-Wise & Problem-Wise Dynamic Pricing Engine -->
+    <div class="glass-card">
+        <h4>4. City-Wise & Problem-Wise Dynamic Pricing Engine (`/Admin/Pricing`)</h4>
+        <p class="text-muted">Admin console se breakdown problem rates aur base distance fees ko city-wise update karne ka central control.</p>
+
+        <h5>A. Edit / Update Problem Rate Modal (`#editProblemModal`)</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> Admin Pricing table me har row ke aage "Edit" button hota hai. Edit button dabane par modal me existing values pre-fill hoti hain. Submit karne par `IPricingService.UpdateProblemPriceRateAsync` call hota hai.</li>
+            <li><strong>Testing Step:</strong> Admin console (`/Admin/Pricing`) me "Flat Tyre / Puncture Repair" ke aage Edit click karein. Min Service Charge ko `200` se badlkar `250` karke Save Changes karein.</li>
+            <li><strong>Expected Outcome:</strong> Table me instant naya rate ₹250 reflect ho jata hai.</li>
+        </ul>
+
+        <h5>B. Real-Time Global Price Propagation (Har Jagah Instant Reflect)</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> Admin se rate update hote hi backend Database `ProblemTypePricings` update hone ki wajah se poore platform par auto-reflect hota hai:
+                <ul>
+                    <li><strong>Front Page Estimator (`/`):</strong> Dynamic calculation me naya ₹250 rate use hota hai.</li>
+                    <li><strong>Services Page (`/Home/Services`):** Price badge auto-update hota hai.</li>
+                    <li><strong>Customer Booking (`/Customer/Book`):</strong> Customer estimate bill new rates se generate hota hai.</li>
+                    <li><strong>AI Chatbot (`/Home/AskAiChat`):</strong> AI System Prompt live DB query se naya ₹250 rate parse karke chat me naya rate hi user ko bataata hai.</li>
+                </ul>
+            </li>
+            <li><strong>Testing Step:</strong> Admin se rate edit karne ke baad Front Page Calculator test karein aur AI Chatbot se poochein "What is Tyre repair price?".</li>
+            <li><strong>Expected Outcome:</strong> Chatbot aur Estimator dono me exact naya rate ₹250 hi dikhai dega.</li>
+        </ul>
+
+        <div class="step-box">
+            <strong>Key Endpoints Tested:</strong> `POST /Admin/UpdateProblemTypePrice`, `POST /Admin/AddProblemType`, `POST /Admin/UpdatePricingRule`
+        </div>
+    </div>
+
+    <!-- Section 5: Legal, Trust & FIR Enforcement Policy -->
+    <div class="glass-card">
+        <h4>5. Legal, Trust & Criminal FIR Enforcement Policy (`/Home/Terms`, `/Home/RefundPolicy`, `/Home/CancellationPolicy`)</h4>
+
+        <h5>A. Terms & Conditions & Non-Payment Police FIR Warning (`/Home/Terms`)</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> Platform rules (Points A to J) ke saath Section 4 me clear legal clause hai: Repair work hone ke baad agar koi customer mechanic ko payment karne se mana karta hai ya estimate se kam paise deta hai, toh customer ke khilaf **Section 420 (Cheating & Fraud) IPC/BNS** ke tehat nearest Police Station me FIR / Police Complaint darj ki jayegi.</li>
+            <li><strong>Testing Step:</strong> Footer me "Terms & Conditions" link par click karein. Highlighted Red Alert Box check karein.</li>
+            <li><strong>Expected Outcome:</strong> Full legal document with IPC/BNS non-payment FIR criminal clause formatted cleanly.</li>
+        </ul>
+
+        <h5>B. SuperAdmin Restricted Testing Manual Access (`/testing-manual.html`)</h5>
+        <ul>
+            <li><strong>Kaise Work Karta Hai:</strong> Footer me `Testing Manual` ka link strictly `@if (isSuperAdmin)` check se protected hai. Non-admin ya customer logged-in rehne par footer me yeh link render hi nahi hota, aur direct URL kholne par Javascript auth guard login page par redirect kar deta hai.</li>
+            <li><strong>Testing Step:</strong> Normal customer session me website footer check karein, fir Admin session me check karein.</li>
+            <li><strong>Expected Outcome:</strong> Link sirf SuperAdmin role ko visible aur accessible rahega.</li>
+        </ul>
+    </div>
+
+    <!-- Section 6: Comprehensive Step-by-Step Testing Matrix -->
+    <div class="glass-card">
+        <h4>6. System-Wide Step-by-Step Testing Matrix Table</h4>
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Test Case ID</th>
+                    <th>Module / Feature</th>
+                    <th>Testing Step / Action</th>
+                    <th>Expected UI & Database Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong class="text-warning">TC-01</strong></td>
+                    <td>GPS Auto Location</td>
+                    <td>Open `/Customer/Book` and allow location permission</td>
+                    <td>GPS coordinates captured, reverse-geocoded address filled into input.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-02</strong></td>
+                    <td>Guest Auto Auth</td>
+                    <td>Submit booking as unauthenticated user with code `1234`</td>
+                    <td>Account auto-created, cookies set, job created with status `Requested`.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-03</strong></td>
+                    <td>Duty Toggle</td>
+                    <td>Click Online/Offline switch in `/Mechanic/Dashboard`</td>
+                    <td>`MechanicProfiles.IsOnline` updates, duty badge turns green.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-04</strong></td>
+                    <td>Job Completion</td>
+                    <td>Accept job, start journey, submit completion as mechanic</td>
+                    <td>Job status updates to `Completed`, completed date recorded.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-05</strong></td>
+                    <td>Escrow Payment</td>
+                    <td>Execute `/Payment/ProcessEscrowPayment?jobId=1`</td>
+                    <td>Escrow executed via SP or C# fallback, 2-tier commission deducted, wallet updated.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-06</strong></td>
+                    <td>Pricing Edit</td>
+                    <td>Click Edit on problem in `/Admin/Pricing`, change rate and save</td>
+                    <td>DB updated, modal closes, new rate instantly propagates to Estimator & AI Chatbot.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-07</strong></td>
+                    <td>AI Chatbot</td>
+                    <td>Ask AI Chatbot widget "What are tyre repair charges?"</td>
+                    <td>AI parses dynamic DB prompt and quotes exact updated price range.</td>
+                </tr>
+                <tr>
+                    <td><strong class="text-warning">TC-08</strong></td>
+                    <td>SuperAdmin Gate</td>
+                    <td>Access `/testing-manual.html` as Customer vs SuperAdmin</td>
+                    <td>Customer redirected to Login; SuperAdmin granted full access with print view.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>

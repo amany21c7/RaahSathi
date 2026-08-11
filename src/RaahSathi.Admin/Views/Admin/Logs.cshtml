@@ -1,0 +1,123 @@
+@using RaahSathi.Models
+@model List<AuditLog>
+@{
+    ViewData["Title"] = "Audit Logs";
+    
+    var adminLogs = Model.Where(l => l.UserRole == "Admin" || string.IsNullOrEmpty(l.UserRole)).ToList();
+    var mechanicLogs = Model.Where(l => l.UserRole == "Mechanic").ToList();
+    var customerLogs = Model.Where(l => l.UserRole == "Customer").ToList();
+}
+
+@{
+    void RenderLogsTable(List<AuditLog> logs, string badgeClass, string userIcon)
+    {
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Timestamp (UTC)</th>
+                        <th>User (Actor)</th>
+                        <th>Action Type</th>
+                        <th>Details & Action Log</th>
+                        <th>IP Address</th>
+                        <th class="text-end pe-3">User Agent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (logs.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No audit logs recorded in this section yet.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var l in logs)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3 text-muted small">@l.TimeStamp.ToString("dd MMM yyyy, HH:mm:ss")</td>
+                                <td class="font-weight-bold text-white"><i class="fa-solid @userIcon me-1"></i> @l.AdminName</td>
+                                <td><span class="badge @badgeClass text-dark font-weight-bold">@l.ActionType</span></td>
+                                <td class="text-light small" style="word-break: break-word; max-width: 450px;">@l.Details</td>
+                                <td><span class="badge bg-secondary text-light">@l.IpAddress</span></td>
+                                <td class="text-end pe-3 text-muted small" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@l.UserAgent">@l.UserAgent</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-rectangle-list text-warning me-2"></i> System Audit Logs</h4>
+        <p class="text-muted small mb-0">Immutable Security Trail: Actions performed by Admins, Mechanics, and Customers are categorized below.</p>
+    </div>
+</div>
+
+<ul class="nav nav-tabs border-secondary mb-3" id="auditTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active text-warning font-weight-bold bg-transparent border-0 border-bottom border-warning border-3 px-4 py-2.5" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin-logs" type="button" role="tab" aria-controls="admin-logs" aria-selected="true" style="border-radius: 0;">
+            <i class="fa-solid fa-user-shield me-2"></i> Admin & System Logs (@adminLogs.Count)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link text-info font-weight-bold bg-transparent border-0 px-4 py-2.5" id="mechanic-tab" data-bs-toggle="tab" data-bs-target="#mechanic-logs" type="button" role="tab" aria-controls="mechanic-logs" aria-selected="false" style="border-radius: 0;">
+            <i class="fa-solid fa-screwdriver-wrench me-2"></i> Mechanic Logs (@mechanicLogs.Count)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link text-success font-weight-bold bg-transparent border-0 px-4 py-2.5" id="customer-tab" data-bs-toggle="tab" data-bs-target="#customer-logs" type="button" role="tab" aria-controls="customer-logs" aria-selected="false" style="border-radius: 0;">
+            <i class="fa-solid fa-user me-2"></i> Customer Logs (@customerLogs.Count)
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="auditTabsContent">
+    <!-- Admin Logs Pane -->
+    <div class="tab-pane fade show active" id="admin-logs" role="tabpanel" aria-labelledby="admin-tab">
+        <div class="card bg-dark border-secondary shadow-sm">
+            <div class="card-body p-0">
+                @{ RenderLogsTable(adminLogs, "bg-warning text-dark", "fa-user-shield text-warning"); }
+            </div>
+        </div>
+    </div>
+    <!-- Mechanic Logs Pane -->
+    <div class="tab-pane fade" id="mechanic-logs" role="tabpanel" aria-labelledby="mechanic-tab">
+        <div class="card bg-dark border-secondary shadow-sm">
+            <div class="card-body p-0">
+                @{ RenderLogsTable(mechanicLogs, "bg-info text-dark", "fa-screwdriver-wrench text-info"); }
+            </div>
+        </div>
+    </div>
+    <!-- Customer Logs Pane -->
+    <div class="tab-pane fade" id="customer-logs" role="tabpanel" aria-labelledby="customer-tab">
+        <div class="card bg-dark border-secondary shadow-sm">
+            <div class="card-body p-0">
+                @{ RenderLogsTable(customerLogs, "bg-success text-white", "fa-user text-success"); }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(function() {
+        // Handle custom styling classes update on tab toggles
+        $('#auditTabs button').on('shown.bs.tab', function (e) {
+            $('#auditTabs button').removeClass('border-bottom border-warning border-info border-success border-3');
+            
+            var targetId = $(e.target).attr('id');
+            if (targetId === 'admin-tab') {
+                $(e.target).addClass('border-bottom border-warning border-3');
+            } else if (targetId === 'mechanic-tab') {
+                $(e.target).addClass('border-bottom border-info border-3');
+            } else if (targetId === 'customer-tab') {
+                $(e.target).addClass('border-bottom border-success border-3');
+            }
+        });
+    });
+</script>
+}

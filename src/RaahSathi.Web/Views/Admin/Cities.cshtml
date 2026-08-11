@@ -1,0 +1,91 @@
+@using RaahSathi.Models
+@model List<CityServiceArea>
+@{
+    ViewData["Title"] = "City Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-city text-warning me-2"></i> City & Service Radius Management</h4>
+        <p class="text-muted small mb-0">State ➔ City ➔ Area ➔ Service Radius KM hierarchy configuration across India.</p>
+    </div>
+    <button type="button" class="btn btn-warning text-dark font-weight-bold" data-bs-toggle="modal" data-bs-target="#addCityModal">
+        <i class="fa-solid fa-plus me-1"></i> Add Service City / Area
+    </button>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">State</th>
+                        <th>City Name</th>
+                        <th>Area / Sector</th>
+                        <th>Service Radius</th>
+                        <th class="text-end pe-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No city service areas added yet.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var c in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3"><span class="badge bg-secondary text-light">@c.State</span></td>
+                                <td class="font-weight-bold text-white fs-6">@c.CityName</td>
+                                <td class="text-light">@c.AreaName</td>
+                                <td class="text-warning font-weight-bold">@c.ServiceRadiusKm KM Radius</td>
+                                <td class="text-end pe-3">
+                                    <span class="badge bg-success text-white">ACTIVE</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add City Area -->
+<div class="modal fade" id="addCityModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold">Add Service City / Area Radius</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/Admin/AddCityArea" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">State</label>
+                        <input type="text" name="state" class="form-control glass-input text-white" value="Uttar Pradesh" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">City Name</label>
+                        <input type="text" name="cityName" class="form-control glass-input text-white" placeholder="e.g. Noida / Lucknow / Delhi" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Area / Sector Landmark</label>
+                        <input type="text" name="areaName" class="form-control glass-input text-white" placeholder="e.g. Sector 62 / Hazratganj" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Dispatch Service Radius (KM)</label>
+                        <input type="number" step="0.5" name="serviceRadiusKm" class="form-control glass-input text-warning font-weight-bold" value="15.0" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100">Add City Radius</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,812 @@
+@inject RaahSathi.Data.ApplicationDbContext _dbContext
+@{
+    ViewData["Title"] = "Customer Operations Dashboard";
+    var vehicles = ViewBag.Vehicles as List<RaahSathi.Models.Vehicle> ?? new List<RaahSathi.Models.Vehicle>();
+    var activeJobs = ViewBag.ActiveJobs as List<RaahSathi.Models.Job> ?? new List<RaahSathi.Models.Job>();
+    var pastJobs = ViewBag.PastJobs as List<RaahSathi.Models.Job> ?? new List<RaahSathi.Models.Job>();
+
+    var now = DateTime.UtcNow;
+    var customerBanners = _dbContext.CmsBanners
+        .Where(b => b.IsActive 
+                 && (b.TargetPage == "Customer Dashboard" || b.TargetPage == "Homepage")
+                 && (b.TargetAudience == "All Users" || b.TargetAudience == "Customers")
+                 && (b.ExpiresAt == null || b.ExpiresAt > now))
+        .OrderByDescending(b => b.Id)
+        .ToList();
+}
+
+<div class="row">
+    @if (customerBanners.Count > 0)
+    {
+        <div class="col-12 mb-4">
+            <div id="customerDashboardCarousel" class="carousel slide" data-bs-ride="carousel" style="border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.06);">
+                <div class="carousel-inner">
+                    @for (int i = 0; i < customerBanners.Count; i++)
+                    {
+                        var b = customerBanners[i];
+                        <div class="carousel-item @(i == 0 ? "active" : "")" style="height: 180px; position: relative;">
+                            <img src="@b.ImageUrl" class="d-block w-100 h-100" style="object-fit: cover; filter: brightness(0.45) contrast(1.1);" alt="@b.Title">
+                            <div class="carousel-caption d-flex flex-column align-items-start justify-content-center text-start h-100" style="left: 6%; right: 6%; bottom: 0; padding-top: 0; padding-bottom: 0;">
+                                <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">PROMOTION / ANNOUNCEMENT</span>
+                                <h3 class="text-white font-weight-bold mb-1" style="font-family: 'Outfit'; font-size: 1.62rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">@b.Title</h3>
+                                <p class="text-muted small mb-0 d-none d-sm-block" style="color: #e2e8f0 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">RaahSathi offers best-in-class roadside assistance services 24/7.</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (customerBanners.Count > 1)
+                {
+                    <button class="carousel-control-prev" type="button" data-bs-target="#customerDashboardCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#customerDashboardCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Quick Emergency Request for Registered Vehicles Card -->
+    <div class="col-12">
+        <div class="glass-card mb-4 border border-warning border-opacity-40" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div>
+                    <h5 class="text-white font-weight-bold mb-1">
+                        <i class="fa-solid fa-bolt text-warning me-2 animate-pulse"></i> Registered Vehicle Quick Request
+                    </h5>
+                    <p class="text-muted small mb-0">Select your registered vehicle to send an instant roadside assistance request.</p>
+                </div>
+                <div>
+                    @if (vehicles.Count > 0)
+                    {
+                        <div class="d-flex align-items-center gap-2">
+                            <select class="form-select glass-input text-white font-weight-bold" id="dashboardVehicleSelect" style="min-width: 210px;">
+                                @foreach (var v in vehicles)
+                                {
+                                    <option value="@v.Id">@v.Model (@v.RegistrationNumber)</option>
+                                }
+                            </select>
+                            <button class="btn btn-warning font-weight-bold text-dark text-nowrap shadow" onclick="submitQuickVehicleRequest()">
+                                <i class="fa-solid fa-paper-plane me-1"></i> Send Request
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <a href="/Customer/Book" class="btn btn-warning font-weight-bold text-dark text-nowrap shadow">
+                            <i class="fa-solid fa-location-crosshairs me-1"></i> Request Emergency Assistance
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Column (col-lg-8): Vehicle Registration (Conditional) + Active Requests + Breakdown History -->
+    <div class="col-lg-8">
+
+        <!-- Vehicle Registration Section (Left Side - Shown ONLY on button click via action=addVehicle) -->
+        <div id="leftVehicleRegistrationSection" class="glass-card mb-4 border border-warning border-opacity-40" style="display: none; background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-40 pb-2">
+                <h4 class="text-white font-weight-bold mb-0">
+                    <i class="fa-solid fa-car text-warning me-2"></i> My Vehicle &amp; Registration
+                </h4>
+                <span class="badge bg-warning text-dark font-weight-bold">@vehicles.Count Vehicles</span>
+            </div>
+
+            @if (vehicles.Count > 0)
+            {
+                <div class="row g-2 mb-4">
+                    @foreach (var v in vehicles)
+                    {
+                        <div class="col-md-6">
+                            <div class="p-3 rounded bg-dark bg-opacity-60 border border-secondary d-flex justify-content-between align-items-center h-100">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    @if (!string.IsNullOrEmpty(v.VehiclePhotoUrl))
+                                    {
+                                        <img src="@v.VehiclePhotoUrl" style="width:48px; height:48px; object-fit:cover; border-radius:8px; border:1px solid #f59e0b;" alt="@v.Model" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-dark border border-secondary d-flex align-items-center justify-content-center text-warning" style="width:40px; height:40px;">
+                                            <i class="fa-solid fa-car"></i>
+                                        </div>
+                                    }
+                                    <div>
+                                        <h6 class="mb-0 text-white font-weight-bold">@v.Model</h6>
+                                        <span class="badge bg-secondary mt-1" style="font-size:0.7rem;">@v.VehicleType</span>
+                                        <div class="text-warning font-weight-bold small mt-0.5">@v.RegistrationNumber</div>
+                                    </div>
+                                </div>
+                                <a href="/Customer/Book?selectedVehicleId=@v.Id" class="btn btn-warning btn-sm font-weight-bold text-dark shadow-sm text-nowrap">
+                                    <i class="fa-solid fa-bolt me-1"></i> Request
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-3"><i class="fa-solid fa-circle-info text-warning me-1"></i> No saved vehicles found. Register your vehicle below to enable instant 1-click bookings.</p>
+            }
+
+            <!-- Add Vehicle Form Card -->
+            <div id="addVehicleCard" class="p-3.5 rounded-3 border border-warning border-opacity-40 bg-dark bg-opacity-70">
+                <h5 class="text-white font-weight-bold mb-3 d-flex align-items-center">
+                    <i class="fa-solid fa-car-on text-warning me-2"></i> Register New Vehicle
+                </h5>
+                <form action="/Customer/AddVehicle" method="POST" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small font-weight-bold">Vehicle Type <span class="text-warning">*</span></label>
+                            <select class="form-select glass-input text-white bg-dark border-secondary" name="vehicleType" required>
+                                <option value="Car">Car / SUV / Van</option>
+                                <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
+                                <option value="Commercial">Commercial (Truck/Bus/Loader/Pickup)</option>
+                                <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small font-weight-bold">Vehicle Name &amp; Model <span class="text-warning">*</span></label>
+                            <input type="text" class="form-control glass-input text-white bg-dark border-secondary" name="model" placeholder="e.g. Maruti Swift 2022 / Honda Activa 6G" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small font-weight-bold">Registration Number <span class="text-warning font-weight-normal">(Optional)</span></label>
+                            <input type="text" class="form-control glass-input text-white bg-dark border-secondary text-uppercase" name="registrationNumber" placeholder="e.g. DL-3C-AB-1234 (Optional)" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small font-weight-bold">Vehicle Photo <span class="text-warning font-weight-normal">(Optional)</span></label>
+                            <input type="file" class="form-control glass-input text-white bg-dark border-secondary" name="vehiclePhoto" accept="image/*" />
+                            <span class="text-muted" style="font-size:0.75rem;">Upload photo for easy identification by mechanics</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 mt-3 font-weight-extrabold text-dark py-2.5 shadow" style="background:#f59e0b;">
+                        <i class="fa-solid fa-plus-circle me-1"></i> Register Vehicle Now
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Active Request Section -->
+        <div class="glass-card mb-4">
+            <h4 class="text-white mb-4 d-flex align-items-center justify-content-between">
+                <span><i class="fa-solid fa-bell text-warning me-2 animate-pulse"></i> Active Roadside Requests</span>
+                <span class="badge bg-danger">@activeJobs.Count Active</span>
+            </h4>
+            
+            @if (activeJobs.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <div class="rounded-circle bg-dark p-4 mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:70px; height:70px;">
+                        <i class="fa-solid fa-shield text-muted" style="font-size: 2rem;"></i>
+                    </div>
+                    <h5 class="text-white">Your vehicle is safe.</h5>
+                    <p class="text-muted">No active breakdown requests at the moment.</p>
+                    <a href="/Customer/Book" class="btn btn-premium-primary mt-2">
+                        <i class="fa-solid fa-location-crosshairs me-1"></i> Request Emergency Assistance
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var job in activeJobs)
+                    {
+                        <div class="col-12">
+                            <div class="p-3 rounded border border-warning border-opacity-30 bg-dark bg-opacity-40">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <span class="badge bg-warning text-dark mb-2">@job.Status</span>
+                                        @if (job.DisputeStatus == "Active")
+                                        {
+                                            <span class="badge bg-danger text-white mb-2 ms-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation me-1"></i> Complaint Filed</span>
+                                        }
+                                        <h5 class="text-white mb-1">@job.Vehicle?.Model (@job.ProblemType Issue)</h5>
+                                        <p class="text-muted small mb-0"><i class="fa-solid fa-map-marker-alt me-1"></i> @job.Address</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="text-muted small">Upfront Bill</div>
+                                        <h5 class="text-warning">₹@job.FinalBillAmount</h5>
+                                    </div>
+                                </div>
+                                <hr class="border-secondary my-2">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <span class="text-muted small">Created: @job.CreatedAt.ToLocalTime().ToString("hh:mm tt")</span>
+                                    <div class="d-flex gap-2">
+                                        <a href="/Customer/Tracker?id=@job.Id" class="btn btn-premium-primary btn-sm">
+                                            <i class="fa-solid fa-compass me-1"></i> Open Live Route Tracker
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Past Request History -->
+        <div class="glass-card mb-4">
+            <h4 class="text-white mb-4"><i class="fa-solid fa-history text-muted me-2"></i> Breakdown History</h4>
+            
+            @if (pastJobs.Count == 0)
+            {
+                <p class="text-muted text-center py-4">No past services recorded.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>Date</th>
+                                <th>Vehicle</th>
+                                <th>Problem</th>
+                                <th>Mechanic</th>
+                                <th>Bill Paid</th>
+                                <th>Receipt</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var job in pastJobs)
+                            {
+                                var jobDate = job.CompletedAt ?? job.CreatedAt;
+                                <tr>
+                                    <td>
+                                        <div class="font-weight-bold text-white">@jobDate.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">@jobDate.ToLocalTime().ToString("hh:mm tt")</div>
+                                    </td>
+                                    <td>@job.Vehicle?.Model</td>
+                                    <td>
+                                        <div>@job.ProblemType</div>
+                                        @if (job.DisputeStatus == "Active")
+                                        {
+                                            <span class="badge bg-danger text-white mt-1" style="font-size: 0.7rem;"><i class="fa-solid fa-clock me-1"></i> Complaint Under Review</span>
+                                        }
+                                        else if (job.DisputeStatus == "Resolved")
+                                        {
+                                            <span class="badge bg-success text-white mt-1" style="font-size: 0.7rem;" data-bs-toggle="tooltip" title="Resolution: @job.DisputeResolution">
+                                                <i class="fa-solid fa-circle-check me-1"></i> Complaint Resolved
+                                            </span>
+                                            <div class="text-success extra-small mt-0.5" style="font-size: 0.72rem; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                Res: @job.DisputeResolution
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>@(job.Mechanic?.Name ?? "Unassigned")</td>
+                                    <td class="text-warning font-weight-bold">₹@job.FinalBillAmount</td>
+                                    <td>
+                                        <button type="button" class="btn btn-outline-info btn-sm py-1 px-2 font-weight-bold" onclick="showCustomerInvoiceModal(@job.Id)">
+                                            <i class="fa-solid fa-receipt me-1"></i> Receipt
+                                        </button>
+                                    </td>
+                                    <td>
+                                        @if (job.RatingFromCustomer.HasValue)
+                                        {
+                                            <div class="d-flex align-items-center gap-1">
+                                                <span class="text-warning font-weight-bold me-1">@job.RatingFromCustomer.Value.ToString("F1") ★</span>
+                                                <div class="small">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        if (i <= job.RatingFromCustomer.Value)
+                                                        {
+                                                            <i class="fa-solid fa-star text-warning"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="fa-regular fa-star text-muted"></i>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-warning btn-sm py-1 px-2 font-weight-bold text-dark shadow-sm" onclick="openDashboardRatingModal(@job.Id, '@(job.Mechanic?.Name ?? "Mechanic")')">
+                                                <i class="fa-solid fa-star me-1"></i> Rate Now
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Right Column (col-lg-4): Customer Quick Profile & Support Card -->
+    <div class="col-lg-4">
+        <div class="glass-card mb-4">
+            <h4 class="text-white mb-3 d-flex align-items-center justify-content-between">
+                <span><i class="fa-solid fa-shield-halved text-warning me-2"></i> Safety &amp; Support</span>
+                <span class="badge bg-success text-white font-weight-bold">Active 24x7</span>
+            </h4>
+            
+            <div class="p-3 bg-dark bg-opacity-60 border border-secondary rounded-3 mb-3">
+                <div class="d-flex align-items-center me-2 mb-2">
+                    <div class="rounded-circle bg-warning text-dark font-weight-bold me-2 d-flex align-items-center justify-content-center" style="width:36px; height:36px;">
+                        <i class="fa-solid fa-user text-dark"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-white font-weight-bold mb-0">@(Context.User.Identity?.IsAuthenticated == true ? Context.User.Identity.Name : "Customer")</h6>
+                        <span class="text-muted small">RaahSathi Verified User</span>
+                    </div>
+                </div>
+                <div class="text-muted small mb-0">
+                    <i class="fa-solid fa-phone text-warning me-1"></i> Toll-Free Hotline: <strong>1800-102-7224</strong>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <a href="/Customer/Book" class="btn btn-warning font-weight-bold text-dark shadow" style="background:#f59e0b;">
+                    <i class="fa-solid fa-location-crosshairs me-1"></i> Emergency Assistance
+                </a>
+                <a href="/Customer/Dashboard?action=addVehicle" class="btn btn-outline-warning btn-sm font-weight-bold">
+                    <i class="fa-solid fa-car-plus me-1"></i> Add / Manage Vehicles
+                </a>
+                <button type="button" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openComplaintModal()">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Report Issue / File Complaint
+                </button>
+                <button type="button" class="btn btn-info btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openSupportTicketModal()">
+                    <i class="fa-solid fa-headset me-1"></i> Support / Help Desk
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const leftVehicleSec = document.getElementById('leftVehicleRegistrationSection');
+        if (urlParams.get('action') === 'addVehicle') {
+            if (leftVehicleSec) {
+                leftVehicleSec.style.display = 'block';
+                leftVehicleSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                leftVehicleSec.style.boxShadow = '0 0 25px rgba(245, 158, 11, 0.35)';
+            }
+        } else {
+            if (leftVehicleSec) {
+                leftVehicleSec.style.display = 'none';
+            }
+        }
+    });
+
+    function submitQuickVehicleRequest() {
+        var vehicleId = $('#dashboardVehicleSelect').val();
+        if (vehicleId) {
+            window.location.href = '/Customer/Book?selectedVehicleId=' + vehicleId;
+        } else {
+            window.location.href = '/Customer/Book';
+        }
+    }
+
+    function openDashboardRatingModal(jobId, mechName) {
+        $('#modalRatingJobId').val(jobId);
+        $('#modalMechanicName').text("Rate service by " + mechName);
+        setModalRating(5);
+        var ratingModal = new bootstrap.Modal(document.getElementById('dashboardRatingModal'));
+        ratingModal.show();
+    }
+
+    function setModalRating(val) {
+        $('#modalRatingScore').val(val);
+        const labels = {
+            1: "1.0 ★ Poor Service",
+            2: "2.0 ★ Below Average",
+            3: "3.0 ★ Average Service",
+            4: "4.0 ★ Good Service",
+            5: "5.0 ★ Excellent Service"
+        };
+        $('#modalRatingLabel').text(labels[val] || (val + ".0 ★"));
+        
+        $('#modalStarsContainer i').each(function(idx) {
+            if (idx < val) {
+                $(this).removeClass('fa-regular text-muted').addClass('fa-solid text-warning');
+            } else {
+                $(this).removeClass('fa-solid text-warning').addClass('fa-regular text-muted');
+            }
+        });
+    }
+
+    function showCustomerInvoiceModal(jobId) {
+        $.get('/Customer/GetJobInvoiceDetails?jobId=' + jobId, function (res) {
+            if (res && res.success) {
+                $('#custInvNumber').text(res.invoiceNo);
+                $('#custInvDate').text('Date: ' + res.date);
+                $('#custInvCustomerName').text(res.customerName);
+                $('#custInvCustomerPhone').text(res.customerPhone);
+                $('#custInvVehicleInfo').text(res.vehicleModel + ' (' + res.vehicleType + ' - ' + res.fuelType + ') • Reg: ' + res.vehicleRegNumber);
+                $('#custInvCustomerAddress').text(res.customerAddress);
+
+                $('#custInvMechanicName').text(res.mechanicName);
+                $('#custInvShopName').text(res.shopName);
+                $('#custInvMechanicPhone').text(res.mechanicPhone);
+                $('#custInvShopAddress').text(res.shopAddress);
+
+                var rowsHtml = '';
+                var itemNo = 1;
+
+                rowsHtml += `<tr><td>${itemNo++}</td><td>Basic Visiting & Distance Charge</td><td class="text-end font-weight-bold">₹${res.visitingCharge.toFixed(2)}</td></tr>`;
+                rowsHtml += `<tr><td>${itemNo++}</td><td>Breakdown Repair Service Fee (${res.problemType})</td><td class="text-end font-weight-bold">₹${res.serviceChargeMin.toFixed(2)}</td></tr>`;
+
+                if (res.customEstimateAmount > 0) {
+                    rowsHtml += `<tr><td>${itemNo++}</td><td>On-Spot Inspection Estimate (${res.customEstimateDetails || 'Custom Repair'})</td><td class="text-end font-weight-bold">₹${res.customEstimateAmount.toFixed(2)}</td></tr>`;
+                }
+
+                if (res.partsEstimateAmount > 0 || res.extraLabourCharge > 0) {
+                    var partLabel = res.partsDetails || 'Spare Part';
+                    if (res.partsMrp > res.partsEstimateAmount) {
+                        partLabel += ` <span class="badge bg-secondary text-light">MRP: ₹${res.partsMrp.toFixed(2)}</span>`;
+                    }
+                    var partsTotal = res.partsEstimateAmount + res.extraLabourCharge;
+                    rowsHtml += `<tr><td>${itemNo++}</td><td>Extra Spare Parts & Labour (${partLabel})</td><td class="text-end font-weight-bold">₹${partsTotal.toFixed(2)}</td></tr>`;
+                }
+
+                if (res.towingCharge > 0) {
+                    rowsHtml += `<tr><td>${itemNo++}</td><td>Emergency Towing Assistance Charge</td><td class="text-end font-weight-bold">₹${res.towingCharge.toFixed(2)}</td></tr>`;
+                }
+
+                $('#custInvItemsTable').html(rowsHtml);
+                $('#custInvTotalAmount').text('₹' + res.totalBillAmount.toFixed(2));
+
+                var invModal = new bootstrap.Modal(document.getElementById('customerInvoiceModal'));
+                invModal.show();
+            } else {
+                alert('Could not fetch receipt details.');
+            }
+        });
+    }
+
+    function openComplaintModal() {
+        $('#complaintJobSelect').val('');
+        $('#txtComplaintJobId').val('').prop('readonly', false);
+        $('#txtComplaintMechName').val('').prop('readonly', false);
+        $('#txtComplaintLocation').val('').prop('readonly', false);
+        $('#txtComplaintProblem').val('').prop('readonly', false);
+        $('#txtComplaintDetails').val('');
+        
+        var modal = new bootstrap.Modal(document.getElementById('customerComplaintModal'));
+        modal.show();
+    }
+
+    function onComplaintJobChange() {
+        var selected = $('#complaintJobSelect').find(':selected');
+        var val = $('#complaintJobSelect').val();
+
+        if (val === 'other') {
+            $('#txtComplaintJobId').val('').prop('readonly', false);
+            $('#txtComplaintMechName').val('').prop('readonly', false);
+            $('#txtComplaintLocation').val('').prop('readonly', false);
+            $('#txtComplaintProblem').val('').prop('readonly', false);
+        } else if (val) {
+            $('#txtComplaintJobId').val(val).prop('readonly', true);
+            $('#txtComplaintMechName').val(selected.data('mechanic') || '').prop('readonly', true);
+            $('#txtComplaintLocation').val(selected.data('location') || '').prop('readonly', true);
+            $('#txtComplaintProblem').val(selected.data('problem') || '').prop('readonly', true);
+        }
+    }
+
+    function submitComplaintForm(e) {
+        e.preventDefault();
+        var jobId = $('#txtComplaintJobId').val();
+        var mechanicName = $('#txtComplaintMechName').val();
+        var locationName = $('#txtComplaintLocation').val();
+        var problemType = $('#txtComplaintProblem').val();
+        var details = $('#txtComplaintDetails').val();
+
+        $.post('/Customer/SubmitComplaint', {
+            jobId: jobId,
+            mechanicName: mechanicName,
+            location: locationName,
+            problem: problemType,
+            details: details
+        }, function(res) {
+            if (res && res.success) {
+                alert('✅ Complaint filed successfully. Our Ops team has logged this and will resolve it within 24 hours.');
+                var modalEl = document.getElementById('customerComplaintModal');
+                var modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+                window.location.reload();
+            } else {
+                alert('❌ Error: ' + (res.message || 'Could not register complaint. Check if Job ID is correct.'));
+            }
+        });
+    }
+
+    function openSupportTicketModal() {
+        $('#supportTicketForm')[0].reset();
+        var modal = new bootstrap.Modal(document.getElementById('customerSupportModal'));
+        modal.show();
+    }
+
+    function submitSupportTicketForm(e) {
+        e.preventDefault();
+        var form = $('#supportTicketForm')[0];
+        var formData = new FormData(form);
+
+        $.ajax({
+            url: '/Home/SubmitSupportTicket',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                if (res && res.success) {
+                    alert('✅ ' + res.message);
+                    var modalEl = document.getElementById('customerSupportModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                } else {
+                    alert('❌ Error: ' + (res.message || 'Could not submit support ticket.'));
+                }
+            },
+            error: function() {
+                alert('❌ Network error submitting support ticket. Please try again.');
+            }
+        });
+    }
+</script>
+
+<!-- Interactive Rating Modal for Breakdown History -->
+<div class="modal fade" id="dashboardRatingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-warning text-white shadow-lg">
+            <div class="modal-header border-secondary py-3">
+                <h5 class="modal-title text-warning font-weight-bold mb-0">
+                    <i class="fa-solid fa-star text-warning me-2"></i> Rate Mechanic Service
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/Customer/SubmitFeedback" method="POST">
+                <input type="hidden" name="id" id="modalRatingJobId" value="" />
+                <input type="hidden" name="rating" id="modalRatingScore" value="5" />
+
+                <div class="modal-body p-4 text-center">
+                    <h6 class="text-white mb-2" id="modalMechanicName">Rate your service</h6>
+                    <p class="text-muted small mb-3">How was your roadside breakdown resolution experience?</p>
+
+                    <div class="d-flex justify-content-center gap-2 mb-3 cursor-pointer text-warning fs-2" id="modalStarsContainer">
+                        <i class="fa-solid fa-star" onclick="setModalRating(1)"></i>
+                        <i class="fa-solid fa-star" onclick="setModalRating(2)"></i>
+                        <i class="fa-solid fa-star" onclick="setModalRating(3)"></i>
+                        <i class="fa-solid fa-star" onclick="setModalRating(4)"></i>
+                        <i class="fa-solid fa-star" onclick="setModalRating(5)"></i>
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="badge bg-success text-white px-3 py-1.5 font-weight-bold" id="modalRatingLabel">5.0 ★ Excellent Service</span>
+                    </div>
+
+                    <div class="mb-3 text-start">
+                        <label class="form-label text-muted small font-weight-bold">Feedback / Review (Optional)</label>
+                        <textarea name="feedback" class="form-control glass-input text-white bg-dark border-secondary" rows="3" placeholder="Share your experience..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark" style="background:#f59e0b;">Submit Rating &amp; Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- CUSTOMER OFFICIAL ITEMIZED TAX INVOICE / RECEIPT MODAL -->
+<div class="modal fade" id="customerInvoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-light border border-info shadow-lg">
+            <div class="modal-header border-secondary d-print-none">
+                <h5 class="modal-title text-info font-weight-bold">
+                    <i class="fa-solid fa-receipt me-2"></i> RaahSathi Official Service Receipt / Tax Invoice
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="custInvoicePrintArea">
+                <div class="p-4 bg-dark bg-opacity-80 rounded-4 border border-secondary">
+                    <!-- Invoice Header -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 border-bottom border-secondary mb-4 gap-2">
+                        <div>
+                            <h3 class="text-warning font-weight-extrabold mb-1" style="font-family: 'Outfit';">RaahSathi Roadside Assistance</h3>
+                            <p class="text-muted small mb-0">Official Breakdown Repair Payment Receipt</p>
+                        </div>
+                        <div class="text-md-end">
+                            <span class="badge bg-success text-white font-weight-bold px-3 py-1 mb-1" id="custInvStatusBadge"><i class="fa-solid fa-circle-check me-1"></i> PAYMENT RECEIVED & VERIFIED</span>
+                            <h6 class="text-light font-weight-bold mb-0" id="custInvNumber">RS-INV-0000-2026</h6>
+                            <span class="text-muted extra-small d-block" id="custInvDate">Date: --</span>
+                        </div>
+                    </div>
+
+                    <!-- Customer & Mechanic Info Grid -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-black bg-opacity-40 rounded-3 border border-secondary h-100">
+                                <h6 class="text-warning font-weight-bold mb-2"><i class="fa-solid fa-user me-1"></i> Customer Details</h6>
+                                <p class="mb-1 text-light font-weight-bold" id="custInvCustomerName">--</p>
+                                <p class="mb-1 text-muted small"><i class="fa-solid fa-phone me-1"></i> <span id="custInvCustomerPhone">--</span></p>
+                                <p class="mb-1 text-muted small"><i class="fa-solid fa-car me-1"></i> <span id="custInvVehicleInfo">--</span></p>
+                                <p class="mb-0 text-muted small"><i class="fa-solid fa-location-dot me-1"></i> <span id="custInvCustomerAddress">--</span></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-black bg-opacity-40 rounded-3 border border-secondary h-100">
+                                <h6 class="text-info font-weight-bold mb-2"><i class="fa-solid fa-screwdriver-wrench me-1"></i> Service Partner Details</h6>
+                                <p class="mb-1 text-light font-weight-bold" id="custInvMechanicName">--</p>
+                                <p class="mb-1 text-muted small"><i class="fa-solid fa-shop me-1"></i> <span id="custInvShopName">--</span></p>
+                                <p class="mb-1 text-muted small"><i class="fa-solid fa-phone me-1"></i> <span id="custInvMechanicPhone">--</span></p>
+                                <p class="mb-0 text-muted small"><i class="fa-solid fa-map-pin me-1"></i> <span id="custInvShopAddress">--</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Itemized Breakdown Table -->
+                    <h6 class="text-white font-weight-bold mb-2"><i class="fa-solid fa-list-check me-1"></i> Itemized Price & Estimate Breakdown</h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-dark table-striped table-bordered align-middle text-light mb-0">
+                            <thead>
+                                <tr class="table-secondary text-dark">
+                                    <th>#</th>
+                                    <th>Description / Service Item</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="custInvItemsTable">
+                                <!-- Dynamic Items inserted via JS -->
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-dark fs-5 font-weight-bold">
+                                    <td colspan="2" class="text-end text-warning">TOTAL PAID AMOUNT:</td>
+                                    <td class="text-end text-success font-weight-extrabold" id="custInvTotalAmount">₹0.00</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Receipt Footer -->
+                    <div class="p-3 bg-dark bg-opacity-60 rounded-3 border border-secondary d-flex justify-content-between align-items-center">
+                        <div class="text-muted extra-small">
+                            <i class="fa-solid fa-shield-halved text-success me-1"></i> Certified Digital Receipt by RaahSathi Escrow System
+                        </div>
+                        <button type="button" class="btn btn-outline-light btn-sm d-print-none" onclick="window.print()">
+                            <i class="fa-solid fa-print me-1"></i> Print Invoice / Download PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CUSTOMER COMPLAINT / REPORT ISSUE MODAL -->
+<div class="modal fade" id="customerComplaintModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border border-danger shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-danger font-weight-bold">
+                    <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Report Mechanic / File Complaint
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="complaintForm" onsubmit="submitComplaintForm(event)">
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">Select your request/job below to pre-populate details, or choose "Other" to enter everything manually.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Select Related Booking / Job <span class="text-danger">*</span></label>
+                        <select id="complaintJobSelect" class="form-select glass-input text-white bg-dark border-secondary" required onchange="onComplaintJobChange()">
+                            <option value="" disabled selected>-- Select a Job / Order --</option>
+                            @foreach (var job in activeJobs)
+                            {
+                                <option value="@job.Id" data-mechanic="@(job.Mechanic?.Name ?? "Unassigned")" data-location="@job.Address" data-problem="@job.ProblemType">
+                                    Job #@job.Id - @job.Vehicle?.Model (@job.ProblemType) - Active
+                                </option>
+                            }
+                            @foreach (var job in pastJobs)
+                            {
+                                <option value="@job.Id" data-mechanic="@(job.Mechanic?.Name ?? "Unassigned")" data-location="@job.Address" data-problem="@job.ProblemType">
+                                    Job #@job.Id - @job.Vehicle?.Model (@job.ProblemType) - Completed
+                                </option>
+                            }
+                            <option value="other">Other (Manual Input)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Job ID / Order ID <span class="text-danger">*</span></label>
+                        <input type="number" id="txtComplaintJobId" name="jobId" class="form-control glass-input text-white" placeholder="e.g. 25" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Mechanic Name <span class="text-danger">*</span></label>
+                        <input type="text" id="txtComplaintMechName" name="mechanicName" class="form-control glass-input text-white" placeholder="e.g. Radhe Kumar" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Location <span class="text-danger">*</span></label>
+                        <input type="text" id="txtComplaintLocation" name="location" class="form-control glass-input text-white" placeholder="e.g. Sector 62 Noida" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Vehicle Problem / Issue Type <span class="text-danger">*</span></label>
+                        <input type="text" id="txtComplaintProblem" name="problem" class="form-control glass-input text-white" placeholder="e.g. Engine Overheating / Brake Failure" required />
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label text-muted small font-weight-bold">Describe Your Complaint Details <span class="text-danger">*</span></label>
+                        <textarea id="txtComplaintDetails" name="details" class="form-control glass-input text-white" rows="3" placeholder="Please explain the fraud, misbehavior, or incomplete work in detail..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm"><i class="fa-solid fa-paper-plane me-1"></i> Submit Complaint</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- CUSTOMER HELP DESK / SUPPORT TICKET MODAL -->
+<div class="modal fade" id="customerSupportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border border-info shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-info font-weight-bold">
+                    <i class="fa-solid fa-headset text-info me-2"></i> RaahSathi Help Desk & Support
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="supportTicketForm" onsubmit="submitSupportTicketForm(event)">
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">Have an issue with booking, payment, or app features? Submit a ticket below along with an optional screenshot/photo.</p>
+                    
+                    <input type="hidden" name="userRole" value="Customer" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Your Name <span class="text-danger">*</span></label>
+                        <input type="text" name="fullName" class="form-control glass-input text-white" value="@(Context.User.Identity?.Name ?? "Customer")" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Phone Number <span class="text-danger">*</span></label>
+                        <input type="text" name="phone" class="form-control glass-input text-white" placeholder="e.g. 9876543210" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" name="email" class="form-control glass-input text-white" placeholder="e.g. customer@example.com" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Subject / Issue Category <span class="text-danger">*</span></label>
+                        <select name="subject" class="form-select glass-input text-white bg-dark border-secondary" required>
+                            <option value="Booking Assistance">Booking / Mechanic Assignment Assistance</option>
+                            <option value="Payment Dispute">Payment or Refund Dispute</option>
+                            <option value="App Bug / Technical Issue">App Bug / Technical Issue</option>
+                            <option value="Feedback / Suggestion">Feedback / Suggestion</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Message Details <span class="text-danger">*</span></label>
+                        <textarea name="message" class="form-control glass-input text-white" rows="3" placeholder="Explain your concern in detail..." required></textarea>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label text-muted small font-weight-bold">Attach Photo / Screenshot <span class="text-warning">(Optional)</span></label>
+                        <input type="file" name="photoFile" class="form-control glass-input text-white" accept="image/*" />
+                        <span class="text-muted extra-small d-block mt-1">Submit visual proof/screenshots for faster resolution.</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info btn-sm font-weight-bold text-white shadow-sm"><i class="fa-solid fa-paper-plane me-1"></i> Submit Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

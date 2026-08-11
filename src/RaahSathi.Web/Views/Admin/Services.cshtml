@@ -1,0 +1,148 @@
+@using RaahSathi.Models
+@model List<CustomService>
+@{
+    ViewData["Title"] = "Services Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2">SYSTEM CONSOLE</span>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-screwdriver-wrench text-warning me-2"></i> Dynamic No-Code Service Management</h4>
+        <p class="text-muted small mb-0">Manage custom breakdown recovery services (e.g. EV Mobile Charging, winches, specific tows) live without developer updates.</p>
+    </div>
+    <button type="button" class="btn btn-warning text-dark font-weight-bold" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+        <i class="fa-solid fa-plus me-1"></i> Add New Service
+    </button>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Icon & Service Name</th>
+                        <th>Category</th>
+                        <th>Base Price</th>
+                        <th>Max Price</th>
+                        <th>Description</th>
+                        <th class="text-end pe-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No custom services added yet. Click 'Add New Service' to create one.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var s in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                            <i class="fa-solid @s.IconClass"></i>
+                                        </div>
+                                        <span class="font-weight-bold text-white fs-6">@s.ServiceName</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-secondary text-light">@s.Category</span></td>
+                                <td class="text-warning font-weight-bold">₹@s.BasePrice.ToString("N0")</td>
+                                <td class="text-success font-weight-bold">₹@s.MaxPrice.ToString("N0")</td>
+                                <td class="text-muted small" style="max-width: 300px; word-break: break-word;">@s.Description</td>
+                                <td class="text-end pe-3">
+                                    <span class="badge bg-success text-white">ACTIVE</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Custom Service -->
+<div class="modal fade" id="addServiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border border-secondary shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-folder-plus text-warning me-2"></i> Add Custom Service</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/Admin/AddCustomService" method="POST">
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Register a new roadside breakdown recovery option. It will immediately show up as a selectable category for customers booking requests.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Service Name <span class="text-danger">*</span></label>
+                        <input type="text" name="serviceName" class="form-control glass-input text-white" placeholder="e.g. Winch Mud Recovery / Heavy Highway Towing" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Category <span class="text-danger">*</span></label>
+                        <select name="category" class="form-select glass-input text-white bg-dark border-secondary">
+                            <option value="Emergency Breakdown">Emergency Breakdown Assistance</option>
+                            <option value="Towing & Recovery">Towing & Recovery Services</option>
+                            <option value="EV Support">EV Charging Support</option>
+                            <option value="Commercial Heavy Support">Commercial/Heavy Vehicle Support</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small font-weight-bold">Base Estimated Price (₹) <span class="text-danger">*</span></label>
+                            <input type="number" name="basePrice" class="form-control glass-input text-warning" value="299" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small font-weight-bold">Max Estimated Price (₹) <span class="text-danger">*</span></label>
+                            <input type="number" name="maxPrice" class="form-control glass-input text-success" value="799" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">FontAwesome Icon Class <span class="text-danger">*</span></label>
+                        <select id="iconClassSelect" name="iconClass" class="form-select glass-input text-white bg-dark border-secondary mb-2" onchange="updateIconPreview()">
+                            <option value="fa-truck-pickup">🛻 Pickup Truck (fa-truck-pickup)</option>
+                            <option value="fa-charging-station">🔌 EV Station (fa-charging-station)</option>
+                            <option value="fa-truck-monster">🚜 Heavy Winch (fa-truck-monster)</option>
+                            <option value="fa-car-battery">🔋 Battery Jumpstart (fa-car-battery)</option>
+                            <option value="fa-gas-pump">⛽ Fuel Delivery (fa-gas-pump)</option>
+                            <option value="fa-oil-can">🛢️ Oil Refill (fa-oil-can)</option>
+                            <option value="fa-screwdriver-wrench">🔧 Mechanic Tools (fa-screwdriver-wrench)</option>
+                            <option value="fa-compass">🧭 Roadside Assistance (fa-compass)</option>
+                            <option value="fa-toolbox">🧰 General Repair (fa-toolbox)</option>
+                        </select>
+                        <div class="p-2.5 rounded bg-black bg-opacity-50 border border-secondary text-center">
+                            <span class="text-muted small d-block mb-1">Live Icon Preview:</span>
+                            <div class="rounded-circle bg-warning bg-opacity-20 text-warning d-inline-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                                <i id="previewIcon" class="fa-solid fa-truck-pickup"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-0">
+                        <label class="form-label text-muted small font-weight-bold">Short Description <span class="text-danger">*</span></label>
+                        <input type="text" name="description" class="form-control glass-input text-white" placeholder="e.g. Quick on-spot pull using flatbed tow hooks or winches" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-warning text-dark font-weight-extrabold w-100 py-2.5 shadow-sm">
+                        <i class="fa-solid fa-plus-circle me-1"></i> Register Service Now
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateIconPreview() {
+        var selectedIcon = document.getElementById('iconClassSelect').value;
+        var iconEl = document.getElementById('previewIcon');
+        iconEl.className = 'fa-solid ' + selectedIcon;
+    }
+</script>

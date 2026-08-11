@@ -1,0 +1,61 @@
+@using RaahSathi.Models
+@model List<MechanicProfile>
+@{
+    ViewData["Title"] = "Workshop Directory";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-shop text-warning me-2"></i> Workshop & Partner Garage Directory</h4>
+        <p class="text-muted small mb-0">Verified workshops, garage owners, services offered, working hours, and current active jobs.</p>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="border-secondary text-muted small">
+                        <th class="ps-3">Workshop Name</th>
+                        <th>Owner / Partner</th>
+                        <th>Working Hours</th>
+                        <th>Specialized Services</th>
+                        <th>Rating</th>
+                        <th class="text-end pe-3">KYC Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No workshop garages listed yet.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var w in Model)
+                        {
+                            <tr class="border-secondary">
+                                <td class="ps-3">
+                                    <div class="font-weight-bold text-warning">@(string.IsNullOrEmpty(w.ShopName) ? "Primary Workshop" : w.ShopName)</div>
+                                    <span class="text-muted small">ID: @w.DisplayId</span>
+                                </td>
+                                <td class="text-light">@(w.User?.Name ?? "Owner") (@(w.User?.PhoneNumber ?? ""))</td>
+                                <td class="text-muted small">@(string.IsNullOrEmpty(w.ShopTiming) ? "9:00 AM - 9:00 PM" : w.ShopTiming)</td>
+                                <td>
+                                    <span class="badge bg-info text-dark">@w.SkillCategory</span>
+                                    <span class="badge bg-secondary text-light">@w.Specialization</span>
+                                </td>
+                                <td class="text-warning font-weight-bold">@w.Rating.ToString("0.0") ★</td>
+                                <td class="text-end pe-3">
+                                    <span class="badge bg-success text-white">Verified Partner</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

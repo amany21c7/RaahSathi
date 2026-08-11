@@ -1,0 +1,263 @@
+@using RaahSathi.Models
+@{
+    ViewData["Title"] = "Manage Pricing Rules & Vehicle Problems (Admin)";
+    var rules = ViewBag.PricingRules as List<PricingRule> ?? new List<PricingRule>();
+    var problemTypes = ViewBag.ProblemTypes as List<ProblemTypePricing> ?? new List<ProblemTypePricing>();
+}
+
+<div class="glass-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="text-white mb-1"><i class="fa-solid fa-tags text-warning me-2"></i> Global Pricing Engine & Vehicle Problems</h4>
+            <p class="text-muted small mb-0">Manage Base Visiting Charges (Layer 1) & Vehicle Problem Fix Price Ranges (Layer 2).</p>
+        </div>
+        <a href="/Admin/Dashboard" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Back to Dashboard</a>
+    </div>
+    
+    <!-- Section 1: Base Visiting Charges (Layer 1) -->
+    <div class="card bg-dark bg-opacity-60 border-secondary mb-5">
+        <div class="card-header bg-dark border-secondary d-flex align-items-center justify-content-between">
+            <h5 class="text-warning mb-0"><i class="fa-solid fa-road me-2"></i> 1. Base Visiting Charges & Per-KM Rates (Layer 1)</h5>
+            <span class="badge bg-warning text-dark font-weight-bold">Visiting Fee Calculator</span>
+        </div>
+        <div class="card-body">
+            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded mb-4">
+                <h6 class="text-white mb-3">Add New Category Pricing Rule</h6>
+                <form action="/Admin/AddPricingRule" method="POST" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small">Vehicle Category</label>
+                        <select class="form-select glass-input text-white bg-dark border-secondary" name="vehicleCategory" required>
+                            <option value="Car">Car / SUV / Van</option>
+                            <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
+                            <option value="Commercial">Commercial (Truck/Bus/Loader/Pickup)</option>
+                            <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Base Fee (₹)</label>
+                        <input type="number" step="0.01" class="form-control glass-input bg-dark text-white border-secondary" name="baseFee" placeholder="99.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Per Km (₹)</label>
+                        <input type="number" step="0.01" class="form-control glass-input bg-dark text-white border-secondary" name="perKmRate" placeholder="8.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Base Tow (₹)</label>
+                        <input type="number" step="0.01" class="form-control glass-input bg-dark text-white border-secondary" name="baseTowingFee" placeholder="500.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Tow / Km (₹)</label>
+                        <input type="number" step="0.01" class="form-control glass-input bg-dark text-white border-secondary" name="perKmTowingRate" placeholder="20.00" required>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100" style="background:#f59e0b;"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Category</th>
+                            <th>Base Fee</th>
+                            <th>Per Km</th>
+                            <th>Base Towing</th>
+                            <th>Towing / Km</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in rules)
+                        {
+                            string iconClass = "fa-car";
+                            if (r.VehicleCategory.Contains("2-Wheeler") || r.VehicleCategory.Contains("Bike") || r.VehicleCategory.Contains("Auto"))
+                            {
+                                iconClass = "fa-motorcycle";
+                            }
+                            else if (r.VehicleCategory.Contains("Commercial") || r.VehicleCategory.Contains("Truck") || r.VehicleCategory.Contains("Bus"))
+                            {
+                                iconClass = "fa-truck";
+                            }
+                            else if (r.VehicleCategory.Contains("Heavy") || r.VehicleCategory.Contains("JCB") || r.VehicleCategory.Contains("Tractor"))
+                            {
+                                iconClass = "fa-tractor";
+                            }
+
+                            <tr>
+                                <td class="font-weight-bold text-white"><i class="fa-solid @iconClass text-warning me-2"></i>@r.VehicleCategory</td>
+                                <td class="text-warning font-weight-bold">₹@r.BaseFee</td>
+                                <td>₹@r.PerKmRate / km</td>
+                                <td class="text-danger">₹@r.BaseTowingFee</td>
+                                <td>₹@r.PerKmTowingRate / km</td>
+                                <td class="text-end">
+                                    <form action="/Admin/DeletePricingRule" method="POST" class="d-inline" onsubmit="return confirm('Delete pricing rule for @r.VehicleCategory?');">
+                                        <input type="hidden" name="id" value="@r.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i> Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Vehicle Problem Types & Fix Ranges (Layer 2) -->
+    <div class="card bg-dark bg-opacity-60 border-secondary">
+        <div class="card-header bg-dark border-secondary d-flex align-items-center justify-content-between">
+            <h5 class="text-warning mb-0"><i class="fa-solid fa-wrench me-2"></i> 2. Vehicle Problem Types & Fix Price Ranges (Layer 2)</h5>
+            <span class="badge bg-success text-white font-weight-bold">Service Range Pricing</span>
+        </div>
+        <div class="card-body">
+            <!-- Add Vehicle Problem Form -->
+            <div class="p-3 bg-dark bg-opacity-50 border border-secondary rounded mb-4">
+                <h6 class="text-white mb-3"><i class="fa-solid fa-circle-plus text-warning me-1"></i> Add New Vehicle Problem & Price Range</h6>
+                <form action="/Admin/AddProblemType" method="POST" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small">Problem Name / Type</label>
+                        <input type="text" class="form-control glass-input bg-dark text-white border-secondary" name="problemName" placeholder="e.g. Battery jump-start, Engine Overheating" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small">Vehicle Category</label>
+                        <select class="form-select glass-input text-white bg-dark border-secondary" name="vehicleCategory" required>
+                            <option value="Car">Car / SUV / Van</option>
+                            <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
+                            <option value="Commercial">Commercial (Truck/Bus/Loader)</option>
+                            <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
+                            <option value="All">All Vehicle Categories</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Min Fix Price (₹)</label>
+                        <input type="number" step="1" class="form-control glass-input bg-dark text-white border-secondary" name="minServiceCharge" placeholder="150" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small">Max Fix Price (₹)</label>
+                        <input type="number" step="1" class="form-control glass-input bg-dark text-white border-secondary" name="maxServiceCharge" placeholder="3500" required>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100" style="background:#f59e0b;" title="Add Vehicle Problem"><i class="fa-solid fa-plus me-1"></i> Add</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Problem Types Table -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-white mb-0">Active Vehicle Problems List (@problemTypes.Count)</h6>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small">Filter Category:</span>
+                    <select id="probCategoryFilter" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 180px;" onchange="filterProblemTable()">
+                        <option value="ALL">All Categories</option>
+                        <option value="Car">Car</option>
+                        <option value="2-Wheeler">2-Wheeler</option>
+                        <option value="Commercial">Commercial</option>
+                        <option value="Heavy">Heavy</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover align-middle mb-0" id="problemTypesTable">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Problem Name</th>
+                            <th>Vehicle Category</th>
+                            <th>Service Fix Range (Layer 2)</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in problemTypes)
+                        {
+                            string probIconClass = "fa-car";
+                            if (p.VehicleCategory.Contains("2-Wheeler") || p.VehicleCategory.Contains("Bike")) probIconClass = "fa-motorcycle";
+                            else if (p.VehicleCategory.Contains("Commercial") || p.VehicleCategory.Contains("Truck")) probIconClass = "fa-truck";
+                            else if (p.VehicleCategory.Contains("Heavy") || p.VehicleCategory.Contains("JCB") || p.VehicleCategory.Contains("Tractor")) probIconClass = "fa-tractor";
+                            else if (p.VehicleCategory.Contains("All")) probIconClass = "fa-layer-group";
+
+                            <tr class="prob-row" data-category="@p.VehicleCategory">
+                                <td>
+                                    <span class="font-weight-bold text-white">@p.ProblemName</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary text-light"><i class="fa-solid @probIconClass me-1"></i>@p.VehicleCategory</span>
+                                </td>
+                                <td>
+                                    <span class="text-warning font-weight-bold">₹@p.MinServiceCharge - ₹@p.MaxServiceCharge</span>
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editProbModal-@p.Id"><i class="fa-solid fa-pen-to-square"></i> Edit Price</button>
+                                    <form action="/Admin/DeleteProblemType" method="POST" class="d-inline" onsubmit="return confirm('Delete problem type @p.ProblemName?');">
+                                        <input type="hidden" name="id" value="@p.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+
+                            <!-- Edit Modal for Problem Type -->
+                            <div class="modal fade" id="editProbModal-@p.Id" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content bg-dark text-white border-warning">
+                                        <form action="/Admin/UpdateProblemType" method="POST">
+                                            <input type="hidden" name="id" value="@p.Id" />
+                                            <div class="modal-header border-secondary">
+                                                <h5 class="modal-title text-warning"><i class="fa-solid fa-pen-to-square me-2"></i> Update Problem Price</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label text-muted small">Problem Name</label>
+                                                    <input type="text" name="problemName" class="form-control bg-dark text-white border-secondary" value="@p.ProblemName" required />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-muted small">Vehicle Category</label>
+                                                    <select name="vehicleCategory" class="form-select bg-dark text-white border-secondary">
+                                                        <option value="Car" selected="@(p.VehicleCategory == "Car")">Car / SUV / Van</option>
+                                                        <option value="2-Wheeler" selected="@(p.VehicleCategory == "2-Wheeler")">2-Wheeler / Auto / E-Rickshaw</option>
+                                                        <option value="Commercial" selected="@(p.VehicleCategory == "Commercial")">Commercial (Truck/Bus/Loader)</option>
+                                                        <option value="Heavy" selected="@(p.VehicleCategory == "Heavy")">Heavy Vehicle (JCB/Tractor)</option>
+                                                        <option value="All" selected="@(p.VehicleCategory == "All")">All Vehicle Categories</option>
+                                                    </select>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label text-muted small">Min Fix Price (₹)</label>
+                                                        <input type="number" step="1" name="minServiceCharge" class="form-control bg-dark text-white border-secondary" value="@p.MinServiceCharge" required />
+                                                    </div>
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label text-muted small">Max Fix Price (₹)</label>
+                                                        <input type="number" step="1" name="maxServiceCharge" class="form-control bg-dark text-white border-secondary" value="@p.MaxServiceCharge" required />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-warning btn-sm text-dark font-weight-bold" style="background:#f59e0b;">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterProblemTable() {
+        const val = document.getElementById('probCategoryFilter').value;
+        document.querySelectorAll('.prob-row').forEach(row => {
+            const cat = row.getAttribute('data-category');
+            if (val === 'ALL' || cat === val || cat === 'All') {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>

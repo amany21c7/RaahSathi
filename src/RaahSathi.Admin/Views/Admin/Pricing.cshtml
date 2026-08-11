@@ -1,0 +1,323 @@
+@using RaahSathi.Models
+@{
+    ViewData["Title"] = "Pricing Engine Controls";
+    var pricingRules = ViewBag.PricingRules as List<PricingRule> ?? new List<PricingRule>();
+    var problemTypes = ViewBag.ProblemTypes as List<ProblemTypePricing> ?? new List<ProblemTypePricing>();
+    var cities = ViewBag.Cities as List<CityServiceArea> ?? new List<CityServiceArea>();
+    var cityNamesList = cities.Select(c => c.CityName).Distinct().OrderBy(c => c).ToList();
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col-lg-6">
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-tags text-warning me-2"></i> City-Wise Pricing Engine Controls</h4>
+        <p class="text-muted small mb-0">Configure base rates, per-KM rates, towing fees, and breakdown problem prices city by city.</p>
+    </div>
+    <div class="col-lg-6 mt-3 mt-lg-0">
+        <div class="p-3 bg-dark bg-opacity-70 border border-warning border-opacity-40 rounded-3 shadow-sm">
+            <h6 class="text-warning font-weight-bold mb-2">
+                <i class="fa-solid fa-percent me-1"></i> Admin Commission Settings Vault
+            </h6>
+            <form action="/Admin/SaveCommissionSettings" method="POST" class="row g-2">
+                <div class="col-3">
+                    <label class="text-muted small d-block mb-1 font-weight-bold">&lt; ₹1000</label>
+                    <select name="phase1" class="form-select form-select-sm bg-dark text-white border-secondary">
+                        @for (int i = 1; i <= 20; i++)
+                        {
+                            bool isSelected = i == (ViewBag.CommPhase1 ?? 8);
+                            <!option value="@i" @(isSelected ? "selected" : "")>@i%</!option>
+                        }
+                    </select>
+                </div>
+                <div class="col-3">
+                    <label class="text-muted small d-block mb-1 font-weight-bold">₹1000 - ₹3000</label>
+                    <select name="phase2" class="form-select form-select-sm bg-dark text-white border-secondary">
+                        @for (int i = 1; i <= 20; i++)
+                        {
+                            bool isSelected = i == (ViewBag.CommPhase2 ?? 10);
+                            <!option value="@i" @(isSelected ? "selected" : "")>@i%</!option>
+                        }
+                    </select>
+                </div>
+                <div class="col-3">
+                    <label class="text-muted small d-block mb-1 font-weight-bold">&gt; ₹3000</label>
+                    <select name="phase3" class="form-select form-select-sm bg-dark text-white border-secondary">
+                        @for (int i = 1; i <= 20; i++)
+                        {
+                            bool isSelected = i == (ViewBag.CommPhase3 ?? 12);
+                            <!option value="@i" @(isSelected ? "selected" : "")>@i%</!option>
+                        }
+                    </select>
+                </div>
+                <div class="col-3">
+                    <label class="text-muted small d-block mb-1 font-weight-bold">Extra Parts</label>
+                    <select name="parts" class="form-select form-select-sm bg-dark text-white border-secondary">
+                        @for (int i = 1; i <= 8; i++)
+                        {
+                            bool isSelected = i == (ViewBag.CommParts ?? 5);
+                            <!option value="@i" @(isSelected ? "selected" : "")>@i%</!option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12 mt-2">
+                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark w-100">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Save Commission Rates
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show bg-success bg-opacity-20 border-success text-white mb-4" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i> @TempData["Success"]
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <!-- Problem Types Price Registry -->
+    <div class="col-lg-7">
+        <div class="card bg-dark border-secondary shadow-sm">
+            <div class="card-header border-secondary bg-transparent d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 py-3">
+                <h5 class="text-white mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Problem Types Price Overrides</h5>
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addProblemModal">
+                    <i class="fa-solid fa-plus me-1"></i> Add City Problem Rate
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0 align-middle">
+                        <thead>
+                            <tr class="border-secondary text-muted small">
+                                <th class="ps-3 py-3">Problem Name</th>
+                                <th>Category</th>
+                                <th>Target City</th>
+                                <th>Min Service Charge</th>
+                                <th>Max Service Charge</th>
+                                <th class="text-end pe-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (problemTypes.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No problem types defined. Click "Add City Problem Rate" to create one.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var p in problemTypes)
+                                {
+                                    <tr class="border-secondary">
+                                        <td class="ps-3 font-weight-bold text-white">@p.ProblemName</td>
+                                        <td><span class="badge bg-secondary text-light">@p.VehicleCategory</span></td>
+                                        <td>
+                                            @if (p.CityName == "All Cities")
+                                            {
+                                                <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30"><i class="fa-solid fa-earth-americas me-1"></i> All Cities</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30"><i class="fa-solid fa-city me-1"></i> @p.CityName</span>
+                                            }
+                                        </td>
+                                        <td class="text-warning font-weight-bold">₹@p.MinServiceCharge.ToString("N0")</td>
+                                        <td class="text-success font-weight-bold">₹@p.MaxServiceCharge.ToString("N0")</td>
+                                        <td class="text-end pe-3">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-warning me-1 px-2"
+                                                    onclick="openEditProblemModal(@p.Id, '@p.ProblemName.Replace("'", "\\'")', '@p.VehicleCategory', '@p.CityName.Replace("'", "\\'")', @p.MinServiceCharge, @p.MaxServiceCharge)"
+                                                    title="Edit City Price Rate">
+                                                <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+                                            </button>
+                                            <form action="/Admin/DeleteProblemType" method="POST" class="d-inline">
+                                                <input type="hidden" name="id" value="@p.Id">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger px-2" onclick="return confirm('Delete price rate for @p.ProblemName (@p.CityName)?')"><i class="fa-solid fa-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Engine Tuning Card -->
+    <div class="col-lg-5">
+        <div class="card bg-dark border-secondary shadow-sm">
+            <div class="card-header border-secondary bg-transparent py-3">
+                <h5 class="text-white mb-0"><i class="fa-solid fa-sliders text-warning me-2"></i> Pricing Engine Tuning</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var r in pricingRules)
+                    {
+                        <div class="p-3 bg-black bg-opacity-40 rounded border border-secondary">
+                            <h6 class="text-white font-weight-bold mb-3">@r.VehicleCategory Rate Settings</h6>
+                            <form action="/Admin/UpdatePricingRule" method="POST">
+                                <input type="hidden" name="ruleId" value="@r.Id">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small font-weight-bold">Target City / Region</label>
+                                    <select name="cityName" class="form-select glass-input text-warning font-weight-bold py-1">
+                                        <option value="All Cities" selected="@(r.CityName == "All Cities")">🌐 All Cities (National Default)</option>
+                                        @foreach (var c in cityNamesList)
+                                        {
+                                            <option value="@c" selected="@(r.CityName == c)">📍 @c</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Base Visiting Fee (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseFee" value="@r.BaseFee" step="1" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Visiting Per-KM Rate (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmRate" value="@r.PerKmRate" step="1" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Base Towing Fee (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseTowingFee" value="@r.BaseTowingFee" step="1" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Towing Per-KM Rate (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmTowingRate" value="@r.PerKmTowingRate" step="1" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn text-white font-weight-bold btn-sm w-100 py-2 shadow-sm" style="background: linear-gradient(135deg, #ff6b00 0%, #e05d00 100%); border: none;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Apply Rates Update
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Problem Rate -->
+<div class="modal fade" id="addProblemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border border-secondary shadow-lg">
+            <div class="modal-header border-secondary bg-black bg-opacity-40">
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-plus me-2"></i>Add City-Wise Problem Rate</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/Admin/AddProblemType" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Target City / Region</label>
+                        <select name="cityName" class="form-select glass-input text-warning font-weight-bold">
+                            <option value="All Cities">🌐 All Cities (National Default)</option>
+                            @foreach (var c in cityNamesList)
+                            {
+                                <option value="@c">📍 @c</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Problem Name</label>
+                        <input type="text" name="problemName" class="form-control glass-input text-white font-weight-bold" placeholder="e.g. Battery Jumpstart" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Vehicle Category</label>
+                        <select name="vehicleCategory" class="form-select glass-input text-white">
+                            <option value="Car">Car</option>
+                            <option value="2-Wheeler">2-Wheeler (Bike/Scooter)</option>
+                            <option value="Commercial">Commercial / Heavy</option>
+                            <option value="All">All Vehicle Types</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small font-weight-bold">Min Service Charge (₹)</label>
+                            <input type="number" step="1" name="minServiceCharge" class="form-control glass-input text-warning font-weight-bold" value="199" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small font-weight-bold">Max Service Charge (₹)</label>
+                            <input type="number" step="1" name="maxServiceCharge" class="form-control glass-input text-success font-weight-bold" value="499" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary bg-black bg-opacity-40">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4"><i class="fa-solid fa-check me-1"></i> Add City Rate Override</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Problem Rate -->
+<div class="modal fade" id="editProblemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border border-secondary shadow-lg">
+            <div class="modal-header border-secondary bg-black bg-opacity-40">
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Edit City Price Rate</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/Admin/UpdateProblemTypePrice" method="POST">
+                <input type="hidden" name="id" id="editProblemId">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Target City / Region</label>
+                        <select name="cityName" id="editCityName" class="form-select glass-input text-warning font-weight-bold">
+                            <option value="All Cities">🌐 All Cities (National Default)</option>
+                            @foreach (var c in cityNamesList)
+                            {
+                                <option value="@c">📍 @c</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Problem Name</label>
+                        <input type="text" name="problemName" id="editProblemName" class="form-control glass-input text-white font-weight-bold" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small font-weight-bold">Vehicle Category</label>
+                        <select name="vehicleCategory" id="editVehicleCategory" class="form-select glass-input text-white">
+                            <option value="Car">Car</option>
+                            <option value="2-Wheeler">2-Wheeler (Bike/Scooter)</option>
+                            <option value="Commercial">Commercial / Heavy</option>
+                            <option value="All">All Vehicle Types</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small font-weight-bold">Min Service Charge (₹)</label>
+                            <input type="number" step="1" name="minServiceCharge" id="editMinServiceCharge" class="form-control glass-input text-warning font-weight-bold" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small font-weight-bold">Max Service Charge (₹)</label>
+                            <input type="number" step="1" name="maxServiceCharge" id="editMaxServiceCharge" class="form-control glass-input text-success font-weight-bold" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary bg-black bg-opacity-40">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4"><i class="fa-solid fa-check me-1"></i> Save City Price</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openEditProblemModal(id, name, category, city, minCharge, maxCharge) {
+        document.getElementById('editProblemId').value = id;
+        document.getElementById('editProblemName').value = name;
+        document.getElementById('editVehicleCategory').value = category;
+        document.getElementById('editCityName').value = city || "All Cities";
+        document.getElementById('editMinServiceCharge').value = minCharge;
+        document.getElementById('editMaxServiceCharge').value = maxCharge;
+
+        var modal = new bootstrap.Modal(document.getElementById('editProblemModal'));
+        modal.show();
+    }
+</script>
