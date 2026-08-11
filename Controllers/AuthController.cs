@@ -19,11 +19,13 @@ namespace RaahSathi.Controllers
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly IWebHostEnvironment _env;
+        private readonly IAuthService _authService;
 
-        public AuthController(ApplicationDbContext dbContext, IWebHostEnvironment env)
+        public AuthController(ApplicationDbContext dbContext, IWebHostEnvironment env, IAuthService authService)
         {
             _dbContext = dbContext;
             _env = env;
+            _authService = authService;
         }
 
         private async Task SetUserCookies(User user)
@@ -126,16 +128,27 @@ namespace RaahSathi.Controllers
             return View("Login");
         }
 
+        private static string CleanPhoneNumber(string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
+            string digits = new string(phone.Where(char.IsDigit).ToArray());
+            if (digits.Length == 12 && digits.StartsWith("91"))
+            {
+                digits = digits.Substring(2);
+            }
+            return digits;
+        }
+
         [HttpPost]
         public async Task<IActionResult> SendOtp(string phoneNumber, string role, string? name)
         {
-            // Simple validation
-            if (string.IsNullOrEmpty(phoneNumber) || phoneNumber.Length < 10)
+            string cleanPhone = CleanPhoneNumber(phoneNumber);
+            if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
             {
-                return Json(new { success = false, message = "Invalid phone number." });
+                return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
             }
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber && u.Role == role);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
             
             if (user == null)
             {
@@ -148,8 +161,8 @@ namespace RaahSathi.Controllers
 
                 user = new User
                 {
-                    Name = name,
-                    PhoneNumber = phoneNumber,
+                    Name = name.Trim(),
+                    PhoneNumber = cleanPhone,
                     Role = role,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -171,12 +184,14 @@ namespace RaahSathi.Controllers
             }
 
             // In real app, send SMS here. We simulate OTP "1234"
-            return Json(new { success = true, isNewUser = false, message = "OTP sent to " + phoneNumber });
+            return Json(new { success = true, isNewUser = false, message = "OTP sent to " + cleanPhone });
         }
 
         [HttpPost]
         public async Task<IActionResult> VerifyOtp(string phoneNumber, string role, string otp)
         {
+            string cleanPhone = CleanPhoneNumber(phoneNumber);
+
             // Dummy OTP restriction for non-development environments
             if (!_env.IsDevelopment() && otp == "1234")
             {
@@ -185,13 +200,13 @@ namespace RaahSathi.Controllers
 
             if (otp != "1234")
             {
-                return Json(new { success = false, message = "Invalid OTP. Use 1234 for testing." });
+                return Json(new { success = false, message = "Invalid OTP code. Please use 1234 for testing." });
             }
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber && u.Role == role);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
             if (user == null)
             {
-                return Json(new { success = false, message = "User not found." });
+                return Json(new { success = false, message = "User account not found." });
             }
 
             await SetUserCookies(user);
@@ -211,87 +226,129 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "Please enter both mobile number and password." });
             }
 
-            phoneNumber = phoneNumber.Trim();
+            string cleanPhone = CleanPhoneNumber(phoneNumber);
             password = password.Trim();
 
-            // Find user by phone number and verify password
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
-
-            if (user == null || (!PasswordHasher.VerifyPassword(password, user.Password) && user.Password != password))
+            if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
             {
-                return Json(new { success = false, message = "Invalid mobile number or password." });
+                return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
             }
 
-            // Allow login as Admin automatically if user is Admin, or if role matches
-            if (user.Role == "Admin" || string.IsNullOrEmpty(role) || user.Role == role)
+            // Find user by phone number and role first, or fallback to phone across any role
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
+            if (user == null)
             {
-                await SetUserCookies(user);
-
-                string redirectUrl = user.Role == "Customer" ? "/Customer/Dashboard" 
-                                   : user.Role == "Mechanic" ? "/Mechanic/Dashboard" 
-                                   : "/Admin/Dashboard";
-
-                return Json(new { success = true, redirect = redirectUrl });
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
             }
 
-            return Json(new { success = false, message = $"This account is registered as a {user.Role}. Please select the {user.Role} option to log in." });
+            if (user == null)
+            {
+                return Json(new { success = false, message = "Mobile number is not registered. Please click 'Create Account' to sign up." });
+            }
+
+            // Verify role matching
+            if (!string.IsNullOrEmpty(role) && user.Role != role && user.Role != "Admin")
+            {
+                return Json(new { success = false, message = $"This phone number is registered as a {user.Role}. Please select the {user.Role} option to log in." });
+            }
+
+            // Check if user has no password set (created via Guest Booking or quick OTP flow)
+            if (string.IsNullOrWhiteSpace(user.Password) || user.Password == "OTP_USER_123")
+            {
+                return Json(new { success = false, message = "No password has been set for this account yet. Please click 'Forgot Password?' to create your password." });
+            }
+
+            // Verify password
+            bool isPasswordValid = PasswordHasher.VerifyPassword(password, user.Password) || user.Password == password;
+            if (!isPasswordValid)
+            {
+                return Json(new { success = false, message = "Incorrect password. Please try again or click 'Forgot Password?' to reset." });
+            }
+
+            await SetUserCookies(user);
+
+            string redirectUrl = user.Role == "Customer" ? "/Customer/Dashboard" 
+                               : user.Role == "Mechanic" ? "/Mechanic/Dashboard" 
+                               : "/Admin/Dashboard";
+
+            return Json(new { success = true, redirect = redirectUrl });
         }
 
         [HttpPost]
         public async Task<IActionResult> SendOtpForRegistration(string phoneNumber, string role, string name)
         {
-            if (string.IsNullOrEmpty(phoneNumber) || phoneNumber.Length < 10)
+            string cleanPhone = CleanPhoneNumber(phoneNumber);
+            if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
             {
-                return Json(new { success = false, message = "Invalid phone number." });
+                return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
             }
             if (string.IsNullOrEmpty(name))
             {
-                return Json(new { success = false, message = "Please enter your name." });
+                return Json(new { success = false, message = "Please enter your full name." });
             }
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber && u.Role == role);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
             if (user != null)
             {
-                return Json(new { success = false, message = "Mobile number already registered under this role. Please login." });
+                // If user already exists AND has a password set, guide them to login
+                if (!string.IsNullOrWhiteSpace(user.Password) && user.Password != "OTP_USER_123")
+                {
+                    return Json(new { success = false, message = "Mobile number is already registered. Please login with your password or use 'Forgot Password?'." });
+                }
+
+                // If user exists but has no password set (created via guest booking), allow OTP registration to set password!
+                return Json(new { success = true, message = "OTP sent to " + cleanPhone });
             }
 
             // Simulate OTP
-            return Json(new { success = true, message = "OTP sent to " + phoneNumber });
+            return Json(new { success = true, message = "OTP sent to " + cleanPhone });
         }
 
         [HttpPost]
         public async Task<IActionResult> CompleteRegistration(string name, string phoneNumber, string role, string password)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber && u.Role == role);
+            string cleanPhone = CleanPhoneNumber(phoneNumber);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
+            
             if (user != null)
             {
-                return Json(new { success = false, message = "Mobile number already registered. Please login." });
-            }
-
-            user = new User
-            {
-                Name = name,
-                PhoneNumber = phoneNumber,
-                Role = role,
-                Password = PasswordHasher.HashPassword(password),
-                CreatedAt = DateTime.UtcNow
-            };
-            _dbContext.Users.Add(user);
-            await _dbContext.SaveChangesAsync();
-
-            if (role == "Mechanic")
-            {
-                _dbContext.MechanicProfiles.Add(new MechanicProfile
+                if (!string.IsNullOrWhiteSpace(user.Password) && user.Password != "OTP_USER_123")
                 {
-                    UserId = user.Id,
-                    Rating = 5.0,
-                    TotalJobs = 0,
-                    KycStatus = "Incomplete",
-                    CommissionRate = 0.20,
-                    SkillCategory = "Car",
-                    ExperienceYears = 1
-                });
+                    return Json(new { success = false, message = "Mobile number is already registered. Please login." });
+                }
+
+                // Update existing unpassworded account (from guest booking) with new password and name
+                user.Name = name.Trim();
+                user.Password = PasswordHasher.HashPassword(password);
                 await _dbContext.SaveChangesAsync();
+            }
+            else
+            {
+                user = new User
+                {
+                    Name = name.Trim(),
+                    PhoneNumber = cleanPhone,
+                    Role = role,
+                    Password = PasswordHasher.HashPassword(password),
+                    CreatedAt = DateTime.UtcNow
+                };
+                _dbContext.Users.Add(user);
+                await _dbContext.SaveChangesAsync();
+
+                if (role == "Mechanic")
+                {
+                    _dbContext.MechanicProfiles.Add(new MechanicProfile
+                    {
+                        UserId = user.Id,
+                        Rating = 5.0,
+                        TotalJobs = 0,
+                        KycStatus = "Incomplete",
+                        CommissionRate = 0.20,
+                        SkillCategory = "Car",
+                        ExperienceYears = 1
+                    });
+                    await _dbContext.SaveChangesAsync();
+                }
             }
 
             await SetUserCookies(user);
@@ -306,17 +363,16 @@ namespace RaahSathi.Controllers
         [HttpPost]
         public async Task<IActionResult> SendOtpForForgotPassword(string phoneNumber, string role)
         {
-            if (string.IsNullOrEmpty(phoneNumber) || phoneNumber.Length < 10)
+            string cleanPhone = CleanPhoneNumber(phoneNumber);
+            if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
             {
-                return Json(new { success = false, message = "Invalid phone number." });
+                return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
             }
 
-            phoneNumber = phoneNumber.Trim();
-
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber && (string.IsNullOrEmpty(role) || u.Role == role));
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && (string.IsNullOrEmpty(role) || u.Role == role));
             if (user == null)
             {
-                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
             }
 
             if (user == null)
@@ -324,19 +380,19 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "Mobile number is not registered in the system." });
             }
 
-            return Json(new { success = true, message = "OTP sent to " + phoneNumber });
+            return Json(new { success = true, message = "OTP sent to " + cleanPhone });
         }
 
         [HttpPost]
         public async Task<IActionResult> ResetPassword(string phoneNumber, string role, string password)
         {
-            phoneNumber = phoneNumber.Trim();
+            string cleanPhone = CleanPhoneNumber(phoneNumber);
             password = password.Trim();
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber && (string.IsNullOrEmpty(role) || u.Role == role));
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && (string.IsNullOrEmpty(role) || u.Role == role));
             if (user == null)
             {
-                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
             }
 
             if (user == null)

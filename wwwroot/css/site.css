@@ -712,6 +712,7 @@ body { top: 0px !important; }
     letter-spacing: 0.5px;
     background: linear-gradient(120deg, #ffffff 0%, #ffe4d1 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 

@@ -17,6 +17,11 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IPricingRepository, PricingRepository>();
 builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHttpContextAccessor();
 
 // Add Cookie Authentication

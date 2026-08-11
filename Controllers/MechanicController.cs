@@ -15,13 +15,19 @@ namespace RaahSathi.Controllers
         private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env;
         private readonly Services.IDispatchEngine _dispatchEngine;
         private readonly Services.IPaymentService _paymentService;
+        private readonly Services.IJobService _jobService;
+        private readonly Services.IWalletService _walletService;
+        private readonly Services.IUserService _userService;
 
-        public MechanicController(ApplicationDbContext dbContext, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, Services.IDispatchEngine dispatchEngine, Services.IPaymentService paymentService)
+        public MechanicController(ApplicationDbContext dbContext, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, Services.IDispatchEngine dispatchEngine, Services.IPaymentService paymentService, Services.IJobService jobService, Services.IWalletService walletService, Services.IUserService userService)
         {
             _dbContext = dbContext;
             _env = env;
             _dispatchEngine = dispatchEngine;
             _paymentService = paymentService;
+            _jobService = jobService;
+            _walletService = walletService;
+            _userService = userService;
         }
 
         private async Task<User?> GetActiveMechanicUserAsync()

@@ -13,11 +13,28 @@ namespace RaahSathi.Controllers
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly Services.IPricingService _pricingService;
+        private readonly Services.IWalletService _walletService;
+        private readonly Services.IJobService _jobService;
+        private readonly Services.IUserService _userService;
+        private readonly Services.INotificationService _notificationService;
+        private readonly Services.IPaymentService _paymentService;
 
-        public AdminController(ApplicationDbContext dbContext, Services.IPricingService pricingService)
+        public AdminController(
+            ApplicationDbContext dbContext,
+            Services.IPricingService pricingService,
+            Services.IWalletService walletService,
+            Services.IJobService jobService,
+            Services.IUserService userService,
+            Services.INotificationService notificationService,
+            Services.IPaymentService paymentService)
         {
             _dbContext = dbContext;
             _pricingService = pricingService;
+            _walletService = walletService;
+            _jobService = jobService;
+            _userService = userService;
+            _notificationService = notificationService;
+            _paymentService = paymentService;
         }
 
         private bool IsAdmin()

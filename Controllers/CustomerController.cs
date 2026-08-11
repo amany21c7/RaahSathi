@@ -17,14 +17,18 @@ namespace RaahSathi.Controllers
         private readonly IDispatchEngine _dispatchEngine;
         private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env;
         private readonly IPaymentService _paymentService;
+        private readonly IJobService _jobService;
+        private readonly IUserService _userService;
 
-        public CustomerController(ApplicationDbContext dbContext, IPricingEngine pricingEngine, IDispatchEngine dispatchEngine, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, IPaymentService paymentService)
+        public CustomerController(ApplicationDbContext dbContext, IPricingEngine pricingEngine, IDispatchEngine dispatchEngine, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, IPaymentService paymentService, IJobService jobService, IUserService userService)
         {
             _dbContext = dbContext;
             _pricingEngine = pricingEngine;
             _dispatchEngine = dispatchEngine;
             _env = env;
             _paymentService = paymentService;
+            _jobService = jobService;
+            _userService = userService;
         }
 
         private async Task<User?> GetActiveCustomerAsync()
@@ -204,14 +208,18 @@ namespace RaahSathi.Controllers
                     return Json(new { success = false, message = "Invalid OTP code. Please use 1234 for instant verification." });
                 }
 
+                // Clean phone number
+                string cleanPhone = new string(phoneNumber.Where(char.IsDigit).ToArray());
+                if (cleanPhone.Length == 12 && cleanPhone.StartsWith("91")) cleanPhone = cleanPhone.Substring(2);
+
                 // Check or create user
-                customer = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber && u.Role == "Customer");
+                customer = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == "Customer");
                 if (customer == null)
                 {
                     customer = new User
                     {
-                        Name = fullName,
-                        PhoneNumber = phoneNumber,
+                        Name = fullName.Trim(),
+                        PhoneNumber = cleanPhone,
                         Role = "Customer",
                         CreatedAt = DateTime.UtcNow
                     };
