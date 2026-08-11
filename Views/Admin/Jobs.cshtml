@@ -32,17 +32,11 @@
             <input type="text" id="jobSearchFilter" class="form-control bg-dark text-white border-secondary" placeholder="Search by ID, Name...">
         </div>
     </div>
-    <div class="col-md-3 col-lg-2">
-        <label class="form-label text-muted small font-weight-bold mb-1">City Location</label>
+    <div class="col-md-3 col-lg-3">
+        <label class="form-label text-muted small font-weight-bold mb-1">Filter by Location</label>
         <div class="input-group shadow-sm">
-            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-city"></i></span>
-            <select id="cityFilter" class="form-select bg-dark text-white border-secondary font-weight-bold text-info">
-                <option value="All">All Cities</option>
-                @foreach (var city in Model.Select(j => GetCityFromAddress(j.Address)).Distinct().OrderBy(c => c))
-                {
-                    <option value="@city">@city</option>
-                }
-            </select>
+            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-location-dot text-danger"></i></span>
+            <input type="text" id="locationFilter" class="form-control bg-dark text-white border-secondary" placeholder="Enter Location, Landmark or Address...">
         </div>
     </div>
     <div class="col-md-2.5 col-lg-2">
@@ -141,10 +135,10 @@
 @section Scripts {
 <script>
     $(document).ready(function() {
-        // Live master ledger search and date range filters
+        // Live master ledger search, location, and date range filters
         function filterJobsTable() {
             var searchVal = $('#jobSearchFilter').val().toLowerCase().trim();
-            var cityVal = $('#cityFilter').val().toLowerCase().trim();
+            var locationVal = $('#locationFilter').val().toLowerCase().trim();
             var fromDateVal = $('#fromDateFilter').val();
             var toDateVal = $('#toDateFilter').val();
             var matches = 0;
@@ -155,7 +149,7 @@
                 var rowDateStr = $(this).data('date') || ''; // "yyyy-MM-dd"
 
                 var textMatch = (searchVal === "") || (rowText.indexOf(searchVal) > -1);
-                var cityMatch = (cityVal === "all") || (cityText === cityVal);
+                var locationMatch = (locationVal === "") || (rowText.indexOf(locationVal) > -1) || (cityText.indexOf(locationVal) > -1);
                 
                 var dateMatch = true;
                 if (rowDateStr) {
@@ -167,7 +161,7 @@
                     }
                 }
 
-                if (textMatch && cityMatch && dateMatch) {
+                if (textMatch && locationMatch && dateMatch) {
                     $(this).show();
                     matches++;
                 } else {
@@ -187,14 +181,14 @@
         }
 
         $('#jobSearchFilter').on('keyup', filterJobsTable);
-        $('#cityFilter').on('change', filterJobsTable);
+        $('#locationFilter').on('keyup', filterJobsTable);
         $('#fromDateFilter').on('change', filterJobsTable);
         $('#toDateFilter').on('change', filterJobsTable);
 
         // Export helper access
         window.clearAllFilters = function() {
             $('#jobSearchFilter').val('');
-            $('#cityFilter').val('All');
+            $('#locationFilter').val('');
             $('#fromDateFilter').val('');
             $('#toDateFilter').val('');
             filterJobsTable();

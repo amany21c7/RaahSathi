@@ -13,7 +13,7 @@
     </div>
 </div>
 
-<!-- Search & City Filter Bar -->
+<!-- Search & Location Filter Bar -->
 <div class="row g-2 mb-3">
     <div class="col-md-6 col-lg-4">
         <div class="input-group shadow-sm">
@@ -21,16 +21,10 @@
             <input type="text" id="mechSearchFilter" class="form-control bg-dark text-white border-secondary" placeholder="Search by ID, Name, or Mobile...">
         </div>
     </div>
-    <div class="col-md-4 col-lg-3">
+    <div class="col-md-6 col-lg-4">
         <div class="input-group shadow-sm">
-            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-city"></i></span>
-            <select id="cityFilter" class="form-select bg-dark text-white border-secondary font-weight-bold text-info">
-                <option value="All">All Cities</option>
-                @foreach (var city in Model.Select(m => m.City).Distinct().OrderBy(c => c))
-                {
-                    <option value="@city">@city</option>
-                }
-            </select>
+            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-location-dot text-danger"></i></span>
+            <input type="text" id="locationFilter" class="form-control bg-dark text-white border-secondary" placeholder="Filter by Location, City, Shop or Address...">
         </div>
     </div>
 </div>
@@ -205,10 +199,10 @@
 @section Scripts {
 <script>
     $(document).ready(function() {
-        // Combined robust text-matching search and city selector
+        // Combined robust text-matching search and location filter
         function filterMechanicsTable() {
             var searchVal = $('#mechSearchFilter').val().toLowerCase().trim();
-            var cityVal = $('#cityFilter').val().toLowerCase().trim();
+            var locationVal = $('#locationFilter').val().toLowerCase().trim();
             var matches = 0;
 
             $('.mech-row').each(function() {
@@ -216,9 +210,9 @@
                 var cityText = $(this).find('.row-city-text').text().toLowerCase().trim();
 
                 var textMatch = (searchVal === "") || (rowText.indexOf(searchVal) > -1);
-                var cityMatch = (cityVal === "all") || (cityText === cityVal);
+                var locationMatch = (locationVal === "") || (rowText.indexOf(locationVal) > -1) || (cityText.indexOf(locationVal) > -1);
 
-                if (textMatch && cityMatch) {
+                if (textMatch && locationMatch) {
                     $(this).show();
                     matches++;
                 } else {
@@ -238,7 +232,7 @@
         }
 
         $('#mechSearchFilter').on('keyup', filterMechanicsTable);
-        $('#cityFilter').on('change', filterMechanicsTable);
+        $('#locationFilter').on('keyup', filterMechanicsTable);
     });
 
     function showMechDetails(id, name, phone, email, category, exp, kyc, online, rating, jobsCount, blockStatus, shopName, shopAddress, city) {
