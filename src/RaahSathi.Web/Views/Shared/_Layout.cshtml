@@ -1080,6 +1080,8 @@
     </div>
     }
 
+    @if (!isAdminPage)
+    {
     <!-- Small Floating AI Chatbot Widget (Bottom Right) -->
     <div id="aiFloatingWidgetContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;">
         <!-- Compact AI Chat Popup Window -->
@@ -1171,6 +1173,7 @@
             });
         }
     </script>
+    }
 
     <!-- Bootstrap & jQuery -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
