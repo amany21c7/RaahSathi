@@ -1647,11 +1647,24 @@ namespace RaahSathi.Controllers
                 ? p.AdminCommissionAmount 
                 : (p.Amount < 1000 ? p.Amount * rate1 : (p.Amount <= 3000 ? p.Amount * rate2 : p.Amount * rate3)));
             double totalWithdrawn = await _dbContext.AdminWithdrawals.SumAsync(w => (double?)w.Amount) ?? 0.0;
+            
+            DateTime startOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            double monthlyWithdrawn = await _dbContext.AdminWithdrawals
+                .Where(w => w.WithdrawnAt >= startOfMonth)
+                .SumAsync(w => (double?)w.Amount) ?? 0.0;
+            double monthlyCommissionEarned = releasedPayments
+                .Where(p => p.CreatedAt >= startOfMonth)
+                .Sum(p => p.AdminCommissionAmount > 0 
+                    ? p.AdminCommissionAmount 
+                    : (p.Amount < 1000 ? p.Amount * rate1 : (p.Amount <= 3000 ? p.Amount * rate2 : p.Amount * rate3)));
+
             double adminVaultBalance = Math.Max(0.0, Math.Round(totalCommissionEarned - totalWithdrawn, 2));
             var withdrawalHistory = await _dbContext.AdminWithdrawals.OrderByDescending(w => w.WithdrawnAt).Take(10).ToListAsync();
 
             ViewBag.TotalCommissionEarned = totalCommissionEarned;
             ViewBag.TotalWithdrawn = totalWithdrawn;
+            ViewBag.MonthlyCommissionEarned = monthlyCommissionEarned;
+            ViewBag.MonthlyWithdrawn = monthlyWithdrawn;
             ViewBag.AdminVaultBalance = adminVaultBalance;
             ViewBag.WithdrawalHistory = withdrawalHistory;
 
