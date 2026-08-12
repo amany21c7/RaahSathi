@@ -905,13 +905,35 @@ namespace RaahSathi.Controllers
             return View(mechanics);
         }
 
-        public async Task<IActionResult> Workshops()
+        public async Task<IActionResult> Workshops(string? search, string? location)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
-            var workshops = await _dbContext.MechanicProfiles
+            
+            var query = _dbContext.MechanicProfiles
                 .Include(m => m.User)
-                .Where(m => !string.IsNullOrEmpty(m.ShopName))
-                .ToListAsync();
+                .Where(m => !string.IsNullOrEmpty(m.ShopName));
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(m => m.ShopName.ToLower().Contains(s) ||
+                                         (m.User != null && m.User.Name.ToLower().Contains(s)) ||
+                                         (m.User != null && m.User.PhoneNumber.Contains(s)) ||
+                                         m.UserId.ToString().Contains(s));
+            }
+
+            if (!string.IsNullOrWhiteSpace(location))
+            {
+                var loc = location.Trim().ToLower();
+                query = query.Where(m => m.City.ToLower().Contains(loc) ||
+                                         m.ShopAddress.ToLower().Contains(loc) ||
+                                         m.Pincode.Contains(loc));
+            }
+
+            var workshops = await query.OrderByDescending(m => m.UserId).ToListAsync();
+
+            ViewBag.SelectedSearch = search ?? "";
+            ViewBag.SelectedLocation = location ?? "";
 
             return View(workshops);
         }

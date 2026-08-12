@@ -1,61 +1,377 @@
 @using RaahSathi.Models
+@using System.Text.Encodings.Web
 @model List<MechanicProfile>
 @{
     ViewData["Title"] = "Workshop Directory";
+    int totalCount = Model.Count;
+    int verifiedCount = Model.Count(w => w.KycStatus == "Approved" || w.IsCertified);
+    int pendingCount = Model.Count(w => w.KycStatus == "Pending");
+    int cityCount = Model.Select(w => string.IsNullOrEmpty(w.City) ? "Noida" : w.City).Distinct().Count();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-shop text-warning me-2"></i> Workshop & Partner Garage Directory</h4>
-        <p class="text-muted small mb-0">Verified workshops, garage owners, services offered, working hours, and current active jobs.</p>
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h4 class="text-white font-weight-bold mb-0">
+                <i class="fa-solid fa-shop text-warning me-2"></i> Workshop Directory
+            </h4>
+            <p class="text-muted small mb-0">Manage listed garages, location coverage, and partner details.</p>
+        </div>
+        <div>
+            <a href="/Admin/ReviewKyc" class="btn btn-outline-warning btn-sm font-weight-bold">
+                <i class="fa-solid fa-id-card me-1"></i> Review KYC (@pendingCount Pending)
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="card bg-dark border-secondary shadow-sm">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-dark table-hover mb-0 align-middle">
-                <thead>
-                    <tr class="border-secondary text-muted small">
-                        <th class="ps-3">Workshop Name</th>
-                        <th>Owner / Partner</th>
-                        <th>Working Hours</th>
-                        <th>Specialized Services</th>
-                        <th>Rating</th>
-                        <th class="text-end pe-3">KYC Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Count == 0)
-                    {
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">No workshop garages listed yet.</td>
+    <!-- Stats Summary Row (Icon on LEFT, Zero Text Overflow) -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-30 d-flex align-items-center gap-3 shadow-sm">
+                <div class="p-2.5 rounded-3 bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="fa-solid fa-shop fs-5"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <span class="text-muted extra-small font-weight-bold text-uppercase text-truncate d-block mb-0.5" style="letter-spacing: 0.5px;">Total Workshops</span>
+                    <h4 class="text-white font-weight-bold mb-0">@totalCount</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-30 d-flex align-items-center gap-3 shadow-sm">
+                <div class="p-2.5 rounded-3 bg-success bg-opacity-15 text-success d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="fa-solid fa-circle-check fs-5"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <span class="text-muted extra-small font-weight-bold text-uppercase text-truncate d-block mb-0.5" style="letter-spacing: 0.5px;">Verified Partners</span>
+                    <h4 class="text-success font-weight-bold mb-0">@verifiedCount</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-30 d-flex align-items-center gap-3 shadow-sm">
+                <div class="p-2.5 rounded-3 bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="fa-solid fa-clock fs-5"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <span class="text-muted extra-small font-weight-bold text-uppercase text-truncate d-block mb-0.5" style="letter-spacing: 0.5px;">Pending KYC</span>
+                    <h4 class="text-warning font-weight-bold mb-0">@pendingCount</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-30 d-flex align-items-center gap-3 shadow-sm">
+                <div class="p-2.5 rounded-3 bg-info bg-opacity-15 text-info d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="fa-solid fa-city fs-5"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <span class="text-muted extra-small font-weight-bold text-uppercase text-truncate d-block mb-0.5" style="letter-spacing: 0.5px;">Cities Covered</span>
+                    <h4 class="text-info font-weight-bold mb-0">@cityCount</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Bar (Workshop Name Search + Location Text Search Filter Only) -->
+    <form method="GET" action="/Admin/Workshops" class="bg-dark p-3 rounded-3 border border-secondary border-opacity-30 mb-3 shadow-sm">
+        <div class="row g-2 align-items-center">
+            <!-- Workshop Name / Owner Search -->
+            <div class="col-12 col-md-5">
+                <label class="form-label text-muted extra-small mb-1 font-weight-bold">
+                    <i class="fa-solid fa-magnifying-glass text-warning me-1"></i> Workshop / Owner Search
+                </label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-black border-secondary text-muted"><i class="fa-solid fa-search"></i></span>
+                    <input type="text" id="workshopSearchInput" name="search" class="form-control bg-black border-secondary text-white small" value="@ViewBag.SelectedSearch" placeholder="Type workshop name, owner, phone, ID..." onkeyup="filterWorkshopsClientSide()">
+                </div>
+            </div>
+
+            <!-- Location Text Search (City / Sector / Area) - NO DROPDOWN -->
+            <div class="col-12 col-md-5">
+                <label class="form-label text-muted extra-small mb-1 font-weight-bold">
+                    <i class="fa-solid fa-location-dot text-info me-1"></i> Filter by Location / City / Sector
+                </label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-black border-secondary text-muted"><i class="fa-solid fa-location-dot text-info"></i></span>
+                    <input type="text" id="locationSearchInput" name="location" class="form-control bg-black border-secondary text-white small" value="@ViewBag.SelectedLocation" placeholder="Type city, sector 44, area, pincode..." onkeyup="filterWorkshopsClientSide()">
+                </div>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="col-12 col-md-2 d-flex gap-1 align-self-end">
+                <button type="submit" class="btn btn-warning btn-sm font-weight-bold flex-grow-1">
+                    <i class="fa-solid fa-filter me-1"></i> Filter
+                </button>
+                <a href="/Admin/Workshops" class="btn btn-outline-secondary btn-sm px-2.5" title="Reset Filters">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Workshop Directory Table Card -->
+    <div class="card bg-dark border-secondary border-opacity-30 shadow-sm">
+        <div class="card-header bg-black bg-opacity-30 border-bottom border-secondary border-opacity-30 py-2 px-3 d-flex align-items-center justify-content-between">
+            <span class="text-light font-weight-bold small">
+                <i class="fa-solid fa-list me-1.5 text-warning"></i> Listed Workshops (<span id="visibleRecordCount">@Model.Count</span>)
+            </span>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
+                <table class="table table-dark table-hover mb-0 align-middle small" id="workshopTable">
+                    <thead class="bg-black text-muted extra-small text-uppercase font-weight-bold">
+                        <tr class="border-secondary border-opacity-30">
+                            <th class="ps-3 py-2.5">Workshop Name</th>
+                            <th>Owner / Contact</th>
+                            <th>Location / Address</th>
+                            <th>Hours</th>
+                            <th>Services</th>
+                            <th>Status</th>
+                            <th class="text-end pe-3">Action</th>
                         </tr>
-                    }
-                    else
-                    {
-                        @foreach (var w in Model)
+                    </thead>
+                    <tbody>
+                        @if (Model.Count == 0)
                         {
-                            <tr class="border-secondary">
-                                <td class="ps-3">
-                                    <div class="font-weight-bold text-warning">@(string.IsNullOrEmpty(w.ShopName) ? "Primary Workshop" : w.ShopName)</div>
-                                    <span class="text-muted small">ID: @w.DisplayId</span>
-                                </td>
-                                <td class="text-light">@(w.User?.Name ?? "Owner") (@(w.User?.PhoneNumber ?? ""))</td>
-                                <td class="text-muted small">@(string.IsNullOrEmpty(w.ShopTiming) ? "9:00 AM - 9:00 PM" : w.ShopTiming)</td>
-                                <td>
-                                    <span class="badge bg-info text-dark">@w.SkillCategory</span>
-                                    <span class="badge bg-secondary text-light">@w.Specialization</span>
-                                </td>
-                                <td class="text-warning font-weight-bold">@w.Rating.ToString("0.0") ★</td>
-                                <td class="text-end pe-3">
-                                    <span class="badge bg-success text-white">Verified Partner</span>
+                            <tr id="noDataRow">
+                                <td colspan="7" class="text-center py-4 text-muted">
+                                    No workshops match the specified search or location criteria.
                                 </td>
                             </tr>
                         }
-                    }
-                </tbody>
-            </table>
+                        else
+                        {
+                            @foreach (var w in Model)
+                            {
+                                string shopName = string.IsNullOrEmpty(w.ShopName) ? "Primary Workshop" : w.ShopName;
+                                string ownerName = w.User?.Name ?? "Owner";
+                                string ownerPhone = w.User?.PhoneNumber ?? "";
+                                string city = string.IsNullOrEmpty(w.City) ? "Noida" : w.City;
+                                string address = string.IsNullOrEmpty(w.ShopAddress) ? city : w.ShopAddress;
+                                string timing = string.IsNullOrEmpty(w.ShopTiming) ? (string.IsNullOrEmpty(w.WorkingHours) ? "9:00 AM - 9:00 PM" : w.WorkingHours) : w.ShopTiming;
+                                bool is24Hours = timing.Contains("24") || timing.ToLower().Contains("always");
+
+                                string[] specializations = string.IsNullOrEmpty(w.Specialization) 
+                                    ? new string[] { "General Repair" } 
+                                    : w.Specialization.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                                <tr class="border-secondary border-opacity-20 workshop-row" 
+                                    data-shopname="@shopName.ToLower()" 
+                                    data-owner="@ownerName.ToLower()" 
+                                    data-phone="@ownerPhone" 
+                                    data-city="@city.ToLower()" 
+                                    data-address="@address.ToLower()">
+                                    
+                                    <td class="ps-3 py-2.5">
+                                        <div class="font-weight-bold text-white">@shopName</div>
+                                        <div class="d-flex align-items-center gap-1.5 mt-0.5">
+                                            <span class="text-muted extra-small">ID: @w.DisplayId</span>
+                                            <span class="text-warning extra-small font-weight-bold">★ @w.Rating.ToString("0.0")</span>
+                                        </div>
+                                    </td>
+                                    
+                                    <td>
+                                        <div class="text-light">@ownerName</div>
+                                        @if (!string.IsNullOrEmpty(ownerPhone))
+                                        {
+                                            <a href="tel:@ownerPhone" class="text-muted extra-small text-decoration-none">
+                                                <i class="fa-solid fa-phone me-1 opacity-75"></i> @ownerPhone
+                                            </a>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <div class="text-info font-weight-bold small">@city</div>
+                                        <div class="text-muted extra-small text-truncate" style="max-width: 180px;" title="@address">
+                                            @address
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        @if (is24Hours)
+                                        {
+                                            <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 extra-small">24/7 Open</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted extra-small">@timing</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @if (!string.IsNullOrEmpty(w.SkillCategory))
+                                            {
+                                                <span class="badge bg-secondary bg-opacity-30 text-light extra-small">@w.SkillCategory</span>
+                                            }
+                                            @if (specializations.Length > 0)
+                                            {
+                                                <span class="badge bg-dark text-muted border border-secondary border-opacity-30 extra-small">@specializations[0]</span>
+                                            }
+                                            @if (specializations.Length > 1)
+                                            {
+                                                <span class="badge bg-dark text-muted border border-secondary border-opacity-30 extra-small" title="@string.Join(", ", specializations)">+@(specializations.Length - 1)</span>
+                                            }
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        @if (w.KycStatus == "Approved" || w.IsCertified)
+                                        {
+                                            <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 extra-small">Verified</span>
+                                        }
+                                        else if (w.KycStatus == "Rejected")
+                                        {
+                                            <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30 extra-small">Rejected</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 extra-small">Pending</span>
+                                        }
+                                    </td>
+
+                                    <td class="text-end pe-3">
+                                        <button type="button" class="btn btn-outline-light btn-sm py-0.5 px-2 extra-small" 
+                                                onclick="openWorkshopModal('@w.DisplayId', '@JavaScriptEncoder.Default.Encode(shopName)', '@JavaScriptEncoder.Default.Encode(ownerName)', '@ownerPhone', '@JavaScriptEncoder.Default.Encode(city)', '@JavaScriptEncoder.Default.Encode(address)', '@JavaScriptEncoder.Default.Encode(timing)', '@w.Rating.ToString("0.0")', '@w.KycStatus', '@JavaScriptEncoder.Default.Encode(w.SkillCategory ?? "")', '@JavaScriptEncoder.Default.Encode(string.Join(", ", specializations))')">
+                                            View
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Modal for Detailed Workshop View -->
+<div class="modal fade" id="workshopDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary py-2.5">
+                <h6 class="modal-title font-weight-bold text-warning" id="modalShopName">Workshop Details</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 small">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <span class="text-muted extra-small d-block">Owner Name</span>
+                        <div class="fw-bold text-white" id="modalOwnerName">--</div>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted extra-small d-block">Contact Phone</span>
+                        <div class="fw-bold text-info" id="modalPhone">--</div>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted extra-small d-block">Location / City</span>
+                        <div class="fw-bold text-warning" id="modalCity">--</div>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted extra-small d-block">Working Hours</span>
+                        <div class="fw-bold text-light" id="modalTiming">--</div>
+                    </div>
+                    <div class="col-12">
+                        <span class="text-muted extra-small d-block">Full Address</span>
+                        <div class="text-light" id="modalAddress">--</div>
+                    </div>
+                    <div class="col-12">
+                        <span class="text-muted extra-small d-block mb-1">Services & Specialization</span>
+                        <div id="modalServices" class="d-flex flex-wrap gap-1">--</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary py-2">
+                <a href="#" id="modalCallBtn" class="btn btn-success btn-sm font-weight-bold py-1">
+                    <i class="fa-solid fa-phone me-1"></i> Call Owner
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm py-1" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Client-side Fast Live Filtering Script -->
+<script>
+    function filterWorkshopsClientSide() {
+        var searchVal = (document.getElementById('workshopSearchInput').value || '').toLowerCase().trim();
+        var locVal = (document.getElementById('locationSearchInput').value || '').toLowerCase().trim();
+
+        var rows = document.querySelectorAll('.workshop-row');
+        var visibleCount = 0;
+
+        rows.forEach(function(row) {
+            var shopName = row.getAttribute('data-shopname') || '';
+            var owner = row.getAttribute('data-owner') || '';
+            var phone = row.getAttribute('data-phone') || '';
+            var city = row.getAttribute('data-city') || '';
+            var address = row.getAttribute('data-address') || '';
+
+            var matchesSearch = !searchVal || shopName.includes(searchVal) || owner.includes(searchVal) || phone.includes(searchVal);
+            var matchesLoc = !locVal || city.includes(locVal) || address.includes(locVal);
+
+            if (matchesSearch && matchesLoc) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        var countBadge = document.getElementById('visibleRecordCount');
+        if (countBadge) countBadge.textContent = visibleCount;
+
+        var noDataRow = document.getElementById('noDataRow');
+        if (noDataRow) {
+            noDataRow.style.display = visibleCount === 0 ? '' : 'none';
+        }
+    }
+
+    function openWorkshopModal(id, shopName, owner, phone, city, address, timing, rating, status, skillCat, specList) {
+        document.getElementById('modalShopName').textContent = shopName + ' (' + id + ')';
+        document.getElementById('modalOwnerName').textContent = owner;
+        document.getElementById('modalPhone').textContent = phone ? phone : 'No Phone';
+        document.getElementById('modalCity').textContent = city;
+        document.getElementById('modalAddress').textContent = address;
+        document.getElementById('modalTiming').textContent = timing;
+
+        var callBtn = document.getElementById('modalCallBtn');
+        if (phone) {
+            callBtn.href = 'tel:' + phone;
+            callBtn.style.display = 'inline-block';
+        } else {
+            callBtn.style.display = 'none';
+        }
+
+        var servicesContainer = document.getElementById('modalServices');
+        servicesContainer.innerHTML = '';
+
+        if (skillCat) {
+            var catBadge = document.createElement('span');
+            catBadge.className = 'badge bg-secondary text-light';
+            catBadge.textContent = skillCat;
+            servicesContainer.appendChild(catBadge);
+        }
+
+        if (specList) {
+            var specs = specList.split(',');
+            specs.forEach(function(s) {
+                if (s.trim()) {
+                    var b = document.createElement('span');
+                    b.className = 'badge bg-dark border border-secondary text-muted';
+                    b.textContent = s.trim();
+                    servicesContainer.appendChild(b);
+                }
+            });
+        }
+
+        var myModal = new bootstrap.Modal(document.getElementById('workshopDetailModal'));
+        myModal.show();
+    }
+</script>
