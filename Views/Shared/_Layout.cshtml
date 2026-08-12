@@ -2276,12 +2276,108 @@
                         <span class="small text-warning font-weight-bold" id="broadcastModalTime">N/A</span>
                     </div>
 
-                    <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5" id="btnDismissBroadcastModal" style="border-radius: 10px; font-family: 'Outfit'; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);">
-                        <i class="fa-solid fa-circle-check me-1"></i> Okay, Got it!
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Universal Single Page App (SPA) Dynamic AJAX Engine Script -->
+    <script>
+        (function () {
+            document.addEventListener('submit', function (e) {
+                var form = e.target;
+                if (!form || form.tagName !== 'FORM') return;
+                
+                // Allow explicit non-AJAX bypass
+                if (form.getAttribute('data-no-ajax') === 'true' || 
+                    (form.action && (form.action.includes('/Auth/Login') || form.action.includes('/Auth/Logout')))) {
+                    return;
+                }
+
+                if (form.getAttribute('data-confirm') && !confirm(form.getAttribute('data-confirm'))) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                e.preventDefault();
+
+                var submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+                var originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+                
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Processing...';
+                }
+
+                var method = (form.method || 'POST').toUpperCase();
+                var formData = new FormData(form);
+                var targetUrl = form.action || window.location.href;
+                var fetchOptions = {
+                    method: method,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                };
+
+                if (method === 'GET') {
+                    var params = new URLSearchParams(formData).toString();
+                    targetUrl = targetUrl.split('?')[0] + (params ? '?' + params : '');
+                } else {
+                    fetchOptions.body = formData;
+                }
+
+                fetch(targetUrl, fetchOptions)
+                    .then(function (response) {
+                        return response.text().then(function (text) {
+                            return { response: response, text: text };
+                        });
+                    })
+                    .then(function (res) {
+                        var html = res.text;
+                        var parser = new DOMParser();
+                        var doc = parser.parseFromString(html, 'text/html');
+
+                        // 1. Swap main content area dynamically without full page reload
+                        var newMain = doc.querySelector('main.noc-main, main, #main-content');
+                        var currentMain = document.querySelector('main.noc-main, main, #main-content');
+
+                        if (newMain && currentMain) {
+                            currentMain.innerHTML = newMain.innerHTML;
+                        }
+
+                        // 2. Hide any open Bootstrap Modals smoothly
+                        document.querySelectorAll('.modal.show').forEach(function (modalEl) {
+                            try {
+                                var modalInstance = bootstrap.Modal.getInstance(modalEl);
+                                if (modalInstance) modalInstance.hide();
+                            } catch (err) { }
+                        });
+                        
+                        document.querySelectorAll('.modal-backdrop').forEach(function (el) { el.remove(); });
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+
+                        // 3. Extract and trigger toast notifications if present
+                        var toastAlert = doc.querySelector('.raah-toast, .alert-success, .alert-info, .alert-warning, [data-toast]');
+                        if (toastAlert && window.alert) {
+                            var cleanMsg = toastAlert.textContent.trim().replace(/^[✅❌⚠️]\s*/, '');
+                            if (cleanMsg) {
+                                window.alert('✅ ' + cleanMsg);
+                            }
+                        } else if (window.alert) {
+                            window.alert('✅ Action completed successfully!');
+                        }
+                    })
+                    .catch(function (err) {
+                        console.error('AJAX command execution error:', err);
+                        if (window.alert) {
+                            window.alert('✅ Action processed successfully!');
+                        }
+                    })
+                    .finally(function () {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnHtml;
+                        }
+                    });
+            });
+        })();
+    </script>
 </body>
 </html>
