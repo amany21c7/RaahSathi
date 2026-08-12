@@ -12,58 +12,36 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-key text-warning me-2"></i> API Integration</h4>
-        <p class="text-muted small mb-0">Tiered commission settings (&lt;1k: 10%, 1k-3k: 8%, &gt;3k: 5%), SMS, Email, WhatsApp, Google Maps, OTP, and Payment Gateway credentials.</p>
+        <p class="text-muted small mb-0">Configure SMS, Email, WhatsApp, Google Maps, OTP, and Payment Gateway credentials for live system integration.</p>
     </div>
 </div>
 
 <form action="/Admin/SaveSystemSettings" method="POST">
     <div class="row g-4">
-        <!-- Tiered Commission Rules Settings -->
-        <div class="col-lg-6">
-            <div class="card bg-dark border-secondary shadow-sm">
-                <div class="card-header border-secondary bg-transparent">
-                    <h5 class="text-warning mb-0"><i class="fa-solid fa-percent me-2"></i> Tiered Commission Rules</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Tier 1: Jobs under ₹1,000</label>
-                        <input type="text" class="form-control glass-input text-warning font-weight-bold" value="10% Commission Rate" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Tier 2: Jobs ₹1,000 to ₹3,000</label>
-                        <input type="text" class="form-control glass-input text-warning font-weight-bold" value="8% Commission Rate" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Tier 3: Jobs above ₹3,000</label>
-                        <input type="text" class="form-control glass-input text-warning font-weight-bold" value="5% Commission Rate" readonly>
-                    </div>
-                    <span class="text-muted small"><i class="fa-solid fa-circle-info text-info me-1"></i> Tiered rates apply automatically during payment escrow settlement. Configure custom base rates in the "Pricing" panel.</span>
-                </div>
-            </div>
-        </div>
-
         <!-- API Gateway Credentials -->
-        <div class="col-lg-6">
+        <div class="col-lg-12">
             <div class="card bg-dark border-secondary shadow-sm">
-                <div class="card-header border-secondary bg-transparent">
+                <div class="card-header border-secondary bg-transparent py-3">
                     <h5 class="text-info mb-0"><i class="fa-solid fa-key me-2"></i> SMS, WhatsApp & Map API Keys</h5>
                 </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Fast2SMS / Twilio SMS API Key</label>
-                        <input type="password" name="smsApiKey" class="form-control glass-input text-white" value="@smsApiKeySetting" placeholder="Enter SMS gateway secret key...">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">WhatsApp Business API Phone</label>
-                        <input type="text" name="whatsappNo" class="form-control glass-input text-white" value="@whatsappNoSetting" placeholder="Enter WhatsApp phone number...">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Google Maps JavaScript API Key</label>
-                        <input type="password" name="googleMapsKey" class="form-control glass-input text-white" value="@googleMapsKeySetting" placeholder="Enter Maps Javascript API key...">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">System SMTP Sender Email Address</label>
-                        <input type="email" name="emailSender" class="form-control glass-input text-white" value="@emailSenderSetting" placeholder="e.g. support@raahsathi.com">
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">Fast2SMS / Twilio SMS API Key</label>
+                            <input type="password" name="smsApiKey" class="form-control glass-input text-white" value="@smsApiKeySetting" placeholder="Enter SMS gateway secret key...">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">WhatsApp Business API Phone</label>
+                            <input type="text" name="whatsappNo" class="form-control glass-input text-white" value="@whatsappNoSetting" placeholder="Enter WhatsApp phone number...">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">Google Maps JavaScript API Key</label>
+                            <input type="password" name="googleMapsKey" class="form-control glass-input text-white" value="@googleMapsKeySetting" placeholder="Enter Maps Javascript API key...">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">System SMTP Sender Email Address</label>
+                            <input type="email" name="emailSender" class="form-control glass-input text-white" value="@emailSenderSetting" placeholder="e.g. support@raahsathi.com">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -71,7 +49,7 @@
     </div>
 
     <div class="mt-4 text-end">
-        <button type="submit" class="btn btn-warning text-dark font-weight-bold px-5 py-2.5">
+        <button type="submit" class="btn btn-warning text-dark font-weight-bold px-5 py-2.5 shadow">
             <i class="fa-solid fa-floppy-disk me-1"></i> Save All System Settings
         </button>
     </div>

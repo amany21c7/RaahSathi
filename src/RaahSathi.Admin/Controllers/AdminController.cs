@@ -959,10 +959,10 @@ namespace RaahSathi.Controllers
             ViewBag.ProblemTypes = await _pricingService.GetAllActiveProblemPricesAsync();
             ViewBag.Cities = await _dbContext.CityServiceAreas.ToListAsync();
 
-            ViewBag.CommPhase1 = await GetSettingIntAsync("CommissionPhase1", 8);
-            ViewBag.CommPhase2 = await GetSettingIntAsync("CommissionPhase2", 10);
-            ViewBag.CommPhase3 = await GetSettingIntAsync("CommissionPhase3", 12);
-            ViewBag.CommParts = await GetSettingIntAsync("CommissionParts", 5);
+            ViewBag.CommPhase1 = await GetSettingDoubleAsync("CommissionPhase1", 8);
+            ViewBag.CommPhase2 = await GetSettingDoubleAsync("CommissionPhase2", 10);
+            ViewBag.CommPhase3 = await GetSettingDoubleAsync("CommissionPhase3", 12);
+            ViewBag.CommParts = await GetSettingDoubleAsync("CommissionParts", 5);
 
             return View();
         }
@@ -2073,14 +2073,14 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveCommissionSettings(int phase1, int phase2, int phase3, int parts)
+        public async Task<IActionResult> SaveCommissionSettings(double phase1, double phase2, double phase3, double parts)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            await SaveOrUpdateSettingAsync("CommissionPhase1", phase1.ToString(), "Commission");
-            await SaveOrUpdateSettingAsync("CommissionPhase2", phase2.ToString(), "Commission");
-            await SaveOrUpdateSettingAsync("CommissionPhase3", phase3.ToString(), "Commission");
-            await SaveOrUpdateSettingAsync("CommissionParts", parts.ToString(), "Commission");
+            await SaveOrUpdateSettingAsync("CommissionPhase1", phase1.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
+            await SaveOrUpdateSettingAsync("CommissionPhase2", phase2.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
+            await SaveOrUpdateSettingAsync("CommissionPhase3", phase3.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
+            await SaveOrUpdateSettingAsync("CommissionParts", parts.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
 
             await LogAdminActionAsync("COMMISSION_SETTINGS", $"Updated commission phases: P1={phase1}%, P2={phase2}%, P3={phase3}%, Parts={parts}%");
             
@@ -2115,7 +2115,7 @@ namespace RaahSathi.Controllers
             try
             {
                 var setting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
-                if (setting != null && double.TryParse(setting.SettingValue, out double val))
+                if (setting != null && double.TryParse(setting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double val))
                 {
                     return val;
                 }

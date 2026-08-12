@@ -24,7 +24,7 @@ namespace RaahSathi.Services
             try
             {
                 var setting = _dbContext.AdminSystemSettings.FirstOrDefault(s => s.SettingKey == key);
-                if (setting != null && double.TryParse(setting.SettingValue, out double val))
+                if (setting != null && double.TryParse(setting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double val))
                 {
                     return val;
                 }
