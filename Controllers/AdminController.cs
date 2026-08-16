@@ -950,7 +950,46 @@ namespace RaahSathi.Controllers
             ViewBag.Jobs = await _dbContext.Jobs.ToListAsync();
             ViewBag.Complaints = await _dbContext.MechanicComplaints.ToListAsync();
 
+            // Pre-calculate KPIs
+            var todayUtc = DateTime.UtcNow.Date;
+            ViewBag.TotalMechanics = mechanics.Count;
+            ViewBag.OnlineMechanics = mechanics.Count(m => m.IsOnline && (m.User == null || !m.User.IsBlocked));
+            ViewBag.VerifiedMechanics = mechanics.Count(m => m.KycStatus == "Approved");
+            ViewBag.PendingKycMechanics = mechanics.Count(m => m.KycStatus == "Pending" || m.KycStatus == "Incomplete" || string.IsNullOrEmpty(m.KycStatus));
+            ViewBag.BlockedMechanics = mechanics.Count(m => m.User != null && m.User.IsBlocked);
+            ViewBag.NewTodayMechanics = mechanics.Count(m => m.User != null && m.User.CreatedAt.Date == todayUtc);
+
             return View(mechanics);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetMechanicStats()
+        {
+            if (!IsAdmin()) return Unauthorized();
+
+            var mechanics = await _dbContext.MechanicProfiles
+                .Include(m => m.User)
+                .Select(m => new { m.UserId, m.IsOnline, m.KycStatus, IsBlocked = m.User != null && m.User.IsBlocked, CreatedAt = m.User != null ? m.User.CreatedAt : DateTime.MinValue })
+                .ToListAsync();
+
+            var todayUtc = DateTime.UtcNow.Date;
+            int total = mechanics.Count;
+            int online = mechanics.Count(m => m.IsOnline && !m.IsBlocked);
+            int verified = mechanics.Count(m => m.KycStatus == "Approved");
+            int pendingKyc = mechanics.Count(m => m.KycStatus == "Pending" || m.KycStatus == "Incomplete" || string.IsNullOrEmpty(m.KycStatus));
+            int blocked = mechanics.Count(m => m.IsBlocked);
+            int newToday = mechanics.Count(m => m.CreatedAt.Date == todayUtc);
+
+            return Json(new
+            {
+                success = true,
+                total,
+                online,
+                verified,
+                pendingKyc,
+                blocked,
+                newToday
+            });
         }
 
         public async Task<IActionResult> Workshops(string? search, string? location)

@@ -2,10 +2,18 @@
 @using System.Text.Encodings.Web
 @model List<MechanicProfile>
 @{
-    ViewData["Title"] = "Mechanic Network Fleet";
+    ViewData["Title"] = "Mechanic Network Fleet - Admin Console";
+    var jobs = ViewBag.Jobs as List<Job> ?? new List<Job>();
+
+    int totalMech = ViewBag.TotalMechanics as int? ?? Model.Count;
+    int onlineMech = ViewBag.OnlineMechanics as int? ?? Model.Count(m => m.IsOnline);
+    int verifiedMech = ViewBag.VerifiedMechanics as int? ?? Model.Count(m => m.KycStatus == "Approved");
+    int pendingKycMech = ViewBag.PendingKycMechanics as int? ?? Model.Count(m => m.KycStatus != "Approved");
+    int blockedMech = ViewBag.BlockedMechanics as int? ?? Model.Count(m => m.User?.IsBlocked == true);
+    int newTodayMech = ViewBag.NewTodayMechanics as int? ?? 0;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2">SYSTEM CONSOLE</span>
         <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-wrench text-warning me-2"></i> Mechanic Network Fleet</h4>
@@ -13,42 +21,177 @@
     </div>
 </div>
 
-<!-- Search & Location Filter Bar -->
-<div class="row g-2 mb-3">
-    <div class="col-md-6 col-lg-4">
-        <div class="input-group shadow-sm">
-            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-            <input type="text" id="mechSearchFilter" class="form-control bg-dark text-white border-secondary" placeholder="Search by ID, Name, or Mobile...">
+<!-- Top Real-Time KPI Summary Cards -->
+<div class="row g-3 mb-4">
+    <!-- Total Mechanics -->
+    <div class="col-6 col-md-4 col-xl">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Total Mechanics</span>
+                <div class="rounded-circle p-1.5 bg-primary bg-opacity-15 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="fa-solid fa-users-gear fs-6"></i>
+                </div>
+            </div>
+            <h3 class="text-white font-weight-bold mb-0" id="kpiTotalMechanics">@totalMech.ToString("N0")</h3>
+            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-database me-1 text-primary"></i> Fleet Network</small>
         </div>
     </div>
-    <div class="col-md-6 col-lg-4">
-        <div class="input-group shadow-sm">
-            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-location-dot text-danger"></i></span>
-            <input type="text" id="locationFilter" class="form-control bg-dark text-white border-secondary" placeholder="Filter by Location, City, Shop or Address...">
+
+    <!-- Online / Active -->
+    <div class="col-6 col-md-4 col-xl">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Active / Online</span>
+                <div class="rounded-circle p-1.5 bg-success bg-opacity-15 text-success d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="fa-solid fa-signal fs-6"></i>
+                </div>
+            </div>
+            <h3 class="text-success font-weight-bold mb-0" id="kpiOnlineMechanics">@onlineMech.ToString("N0")</h3>
+            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-bolt me-1 text-success"></i> Ready for Dispatch</small>
+        </div>
+    </div>
+
+    <!-- Pending KYC -->
+    <div class="col-6 col-md-4 col-xl">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Pending KYC</span>
+                <div class="rounded-circle p-1.5 bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="fa-solid fa-file-shield fs-6"></i>
+                </div>
+            </div>
+            <h3 class="text-warning font-weight-bold mb-0" id="kpiPendingKycMechanics">@pendingKycMech.ToString("N0")</h3>
+            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-clock me-1 text-warning"></i> Needs Verification</small>
+        </div>
+    </div>
+
+    <!-- Blocked -->
+    <div class="col-6 col-md-4 col-xl">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Blocked</span>
+                <div class="rounded-circle p-1.5 bg-danger bg-opacity-15 text-danger d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="fa-solid fa-ban fs-6"></i>
+                </div>
+            </div>
+            <h3 class="text-danger font-weight-bold mb-0" id="kpiBlockedMechanics">@blockedMech.ToString("N0")</h3>
+            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-lock me-1 text-danger"></i> Restricted Partners</small>
+        </div>
+    </div>
+
+    <!-- New Today -->
+    <div class="col-6 col-md-4 col-xl">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">New Today</span>
+                <div class="rounded-circle p-1.5 bg-info bg-opacity-15 text-info d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="fa-solid fa-calendar-plus fs-6"></i>
+                </div>
+            </div>
+            <h3 class="text-info font-weight-bold mb-0" id="kpiNewTodayMechanics">@newTodayMech.ToString("N0")</h3>
+            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-sparkles me-1 text-info"></i> Joined Today</small>
         </div>
     </div>
 </div>
 
+<!-- Compact Single-Row Filter Bar (Exact Customers Style) -->
+<div class="card bg-dark border-secondary shadow-sm mb-3">
+    <div class="card-body p-2">
+        <div class="d-flex align-items-center flex-nowrap gap-2 w-100">
+            <!-- Search Text -->
+            <div class="input-group input-group-sm flex-shrink-0" style="width: 120px;">
+                <span class="input-group-text bg-black bg-opacity-50 border-secondary text-muted px-2" style="height: 32px;"><i class="fa-solid fa-magnifying-glass" style="font-size: 0.72rem;"></i></span>
+                <input type="text" id="mechSearchFilter" class="form-control bg-dark text-white border-secondary px-2" placeholder="ID, Name..." style="height: 32px; font-size: 0.75rem;" oninput="applyMechanicFilters()">
+            </div>
+
+            <!-- Location / City Filter -->
+            <div class="input-group input-group-sm flex-shrink-0" style="width: 110px;">
+                <span class="input-group-text bg-black bg-opacity-50 border-secondary text-muted px-2" style="height: 32px;"><i class="fa-solid fa-location-dot text-danger" style="font-size: 0.72rem;"></i></span>
+                <input type="text" id="locationFilter" class="form-control bg-dark text-white border-secondary px-2" placeholder="City / Area..." style="height: 32px; font-size: 0.75rem;" oninput="applyMechanicFilters()">
+            </div>
+
+            <!-- KYC Status Filter -->
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px;">
+                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-shield-halved text-info me-1"></i>KYC:</span>
+                <select id="filterKyc" class="form-select form-select-sm bg-transparent border-0 text-white p-0" style="width: 78px; outline: none; font-size: 0.73rem;" onchange="applyMechanicFilters()">
+                    <option value="All" class="bg-dark text-white">All KYC</option>
+                    <option value="Approved" class="bg-dark text-white">Verified</option>
+                    <option value="Pending" class="bg-dark text-white">Pending</option>
+                    <option value="Incomplete" class="bg-dark text-white">Incomplete</option>
+                    <option value="Rejected" class="bg-dark text-white">Rejected</option>
+                </select>
+            </div>
+
+            <!-- Online / Account Status Filter -->
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px;">
+                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-circle-dot text-success me-1"></i>Status:</span>
+                <select id="filterStatus" class="form-select form-select-sm bg-transparent border-0 text-white p-0" style="width: 72px; outline: none; font-size: 0.73rem;" onchange="applyMechanicFilters()">
+                    <option value="All" class="bg-dark text-white">All Status</option>
+                    <option value="Online" class="bg-dark text-white">Online</option>
+                    <option value="Offline" class="bg-dark text-white">Offline</option>
+                    <option value="Blocked" class="bg-dark text-white">Blocked</option>
+                </select>
+            </div>
+
+            <!-- Two Separate Date Pickers: From & To -->
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px; cursor: pointer;" onclick="document.getElementById('filterFromDate').showPicker?.() || document.getElementById('filterFromDate').focus();">
+                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-calendar-days text-warning me-1"></i>From:</span>
+                <input type="date" id="filterFromDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0" style="width: 88px; outline: none; font-size: 0.73rem; color-scheme: dark; cursor: pointer;" onchange="applyMechanicFilters()">
+            </div>
+
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px; cursor: pointer;" onclick="document.getElementById('filterToDate').showPicker?.() || document.getElementById('filterToDate').focus();">
+                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-calendar-days text-warning me-1"></i>To:</span>
+                <input type="date" id="filterToDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0" style="width: 88px; outline: none; font-size: 0.73rem; color-scheme: dark; cursor: pointer;" onchange="applyMechanicFilters()">
+            </div>
+
+            <!-- Skill Category Filter -->
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px;">
+                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-wrench text-warning me-1"></i>Skills:</span>
+                <select id="filterSkill" class="form-select form-select-sm bg-transparent border-0 text-white p-0" style="width: 72px; outline: none; font-size: 0.73rem;" onchange="applyMechanicFilters()">
+                    <option value="All" class="bg-dark text-white">All Skills</option>
+                    <option value="Car" class="bg-dark text-white">Car</option>
+                    <option value="Bike" class="bg-dark text-white">Bike</option>
+                    <option value="Towing" class="bg-dark text-white">Towing</option>
+                    <option value="Truck" class="bg-dark text-white">Truck</option>
+                    <option value="EV" class="bg-dark text-white">EV</option>
+                </select>
+            </div>
+
+            <!-- Search & Reset Icon Buttons Inline -->
+            <div class="d-flex align-items-center gap-1.5 ms-auto flex-shrink-0">
+                <button type="button" class="btn btn-warning btn-sm p-0 text-dark font-weight-bold d-inline-flex align-items-center justify-content-center" onclick="applyMechanicFilters()" title="Search / Apply Filters" style="height: 32px; width: 32px; font-size: 0.78rem;">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm p-0 text-light border-secondary shadow-sm d-inline-flex align-items-center justify-content-center" onclick="resetMechanicFilters()" title="Reset All Filters" style="height: 32px; width: 32px; font-size: 0.78rem;">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mechanic Network Fleet Grid -->
 <div class="card bg-dark border-secondary shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-dark table-hover mb-0 align-middle" id="mechanicsTable">
                 <thead>
                     <tr class="border-secondary text-muted small">
-                        <th class="ps-3">Mechanic & ID</th>
-                        <th>Phone</th>
-                        <th>Category & City</th>
-                        <th>KYC Status</th>
-                        <th>Online / Status</th>
-                        <th>Rating & Wallet</th>
-                        <th class="text-end pe-3">Actions</th>
+                        <th class="ps-3" style="width: 15%;">Mechanic &amp; ID</th>
+                        <th style="width: 11%;">Phone</th>
+                        <th style="width: 12%;">Registered</th>
+                        <th style="width: 20%;">Category &amp; City</th>
+                        <th style="width: 11%;">KYC Status</th>
+                        <th style="width: 11%;">Online / Status</th>
+                        <th style="width: 10%;">Rating &amp; Wallet</th>
+                        <th class="text-end pe-3" style="width: 10%; min-width: 105px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (Model.Count == 0)
                     {
                         <tr class="no-data-row">
-                            <td colspan="7" class="text-center py-4 text-muted">No mechanics registered yet.</td>
+                            <td colspan="8" class="text-center py-4 text-muted">No mechanics registered yet.</td>
                         </tr>
                     }
                     else
@@ -58,53 +201,81 @@
                             var name = m.User?.Name ?? "Partner";
                             var phone = m.User?.PhoneNumber ?? "N/A";
                             var blockStatus = m.User?.IsBlocked == true ? "Blocked" : "Active";
+                            var regDate = m.User?.CreatedAt ?? DateTime.UtcNow;
+
+                            string onlineStatus = m.User?.IsBlocked == true ? "Blocked" : (m.IsOnline ? "Online" : "Offline");
                             
-                            <tr class="border-secondary mech-row">
+                            <tr class="border-secondary mech-row"
+                                data-id="@m.DisplayId.ToLower()"
+                                data-name="@name.ToLower()"
+                                data-phone="@phone"
+                                data-location="@((m.City + " " + m.ShopName + " " + m.ShopAddress).ToLower())"
+                                data-kyc="@m.KycStatus"
+                                data-status="@onlineStatus"
+                                data-created="@regDate.ToString("yyyy-MM-dd")"
+                                data-skills="@((m.SkillCategory ?? "").ToLower())">
+                                
                                 <td class="ps-3">
                                     <div class="font-weight-bold text-white">@name</div>
                                     <span class="badge bg-warning text-dark font-weight-bold" style="font-size:0.68rem;">@m.DisplayId</span>
                                 </td>
-                                <td class="text-light">@phone</td>
+                                <td class="text-light small">@phone</td>
                                 <td>
-                                    <span class="badge bg-secondary text-light">@m.SkillCategory</span>
-                                    <div class="text-muted small">Exp: @m.ExperienceYears Years</div>
-                                    <div class="text-info font-weight-bold small mt-0.5"><i class="fa-solid fa-map-pin me-1"></i> <span class="row-city-text">@m.City</span></div>
+                                    <div class="text-light font-weight-medium small">@regDate.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">@regDate.ToLocalTime().ToString("hh:mm tt")</small>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 180px;" title="@m.SkillCategory">
+                                        <span class="badge bg-secondary text-light" style="font-size: 0.7rem;">@m.SkillCategory</span>
+                                    </div>
+                                    <div class="text-muted small" style="font-size: 0.72rem;">Exp: @m.ExperienceYears Years</div>
+                                    <div class="text-info font-weight-bold small mt-0.5" style="font-size: 0.72rem;"><i class="fa-solid fa-map-pin me-1"></i> <span class="row-city-text">@m.City</span></div>
                                 </td>
                                 <td>
                                     @if (m.KycStatus == "Approved")
                                     {
-                                        <span class="badge bg-success text-white"><i class="fa-solid fa-check me-1"></i> Verified</span>
+                                        <span class="badge bg-success text-white" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-check me-1"></i> Verified</span>
                                     }
                                     else if (m.KycStatus == "Pending")
                                     {
-                                        <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Pending KYC</span>
+                                        <span class="badge bg-warning text-dark" style="font-size: 0.72rem;"><i class="fa-solid fa-clock me-1"></i> Pending KYC</span>
+                                    }
+                                    else if (m.KycStatus == "Rejected")
+                                    {
+                                        <span class="badge bg-danger text-white" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-xmark me-1"></i> Rejected</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-danger text-white">@m.KycStatus</span>
+                                        <span class="badge bg-secondary text-light" style="font-size: 0.72rem;">@m.KycStatus</span>
                                     }
                                 </td>
                                 <td>
-                                    @if (m.IsOnline)
+                                    @if (m.User?.IsBlocked == true)
                                     {
-                                        <span class="badge bg-success text-white">🟢 ONLINE</span>
+                                        <span class="badge bg-danger text-white" style="font-size: 0.72rem;"><i class="fa-solid fa-ban me-1"></i> BLOCKED</span>
+                                    }
+                                    else if (m.IsOnline)
+                                    {
+                                        <span class="badge bg-success text-white" style="font-size: 0.72rem;"><i class="fa-solid fa-circle text-white me-1" style="font-size:0.5rem;"></i> ONLINE</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary text-light">OFFLINE</span>
+                                        <span class="badge bg-secondary text-light" style="font-size: 0.72rem;">OFFLINE</span>
                                     }
                                 </td>
                                 <td>
-                                    <div class="text-warning font-weight-bold">@m.Rating.ToString("0.0") ★</div>
-                                    <span class="text-info small font-weight-bold">@m.TotalJobs Jobs Completed</span>
+                                    <div class="text-warning font-weight-bold" style="font-size: 0.82rem;">@m.Rating.ToString("0.0") ★</div>
+                                    <span class="text-info small font-weight-bold" style="font-size: 0.72rem;">@m.TotalJobs Jobs</span>
                                 </td>
                                 <td class="text-end pe-3">
                                     <div class="d-flex justify-content-end gap-1">
-                                        <button class="btn btn-sm btn-outline-warning font-weight-bold" onclick="showMechDetails('@m.DisplayId', '@Html.Raw(JavaScriptEncoder.Default.Encode(name))', '@phone', '@m.Email', '@m.SkillCategory', '@m.ExperienceYears', '@m.KycStatus', '@(m.IsOnline ? "Online" : "Offline")', '@m.Rating.ToString("0.0")', '@m.TotalJobs', '@blockStatus', '@Html.Raw(JavaScriptEncoder.Default.Encode(m.ShopName))', '@Html.Raw(JavaScriptEncoder.Default.Encode(m.ShopAddress))', '@m.City')">
-                                            <i class="fa-solid fa-eye me-1"></i> Details
+                                        <button class="btn btn-sm btn-outline-warning font-weight-bold p-1 px-1.5" onclick="showMechDetails('@m.DisplayId', '@Html.Raw(JavaScriptEncoder.Default.Encode(name))', '@phone', '@m.Email', '@m.SkillCategory', '@m.ExperienceYears', '@m.KycStatus', '@(m.IsOnline ? "Online" : "Offline")', '@m.Rating.ToString("0.0")', '@m.TotalJobs', '@blockStatus', '@Html.Raw(JavaScriptEncoder.Default.Encode(m.ShopName))', '@Html.Raw(JavaScriptEncoder.Default.Encode(m.ShopAddress))', '@m.City', '@regDate.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")')" title="View Details">
+                                            <i class="fa-solid fa-eye"></i>
                                         </button>
-                                        <a href="/Admin/ReviewKyc/@m.UserId" class="btn btn-sm btn-outline-info font-weight-bold"><i class="fa-solid fa-file-shield me-1"></i> KYC</a>
-                                        <button class="btn btn-sm @(m.User?.IsBlocked == true ? "btn-outline-success" : "btn-outline-danger") font-weight-bold" onclick="toggleUserBlock(@m.UserId)">
+                                        <a href="/Admin/ReviewKyc/@m.UserId" class="btn btn-sm btn-outline-info font-weight-bold p-1 px-1.5" title="Review KYC Documents">
+                                            <i class="fa-solid fa-file-shield"></i>
+                                        </a>
+                                        <button class="btn btn-sm @(m.User?.IsBlocked == true ? "btn-outline-success" : "btn-outline-danger") font-weight-bold p-1 px-1.5" onclick="toggleUserBlock(@m.UserId)" title="@(m.User?.IsBlocked == true ? "Unblock Partner" : "Block Partner")">
                                             <i class="fa-solid @(m.User?.IsBlocked == true ? "fa-unlock" : "fa-ban")"></i>
                                         </button>
                                     </div>
@@ -132,60 +303,56 @@
                         <strong class="text-warning fs-5" id="lblMechDetName"></strong>
                         <span class="badge bg-warning text-dark font-weight-bold" id="lblMechDetId"></span>
                     </div>
-                    <div class="text-muted small mb-1"><i class="fa-solid fa-phone me-1"></i> <span id="lblMechDetPhone"></span></div>
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                        <span><i class="fa-solid fa-phone me-1 text-info"></i> <span id="lblMechDetPhone"></span></span>
+                        <span><i class="fa-regular fa-calendar me-1 text-warning"></i> <span id="lblMechDetRegDate"></span></span>
+                    </div>
                     <div class="text-muted small mb-1"><i class="fa-solid fa-envelope me-1"></i> <span id="lblMechDetEmail"></span></div>
                     <div class="text-info small font-weight-bold"><i class="fa-solid fa-map-pin me-1"></i> Operating City: <span id="lblMechDetCity"></span></div>
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <div class="p-2.5 rounded bg-dark border border-secondary text-center">
+                    <div class="col-4">
+                        <div class="p-2.5 rounded bg-black bg-opacity-50 border border-secondary text-center">
+                            <span class="text-muted small d-block">Experience</span>
+                            <strong class="text-warning fs-6" id="lblMechDetExp">0 Yrs</strong>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2.5 rounded bg-black bg-opacity-50 border border-secondary text-center">
                             <span class="text-muted small d-block">Rating</span>
-                            <strong class="text-warning fs-5" id="lblMechDetRating">5.0 ★</strong>
+                            <strong class="text-warning fs-6" id="lblMechDetRating">0.0 ★</strong>
                         </div>
                     </div>
-                    <div class="col-6">
-                        <div class="p-2.5 rounded bg-dark border border-secondary text-center">
-                            <span class="text-muted small d-block">Jobs Completed</span>
-                            <strong class="text-info fs-5" id="lblMechDetJobs">0</strong>
+                    <div class="col-4">
+                        <div class="p-2.5 rounded bg-black bg-opacity-50 border border-secondary text-center">
+                            <span class="text-muted small d-block">Total Jobs</span>
+                            <strong class="text-info fs-6" id="lblMechDetJobs">0</strong>
                         </div>
                     </div>
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-6 col-sm-4">
-                        <span class="text-muted small d-block font-weight-bold">Category</span>
-                        <span class="badge bg-secondary text-light font-weight-bold mt-1" id="lblMechDetCategory"></span>
+                    <div class="col-6">
+                        <label class="form-label text-muted small font-weight-bold mb-1">KYC Status</label>
+                        <div id="lblMechDetKyc"></div>
                     </div>
-                    <div class="col-6 col-sm-4">
-                        <span class="text-muted small d-block font-weight-bold">Experience</span>
-                        <div class="text-white mt-1" id="lblMechDetExp">0 Years</div>
-                    </div>
-                    <div class="col-12 col-sm-4 mt-2 mt-sm-0">
-                        <span class="text-muted small d-block font-weight-bold">KYC Status</span>
-                        <div class="mt-1" id="lblMechDetKyc"></div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small font-weight-bold mb-1">Live Online Status</label>
+                        <div id="lblMechDetOnline"></div>
                     </div>
                 </div>
 
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <span class="text-muted small d-block font-weight-bold">Online Status</span>
-                        <div class="mt-1" id="lblMechDetOnline"></div>
-                    </div>
-                    <div class="col-6">
-                        <span class="text-muted small d-block font-weight-bold">Account Block Status</span>
-                        <div class="mt-1" id="lblMechDetBlock"></div>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small font-weight-bold mb-1">Specialization / Skills</label>
+                    <div class="p-2.5 bg-black bg-opacity-50 rounded border border-secondary text-light small" id="lblMechDetCategory"></div>
                 </div>
 
-                <div class="p-3 bg-black bg-opacity-40 rounded border border-secondary text-light small mb-0">
-                    <div class="mb-2">
-                        <strong class="text-warning small d-block">Garage / Shop Name:</strong>
-                        <span id="lblMechDetShopName">Not Specified</span>
-                    </div>
-                    <div>
-                        <strong class="text-warning small d-block">Shop / Garage Address:</strong>
-                        <span id="lblMechDetShopAddress">Not Specified</span>
+                <div class="mb-0">
+                    <label class="form-label text-muted small font-weight-bold mb-1">Workshop / Garage Information</label>
+                    <div class="p-2.5 bg-black bg-opacity-50 rounded border border-secondary text-light small">
+                        <div class="font-weight-bold text-warning mb-0.5" id="lblMechDetShop"></div>
+                        <div class="text-muted small" id="lblMechDetShopAddr"></div>
                     </div>
                 </div>
             </div>
@@ -198,73 +365,121 @@
 
 @section Scripts {
 <script>
-    $(document).ready(function() {
-        // Combined robust text-matching search and location filter
-        function filterMechanicsTable() {
-            var searchVal = $('#mechSearchFilter').val().toLowerCase().trim();
-            var locationVal = $('#locationFilter').val().toLowerCase().trim();
-            var matches = 0;
+    function applyMechanicFilters() {
+        var query = $('#mechSearchFilter').val().toLowerCase().trim();
+        var location = $('#locationFilter').val().toLowerCase().trim();
+        var kyc = $('#filterKyc').val();
+        var status = $('#filterStatus').val();
+        var fromDate = $('#filterFromDate').val();
+        var toDate = $('#filterToDate').val();
+        var skill = $('#filterSkill').val().toLowerCase().trim();
 
-            $('.mech-row').each(function() {
-                var rowText = $(this).text().toLowerCase();
-                var cityText = $(this).find('.row-city-text').text().toLowerCase().trim();
+        var matches = 0;
 
-                var textMatch = (searchVal === "") || (rowText.indexOf(searchVal) > -1);
-                var locationMatch = (locationVal === "") || (rowText.indexOf(locationVal) > -1) || (cityText.indexOf(locationVal) > -1);
+        $('.mech-row').each(function () {
+            var row = $(this);
+            var id = row.data('id') || '';
+            var name = row.data('name') || '';
+            var phone = (row.data('phone') || '').toString();
+            var rowLoc = row.data('location') || '';
+            var rowKyc = row.data('kyc') || '';
+            var rowStatus = row.data('status') || '';
+            var created = row.data('created') || '';
+            var rowSkills = (row.data('skills') || '').toLowerCase();
 
-                if (textMatch && locationMatch) {
-                    $(this).show();
-                    matches++;
-                } else {
-                    $(this).hide();
-                }
-            });
+            // Search text check (ID, Name, Phone)
+            var matchQuery = (query === "") || (id.indexOf(query) > -1 || name.indexOf(query) > -1 || phone.indexOf(query) > -1);
 
-            if (matches === 0) {
-                if ($('.no-data-row').length === 0) {
-                    $('#mechanicsTable tbody').append('<tr class="no-data-row"><td colspan="7" class="text-center py-4 text-muted">No matching mechanics found.</td></tr>');
-                } else {
-                    $('.no-data-row').show().find('td').text('No matching mechanics found.');
-                }
+            // Location check
+            var matchLoc = (location === "") || (rowLoc.indexOf(location) > -1);
+
+            // KYC check
+            var matchKyc = (kyc === "All") || (rowKyc === kyc);
+
+            // Online / Blocked status check
+            var matchStatus = (status === "All") || (rowStatus === status);
+
+            // Date Range check
+            var matchDate = true;
+            if (fromDate && created < fromDate) matchDate = false;
+            if (toDate && created > toDate) matchDate = false;
+
+            // Skill Category check
+            var matchSkill = (skill === "all") || (rowSkills.indexOf(skill) > -1);
+
+            if (matchQuery && matchLoc && matchKyc && matchStatus && matchDate && matchSkill) {
+                row.show();
+                matches++;
             } else {
-                $('.no-data-row').hide();
+                row.hide();
             }
-        }
+        });
 
-        $('#mechSearchFilter').on('keyup', filterMechanicsTable);
-        $('#locationFilter').on('keyup', filterMechanicsTable);
+        if (matches === 0) {
+            if ($('.no-data-row').length === 0) {
+                $('#mechanicsTable tbody').append('<tr class="no-data-row"><td colspan="8" class="text-center py-4 text-muted">No matching mechanics found.</td></tr>');
+            } else {
+                $('.no-data-row').show().find('td').text('No matching mechanics found.');
+            }
+        } else {
+            $('.no-data-row').hide();
+        }
+    }
+
+    function resetMechanicFilters() {
+        $('#mechSearchFilter').val('');
+        $('#locationFilter').val('');
+        $('#filterKyc').val('All');
+        $('#filterStatus').val('All');
+        $('#filterFromDate').val('');
+        $('#filterToDate').val('');
+        $('#filterSkill').val('All');
+        applyMechanicFilters();
+    }
+
+    // Real-Time KPI Stats Poller (every 4 seconds)
+    function pollMechanicKPIs() {
+        $.get('/Admin/GetMechanicStats', function (res) {
+            if (res && res.success) {
+                $('#kpiTotalMechanics').text(Number(res.total).toLocaleString());
+                $('#kpiOnlineMechanics').text(Number(res.online).toLocaleString());
+                $('#kpiPendingKycMechanics').text(Number(res.pendingKyc).toLocaleString());
+                $('#kpiBlockedMechanics').text(Number(res.blocked).toLocaleString());
+                $('#kpiNewTodayMechanics').text(Number(res.newToday).toLocaleString());
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        pollMechanicKPIs();
+        setInterval(pollMechanicKPIs, 4000);
     });
 
-    function showMechDetails(id, name, phone, email, category, exp, kyc, online, rating, jobsCount, blockStatus, shopName, shopAddress, city) {
+    function showMechDetails(id, name, phone, email, category, exp, kyc, online, rating, jobsCount, blockStatus, shop, shopAddr, city, regDate) {
         $('#lblMechDetId').text(id);
         $('#lblMechDetName').text(name);
         $('#lblMechDetPhone').text(phone);
-        $('#lblMechDetEmail').text(email || 'No email registered');
-        $('#lblMechDetCity').text(city);
-        
-        $('#lblMechDetCategory').text(category);
-        $('#lblMechDetExp').text(exp + ' Years');
-        
+        $('#lblMechDetEmail').text(email || 'N/A');
+        $('#lblMechDetCity').text(city || 'N/A');
+        $('#lblMechDetRegDate').text(regDate || 'N/A');
+        $('#lblMechDetExp').text(exp + ' Yrs');
         $('#lblMechDetRating').text(rating + ' ★');
         $('#lblMechDetJobs').text(jobsCount);
 
-        var kycHtml = kyc === 'Approved'
-            ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> Verified</span>'
-            : '<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Pending KYC</span>';
+        var kycHtml = kyc === 'Approved' ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> VERIFIED</span>' :
+                      kyc === 'Pending' ? '<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> PENDING KYC</span>' :
+                      kyc === 'Rejected' ? '<span class="badge bg-danger"><i class="fa-solid fa-circle-xmark me-1"></i> REJECTED</span>' :
+                      '<span class="badge bg-secondary">' + kyc + '</span>';
         $('#lblMechDetKyc').html(kycHtml);
 
-        var onlineHtml = online === 'Online'
-            ? '<span class="badge bg-success">🟢 ONLINE</span>'
-            : '<span class="badge bg-secondary text-light">OFFLINE</span>';
+        var onlineHtml = blockStatus === 'Blocked' ? '<span class="badge bg-danger"><i class="fa-solid fa-ban me-1"></i> BLOCKED</span>' :
+                         online === 'Online' ? '<span class="badge bg-success">🟢 ONLINE</span>' :
+                         '<span class="badge bg-secondary">OFFLINE</span>';
         $('#lblMechDetOnline').html(onlineHtml);
 
-        var blockHtml = blockStatus === 'Active'
-            ? '<span class="badge bg-success">ACTIVE</span>'
-            : '<span class="badge bg-danger">BLOCKED</span>';
-        $('#lblMechDetBlock').html(blockHtml);
-
-        $('#lblMechDetShopName').text(shopName || 'Not specified');
-        $('#lblMechDetShopAddress').text(shopAddress || 'Not specified');
+        $('#lblMechDetCategory').text(category || 'General Vehicle Repairs');
+        $('#lblMechDetShop').text(shop || 'Independent Service Partner');
+        $('#lblMechDetShopAddr').text(shopAddr || 'No fixed garage address registered');
 
         var modal = new bootstrap.Modal(document.getElementById('mechDetailsModal'));
         modal.show();
@@ -273,8 +488,9 @@
     function toggleUserBlock(userId) {
         $.post('/Admin/ToggleUserBlock', { userId: userId }, function(res) {
             if (res && res.success) {
-                alert(res.message);
                 location.reload();
+            } else {
+                alert(res.message || 'Action failed.');
             }
         });
     }
