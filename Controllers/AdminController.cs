@@ -887,11 +887,56 @@ namespace RaahSathi.Controllers
                 .OrderByDescending(u => u.Id)
                 .ToListAsync();
 
-            ViewBag.Vehicles = await _dbContext.Vehicles.ToListAsync();
-            ViewBag.Jobs = await _dbContext.Jobs.Where(j => j.Customer != null).ToListAsync();
-            ViewBag.Complaints = await _dbContext.MechanicComplaints.ToListAsync();
+            var vehicles = await _dbContext.Vehicles.ToListAsync();
+            var jobs = await _dbContext.Jobs.Where(j => j.Customer != null).ToListAsync();
+            var complaints = await _dbContext.MechanicComplaints.ToListAsync();
+            var cities = await _dbContext.CityServiceAreas.Where(c => c.IsActive).Select(c => c.CityName).Distinct().ToListAsync();
+
+            ViewBag.Vehicles = vehicles;
+            ViewBag.Jobs = jobs;
+            ViewBag.Complaints = complaints;
+            ViewBag.Cities = cities;
+
+            // Pre-calculate KPIs
+            var todayUtc = DateTime.UtcNow.Date;
+            ViewBag.TotalCustomers = customers.Count;
+            ViewBag.BlockedCustomers = customers.Count(u => u.IsBlocked);
+            ViewBag.ActiveCustomers = customers.Count(u => !u.IsBlocked && (vehicles.Any(v => v.UserId == u.Id) || jobs.Any(j => j.CustomerId == u.Id)));
+            ViewBag.PendingCustomers = customers.Count(u => !u.IsBlocked && !vehicles.Any(v => v.UserId == u.Id) && !jobs.Any(j => j.CustomerId == u.Id));
+            ViewBag.NewTodayCustomers = customers.Count(u => u.CreatedAt.Date == todayUtc);
 
             return View(customers);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerStats()
+        {
+            if (!IsAdmin()) return Unauthorized();
+            
+            var customers = await _dbContext.Users
+                .Where(u => u.Role == "Customer")
+                .Select(u => new { u.Id, u.IsBlocked, u.CreatedAt })
+                .ToListAsync();
+
+            var userIdsWithVehicles = (await _dbContext.Vehicles.Select(v => v.UserId).Distinct().ToListAsync()).ToHashSet();
+            var userIdsWithJobs = (await _dbContext.Jobs.Where(j => j.CustomerId.HasValue).Select(j => j.CustomerId!.Value).Distinct().ToListAsync()).ToHashSet();
+
+            var todayUtc = DateTime.UtcNow.Date;
+            int total = customers.Count;
+            int blocked = customers.Count(u => u.IsBlocked);
+            int active = customers.Count(u => !u.IsBlocked && (userIdsWithVehicles.Contains(u.Id) || userIdsWithJobs.Contains(u.Id)));
+            int pending = customers.Count(u => !u.IsBlocked && !userIdsWithVehicles.Contains(u.Id) && !userIdsWithJobs.Contains(u.Id));
+            int newToday = customers.Count(u => u.CreatedAt.Date == todayUtc);
+
+            return Json(new
+            {
+                success = true,
+                total,
+                active,
+                pending,
+                blocked,
+                newToday
+            });
         }
 
         public async Task<IActionResult> Mechanics()
