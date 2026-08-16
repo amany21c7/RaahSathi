@@ -864,27 +864,36 @@
 
             <!-- Right: Wallet Stats & Statement -->
             <div class="col-lg-7">
-                <div class="row g-3 mb-4">
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 border-secondary text-center">
+                <div class="row g-2 g-md-3 mb-4">
+                    <div class="col-6 col-md">
+                        <div class="glass-card p-3 border-secondary text-center h-100">
                             <span class="text-muted small d-block mb-1">Today's Earnings</span>
                             <h4 class="text-success font-weight-extrabold mb-0" id="lblWalletTodayEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.TodayEarnings).ToString("N2"))</h4>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 border-secondary text-center">
+                    <div class="col-6 col-md">
+                        <div class="glass-card p-3 border-secondary text-center h-100">
                             <span class="text-muted small d-block mb-1">Weekly Earnings</span>
                             <h4 class="text-warning font-weight-extrabold mb-0" id="lblWalletWeeklyEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.WeeklyEarnings).ToString("N2"))</h4>
+                            <span class="text-muted" style="font-size: 0.68rem;">(Current Week)</span>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 border-secondary text-center">
-                            <span class="text-muted small d-block mb-1">Monthly Volume</span>
-                            <h4 class="text-info font-weight-extrabold mb-0" id="lblWalletMonthlyVolume" style="font-family: 'Outfit';">₹@(((double)ViewBag.MonthlyVolume).ToString("N2"))</h4>
+                    <div class="col-6 col-md">
+                        <div class="glass-card p-3 border-secondary text-center h-100">
+                            <span class="text-muted small d-block mb-1">Monthly Earnings</span>
+                            <h4 class="text-info font-weight-extrabold mb-0" id="lblWalletMonthlyVolume" style="font-family: 'Outfit';">₹@(((double)(ViewBag.MonthlyEarnings ?? ViewBag.MonthlyVolume ?? 0)).ToString("N2"))</h4>
+                            <span class="text-muted" style="font-size: 0.68rem;">(Current Month)</span>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 border-danger border-opacity-40 text-center bg-danger bg-opacity-10">
+                    <div class="col-6 col-md">
+                        <div class="glass-card p-3 border-info border-opacity-30 text-center bg-info bg-opacity-10 h-100">
+                            <span class="text-muted small d-block mb-1">Monthly Withdrawn</span>
+                            <h4 class="text-white font-weight-extrabold mb-0" id="lblWalletMonthlyWithdrawal" style="font-family: 'Outfit';">₹@(((double)(ViewBag.MonthlyWithdrawals ?? 0)).ToString("N2"))</h4>
+                            <span class="text-info" style="font-size: 0.68rem;">(Current Month)</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md">
+                        <div class="glass-card p-3 border-danger border-opacity-40 text-center bg-danger bg-opacity-10 h-100">
                             <span class="text-muted small d-block mb-1">Held in Escrow</span>
                             <h4 class="text-danger font-weight-extrabold mb-0" id="lblWalletHeldEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.HeldEarnings).ToString("N2"))</h4>
                         </div>
@@ -893,13 +902,36 @@
 
                 <!-- Recent Earnings Statement Card -->
                 <div class="glass-card border-secondary">
-                    <h5 class="text-white font-weight-bold mb-3"><i class="fa-solid fa-file-invoice-dollar text-warning me-2"></i> Recent Earnings Statement</h5>
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3 border-bottom border-secondary border-opacity-30 pb-3">
+                        <div>
+                            <h5 class="text-white font-weight-bold mb-0">
+                                <i class="fa-solid fa-file-invoice-dollar text-warning me-2"></i> Recent Earnings Statement
+                            </h5>
+                            <small class="text-muted" style="font-size: 0.75rem;">Live statements &amp; date range transactions</small>
+                        </div>
+
+                        <!-- Compact Date Filter Controls -->
+                        <div class="d-flex align-items-center flex-nowrap gap-1.5">
+                            <div class="d-flex align-items-center gap-1 bg-dark bg-opacity-75 px-2 py-1 rounded-2 border border-secondary" style="height: 30px;">
+                                <span class="text-muted" style="font-size: 0.72rem;"><i class="fa-regular fa-calendar text-warning me-1"></i>From:</span>
+                                <input type="date" id="txtStatementFromDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0" style="width: 100px; outline: none; font-size: 0.75rem;" onchange="applyStatementDateFilter()">
+                            </div>
+                            <div class="d-flex align-items-center gap-1 bg-dark bg-opacity-75 px-2 py-1 rounded-2 border border-secondary" style="height: 30px;">
+                                <span class="text-muted" style="font-size: 0.72rem;">To:</span>
+                                <input type="date" id="txtStatementToDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0" style="width: 100px; outline: none; font-size: 0.75rem;" onchange="applyStatementDateFilter()">
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 text-light border-secondary shadow-sm" onclick="resetStatementFilter()" title="Reset Date Filter (Default 1 Month)" style="height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem;">
+                                <i class="fa-solid fa-arrow-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-dark table-hover align-middle mb-0">
                             <thead>
                                 <tr class="border-secondary text-muted small">
                                     <th>Job ID</th>
-                                    <th>Date & Time</th>
+                                    <th>Date &amp; Time</th>
                                     <th>Status</th>
                                     <th>Total Bill</th>
                                     <th class="text-end">Net Credited</th>
@@ -940,11 +972,11 @@
                                             <td class="text-white-50">₹@p.Amount.ToString("N2")</td>
                                             @if (p.PaymentStatus == "Released" || p.PaymentStatus == "Completed")
                                             {
-                                                <td class="text-success font-weight-bold text-end">+₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                                <td class="text-success font-weight-bold text-end">+₹@((p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount)).ToString("N2"))</td>
                                             }
                                             else if (p.PaymentStatus == "Held" || p.PaymentStatus == "Pending")
                                             {
-                                                <td class="text-warning font-weight-bold text-end">₹@p.MechanicEarningAmount.ToString("N2") (Held)</td>
+                                                <td class="text-warning font-weight-bold text-end">₹@((p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount)).ToString("N2")) (Held)</td>
                                             }
                                             else if (p.PaymentStatus == "Refunded")
                                             {
@@ -952,18 +984,25 @@
                                             }
                                             else
                                             {
-                                                <td class="text-muted text-end">₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                                <td class="text-muted text-end">₹@((p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount)).ToString("N2"))</td>
                                             }
                                         </tr>
                                     }
                                 }
                             </tbody>
+                            <tfoot id="walletTransactionsTableFoot" class="border-top border-secondary">
+                                <tr class="fw-bold bg-dark bg-opacity-75">
+                                    <td colspan="3" class="text-white py-3">
+                                        <i class="fa-solid fa-calculator text-warning me-2"></i> 
+                                        Total Summary (<span id="lblFilteredCount">0</span> Transactions)
+                                    </td>
+                                    <td class="text-info py-3" id="lblFilteredTotalBill">₹0.00</td>
+                                    <td class="text-success text-end py-3 fs-6" id="lblFilteredNetCredited">+₹0.00</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>             </div>
             </div>
         </div>
     </div>
@@ -1702,14 +1741,37 @@
     var todayJobsCountVal = @(ViewBag.TodayJobsCount ?? 0);
     var weeklyJobsCountVal = @(ViewBag.WeeklyJobsCount ?? 0);
 
+    var currentStatementFrom = '';
+    var currentStatementTo = '';
+
+    function applyStatementDateFilter() {
+        currentStatementFrom = $('#txtStatementFromDate').val() || '';
+        currentStatementTo = $('#txtStatementToDate').val() || '';
+        updateWalletStats();
+    }
+
+    function resetStatementFilter() {
+        $('#txtStatementFromDate').val('');
+        $('#txtStatementToDate').val('');
+        currentStatementFrom = '';
+        currentStatementTo = '';
+        updateWalletStats();
+    }
+
     function updateWalletStats() {
-        $.get('/Mechanic/GetWalletStats', function(res) {
-            if (res.success) {
-                $('#lblWalletTodayEarnings').text('₹' + res.todayEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                $('#lblWalletWeeklyEarnings').text('₹' + res.weeklyEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                $('#lblWalletMonthlyVolume').text('₹' + res.monthlyVolume.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                $('#lblWalletPendingSettlement').text('₹' + res.pendingSettlement.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                $('#topTodayEarnings').text('₹' + Math.round(res.todayEarnings).toLocaleString('en-IN'));
+        var query = '';
+        if (currentStatementFrom || currentStatementTo) {
+            query = '?fromDate=' + encodeURIComponent(currentStatementFrom) + '&toDate=' + encodeURIComponent(currentStatementTo);
+        }
+        $.get('/Mechanic/GetWalletStats' + query, function(res) {
+            if (res && res.success) {
+                $('#lblWalletTodayEarnings').text('₹' + (res.todayEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletWeeklyEarnings').text('₹' + (res.weeklyEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletMonthlyVolume').text('₹' + (res.monthlyEarnings || res.monthlyVolume || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletMonthlyWithdrawal').text('₹' + (res.monthlyWithdrawal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletHeldEarnings').text('₹' + (res.heldEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletPendingSettlement').text('₹' + (res.pendingSettlement || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#topTodayEarnings').text('₹' + Math.round(res.todayEarnings || 0).toLocaleString('en-IN'));
 
                 // Update jobs count variables in real-time
                 todayJobsCountVal = res.todayJobsCount || 0;
@@ -1725,8 +1787,8 @@
 
                 // Update Recent Earnings Statement table
                 var tableHtml = '';
-                if (res.transactions.length === 0) {
-                    tableHtml = '<tr><td colspan="5" class="text-muted text-center py-4">No transactions recorded yet.</td></tr>';
+                if (!res.transactions || res.transactions.length === 0) {
+                    tableHtml = '<tr><td colspan="5" class="text-muted text-center py-4"><i class="fa-regular fa-calendar-xmark me-1"></i> No transactions found for selected date range.</td></tr>';
                 } else {
                     res.transactions.forEach(function(tx) {
                         var isDebit = tx.mechanicEarning < 0;
@@ -1736,18 +1798,36 @@
                         var signPrefix = isDebit ? "-" : "+";
                         var absEarning = Math.abs(tx.mechanicEarning);
 
+                        if (tx.status === "Held" || tx.status === "Pending") {
+                            badgeText = "Payment Held";
+                            badgeClass = "bg-warning bg-opacity-15 text-warning border border-warning border-opacity-30";
+                            textClass = "text-warning font-weight-bold";
+                            signPrefix = "";
+                        } else if (tx.status === "Refunded") {
+                            badgeText = "Refunded (Cancelled)";
+                            badgeClass = "bg-danger bg-opacity-15 text-danger border border-danger border-opacity-30";
+                            textClass = "text-danger font-weight-bold";
+                            signPrefix = "";
+                        }
+
                         tableHtml += `
                             <tr>
                                 <td><b>#${tx.jobId}</b></td>
                                 <td class="small text-muted">${tx.createdAt}</td>
                                 <td><span class="badge ${badgeClass} px-2 py-1">${badgeText}</span></td>
-                                <td>₹${tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td class="${textClass}">${signPrefix}₹${absEarning.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td class="text-white-50">₹${tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td class="${textClass} text-end">${signPrefix}₹${absEarning.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
                         `;
                     });
                 }
                 $('#walletTransactionsTableBody').html(tableHtml);
+
+                // Update Table Footer Totals
+                var count = res.transactions ? res.transactions.length : 0;
+                $('#lblFilteredCount').text(count);
+                $('#lblFilteredTotalBill').text('₹' + (res.filteredTotalBill || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblFilteredNetCredited').text('+₹' + (res.filteredTotalNetEarning || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
             }
         });
     }

@@ -279,22 +279,42 @@ namespace RaahSathi.Controllers
             var releasedPayments = allPayments.Where(p => p.PaymentStatus == "Released" || p.PaymentStatus == "Completed" || p.PaymentStatus == "Paid").ToList();
             var heldPayments = allPayments.Where(p => p.PaymentStatus == "Held" || p.PaymentStatus == "Pending").ToList();
 
-            var todayLocal = DateTime.UtcNow.ToLocalTime().Date;
+            var nowLocal = DateTime.UtcNow.ToLocalTime();
+            var todayLocal = nowLocal.Date;
+
+            // Current Week: Monday 00:00 to next Monday 00:00
+            int diffToMonday = (7 + (int)todayLocal.DayOfWeek - (int)DayOfWeek.Monday) % 7;
+            var startOfWeek = todayLocal.AddDays(-diffToMonday);
+            var endOfWeek = startOfWeek.AddDays(7);
+
+            // Current Month: 1st of month 00:00 to 1st of next month 00:00
+            var startOfMonth = new DateTime(todayLocal.Year, todayLocal.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1);
+
             double todayEarnings = releasedPayments
                 .Where(p => p.CreatedAt.ToLocalTime().Date == todayLocal)
-                .Sum(p => p.Amount - p.AdminCommissionAmount);
+                .Sum(p => p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount));
 
-            var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
             double weeklyEarnings = releasedPayments
-                .Where(p => p.CreatedAt >= sevenDaysAgo)
-                .Sum(p => p.Amount - p.AdminCommissionAmount);
+                .Where(p => {
+                    var d = p.CreatedAt.ToLocalTime().Date;
+                    return d >= startOfWeek && d < endOfWeek;
+                })
+                .Sum(p => p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount));
 
-            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-            double monthlyVolume = releasedPayments
-                .Where(p => p.CreatedAt >= thirtyDaysAgo)
-                .Sum(p => p.Amount);
+            double monthlyEarnings = releasedPayments
+                .Where(p => {
+                    var d = p.CreatedAt.ToLocalTime().Date;
+                    return d >= startOfMonth && d < endOfMonth;
+                })
+                .Sum(p => p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount));
 
-            double heldEarnings = heldPayments.Sum(p => p.Amount - p.AdminCommissionAmount);
+            // Current Month Total Withdrawal (Completed / Approved Payout Requests)
+            double monthlyWithdrawals = await _dbContext.MechanicPayoutRequests
+                .Where(r => r.MechanicId == user.Id && (r.Status == "Approved" || r.Status == "Completed") && r.CreatedAt >= startOfMonth.ToUniversalTime() && r.CreatedAt < endOfMonth.ToUniversalTime())
+                .SumAsync(r => (double?)r.Amount) ?? 0.0;
+
+            double heldEarnings = heldPayments.Sum(p => p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount));
 
             double pendingSettlement = profile.CurrentEarnings;
 
@@ -311,19 +331,21 @@ namespace RaahSathi.Controllers
             ViewBag.SupportMessages = supportMessages;
             ViewBag.UnreadSupportCount = supportMessages.Count(m => !m.IsRead && m.IsFromAdmin);
             var todayUtc = DateTime.UtcNow.Date;
-            var sevenDaysAgoUtc = DateTime.UtcNow.Date.AddDays(-7);
+            var startOfWeekUtc = startOfWeek.ToUniversalTime();
             int todayJobsCount = await _dbContext.Jobs
                 .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= todayUtc);
             int weeklyJobsCount = await _dbContext.Jobs
-                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= sevenDaysAgoUtc);
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= startOfWeekUtc);
 
             var referralSummary = await _referralService.GetUserReferralSummaryAsync(user.Id);
 
             ViewBag.TodayEarnings = todayEarnings;
             ViewBag.WeeklyEarnings = weeklyEarnings;
+            ViewBag.MonthlyEarnings = monthlyEarnings;
+            ViewBag.MonthlyVolume = monthlyEarnings;
+            ViewBag.MonthlyWithdrawals = monthlyWithdrawals;
             ViewBag.TodayJobsCount = todayJobsCount;
             ViewBag.WeeklyJobsCount = weeklyJobsCount;
-            ViewBag.MonthlyVolume = monthlyVolume;
             ViewBag.HeldEarnings = heldEarnings;
             ViewBag.PendingSettlement = pendingSettlement;
             ViewBag.PendingPayoutAmount = pendingPayout;
@@ -1426,7 +1448,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetWalletStats()
+        public async Task<IActionResult> GetWalletStats(string? fromDate, string? toDate)
         {
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated" });
@@ -1434,43 +1456,95 @@ namespace RaahSathi.Controllers
             var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile == null) return Json(new { success = false, message = "Profile not found" });
 
-            var payments = await _dbContext.Payments
+            var allPayments = await _dbContext.Payments
                 .Include(p => p.Job)
-                .Where(p => p.Job != null && p.Job.MechanicId == user.Id && (p.PaymentStatus == "Released" || p.PaymentStatus == "Completed" || p.PaymentStatus == "Paid"))
+                .Where(p => p.Job != null && p.Job.MechanicId == user.Id)
                 .ToListAsync();
 
-            var todayLocal = DateTime.UtcNow.ToLocalTime().Date;
-            double todayEarnings = payments
+            var releasedPayments = allPayments.Where(p => p.PaymentStatus == "Released" || p.PaymentStatus == "Completed" || p.PaymentStatus == "Paid").ToList();
+            var heldPayments = allPayments.Where(p => p.PaymentStatus == "Held" || p.PaymentStatus == "Pending").ToList();
+
+            var nowLocal = DateTime.UtcNow.ToLocalTime();
+            var todayLocal = nowLocal.Date;
+
+            // Current Week: Monday 00:00 to next Monday 00:00
+            int diffToMonday = (7 + (int)todayLocal.DayOfWeek - (int)DayOfWeek.Monday) % 7;
+            var startOfWeek = todayLocal.AddDays(-diffToMonday);
+            var endOfWeek = startOfWeek.AddDays(7);
+
+            // Current Month: 1st of month 00:00 to 1st of next month 00:00
+            var startOfMonth = new DateTime(todayLocal.Year, todayLocal.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1);
+
+            double todayEarnings = releasedPayments
                 .Where(p => p.CreatedAt.ToLocalTime().Date == todayLocal)
-                .Sum(p => p.Amount - p.AdminCommissionAmount);
+                .Sum(p => p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount));
 
-            var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-            double weeklyEarnings = payments
-                .Where(p => p.CreatedAt >= sevenDaysAgo)
-                .Sum(p => p.Amount - p.AdminCommissionAmount);
+            double weeklyEarnings = releasedPayments
+                .Where(p => {
+                    var d = p.CreatedAt.ToLocalTime().Date;
+                    return d >= startOfWeek && d < endOfWeek;
+                })
+                .Sum(p => p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount));
 
-            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-            double monthlyVolume = payments
-                .Where(p => p.CreatedAt >= thirtyDaysAgo)
-                .Sum(p => p.Amount);
+            double monthlyEarnings = releasedPayments
+                .Where(p => {
+                    var d = p.CreatedAt.ToLocalTime().Date;
+                    return d >= startOfMonth && d < endOfMonth;
+                })
+                .Sum(p => p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount));
 
+            // Current Month Total Withdrawal (Completed / Approved Payout Requests)
+            double monthlyWithdrawal = await _dbContext.MechanicPayoutRequests
+                .Where(r => r.MechanicId == user.Id && (r.Status == "Approved" || r.Status == "Completed") && r.CreatedAt >= startOfMonth.ToUniversalTime() && r.CreatedAt < endOfMonth.ToUniversalTime())
+                .SumAsync(r => (double?)r.Amount) ?? 0.0;
+
+            double heldEarnings = heldPayments.Sum(p => p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount));
             double pendingSettlement = profile.CurrentEarnings;
 
             var todayUtc = DateTime.UtcNow.Date;
-            var sevenDaysAgoUtc = DateTime.UtcNow.Date.AddDays(-7);
+            var startOfWeekUtc = startOfWeek.ToUniversalTime();
             int todayJobsCount = await _dbContext.Jobs
                 .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= todayUtc);
             int weeklyJobsCount = await _dbContext.Jobs
-                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= sevenDaysAgoUtc);
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= startOfWeekUtc);
 
-            var transactions = payments
+            // Filter statement by Date Range (Default: Last 1 Month if not provided)
+            DateTime filterFromDate = todayLocal.AddMonths(-1);
+            if (!string.IsNullOrEmpty(fromDate) && DateTime.TryParse(fromDate, out DateTime parsedFrom))
+            {
+                filterFromDate = parsedFrom.Date;
+            }
+
+            DateTime filterToDate = todayLocal;
+            if (!string.IsNullOrEmpty(toDate) && DateTime.TryParse(toDate, out DateTime parsedTo))
+            {
+                filterToDate = parsedTo.Date;
+            }
+
+            var filteredPayments = allPayments
+                .Where(p => {
+                    var localDate = p.CreatedAt.ToLocalTime().Date;
+                    return localDate >= filterFromDate && localDate <= filterToDate;
+                })
                 .OrderByDescending(p => p.CreatedAt)
-                .Take(10)
+                .ToList();
+
+            double filteredTotalBill = filteredPayments.Sum(p => p.Amount);
+            double filteredTotalNetEarning = filteredPayments.Sum(p => {
+                if (p.PaymentStatus == "Released" || p.PaymentStatus == "Completed" || p.PaymentStatus == "Paid")
+                {
+                    return p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount);
+                }
+                return 0;
+            });
+
+            var transactions = filteredPayments
                 .Select(p => new {
                     id = p.Id,
                     jobId = p.JobId,
                     amount = p.Amount,
-                    mechanicEarning = p.MechanicEarningAmount,
+                    mechanicEarning = p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount),
                     createdAt = p.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt"),
                     status = p.PaymentStatus
                 })
@@ -1480,10 +1554,17 @@ namespace RaahSathi.Controllers
                 success = true,
                 todayEarnings = todayEarnings,
                 weeklyEarnings = weeklyEarnings,
+                monthlyEarnings = monthlyEarnings,
+                monthlyVolume = monthlyEarnings, // for compatibility
+                monthlyWithdrawal = monthlyWithdrawal,
+                heldEarnings = heldEarnings,
+                pendingSettlement = pendingSettlement,
                 todayJobsCount = todayJobsCount,
                 weeklyJobsCount = weeklyJobsCount,
-                monthlyVolume = monthlyVolume,
-                pendingSettlement = pendingSettlement,
+                fromDate = filterFromDate.ToString("yyyy-MM-dd"),
+                toDate = filterToDate.ToString("yyyy-MM-dd"),
+                filteredTotalBill = filteredTotalBill,
+                filteredTotalNetEarning = filteredTotalNetEarning,
                 transactions = transactions
             });
         }
