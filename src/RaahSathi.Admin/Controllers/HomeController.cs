@@ -92,6 +92,10 @@ namespace RaahSathi.Controllers
             return View();
         }
 
+        [HttpGet("Home/AboutUs")]
+        [HttpGet("Home/About")]
+        [HttpGet("AboutUs")]
+        [HttpGet("About")]
         public IActionResult AboutUs()
         {
             ViewData["Title"] = "About Us - On Every Road, A Trusted Companion";
@@ -100,6 +104,10 @@ namespace RaahSathi.Controllers
             return View();
         }
 
+        [HttpGet("Home/ContactUs")]
+        [HttpGet("Home/Contact")]
+        [HttpGet("ContactUs")]
+        [HttpGet("Contact")]
         public IActionResult ContactUs()
         {
             ViewData["Title"] = "Contact Us - 24x7 Emergency Roadside Support & Partnership";
@@ -481,16 +489,18 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
 
             if (User.Identity?.IsAuthenticated == true)
             {
-                if (User.IsInRole("Admin")) role = "Admin";
+                if (User.IsInRole("Admin")) 
+                {
+                    role = "Admin";
+                }
                 else if (User.IsInRole("Mechanic"))
                 {
                     role = "Mechanic";
-                    var userPhone = User.Identity.Name;
-                    var mechUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == userPhone);
-                    if (mechUser != null)
+                    string? userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (int.TryParse(userIdStr, out int mechId))
                     {
-                        var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == mechUser.Id);
-                        if (mechProfile != null)
+                        var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == mechId);
+                        if (mechProfile != null && !string.IsNullOrEmpty(mechProfile.City))
                         {
                             userCity = mechProfile.City;
                         }
@@ -505,13 +515,22 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
                     }
                 }
             }
+            else
+            {
+                if (Request.Cookies.TryGetValue("UserSelectedCity", out string? cookieCity))
+                {
+                    userCity = cookieCity;
+                }
+            }
 
-            var cutoffDate = DateTime.UtcNow.AddDays(-7);
-            var query = _dbContext.PushNotificationLogs.Where(n => n.SentAt >= cutoffDate && (n.ExpiresAt == null || n.ExpiresAt > DateTime.UtcNow));
+            var nowUtc = DateTime.UtcNow;
+
+            // Notification is active if it has not expired yet (or has no expiration set)
+            var query = _dbContext.PushNotificationLogs.Where(n => n.ExpiresAt == null || n.ExpiresAt > nowUtc);
 
             if (role == "Customer")
             {
-                query = query.Where(n => n.TargetAudience == "All Users" || n.TargetAudience == "Customers");
+                query = query.Where(n => n.TargetAudience == "All Users" || n.TargetAudience == "Customers" || n.TargetAudience == "Homepage Visitors" || n.TargetAudience == "Homepage");
             }
             else if (role == "Mechanic")
             {
@@ -519,24 +538,26 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             }
             else if (role == "Admin")
             {
-                query = query.Where(n => n.TargetAudience == "All Users");
+                query = query.Where(n => n.TargetAudience == "All Users" || n.TargetAudience == "Customers" || n.TargetAudience == "Mechanics" || n.TargetAudience == "Homepage Visitors" || n.TargetAudience == "Homepage");
             }
             else
             {
-                query = query.Where(n => n.TargetAudience == "All Users");
+                query = query.Where(n => n.TargetAudience == "All Users" || n.TargetAudience == "Homepage Visitors" || n.TargetAudience == "Homepage" || n.TargetAudience == "Customers");
             }
 
             var allNotifs = await query.OrderByDescending(n => n.SentAt).ToListAsync();
 
             var filteredNotifs = allNotifs.Where(n =>
+                string.IsNullOrEmpty(n.SelectedCity) ||
                 n.SelectedCity.Equals("All", StringComparison.OrdinalIgnoreCase) ||
+                n.SelectedCity.Equals("All India Cities", StringComparison.OrdinalIgnoreCase) ||
                 (userCity != null && n.SelectedCity.Equals(userCity, StringComparison.OrdinalIgnoreCase))
             ).Select(n => new
             {
                 n.Id,
                 n.Title,
                 n.Message,
-                SentAt = n.SentAt.ToLocalTime().ToString("MMM dd, yyyy hh:mm tt")
+                SentAt = n.SentAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")
             }).ToList();
 
             return Json(new { success = true, notifications = filteredNotifs });
