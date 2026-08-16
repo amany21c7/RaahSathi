@@ -30,6 +30,14 @@ namespace RaahSathi.Models
 
         public string AdminRole { get; set; } = "Super Admin"; // "Super Admin", "Finance", "Support", "Operations", "Marketing", "Moderator"
 
+        [StringLength(50)]
+        public string ReferralCode { get; set; } = string.Empty;
+
+        [StringLength(50)]
+        public string? ReferredByCode { get; set; }
+
+        public double ReferralWalletBalance { get; set; } = 0.0;
+
         // Custom Formatted Unique ID (e.g., RS01C for Customer, RS01M for Mechanic, RS01A for Admin)
         [NotMapped]
         public string DisplayId => Role == "Mechanic" 

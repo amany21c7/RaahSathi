@@ -10,10 +10,12 @@ namespace RaahSathi.Repositories
     public class PaymentRepository : IPaymentRepository
     {
         private readonly ApplicationDbContext _dbContext;
+        private readonly Services.IReferralService _referralService;
 
-        public PaymentRepository(ApplicationDbContext dbContext)
+        public PaymentRepository(ApplicationDbContext dbContext, Services.IReferralService referralService)
         {
             _dbContext = dbContext;
+            _referralService = referralService;
         }
 
         public async Task<Payment?> GetPaymentByJobIdAsync(int jobId)
@@ -83,6 +85,12 @@ namespace RaahSathi.Repositories
             }
 
             await _dbContext.SaveChangesAsync();
+
+            try
+            {
+                await _referralService.ProcessJobCompletionReferralRewardAsync(jobId);
+            }
+            catch { }
         }
     }
 }

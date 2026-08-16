@@ -14,12 +14,14 @@ namespace RaahSathi.Services
         private readonly ApplicationDbContext _dbContext;
         private readonly IPricingEngine _pricingEngine;
         private readonly IDispatchEngine _dispatchEngine;
+        private readonly IReferralService _referralService;
 
-        public JobService(ApplicationDbContext dbContext, IPricingEngine pricingEngine, IDispatchEngine dispatchEngine)
+        public JobService(ApplicationDbContext dbContext, IPricingEngine pricingEngine, IDispatchEngine dispatchEngine, IReferralService referralService)
         {
             _dbContext = dbContext;
             _pricingEngine = pricingEngine;
             _dispatchEngine = dispatchEngine;
+            _referralService = referralService;
         }
 
         public async Task<JobDetailDto?> CreateJobAsync(CreateJobRequestDto dto)
@@ -154,6 +156,16 @@ namespace RaahSathi.Services
                 job.CompletedAt = DateTime.UtcNow;
             }
             await _dbContext.SaveChangesAsync();
+
+            if (status == "Completed")
+            {
+                try
+                {
+                    await _referralService.ProcessJobCompletionReferralRewardAsync(jobId);
+                }
+                catch { }
+            }
+
             return true;
         }
 

@@ -22,6 +22,7 @@ builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddHttpContextAccessor();
 
 // Add Cookie Authentication
@@ -449,14 +450,142 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [AuditLogs] ADD [UserRole] nvarchar(50) NOT NULL DEFAULT 'Admin';
                 END;
 
-                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[AdminSystemSettings]') AND type in (N'U'))
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Users]') AND name = N'ReferralCode')
                 BEGIN
-                    CREATE TABLE [AdminSystemSettings] (
+                    ALTER TABLE [Users] ADD [ReferralCode] nvarchar(50) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Users]') AND name = N'ReferredByCode')
+                BEGIN
+                    ALTER TABLE [Users] ADD [ReferredByCode] nvarchar(50) NULL;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Users]') AND name = N'ReferralWalletBalance')
+                BEGIN
+                    ALTER TABLE [Users] ADD [ReferralWalletBalance] float NOT NULL DEFAULT 0.0;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[ReferralProgramSettings]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [ReferralProgramSettings] (
                         [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [SettingKey] nvarchar(100) NOT NULL,
-                        [SettingValue] nvarchar(max) NOT NULL,
-                        [Category] nvarchar(100) NOT NULL DEFAULT 'General',
-                        [Description] nvarchar(500) NOT NULL DEFAULT ''
+                        [IsMasterEnabled] bit NOT NULL DEFAULT 1,
+                        [M2M_Enabled] bit NOT NULL DEFAULT 1,
+                        [M2M_ReferrerReward] float NOT NULL DEFAULT 300.0,
+                        [M2M_RefereeReward] float NOT NULL DEFAULT 150.0,
+                        [M2C_Enabled] bit NOT NULL DEFAULT 1,
+                        [M2C_ReferrerReward] float NOT NULL DEFAULT 150.0,
+                        [M2C_RefereeReward] float NOT NULL DEFAULT 100.0,
+                        [C2C_Enabled] bit NOT NULL DEFAULT 1,
+                        [C2C_ReferrerReward] float NOT NULL DEFAULT 100.0,
+                        [C2C_RefereeReward] float NOT NULL DEFAULT 50.0,
+                        [C2M_Enabled] bit NOT NULL DEFAULT 1,
+                        [C2M_ReferrerReward] float NOT NULL DEFAULT 250.0,
+                        [C2M_RefereeReward] float NOT NULL DEFAULT 100.0,
+                        [MinWithdrawalAmount] float NOT NULL DEFAULT 100.0,
+                        [MinJobAmountForReward] float NOT NULL DEFAULT 150.0,
+                        [UpdatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END
+                ELSE IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[ReferralProgramSettings]') AND name = N'M2M_Enabled')
+                BEGIN
+                    DROP TABLE [ReferralProgramSettings];
+                    CREATE TABLE [ReferralProgramSettings] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [IsMasterEnabled] bit NOT NULL DEFAULT 1,
+                        [M2M_Enabled] bit NOT NULL DEFAULT 1,
+                        [M2M_ReferrerReward] float NOT NULL DEFAULT 300.0,
+                        [M2M_RefereeReward] float NOT NULL DEFAULT 150.0,
+                        [M2C_Enabled] bit NOT NULL DEFAULT 1,
+                        [M2C_ReferrerReward] float NOT NULL DEFAULT 150.0,
+                        [M2C_RefereeReward] float NOT NULL DEFAULT 100.0,
+                        [C2C_Enabled] bit NOT NULL DEFAULT 1,
+                        [C2C_ReferrerReward] float NOT NULL DEFAULT 100.0,
+                        [C2C_RefereeReward] float NOT NULL DEFAULT 50.0,
+                        [C2M_Enabled] bit NOT NULL DEFAULT 1,
+                        [C2M_ReferrerReward] float NOT NULL DEFAULT 250.0,
+                        [C2M_RefereeReward] float NOT NULL DEFAULT 100.0,
+                        [MinWithdrawalAmount] float NOT NULL DEFAULT 100.0,
+                        [MinJobAmountForReward] float NOT NULL DEFAULT 150.0,
+                        [UpdatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[ReferralTransactions]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [ReferralTransactions] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [ReferrerUserId] int NOT NULL,
+                        [RefereeUserId] int NOT NULL,
+                        [StageType] nvarchar(20) NOT NULL DEFAULT 'C2C',
+                        [ReferralCodeUsed] nvarchar(50) NOT NULL DEFAULT '',
+                        [ReferrerRewardAmount] float NOT NULL DEFAULT 0.0,
+                        [RefereeRewardAmount] float NOT NULL DEFAULT 0.0,
+                        [Status] nvarchar(30) NOT NULL DEFAULT 'Pending',
+                        [TriggerJobId] int NULL,
+                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [CompletedAt] datetime2 NULL,
+                        [Remarks] nvarchar(255) NOT NULL DEFAULT ''
+                    );
+                END
+                ELSE IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[ReferralTransactions]') AND name = N'RefereeUserId')
+                BEGIN
+                    DROP TABLE [ReferralTransactions];
+                    CREATE TABLE [ReferralTransactions] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [ReferrerUserId] int NOT NULL,
+                        [RefereeUserId] int NOT NULL,
+                        [StageType] nvarchar(20) NOT NULL DEFAULT 'C2C',
+                        [ReferralCodeUsed] nvarchar(50) NOT NULL DEFAULT '',
+                        [ReferrerRewardAmount] float NOT NULL DEFAULT 0.0,
+                        [RefereeRewardAmount] float NOT NULL DEFAULT 0.0,
+                        [Status] nvarchar(30) NOT NULL DEFAULT 'Pending',
+                        [TriggerJobId] int NULL,
+                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [CompletedAt] datetime2 NULL,
+                        [Remarks] nvarchar(255) NOT NULL DEFAULT ''
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[ReferralWithdrawalRequests]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [ReferralWithdrawalRequests] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [UserId] int NOT NULL,
+                        [UserRole] nvarchar(20) NOT NULL DEFAULT 'Customer',
+                        [Amount] float NOT NULL,
+                        [PayoutMethod] nvarchar(50) NOT NULL DEFAULT 'UPI',
+                        [AccountHolderName] nvarchar(200) NOT NULL DEFAULT '',
+                        [BankAccountNumber] nvarchar(100) NOT NULL DEFAULT '',
+                        [BankName] nvarchar(200) NOT NULL DEFAULT '',
+                        [IfscCode] nvarchar(50) NOT NULL DEFAULT '',
+                        [UpiId] nvarchar(100) NOT NULL DEFAULT '',
+                        [Status] nvarchar(50) NOT NULL DEFAULT 'Pending',
+                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [ProcessedAt] datetime2 NULL,
+                        [AdminRemarks] nvarchar(500) NOT NULL DEFAULT '',
+                        [TransactionReference] nvarchar(100) NOT NULL DEFAULT ''
+                    );
+                END
+                ELSE IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[ReferralWithdrawalRequests]') AND name = N'PayoutMethod')
+                BEGIN
+                    DROP TABLE [ReferralWithdrawalRequests];
+                    CREATE TABLE [ReferralWithdrawalRequests] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [UserId] int NOT NULL,
+                        [UserRole] nvarchar(20) NOT NULL DEFAULT 'Customer',
+                        [Amount] float NOT NULL,
+                        [PayoutMethod] nvarchar(50) NOT NULL DEFAULT 'UPI',
+                        [AccountHolderName] nvarchar(200) NOT NULL DEFAULT '',
+                        [BankAccountNumber] nvarchar(100) NOT NULL DEFAULT '',
+                        [BankName] nvarchar(200) NOT NULL DEFAULT '',
+                        [IfscCode] nvarchar(50) NOT NULL DEFAULT '',
+                        [UpiId] nvarchar(100) NOT NULL DEFAULT '',
+                        [Status] nvarchar(50) NOT NULL DEFAULT 'Pending',
+                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [ProcessedAt] datetime2 NULL,
+                        [AdminRemarks] nvarchar(500) NOT NULL DEFAULT '',
+                        [TransactionReference] nvarchar(100) NOT NULL DEFAULT ''
                     );
                 END;
 

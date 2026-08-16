@@ -74,11 +74,19 @@
                     <input type="text" class="form-control glass-input text-white" id="registerName" placeholder="Rahul Sharma">
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="form-label text-muted small">10-Digit Mobile Number</label>
                     <div class="input-group">
                         <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
                         <input type="tel" class="form-control glass-input text-white" id="registerPhone" placeholder="9876543210" maxlength="10">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small">Referral Code <span class="text-warning">(Optional - Get Joining Bonus)</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-gift"></i></span>
+                        <input type="text" class="form-control glass-input text-white font-monospace text-uppercase" id="registerReferralCode" value="@(ViewBag.ReferralCode ?? "")" placeholder="e.g. RSC-AMAN-001">
                     </div>
                 </div>
 
@@ -346,6 +354,11 @@ $(document).ready(function() {
         $('input[name="forgotRole"][value="' + initialRole + '"]').prop('checked', true);
     }
 
+    var passedRefCode = "@(ViewBag.ReferralCode ?? "")";
+    if (passedRefCode && passedRefCode.length > 0) {
+        showPanel('panelRegisterDetails', 'Register Account', 'fa-gift', 'Joining with Referral Code: ' + passedRefCode);
+    }
+
     // Dynamic role sync on user selection change
     $('input[name="loginRole"], input[name="registerRole"], input[name="forgotRole"]').change(function() {
         var val = $(this).val();
@@ -570,6 +583,7 @@ $(document).ready(function() {
     var regPhone = "";
     var regRole = "";
     var regName = "";
+    var regReferralCode = "";
 
     $('#btnRegisterSendOtp').click(function() {
         regRole = $('input[name="registerRole"]:checked').val();
@@ -580,6 +594,7 @@ $(document).ready(function() {
 
         regPhone = $('#registerPhone').val().trim();
         regName = $('#registerName').val().trim();
+        regReferralCode = $('#registerReferralCode').val().trim();
 
         if (!regName) {
             alert('Please enter your full name.');
@@ -643,7 +658,8 @@ $(document).ready(function() {
             name: regName,
             phoneNumber: regPhone,
             role: regRole,
-            password: password
+            password: password,
+            referralCode: regReferralCode
         }, function(res) {
             if (res.success) {
                 window.location.href = res.redirect;

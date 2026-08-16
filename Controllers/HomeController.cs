@@ -92,6 +92,10 @@ namespace RaahSathi.Controllers
             return View();
         }
 
+        [HttpGet("Home/AboutUs")]
+        [HttpGet("Home/About")]
+        [HttpGet("AboutUs")]
+        [HttpGet("About")]
         public IActionResult AboutUs()
         {
             ViewData["Title"] = "About Us - On Every Road, A Trusted Companion";
@@ -100,6 +104,10 @@ namespace RaahSathi.Controllers
             return View();
         }
 
+        [HttpGet("Home/ContactUs")]
+        [HttpGet("Home/Contact")]
+        [HttpGet("ContactUs")]
+        [HttpGet("Contact")]
         public IActionResult ContactUs()
         {
             ViewData["Title"] = "Contact Us - 24x7 Emergency Roadside Support & Partnership";

@@ -18,6 +18,7 @@ namespace RaahSathi.Controllers
         private readonly Services.IUserService _userService;
         private readonly Services.INotificationService _notificationService;
         private readonly Services.IPaymentService _paymentService;
+        private readonly Services.IReferralService _referralService;
 
         public AdminController(
             ApplicationDbContext dbContext,
@@ -26,7 +27,8 @@ namespace RaahSathi.Controllers
             Services.IJobService jobService,
             Services.IUserService userService,
             Services.INotificationService notificationService,
-            Services.IPaymentService paymentService)
+            Services.IPaymentService paymentService,
+            Services.IReferralService referralService)
         {
             _dbContext = dbContext;
             _pricingService = pricingService;
@@ -35,6 +37,7 @@ namespace RaahSathi.Controllers
             _userService = userService;
             _notificationService = notificationService;
             _paymentService = paymentService;
+            _referralService = referralService;
         }
 
         private bool IsAdmin()
@@ -1530,6 +1533,26 @@ namespace RaahSathi.Controllers
                 });
             }
 
+            // 5. Pending Referral Withdrawal Requests
+            var refWithdrawals = await _dbContext.ReferralWithdrawalRequests
+                .Include(r => r.User)
+                .Where(r => r.Status == "Pending")
+                .OrderByDescending(r => r.Id)
+                .Take(10)
+                .ToListAsync();
+            foreach (var rw in refWithdrawals)
+            {
+                list.Add(new AdminNotificationDto
+                {
+                    Title = "Referral Reward Payout",
+                    Message = $"{rw.User?.Name ?? "User"} ({rw.UserRole}) requested ₹{rw.Amount:N0} referral withdrawal",
+                    Url = "/Admin/Referrals",
+                    Icon = "fa-solid fa-gift text-warning",
+                    CreatedAt = rw.CreatedAt.ToLocalTime().ToString("MMM dd, hh:mm tt"),
+                    RawDate = rw.CreatedAt
+                });
+            }
+
             var sortedList = list.OrderByDescending(x => x.RawDate).Take(15).ToList();
             return Json(new { success = true, notifications = sortedList });
         }
@@ -1604,6 +1627,82 @@ namespace RaahSathi.Controllers
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
             ViewBag.Settings = await _dbContext.AdminSystemSettings.ToListAsync();
             return View();
+        }
+
+        public async Task<IActionResult> Referrals()
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var settings = await _referralService.GetSettingsAsync();
+            var withdrawals = await _referralService.GetAllWithdrawalRequestsAsync();
+            var transactions = await _dbContext.ReferralTransactions
+                .Include(t => t.ReferrerUser)
+                .Include(t => t.RefereeUser)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
+
+            ViewBag.Settings = settings;
+            ViewBag.Withdrawals = withdrawals;
+            ViewBag.Transactions = transactions;
+
+            ViewBag.TotalReferralsCount = transactions.Count;
+            ViewBag.CompletedReferralsCount = transactions.Count(t => t.Status == "Completed");
+            ViewBag.PendingReferralsCount = transactions.Count(t => t.Status == "Pending");
+            ViewBag.TotalRewardsDisbursed = transactions.Where(t => t.Status == "Completed").Sum(t => t.ReferrerRewardAmount + t.RefereeRewardAmount);
+            ViewBag.PendingPayoutsAmount = withdrawals.Where(w => w.Status == "Pending").Sum(w => w.Amount);
+            ViewBag.SettledPayoutsAmount = withdrawals.Where(w => w.Status == "Approved").Sum(w => w.Amount);
+
+            return View(settings);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveReferralSettings(ReferralProgramSetting model)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            await _referralService.UpdateSettingsAsync(model);
+            await LogAdminActionAsync("REFERRAL_SETTINGS_UPDATE", "Updated 4-Stage Referral Program rules and reward amounts");
+
+            TempData["Success"] = "Referral Program settings saved successfully!";
+            return RedirectToAction("Referrals");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ApproveReferralWithdrawal(int requestId, string transactionRef, string remarks)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            bool success = await _referralService.ProcessWithdrawalApprovalAsync(requestId, transactionRef, remarks);
+            if (success)
+            {
+                await LogAdminActionAsync("REFERRAL_PAYOUT_APPROVED", $"Approved referral payout #{requestId} Ref: {transactionRef}");
+                TempData["Success"] = $"Referral payout #{requestId} approved and recorded successfully!";
+            }
+            else
+            {
+                TempData["Error"] = "Unable to approve request. Request may not exist or is already processed.";
+            }
+
+            return RedirectToAction("Referrals");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RejectReferralWithdrawal(int requestId, string remarks)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            bool success = await _referralService.ProcessWithdrawalRejectionAsync(requestId, remarks);
+            if (success)
+            {
+                await LogAdminActionAsync("REFERRAL_PAYOUT_REJECTED", $"Rejected referral payout #{requestId}. Amount refunded to user wallet.");
+                TempData["Success"] = $"Referral payout #{requestId} rejected. Reward balance refunded back to user's wallet.";
+            }
+            else
+            {
+                TempData["Error"] = "Unable to reject request.";
+            }
+
+            return RedirectToAction("Referrals");
         }
 
         [HttpPost]

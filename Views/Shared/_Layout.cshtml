@@ -314,7 +314,8 @@
                               || Context.Request.Path.Value?.StartsWith("/Admin/Notifications", StringComparison.OrdinalIgnoreCase) == true
                               || Context.Request.Path.Value?.StartsWith("/Admin/Cms", StringComparison.OrdinalIgnoreCase) == true
                               || Context.Request.Path.Value?.StartsWith("/Admin/Account", StringComparison.OrdinalIgnoreCase) == true
-                              || Context.Request.Path.Value?.StartsWith("/Admin/Admins", StringComparison.OrdinalIgnoreCase) == true;
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Admins", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Referrals", StringComparison.OrdinalIgnoreCase) == true;
         
         bool isSettingsHubPage = Context.Request.Path.Value?.Equals("/Admin/Settings", StringComparison.OrdinalIgnoreCase) == true;
         
@@ -580,6 +581,9 @@
                         </a>
                         <a href="/Admin/Cms" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Cms", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                             <i class="fa-solid fa-images"></i> CMS
+                        </a>
+                        <a href="/Admin/Referrals" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Referrals", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-gift text-warning"></i> Referrals Program
                         </a>
                         <a href="/Admin/Account" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Account", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                             <i class="fa-solid fa-building-columns"></i> Admin Accounts
@@ -2199,6 +2203,7 @@
                         }
                     });
                 }
+                window.acceptPing = acceptPing;
 
                 function declinePing(jobId) {
                     window.stopSirenAlert();
@@ -2211,6 +2216,7 @@
                         window.location.reload();
                     });
                 }
+                window.declinePing = declinePing;
 
                 function timeoutPing(jobId) {
                     window.stopSirenAlert();
@@ -2225,6 +2231,7 @@
                         window.location.reload();
                     });
                 }
+                window.timeoutPing = timeoutPing;
 
                 function snoozePing(jobId) {
                     window.stopSirenAlert();
@@ -2237,6 +2244,7 @@
                         window.location.reload();
                     });
                 }
+                window.snoozePing = snoozePing;
 
                 // Web Worker for background intervals
                 try {

@@ -39,6 +39,9 @@ namespace RaahSathi.Data
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<AdminSystemSetting> AdminSystemSettings { get; set; }
         public DbSet<MechanicPayoutRequest> MechanicPayoutRequests { get; set; }
+        public DbSet<ReferralProgramSetting> ReferralProgramSettings { get; set; }
+        public DbSet<ReferralTransaction> ReferralTransactions { get; set; }
+        public DbSet<ReferralWithdrawalRequest> ReferralWithdrawalRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -104,6 +107,32 @@ namespace RaahSathi.Data
                 .WithMany()
                 .HasForeignKey(w => w.ComplaintId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure ReferralTransaction relationships
+            modelBuilder.Entity<ReferralTransaction>()
+                .HasOne(r => r.ReferrerUser)
+                .WithMany()
+                .HasForeignKey(r => r.ReferrerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ReferralTransaction>()
+                .HasOne(r => r.RefereeUser)
+                .WithMany()
+                .HasForeignKey(r => r.RefereeUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ReferralTransaction>()
+                .HasOne(r => r.TriggerJob)
+                .WithMany()
+                .HasForeignKey(r => r.TriggerJobId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure ReferralWithdrawalRequest relationships
+            modelBuilder.Entity<ReferralWithdrawalRequest>()
+                .HasOne(w => w.User)
+                .WithMany()
+                .HasForeignKey(w => w.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

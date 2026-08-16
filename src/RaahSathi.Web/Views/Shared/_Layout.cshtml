@@ -2197,6 +2197,7 @@
                         }
                     });
                 }
+                window.acceptPing = acceptPing;
 
                 function declinePing(jobId) {
                     window.stopSirenAlert();
@@ -2209,6 +2210,7 @@
                         window.location.reload();
                     });
                 }
+                window.declinePing = declinePing;
 
                 function timeoutPing(jobId) {
                     window.stopSirenAlert();
@@ -2223,6 +2225,7 @@
                         window.location.reload();
                     });
                 }
+                window.timeoutPing = timeoutPing;
 
                 function snoozePing(jobId) {
                     window.stopSirenAlert();
@@ -2235,6 +2238,7 @@
                         window.location.reload();
                     });
                 }
+                window.snoozePing = snoozePing;
 
                 // Web Worker for background intervals
                 try {

@@ -18,8 +18,17 @@ namespace RaahSathi.Controllers
         private readonly Services.IJobService _jobService;
         private readonly Services.IWalletService _walletService;
         private readonly Services.IUserService _userService;
+        private readonly Services.IReferralService _referralService;
 
-        public MechanicController(ApplicationDbContext dbContext, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, Services.IDispatchEngine dispatchEngine, Services.IPaymentService paymentService, Services.IJobService jobService, Services.IWalletService walletService, Services.IUserService userService)
+        public MechanicController(
+            ApplicationDbContext dbContext,
+            Microsoft.AspNetCore.Hosting.IWebHostEnvironment env,
+            Services.IDispatchEngine dispatchEngine,
+            Services.IPaymentService paymentService,
+            Services.IJobService jobService,
+            Services.IWalletService walletService,
+            Services.IUserService userService,
+            Services.IReferralService referralService)
         {
             _dbContext = dbContext;
             _env = env;
@@ -28,6 +37,7 @@ namespace RaahSathi.Controllers
             _jobService = jobService;
             _walletService = walletService;
             _userService = userService;
+            _referralService = referralService;
         }
 
         private async Task<User?> GetActiveMechanicUserAsync()
@@ -245,8 +255,8 @@ namespace RaahSathi.Controllers
             var pastJobs = await _dbContext.Jobs
                 .Include(j => j.Customer)
                 .Include(j => j.Vehicle)
-                .Where(j => j.MechanicId == user.Id && j.Status == "Completed")
-                .OrderByDescending(j => j.CompletedAt)
+                .Where(j => j.MechanicId == user.Id && (j.Status == "Completed" || j.Status == "Paid" || j.Status == "Closed"))
+                .OrderByDescending(j => j.CompletedAt ?? j.CreatedAt)
                 .ToListAsync();
 
             // Active Warning from Admin
@@ -266,7 +276,7 @@ namespace RaahSathi.Controllers
                 .Where(p => p.Job != null && p.Job.MechanicId == user.Id)
                 .ToListAsync();
 
-            var releasedPayments = allPayments.Where(p => p.PaymentStatus == "Released" || p.PaymentStatus == "Completed").ToList();
+            var releasedPayments = allPayments.Where(p => p.PaymentStatus == "Released" || p.PaymentStatus == "Completed" || p.PaymentStatus == "Paid").ToList();
             var heldPayments = allPayments.Where(p => p.PaymentStatus == "Held" || p.PaymentStatus == "Pending").ToList();
 
             var todayLocal = DateTime.UtcNow.ToLocalTime().Date;
@@ -303,9 +313,11 @@ namespace RaahSathi.Controllers
             var todayUtc = DateTime.UtcNow.Date;
             var sevenDaysAgoUtc = DateTime.UtcNow.Date.AddDays(-7);
             int todayJobsCount = await _dbContext.Jobs
-                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && j.CompletedAt.HasValue && j.CompletedAt.Value >= todayUtc);
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= todayUtc);
             int weeklyJobsCount = await _dbContext.Jobs
-                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && j.CompletedAt.HasValue && j.CompletedAt.Value >= sevenDaysAgoUtc);
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= sevenDaysAgoUtc);
+
+            var referralSummary = await _referralService.GetUserReferralSummaryAsync(user.Id);
 
             ViewBag.TodayEarnings = todayEarnings;
             ViewBag.WeeklyEarnings = weeklyEarnings;
@@ -316,8 +328,49 @@ namespace RaahSathi.Controllers
             ViewBag.PendingSettlement = pendingSettlement;
             ViewBag.PendingPayoutAmount = pendingPayout;
             ViewBag.Payments = allPayments.OrderByDescending(p => p.CreatedAt).ToList();
+            ViewBag.ReferralSummary = referralSummary;
+            ViewBag.ReferralSettings = await _referralService.GetSettingsAsync();
 
             return View();
+        }
+
+        [HttpGet("/Mechanic/GetReferralData")]
+        public async Task<IActionResult> GetReferralData()
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Unauthorized();
+
+            var summary = await _referralService.GetUserReferralSummaryAsync(user.Id);
+            return Json(new { success = true, summary });
+        }
+
+        [HttpPost("/Mechanic/SubmitReferralWithdrawal")]
+        public async Task<IActionResult> SubmitReferralWithdrawal(double amount, string payoutMethod, string accountHolder, string bankAccount, string bankName, string ifsc, string upiId)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Unauthorized();
+
+            var result = await _referralService.RequestReferralWithdrawalAsync(
+                user.Id,
+                amount,
+                payoutMethod,
+                accountHolder,
+                bankAccount,
+                bankName,
+                ifsc,
+                upiId
+            );
+
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message;
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
+
+            return RedirectToAction("Dashboard");
         }
 
         [HttpPost]
@@ -1383,7 +1436,7 @@ namespace RaahSathi.Controllers
 
             var payments = await _dbContext.Payments
                 .Include(p => p.Job)
-                .Where(p => p.Job != null && p.Job.MechanicId == user.Id && p.PaymentStatus == "Released")
+                .Where(p => p.Job != null && p.Job.MechanicId == user.Id && (p.PaymentStatus == "Released" || p.PaymentStatus == "Completed" || p.PaymentStatus == "Paid"))
                 .ToListAsync();
 
             var todayLocal = DateTime.UtcNow.ToLocalTime().Date;
@@ -1406,9 +1459,9 @@ namespace RaahSathi.Controllers
             var todayUtc = DateTime.UtcNow.Date;
             var sevenDaysAgoUtc = DateTime.UtcNow.Date.AddDays(-7);
             int todayJobsCount = await _dbContext.Jobs
-                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && j.CompletedAt.HasValue && j.CompletedAt.Value >= todayUtc);
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= todayUtc);
             int weeklyJobsCount = await _dbContext.Jobs
-                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && j.CompletedAt.HasValue && j.CompletedAt.Value >= sevenDaysAgoUtc);
+                .CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed" && (j.CompletedAt ?? j.CreatedAt) >= sevenDaysAgoUtc);
 
             var transactions = payments
                 .OrderByDescending(p => p.CreatedAt)
@@ -1432,6 +1485,46 @@ namespace RaahSathi.Controllers
                 monthlyVolume = monthlyVolume,
                 pendingSettlement = pendingSettlement,
                 transactions = transactions
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CheckActiveJobOrPing()
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false });
+
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (profile == null) return Json(new { success = false });
+
+            var activeJob = await _dbContext.Jobs
+                .FirstOrDefaultAsync(j => j.MechanicId == user.Id && j.Status != "Completed" && j.Status != "Cancelled");
+
+            bool hasPing = false;
+            int? pingJobId = null;
+            if (profile.IsOnline && profile.KycStatus == "Approved" && activeJob == null)
+            {
+                var ping = await _dbContext.Jobs
+                    .Where(j => j.Status == "Requested" && j.MechanicId == null)
+                    .OrderByDescending(j => j.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (ping != null && (DateTime.UtcNow - ping.CreatedAt).TotalSeconds < 300)
+                {
+                    hasPing = true;
+                    pingJobId = ping.Id;
+                }
+            }
+
+            return Json(new
+            {
+                success = true,
+                hasActiveJob = activeJob != null,
+                activeJobId = activeJob?.Id,
+                activeJobStatus = activeJob?.Status,
+                hasPing = hasPing,
+                pingJobId = pingJobId,
+                walletBalance = profile.CurrentEarnings
             });
         }
     }

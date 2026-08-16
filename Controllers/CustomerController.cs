@@ -19,8 +19,17 @@ namespace RaahSathi.Controllers
         private readonly IPaymentService _paymentService;
         private readonly IJobService _jobService;
         private readonly IUserService _userService;
+        private readonly IReferralService _referralService;
 
-        public CustomerController(ApplicationDbContext dbContext, IPricingEngine pricingEngine, IDispatchEngine dispatchEngine, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, IPaymentService paymentService, IJobService jobService, IUserService userService)
+        public CustomerController(
+            ApplicationDbContext dbContext,
+            IPricingEngine pricingEngine,
+            IDispatchEngine dispatchEngine,
+            Microsoft.AspNetCore.Hosting.IWebHostEnvironment env,
+            IPaymentService paymentService,
+            IJobService jobService,
+            IUserService userService,
+            IReferralService referralService)
         {
             _dbContext = dbContext;
             _pricingEngine = pricingEngine;
@@ -29,6 +38,7 @@ namespace RaahSathi.Controllers
             _paymentService = paymentService;
             _jobService = jobService;
             _userService = userService;
+            _referralService = referralService;
         }
 
         private async Task<User?> GetActiveCustomerAsync()
@@ -79,13 +89,56 @@ namespace RaahSathi.Controllers
                 .OrderByDescending(j => j.CreatedAt)
                 .ToListAsync();
 
+            var referralSummary = await _referralService.GetUserReferralSummaryAsync(customer.Id);
+
             ViewBag.CustomerName = customer.Name;
             ViewBag.CustomerPhone = customer.PhoneNumber;
             ViewBag.Vehicles = myVehicles;
             ViewBag.ActiveJobs = activeJobs;
             ViewBag.PastJobs = pastJobs;
+            ViewBag.ReferralSummary = referralSummary;
+            ViewBag.ReferralSettings = await _referralService.GetSettingsAsync();
 
             return View();
+        }
+
+        [HttpGet("/Customer/GetReferralData")]
+        public async Task<IActionResult> GetReferralData()
+        {
+            var customer = await GetActiveCustomerAsync();
+            if (customer == null) return Unauthorized();
+
+            var summary = await _referralService.GetUserReferralSummaryAsync(customer.Id);
+            return Json(new { success = true, summary });
+        }
+
+        [HttpPost("/Customer/SubmitReferralWithdrawal")]
+        public async Task<IActionResult> SubmitReferralWithdrawal(double amount, string payoutMethod, string accountHolder, string bankAccount, string bankName, string ifsc, string upiId)
+        {
+            var customer = await GetActiveCustomerAsync();
+            if (customer == null) return Unauthorized();
+
+            var result = await _referralService.RequestReferralWithdrawalAsync(
+                customer.Id,
+                amount,
+                payoutMethod,
+                accountHolder,
+                bankAccount,
+                bankName,
+                ifsc,
+                upiId
+            );
+
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message;
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
+
+            return RedirectToAction("Dashboard");
         }
 
         [HttpPost]

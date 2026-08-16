@@ -20,12 +20,14 @@ namespace RaahSathi.Controllers
         private readonly ApplicationDbContext _dbContext;
         private readonly IWebHostEnvironment _env;
         private readonly IAuthService _authService;
+        private readonly IReferralService _referralService;
 
-        public AuthController(ApplicationDbContext dbContext, IWebHostEnvironment env, IAuthService authService)
+        public AuthController(ApplicationDbContext dbContext, IWebHostEnvironment env, IAuthService authService, IReferralService referralService)
         {
             _dbContext = dbContext;
             _env = env;
             _authService = authService;
+            _referralService = referralService;
         }
 
         private async Task SetUserCookies(User user)
@@ -69,7 +71,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login(string? role, string? switchRole)
+        public IActionResult Login(string? role, string? switchRole, string? @ref)
         {
             string? targetRole = role ?? switchRole;
 
@@ -100,6 +102,7 @@ namespace RaahSathi.Controllers
             }
 
             ViewBag.TargetRole = targetRole;
+            ViewBag.ReferralCode = @ref ?? string.Empty;
             return View();
         }
 
@@ -140,7 +143,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendOtp(string phoneNumber, string role, string? name)
+        public async Task<IActionResult> SendOtp(string phoneNumber, string role, string? name, string? referralCode)
         {
             string cleanPhone = CleanPhoneNumber(phoneNumber);
             if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
@@ -168,6 +171,15 @@ namespace RaahSathi.Controllers
                 };
                 _dbContext.Users.Add(user);
                 await _dbContext.SaveChangesAsync();
+
+                // Generate their unique referral code
+                await _referralService.EnsureUserReferralCodeAsync(user.Id);
+
+                // If referred by someone, register referral
+                if (!string.IsNullOrWhiteSpace(referralCode))
+                {
+                    await _referralService.RegisterReferralSignupAsync(user.Id, referralCode);
+                }
 
                 // If mechanic, create empty profile
                 if (role == "Mechanic")
@@ -305,7 +317,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CompleteRegistration(string name, string phoneNumber, string role, string password)
+        public async Task<IActionResult> CompleteRegistration(string name, string phoneNumber, string role, string password, string? referralCode)
         {
             string cleanPhone = CleanPhoneNumber(phoneNumber);
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
@@ -321,6 +333,12 @@ namespace RaahSathi.Controllers
                 user.Name = name.Trim();
                 user.Password = PasswordHasher.HashPassword(password);
                 await _dbContext.SaveChangesAsync();
+
+                await _referralService.EnsureUserReferralCodeAsync(user.Id);
+                if (!string.IsNullOrWhiteSpace(referralCode))
+                {
+                    await _referralService.RegisterReferralSignupAsync(user.Id, referralCode);
+                }
             }
             else
             {
@@ -334,6 +352,12 @@ namespace RaahSathi.Controllers
                 };
                 _dbContext.Users.Add(user);
                 await _dbContext.SaveChangesAsync();
+
+                await _referralService.EnsureUserReferralCodeAsync(user.Id);
+                if (!string.IsNullOrWhiteSpace(referralCode))
+                {
+                    await _referralService.RegisterReferralSignupAsync(user.Id, referralCode);
+                }
 
                 if (role == "Mechanic")
                 {

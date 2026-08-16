@@ -12,11 +12,13 @@ namespace RaahSathi.Services
     {
         private readonly IPaymentRepository _paymentRepository;
         private readonly ApplicationDbContext _dbContext;
+        private readonly IReferralService _referralService;
 
-        public PaymentService(IPaymentRepository paymentRepository, ApplicationDbContext dbContext)
+        public PaymentService(IPaymentRepository paymentRepository, ApplicationDbContext dbContext, IReferralService referralService)
         {
             _paymentRepository = paymentRepository;
             _dbContext = dbContext;
+            _referralService = referralService;
         }
 
         private double GetSettingDouble(string key, double defaultValue)
@@ -97,6 +99,11 @@ namespace RaahSathi.Services
             bool spSuccess = await _paymentRepository.ExecuteProcessEscrowStoredProcedureAsync(job.Id, payId);
             if (spSuccess)
             {
+                try
+                {
+                    await _referralService.ProcessJobCompletionReferralRewardAsync(job.Id);
+                }
+                catch { }
                 return true;
             }
 
