@@ -1,9 +1,36 @@
 @using RaahSathi.Models
 @using RaahSathi.Controllers
+@functions {
+    public string MaskUpi(string upi)
+    {
+        if (string.IsNullOrWhiteSpace(upi)) return "";
+        if (upi.Contains("@"))
+        {
+            var parts = upi.Split('@');
+            var user = parts[0];
+            var domain = parts.Length > 1 ? parts[1] : "";
+            var maskedUser = user.Length > 3 
+                ? new string('*', user.Length - 3) + user.Substring(user.Length - 3)
+                : user;
+            return maskedUser + "@" + domain;
+        }
+        return upi.Length > 3 
+            ? new string('*', upi.Length - 3) + upi.Substring(upi.Length - 3)
+            : upi;
+    }
+
+    public string MaskText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        return text.Length > 3 
+            ? new string('*', text.Length - 3) + text.Substring(text.Length - 3)
+            : text;
+    }
+}
 @{
     ViewData["Title"] = "Admin Account & Treasury Vault";
     var withdrawalHistory = ViewBag.WithdrawalHistory as List<AdminWithdrawal> ?? new List<AdminWithdrawal>();
-    var accounts = ViewBag.Accounts as List<RaahSathi.Controllers.AdminAccountModel> ?? new List<RaahSathi.Controllers.AdminAccountModel>();
+    var accounts = ViewBag.Accounts as List<RaahSathi.Controllers.AdminAccountModel> ?? new List<AdminAccountModel>();
     var activeAccount = accounts.FirstOrDefault(a => a.IsActive);
 }
 
@@ -32,10 +59,14 @@
                 <span class="badge bg-warning text-dark font-weight-bold px-3 py-1">ADMIN TREASURY & COMMISSION VAULT</span>
             </div>
             <h2 class="text-warning font-weight-extrabold mt-2 mb-1" style="font-family: 'Outfit';">
-                ₹@(((double)(ViewBag.TotalCommissionEarned ?? 0.0)).ToString("N2"))
+                ₹@(((double)(ViewBag.AdminVaultBalance ?? 0.0)).ToString("N2"))
             </h2>
             <div class="text-muted small">
-                Available Vault Balance: <strong class="text-success font-weight-bold">₹@(((double)(ViewBag.AdminVaultBalance ?? 0.0)).ToString("N2"))</strong>
+                Recently Withdrawn: <strong class="text-success font-weight-bold">₹@((withdrawalHistory.FirstOrDefault() != null ? withdrawalHistory.First().Amount : 0.0).ToString("N2"))</strong>
+                @if (withdrawalHistory.FirstOrDefault() != null)
+                {
+                    <span class="text-muted extra-small">(@withdrawalHistory.First().WithdrawnAt.ToString("dd MMM, hh:mm tt"))</span>
+                }
             </div>
         </div>
         <div>
@@ -116,13 +147,28 @@
                                         </td>
                                         <td>
                                             <strong class="text-white">@acc.HolderName</strong>
-                                            <div class="text-warning font-monospace mt-0.5" style="font-size:0.8rem;">@acc.UpiId</div>
+                                            @if (!string.IsNullOrEmpty(acc.UpiId))
+                                            {
+                                                <div class="text-warning font-monospace mt-0.5" style="font-size:0.8rem;">@MaskUpi(acc.UpiId)</div>
+                                            }
                                         </td>
                                         <td>
-                                            @if (!string.IsNullOrEmpty(acc.BankName))
+                                            @if (!string.IsNullOrEmpty(acc.BankName) || !string.IsNullOrEmpty(acc.AccountNumber))
                                             {
-                                                <div class="text-light font-weight-medium">@acc.BankName</div>
-                                                <div class="text-muted extra-small" style="font-size:0.75rem;">A/C: @acc.AccountNumber | IFSC: @acc.IfscCode</div>
+                                                @if (!string.IsNullOrEmpty(acc.BankName))
+                                                {
+                                                    <div class="text-light font-weight-medium">@acc.BankName</div>
+                                                }
+                                                <div class="text-muted extra-small" style="font-size:0.75rem;">
+                                                    @if (!string.IsNullOrEmpty(acc.AccountNumber))
+                                                    {
+                                                        <span>A/C: <span class="text-light font-monospace">@MaskText(acc.AccountNumber)</span></span>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(acc.IfscCode))
+                                                    {
+                                                        <span> | IFSC: <span class="text-light font-monospace">@MaskText(acc.IfscCode)</span></span>
+                                                    }
+                                                </div>
                                             }
                                             else
                                             {
@@ -150,8 +196,26 @@
     <!-- Right Column: Recent Withdrawals Transaction Ledger -->
     <div class="col-lg-5">
         <div class="card bg-dark border-secondary shadow-sm h-100">
-            <div class="card-header border-secondary bg-transparent py-3">
-                <h5 class="text-info mb-0"><i class="fa-solid fa-clock-rotate-left me-2"></i> Recent Treasury Withdrawals</h5>
+            <div class="card-header border-secondary bg-transparent py-2.5">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                    <h5 class="text-info mb-0 fs-6 font-weight-bold">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Recent Treasury Withdrawals
+                    </h5>
+                    <form method="GET" action="/Admin/Account" class="d-flex align-items-center gap-1.5 flex-wrap">
+                        <input type="date" name="startDate" value="@(ViewBag.StartDate ?? "")" class="form-control form-control-sm glass-input text-light py-1 px-2" style="font-size: 0.75rem; width: 115px;" title="From Date">
+                        <span class="text-muted extra-small">-</span>
+                        <input type="date" name="endDate" value="@(ViewBag.EndDate ?? "")" class="form-control form-control-sm glass-input text-light py-1 px-2" style="font-size: 0.75rem; width: 115px;" title="To Date">
+                        <button type="submit" class="btn btn-warning btn-sm py-1 px-2 text-dark font-weight-bold" style="font-size: 0.75rem;" title="Filter by Date">
+                            <i class="fa-solid fa-filter"></i>
+                        </button>
+                        @if (!string.IsNullOrEmpty(ViewBag.StartDate as string) || !string.IsNullOrEmpty(ViewBag.EndDate as string))
+                        {
+                            <a href="/Admin/Account" class="btn btn-outline-secondary btn-sm py-1 px-2 text-light" style="font-size: 0.75rem;" title="Reset Filter">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </a>
+                        }
+                    </form>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -168,7 +232,7 @@
                             @if (withdrawalHistory.Count == 0)
                             {
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">No withdrawals recorded yet.</td>
+                                    <td colspan="4" class="text-center text-muted py-4">No withdrawals found for the selected date range.</td>
                                 </tr>
                             }
                             else
@@ -184,6 +248,16 @@
                                 }
                             }
                         </tbody>
+                        @if (withdrawalHistory.Count > 0)
+                        {
+                            <tfoot>
+                                <tr class="bg-black bg-opacity-40 font-weight-bold border-top border-secondary">
+                                    <td class="ps-3 text-light">Total Withdrawn:</td>
+                                    <td class="text-warning fs-6">₹@withdrawalHistory.Sum(w => w.Amount).ToString("N2")</td>
+                                    <td colspan="2" class="text-muted extra-small text-end pe-3">@withdrawalHistory.Count record(s)</td>
+                                </tr>
+                            </tfoot>
+                        }
                     </table>
                 </div>
             </div>
@@ -193,51 +267,78 @@
 
 <!-- Modal: Add Admin Account -->
 <div class="modal fade" id="addAccountModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content bg-dark text-light border border-warning shadow-lg">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title text-warning font-weight-bold">
+            <div class="modal-header border-secondary py-3">
+                <h5 class="modal-title text-warning font-weight-bold fs-5">
                     <i class="fa-solid fa-plus-circle me-2"></i> Add Settlement Account
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <form action="/Admin/AddAdminAccount" method="POST">
-                    <div class="mb-3">
-                        <label class="form-label text-light small font-weight-bold">UPI ID (VPA) <span class="text-danger">*</span></label>
-                        <input type="text" name="upiId" class="form-control glass-input text-warning font-weight-bold" placeholder="e.g. raahsathi@upi" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label text-light small font-weight-bold">Account Holder Name <span class="text-danger">*</span></label>
-                        <input type="text" name="holderName" class="form-control glass-input text-light" placeholder="e.g. RaahSathi Private Limited" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label text-light small font-weight-bold">Bank Name (Optional)</label>
-                        <input type="text" name="bankName" class="form-control glass-input text-light" placeholder="e.g. HDFC Bank">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label text-light small font-weight-bold">Bank Account Number (Optional)</label>
-                        <input type="text" name="accountNumber" class="form-control glass-input text-light" placeholder="e.g. 50100293847261">
+                <form action="/Admin/AddAdminAccount" method="POST" id="formAddAdminAccount">
+                    <!-- Row 1: Holder Name & UPI ID -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-light small font-weight-bold">Account Holder Name <span class="text-danger">*</span></label>
+                            <input type="text" name="holderName" id="accHolderName" class="form-control glass-input text-light" placeholder="Enter Account Holder Name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-warning small font-weight-bold">
+                                <i class="fa-solid fa-qrcode me-1"></i> UPI ID (VPA) <span class="text-muted extra-small font-weight-normal">(Optional if Bank added)</span>
+                            </label>
+                            <input type="text" name="upiId" id="accUpiId" class="form-control glass-input text-warning font-weight-bold" placeholder="Enter UPI ID (e.g. name@upi)">
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label text-light small font-weight-bold">IFSC Code (Optional)</label>
-                        <input type="text" name="ifscCode" class="form-control glass-input text-light text-uppercase" placeholder="e.g. HDFC0000102">
+                    <!-- Bank Details Card (2 Rows) -->
+                    <div class="p-3 bg-black bg-opacity-30 rounded border border-secondary border-opacity-40 mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-30 pb-2">
+                            <span class="text-info small font-weight-bold">
+                                <i class="fa-solid fa-building-columns me-1"></i> Bank Account Details <span class="text-muted extra-small font-weight-normal">(Optional if UPI added)</span>
+                            </span>
+                            <span class="badge bg-secondary text-light extra-small">Direct Settlement</span>
+                        </div>
+                        
+                        <!-- Bank Row 1: Bank Name & IFSC -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-light extra-small font-weight-semibold">Bank Name</label>
+                                <input type="text" name="bankName" id="accBankName" class="form-control form-control-sm glass-input text-light" placeholder="Enter Bank Name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-light extra-small font-weight-semibold">IFSC Code</label>
+                                <input type="text" name="ifscCode" id="accIfscCode" class="form-control form-control-sm glass-input text-light text-uppercase font-monospace" placeholder="Enter IFSC Code">
+                            </div>
+                        </div>
+
+                        <!-- Bank Row 2: Account Number & Confirm Account Number -->
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-light extra-small font-weight-semibold">Bank Account Number</label>
+                                <input type="password" name="accountNumber" id="accNumber" class="form-control form-control-sm glass-input text-light font-monospace" placeholder="Enter account number" autocomplete="new-password">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-light extra-small font-weight-semibold">Confirm Bank Account Number</label>
+                                <input type="text" id="accNumberConfirm" class="form-control form-control-sm glass-input text-light font-monospace" placeholder="Re-enter account number to confirm" autocomplete="off">
+                                <div class="text-danger extra-small mt-1 d-none font-weight-bold" id="accMismatchAlert">
+                                    <i class="fa-solid fa-circle-exclamation me-1"></i> Account numbers do not match!
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" name="makeActive" value="true" id="chkMakeActive" checked>
-                        <label class="form-check-label text-muted small" for="chkMakeActive" style="cursor: pointer;">
-                            Mark this account as primary active receiver immediately
-                        </label>
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 pt-2">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" name="makeActive" value="true" id="chkMakeActive" checked>
+                            <label class="form-check-label text-muted small" for="chkMakeActive" style="cursor: pointer;">
+                                Mark this account as primary active receiver
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4 py-2 shadow">
+                            <i class="fa-solid fa-plus-circle me-1"></i> Add Account Details
+                        </button>
                     </div>
-
-                    <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 shadow">
-                        <i class="fa-solid fa-plus-circle me-1"></i> Add Account Details
-                    </button>
                 </form>
             </div>
         </div>
@@ -287,6 +388,68 @@
 
 @section Scripts {
 <script>
+    // Live validation for Add Account Form
+    $('#formAddAdminAccount').on('submit', function (e) {
+        var holder = $('#accHolderName').val().trim();
+        var upi = $('#accUpiId').val().trim();
+        var acc = $('#accNumber').val().trim();
+        var confirmAcc = $('#accNumberConfirm').val().trim();
+        var bank = $('#accBankName').val().trim();
+        var ifsc = $('#accIfscCode').val().trim();
+
+        if (!holder) {
+            e.preventDefault();
+            alert('Please enter Account Holder Name.');
+            $('#accHolderName').focus();
+            return false;
+        }
+
+        if (!upi && !acc) {
+            e.preventDefault();
+            alert('Please provide either a UPI ID or Bank Account Details.');
+            $('#accUpiId').focus();
+            return false;
+        }
+
+        // If user entered any bank details or account number
+        if (acc || bank || ifsc || confirmAcc) {
+            if (!acc) {
+                e.preventDefault();
+                alert('Please enter the Bank Account Number.');
+                $('#accNumber').focus();
+                return false;
+            }
+
+            if (!confirmAcc) {
+                e.preventDefault();
+                alert('Please re-enter the Bank Account Number to confirm.');
+                $('#accNumberConfirm').focus();
+                return false;
+            }
+
+            if (acc !== confirmAcc) {
+                e.preventDefault();
+                $('#accMismatchAlert').removeClass('d-none');
+                $('#accNumberConfirm').focus();
+                alert('Account Number and Confirm Account Number do not match! Please check and re-enter.');
+                return false;
+            } else {
+                $('#accMismatchAlert').addClass('d-none');
+            }
+        }
+    });
+
+    // Real-time mismatch indicator
+    $('#accNumberConfirm, #accNumber').on('input', function () {
+        var acc = $('#accNumber').val().trim();
+        var confirmAcc = $('#accNumberConfirm').val().trim();
+        if (confirmAcc && acc !== confirmAcc) {
+            $('#accMismatchAlert').removeClass('d-none');
+        } else {
+            $('#accMismatchAlert').addClass('d-none');
+        }
+    });
+
     // AJAX activation trigger
     $('.active-account-selector').on('change', function () {
         var accountId = $(this).val();

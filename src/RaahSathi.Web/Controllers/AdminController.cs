@@ -721,9 +721,9 @@ namespace RaahSathi.Controllers
             double totalWithdrawn = await _dbContext.AdminWithdrawals.SumAsync(w => (double?)w.Amount) ?? 0.0;
             double currentVaultBalance = Math.Max(0.0, Math.Round(totalCommissionEarned - totalWithdrawn, 2));
 
-            if (amount > totalCommissionEarned)
+            if (amount > currentVaultBalance)
             {
-                return Json(new { success = false, message = $"Requested amount (₹{amount}) exceeds total earned commission (₹{totalCommissionEarned:N2})." });
+                return Json(new { success = false, message = $"Requested amount (₹{amount:N2}) exceeds available vault balance (₹{currentVaultBalance:N2})." });
             }
 
             string method = string.IsNullOrWhiteSpace(payoutMethod) ? "Bank Transfer" : payoutMethod;
@@ -735,7 +735,7 @@ namespace RaahSathi.Controllers
                 amount, method, refNo
             );
 
-            return Json(new { success = true, newVaultBalance = Math.Round(totalCommissionEarned - amount, 2), message = $"₹{amount:N2} successfully withdrawn from Admin Commission Vault!" });
+            return Json(new { success = true, newVaultBalance = Math.Round(currentVaultBalance - amount, 2), message = $"₹{amount:N2} successfully withdrawn from Admin Commission Vault!" });
         }
 
         // ======================= COMMAND CENTER MODULES ======================= //
@@ -1234,15 +1234,6 @@ namespace RaahSathi.Controllers
             req.TransactionReference = string.IsNullOrEmpty(referenceNumber) ? Guid.NewGuid().ToString().Substring(0, 12).ToUpper() : referenceNumber;
             req.AdminRemarks = string.IsNullOrEmpty(remarks) ? "Payout released by Admin" : remarks;
 
-            var adminWithdrawal = new AdminWithdrawal
-            {
-                Amount = req.Amount,
-                PayoutMethod = req.PayoutMethod == "UPI" ? "UPI Direct" : "Bank Transfer",
-                ReferenceNumber = req.TransactionReference,
-                WithdrawnAt = DateTime.UtcNow
-            };
-            _dbContext.AdminWithdrawals.Add(adminWithdrawal);
-
             var supportMsg = new MechanicSupportMessage
             {
                 MechanicId = req.MechanicId,
@@ -1391,15 +1382,6 @@ namespace RaahSathi.Controllers
             _dbContext.MechanicPayoutRequests.Add(req);
 
             profile.CurrentEarnings = 0.0;
-
-            var adminWithdrawal = new AdminWithdrawal
-            {
-                Amount = releaseAmount,
-                PayoutMethod = req.PayoutMethod == "UPI" ? "UPI Direct" : "Bank Transfer",
-                ReferenceNumber = req.TransactionReference,
-                WithdrawnAt = DateTime.UtcNow
-            };
-            _dbContext.AdminWithdrawals.Add(adminWithdrawal);
 
             var supportMsg = new MechanicSupportMessage
             {
@@ -1799,9 +1781,25 @@ namespace RaahSathi.Controllers
             return RedirectToAction("Account");
         }
 
-        public async Task<IActionResult> Account()
+        public async Task<IActionResult> Account(DateTime? startDate = null, DateTime? endDate = null)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            // Clean up any invalid mechanic payout records that were previously mistakenly saved to AdminWithdrawals
+            var mechanicRefs = await _dbContext.MechanicPayoutRequests
+                .Where(r => !string.IsNullOrEmpty(r.TransactionReference))
+                .Select(r => r.TransactionReference)
+                .ToListAsync();
+
+            var invalidAdminWithdrawals = await _dbContext.AdminWithdrawals
+                .Where(w => mechanicRefs.Contains(w.ReferenceNumber) || w.ReferenceNumber.StartsWith("DIR-") || w.ReferenceNumber.StartsWith("ref"))
+                .ToListAsync();
+
+            if (invalidAdminWithdrawals.Any())
+            {
+                _dbContext.AdminWithdrawals.RemoveRange(invalidAdminWithdrawals);
+                await _dbContext.SaveChangesAsync();
+            }
 
             var accountsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountsJson");
             List<AdminAccountModel> accounts = new List<AdminAccountModel>();
@@ -1864,7 +1862,20 @@ namespace RaahSathi.Controllers
                     : (p.Amount < 1000 ? p.Amount * rate1 : (p.Amount <= 3000 ? p.Amount * rate2 : p.Amount * rate3)));
 
             double adminVaultBalance = Math.Max(0.0, Math.Round(totalCommissionEarned - totalWithdrawn, 2));
-            var withdrawalHistory = await _dbContext.AdminWithdrawals.OrderByDescending(w => w.WithdrawnAt).Take(10).ToListAsync();
+
+            // Query withdrawals with optional date range filter (default 20 records)
+            var withdrawalsQuery = _dbContext.AdminWithdrawals.AsQueryable();
+            if (startDate.HasValue)
+            {
+                withdrawalsQuery = withdrawalsQuery.Where(w => w.WithdrawnAt >= startDate.Value.Date);
+            }
+            if (endDate.HasValue)
+            {
+                var end = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                withdrawalsQuery = withdrawalsQuery.Where(w => w.WithdrawnAt <= end);
+            }
+
+            var withdrawalHistory = await withdrawalsQuery.OrderByDescending(w => w.WithdrawnAt).Take(20).ToListAsync();
 
             ViewBag.TotalCommissionEarned = totalCommissionEarned;
             ViewBag.TotalWithdrawn = totalWithdrawn;
@@ -1872,6 +1883,8 @@ namespace RaahSathi.Controllers
             ViewBag.MonthlyWithdrawn = monthlyWithdrawn;
             ViewBag.AdminVaultBalance = adminVaultBalance;
             ViewBag.WithdrawalHistory = withdrawalHistory;
+            ViewBag.StartDate = startDate?.ToString("yyyy-MM-dd");
+            ViewBag.EndDate = endDate?.ToString("yyyy-MM-dd");
 
             return View();
         }
@@ -1880,6 +1893,18 @@ namespace RaahSathi.Controllers
         public async Task<IActionResult> AddAdminAccount(string upiId, string holderName, string bankName, string accountNumber, string ifscCode, bool makeActive)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            if (string.IsNullOrWhiteSpace(holderName))
+            {
+                TempData["Error"] = "Account Holder Name is required.";
+                return RedirectToAction("Account");
+            }
+
+            if (string.IsNullOrWhiteSpace(upiId) && string.IsNullOrWhiteSpace(accountNumber))
+            {
+                TempData["Error"] = "Please provide either a UPI ID or Bank Account details.";
+                return RedirectToAction("Account");
+            }
 
             var accountsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountsJson");
             List<AdminAccountModel> accounts = new List<AdminAccountModel>();
@@ -1898,11 +1923,11 @@ namespace RaahSathi.Controllers
             var newAccount = new AdminAccountModel
             {
                 Id = Guid.NewGuid().ToString(),
-                UpiId = upiId ?? "",
-                HolderName = holderName ?? "",
-                BankName = bankName ?? "",
-                AccountNumber = accountNumber ?? "",
-                IfscCode = ifscCode ?? "",
+                UpiId = (upiId ?? "").Trim(),
+                HolderName = (holderName ?? "").Trim(),
+                BankName = (bankName ?? "").Trim(),
+                AccountNumber = (accountNumber ?? "").Trim(),
+                IfscCode = (ifscCode ?? "").Trim().ToUpper(),
                 IsActive = makeActive || accounts.Count == 0
             };
 
@@ -1924,8 +1949,9 @@ namespace RaahSathi.Controllers
                 await MirrorActiveAccountSettings(newAccount);
             }
 
-            await LogAdminActionAsync("ADMIN_ADD_ACCOUNT", $"Added new settlement account: {newAccount.HolderName} ({newAccount.UpiId})");
-            TempData["Success"] = "New settlement account added successfully.";
+            await LogAdminActionAsync("ADMIN_ADD_ACCOUNT", $"Added settlement account: {newAccount.HolderName} ({(string.IsNullOrEmpty(newAccount.UpiId) ? newAccount.BankName : newAccount.UpiId)})");
+
+            TempData["Success"] = "Settlement account added successfully!";
             return RedirectToAction("Account");
         }
 
