@@ -919,7 +919,7 @@ namespace RaahSathi.Controllers
                 .ToListAsync();
 
             var userIdsWithVehicles = (await _dbContext.Vehicles.Select(v => v.UserId).Distinct().ToListAsync()).ToHashSet();
-            var userIdsWithJobs = (await _dbContext.Jobs.Where(j => j.CustomerId.HasValue).Select(j => j.CustomerId!.Value).Distinct().ToListAsync()).ToHashSet();
+            var userIdsWithJobs = (await _dbContext.Jobs.Select(j => j.CustomerId).Distinct().ToListAsync()).ToHashSet();
 
             var todayUtc = DateTime.UtcNow.Date;
             int total = customers.Count;
