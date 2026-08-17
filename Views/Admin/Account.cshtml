@@ -105,7 +105,7 @@
 
 <div class="row g-4">
     <!-- Left Column: Payout Details Setup (Multiple accounts listing) -->
-    <div class="col-lg-7">
+    <div class="col-lg-6">
         <div class="card bg-dark border-secondary shadow-sm h-100">
             <div class="card-header border-secondary bg-transparent py-3 d-flex align-items-center justify-content-between">
                 <h5 class="text-warning mb-0"><i class="fa-solid fa-address-card me-2"></i> Payout Details Setup</h5>
@@ -194,23 +194,23 @@
     </div>
 
     <!-- Right Column: Recent Withdrawals Transaction Ledger -->
-    <div class="col-lg-5">
+    <div class="col-lg-6">
         <div class="card bg-dark border-secondary shadow-sm h-100">
-            <div class="card-header border-secondary bg-transparent py-2.5">
-                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
-                    <h5 class="text-info mb-0 fs-6 font-weight-bold">
-                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Recent Treasury Withdrawals
+            <div class="card-header border-secondary bg-transparent py-2.5 px-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h5 class="text-info mb-0 fs-6 font-weight-bold d-flex align-items-center text-nowrap">
+                        <i class="fa-solid fa-clock-rotate-left me-1.5"></i> Recent Treasury Withdrawals
                     </h5>
-                    <form method="GET" action="/Admin/Account" class="d-flex align-items-center gap-1.5 flex-wrap">
-                        <input type="date" name="startDate" value="@(ViewBag.StartDate ?? "")" class="form-control form-control-sm glass-input text-light py-1 px-2" style="font-size: 0.75rem; width: 115px;" title="From Date">
-                        <span class="text-muted extra-small">-</span>
-                        <input type="date" name="endDate" value="@(ViewBag.EndDate ?? "")" class="form-control form-control-sm glass-input text-light py-1 px-2" style="font-size: 0.75rem; width: 115px;" title="To Date">
-                        <button type="submit" class="btn btn-warning btn-sm py-1 px-2 text-dark font-weight-bold" style="font-size: 0.75rem;" title="Filter by Date">
+                    <form method="GET" action="/Admin/Account" class="d-flex align-items-center gap-1 flex-nowrap ms-auto">
+                        <input type="date" name="startDate" value="@(ViewBag.StartDate ?? "")" class="form-control form-control-sm glass-input text-light py-0.5 px-1.5" style="font-size: 0.75rem; width: 105px; height: 28px;" title="From Date">
+                        <span class="text-muted extra-small font-weight-bold">-</span>
+                        <input type="date" name="endDate" value="@(ViewBag.EndDate ?? "")" class="form-control form-control-sm glass-input text-light py-0.5 px-1.5" style="font-size: 0.75rem; width: 105px; height: 28px;" title="To Date">
+                        <button type="submit" class="btn btn-warning btn-sm py-0.5 px-2 text-dark font-weight-bold d-flex align-items-center justify-content-center" style="font-size: 0.75rem; height: 28px;" title="Filter by Date">
                             <i class="fa-solid fa-filter"></i>
                         </button>
                         @if (!string.IsNullOrEmpty(ViewBag.StartDate as string) || !string.IsNullOrEmpty(ViewBag.EndDate as string))
                         {
-                            <a href="/Admin/Account" class="btn btn-outline-secondary btn-sm py-1 px-2 text-light" style="font-size: 0.75rem;" title="Reset Filter">
+                            <a href="/Admin/Account" class="btn btn-outline-secondary btn-sm py-0.5 px-1.5 text-light d-flex align-items-center justify-content-center" style="font-size: 0.75rem; height: 28px;" title="Reset Filter">
                                 <i class="fa-solid fa-rotate-left"></i>
                             </a>
                         }
