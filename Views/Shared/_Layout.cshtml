@@ -1648,6 +1648,41 @@
             });
 
             // Real-Time Push Notifications fetcher
+            var isUserAuthenticated = @((User.Identity?.IsAuthenticated == true).ToString().ToLower());
+            var currentBroadcastModalId = null;
+            var sessionDismissedBroadcastIds = [];
+
+            function isHomePageCheck() {
+                var p = (window.location.pathname || '').toLowerCase();
+                return p === '/' || p === '' || p === '/home' || p === '/home/' || p === '/home/index' || p === '/home/index/';
+            }
+
+            function markBroadcastNotificationDismissed(id) {
+                if (!id) return;
+                var numId = parseInt(id);
+                if (isNaN(numId)) return;
+                
+                // Track in-session dismissal so 30s background poll doesn't reopen it in same view
+                if (!sessionDismissedBroadcastIds.includes(numId)) {
+                    sessionDismissedBroadcastIds.push(numId);
+                }
+
+                // If user is logged in, save permanently in localStorage so it never shows again
+                if (isUserAuthenticated) {
+                    try {
+                        var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
+                        if (!Array.isArray(dismissedNotifs)) dismissedNotifs = [];
+                        dismissedNotifs = dismissedNotifs.map(Number);
+                        if (!dismissedNotifs.includes(numId)) {
+                            dismissedNotifs.push(numId);
+                            localStorage.setItem('raahsathi_dismissed_notifs', JSON.stringify(dismissedNotifs));
+                        }
+                    } catch(e) {
+                        console.error('Error saving dismissed notif:', e);
+                    }
+                }
+            }
+
             window.pollPushNotifications = function() {
                 $.get('/Home/GetActiveNotifications', { _t: Date.now() }, function(res) {
                     if (res && res.success && res.notifications) {
@@ -1656,8 +1691,20 @@
                         var lastSeenId = parseInt(localStorage.getItem('raahsathi_last_seen_notif_id') || '0');
                         var maxId = lastSeenId;
                         
-                        var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
+                        var dismissedNotifs = [];
+                        try {
+                            dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
+                            if (Array.isArray(dismissedNotifs)) {
+                                dismissedNotifs = dismissedNotifs.map(Number);
+                            } else {
+                                dismissedNotifs = [];
+                            }
+                        } catch(e) {
+                            dismissedNotifs = [];
+                        }
+
                         var showPopupNotif = null;
+                        var onHome = isHomePageCheck();
                         
                         var listHtml = '';
                         if (notifications.length === 0) {
@@ -1667,16 +1714,30 @@
                                 '</div>';
                         } else {
                             $.each(notifications, function(idx, n) {
-                                if (n.id > lastSeenId) {
+                                var nid = parseInt(n.id);
+                                if (nid > lastSeenId) {
                                     newCount++;
-                                    if (n.id > maxId) {
-                                        maxId = n.id;
+                                    if (nid > maxId) {
+                                        maxId = nid;
                                     }
                                 }
                                 
-                                // Priority popup checking: newest un-dismissed active notification
-                                if (dismissedNotifs.indexOf(n.id) === -1) {
-                                    if (!showPopupNotif || n.id > showPopupNotif.id) {
+                                // Auto popup logic:
+                                // 1. Guest user on Home Page: show on page load/refresh (unless closed in current session)
+                                // 2. Logged-in user: show once on first login/view, never again after dismissed
+                                var shouldPopup = false;
+                                if (!isUserAuthenticated && onHome) {
+                                    if (!sessionDismissedBroadcastIds.includes(nid)) {
+                                        shouldPopup = true;
+                                    }
+                                } else if (isUserAuthenticated) {
+                                    if (!dismissedNotifs.includes(nid) && !sessionDismissedBroadcastIds.includes(nid)) {
+                                        shouldPopup = true;
+                                    }
+                                }
+                                
+                                if (shouldPopup) {
+                                    if (!showPopupNotif || nid > showPopupNotif.id) {
                                         showPopupNotif = n;
                                     }
                                 }
@@ -1701,7 +1762,7 @@
                             $('#notificationBadge').addClass('d-none');
                         }
                         
-                        // Auto popup when loaded if there is an active undismissed notification
+                        // Auto popup when loaded if there is an active notification to display
                         if (showPopupNotif) {
                             showBroadcastModal(showPopupNotif.id, showPopupNotif.title, showPopupNotif.message, showPopupNotif.sentAt);
                         }
@@ -1717,25 +1778,31 @@
             };
 
             function showBroadcastModal(id, title, message, sentAt) {
+                currentBroadcastModalId = id;
                 $('#broadcastModalTitle').text(title);
                 $('#broadcastModalMessage').text(message);
                 $('#broadcastModalTime').html('<i class="fa-regular fa-clock me-1"></i> ' + sentAt);
                 
-                $('#btnDismissBroadcastModal').off('click').on('click', function() {
-                    var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
-                    if (dismissedNotifs.indexOf(id) === -1) {
-                        dismissedNotifs.push(id);
-                        localStorage.setItem('raahsathi_dismissed_notifs', JSON.stringify(dismissedNotifs));
+                var modalEl = document.getElementById('raahSathiBroadcastModal');
+                if (!modalEl) return;
+
+                // Whenever modal is hidden by any action (backdrop click, close button, Got It button, Esc key)
+                $(modalEl).off('hidden.bs.modal').on('hidden.bs.modal', function() {
+                    if (currentBroadcastModalId) {
+                        markBroadcastNotificationDismissed(currentBroadcastModalId);
                     }
-                    
-                    var modalEl = document.getElementById('raahSathiBroadcastModal');
+                });
+
+                $('#btnDismissBroadcastModal').off('click').on('click', function() {
+                    if (currentBroadcastModalId) {
+                        markBroadcastNotificationDismissed(currentBroadcastModalId);
+                    }
                     var instance = bootstrap.Modal.getInstance(modalEl);
                     if (instance) {
                         instance.hide();
                     }
                 });
 
-                var modalEl = document.getElementById('raahSathiBroadcastModal');
                 var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                 instance.show();
             }
@@ -1744,13 +1811,15 @@
                 showBroadcastModal(id, decodeURIComponent(titleEnc), decodeURIComponent(messageEnc), sentAt);
             };
 
-            // Start polling if the notification bell exists and user is NOT an admin
-            var isAdminLoggedIn = @(isAdminLoggedIn.ToString().ToLower());
-            if ($('#notificationBellBtn').length && !isAdminLoggedIn) {
-                window.pollPushNotifications();
-                // Check for new broadcasts every 30 seconds
-                setInterval(window.pollPushNotifications, 30000);
-            }
+            // Start polling if user is NOT an admin
+            $(document).ready(function() {
+                var isAdminLoggedIn = @(isAdminLoggedIn.ToString().ToLower());
+                if (!isAdminLoggedIn) {
+                    window.pollPushNotifications();
+                    // Check for new broadcasts every 30 seconds
+                    setInterval(window.pollPushNotifications, 30000);
+                }
+            });
 
             // Real-Time Admin Operations Notification fetcher
             window.pollAdminNotifications = function() {
@@ -2265,24 +2334,37 @@
     }
 
     <!-- Premium Custom Broadcast Alert Modal -->
-    <div class="modal fade" id="raahSathiBroadcastModal" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(8px); z-index: 106000;">
+    <div class="modal fade" id="raahSathiBroadcastModal" tabindex="-1" aria-labelledby="broadcastModalTitle" aria-hidden="true" style="backdrop-filter: blur(8px); z-index: 106000;">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" style="background: linear-gradient(145deg, #101c36, #090e1c); border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.6);">
+            <div class="modal-content border-0 shadow-lg position-relative" style="background: linear-gradient(145deg, #101c36, #090e1c); border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); border: 1px solid rgba(245, 158, 11, 0.25);">
+                <!-- Top-Right Close Button -->
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 shadow-none" data-bs-dismiss="modal" aria-label="Close" style="z-index: 10; opacity: 0.75; cursor: pointer;"></button>
+                
                 <div class="modal-body p-4 text-center">
                     <!-- Glowing Alert Icon Header -->
                     <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10 border border-warning border-opacity-30 rounded-circle mb-3" style="width: 76px; height: 76px; box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);">
                         <i class="fa-solid fa-bell text-warning fa-2x animate-bounce"></i>
                     </div>
                     
-                    <span class="badge bg-warning text-dark font-weight-extrabold px-3 py-1 mb-2" style="font-size: 0.72rem; letter-spacing: 1px;">IMPORTANT BROADCAST</span>
+                    <div class="mb-2">
+                        <span class="badge bg-warning text-dark font-weight-extrabold px-3 py-1" style="font-size: 0.72rem; letter-spacing: 1px;">IMPORTANT BROADCAST</span>
+                    </div>
                     
                     <h4 class="text-white font-weight-bold mb-2" id="broadcastModalTitle" style="font-family: 'Outfit';">Live Announcement</h4>
                     <p class="text-muted small mb-4" id="broadcastModalMessage" style="font-size: 0.88rem; line-height: 1.5; color: #cbd5e1 !important;">Notification details...</p>
                     
-                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-black bg-opacity-30 border border-secondary border-opacity-20 mb-4">
+                    <div class="d-flex align-items-center justify-content-between p-2.5 rounded bg-black bg-opacity-30 border border-secondary border-opacity-20 mb-4">
                         <span class="small text-muted"><i class="fa-regular fa-clock me-1"></i> Broadcast Date:</span>
                         <span class="small text-warning font-weight-bold" id="broadcastModalTime">N/A</span>
                     </div>
+
+                    <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnDismissBroadcastModal" data-bs-dismiss="modal" style="font-size: 0.92rem;">
+                        <i class="fa-solid fa-check"></i> <span>Got It, Don't Show Again</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Universal Single Page App (SPA) Dynamic AJAX Engine Script -->
     <script>
