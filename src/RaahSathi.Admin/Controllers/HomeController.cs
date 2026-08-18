@@ -428,7 +428,7 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
         }
 
         [Route("sitemap.xml")]
-        public IActionResult Sitemap()
+        public async Task<IActionResult> Sitemap()
         {
             var host = Request.Host.Value;
             var scheme = Request.Scheme;
@@ -436,19 +436,22 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             
             var sitemapContent = new System.Text.StringBuilder();
             sitemapContent.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            sitemapContent.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+            sitemapContent.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:xhtml=\"http://www.w3.org/1999/xhtml\">");
 
             void AddUrl(string path, string frequency, string priority)
             {
                 sitemapContent.AppendLine("  <url>");
                 sitemapContent.AppendLine($"    <loc>{baseUrl}{path}</loc>");
+                sitemapContent.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"en\" href=\"{baseUrl}{path}\" />");
+                sitemapContent.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"hi\" href=\"{baseUrl}{path}?lang=hi\" />");
+                sitemapContent.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"x-default\" href=\"{baseUrl}{path}\" />");
                 sitemapContent.AppendLine($"    <lastmod>{DateTime.UtcNow:yyyy-MM-dd}</lastmod>");
                 sitemapContent.AppendLine($"    <changefreq>{frequency}</changefreq>");
                 sitemapContent.AppendLine($"    <priority>{priority}</priority>");
                 sitemapContent.AppendLine("  </url>");
             }
 
-            // Public Routes
+            // Public Core Routes
             AddUrl("/", "daily", "1.0");
             AddUrl("/Home/Services", "weekly", "0.9");
             AddUrl("/Home/HowItWorks", "weekly", "0.8");
@@ -459,6 +462,26 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             AddUrl("/Home/Terms", "yearly", "0.5");
             AddUrl("/Home/RefundPolicy", "yearly", "0.5");
             AddUrl("/Home/CancellationPolicy", "yearly", "0.5");
+
+            // Dynamic Programmatic City & Local Breakdown SEO Routes
+            try
+            {
+                var cities = await _dbContext.CityServiceAreas.Where(c => c.IsActive).Select(c => c.CityName).Distinct().ToListAsync();
+                foreach (var city in cities)
+                {
+                    AddUrl($"/Home/Services?city={Uri.EscapeDataString(city)}", "weekly", "0.85");
+                }
+
+                var serviceProblems = await _dbContext.ProblemTypePricings.Where(p => p.IsActive).Select(p => p.ProblemName).Distinct().ToListAsync();
+                foreach (var problem in serviceProblems)
+                {
+                    AddUrl($"/Home/Services?service={Uri.EscapeDataString(problem)}", "weekly", "0.80");
+                }
+            }
+            catch
+            {
+                // Fallback graceful handling
+            }
 
             sitemapContent.AppendLine("</urlset>");
             return Content(sitemapContent.ToString(), "application/xml", System.Text.Encoding.UTF8);

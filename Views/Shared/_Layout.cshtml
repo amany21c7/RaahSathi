@@ -7,13 +7,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="@(ViewData["MetaDescription"] ?? "RaahSathi is India's premier 24x7 connected roadside assistance network. Instantly find verified mechanics, towing services, and workshops near you with transparent upfront pricing.")" />
-    <meta name="keywords" content="@(ViewData["MetaKeywords"] ?? "roadside assistance, mechanic near me, car repair, bike repair, towing services, battery jumpstart, flat tyre repair, emergency fuel, RaahSathi, roadside help India")" />
+    <meta name="keywords" content="@(ViewData["MetaKeywords"] ?? "roadside assistance, car breakdown service, gadi kharab ho gayi, car breakdown kya kare, mechanic chahiye, mechanic near me, emergency towing, battery jumpstart, flat tyre repair, emergency fuel, RaahSathi, roadside help Noida Delhi India")" />
     <link rel="canonical" href="@(ViewData["CanonicalUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
+
+    <!-- Multilingual Alternate Language Tags (Hreflang Architecture) -->
+    <link rel="alternate" hreflang="en" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
+    <link rel="alternate" hreflang="hi" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}?lang=hi")" />
+    <link rel="alternate" hreflang="x-default" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="@(ViewData["OgType"] ?? "website")" />
-    <meta property="og:title" content="@(ViewData["OgTitle"] ?? ViewData["Title"] ?? "RaahSathi | Roadside Assistance")" />
-    <meta property="og:description" content="@(ViewData["OgDescription"] ?? ViewData["MetaDescription"] ?? "India's Connected Roadside Assistance Network. Get instant help anywhere, anytime with transparent pricing.")" />
+    <meta property="og:title" content="@(ViewData["OgTitle"] ?? ViewData["Title"] ?? "RaahSathi | 24x7 Roadside Assistance Network")" />
+    <meta property="og:description" content="@(ViewData["OgDescription"] ?? ViewData["MetaDescription"] ?? "India's Connected Roadside Assistance Network. Get instant breakdown help anywhere, anytime with transparent pricing.")" />
     <meta property="og:url" content="@(ViewData["OgUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
     <meta property="og:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/header-logo.png")" />
     <meta property="og:site_name" content="RaahSathi" />
@@ -34,8 +39,11 @@
         <script type="application/ld+json">
         {
           "@@context": "https://schema.org",
-          "@@type": "AutoRepair",
-          "name": "RaahSathi",
+          "@@type": "EmergencyService",
+          "name": "RaahSathi Roadside Assistance",
+          "alternateName": "RaahSathi",
+          "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}")",
+          "logo": "@($"{Context.Request.Scheme}://{Context.Request.Host}/images/header-logo.png")",
           "image": "@($"{Context.Request.Scheme}://{Context.Request.Host}/images/header-logo.png")",
           "description": "India's premier 24x7 connected roadside assistance network. Instantly find verified mechanics, towing services, and workshops near you.",
           "telephone": "1800-102-7224",
@@ -59,6 +67,38 @@
             "opens": "00:00",
             "closes": "23:59"
           }
+        }
+        </script>
+        <script type="application/ld+json">
+        {
+          "@@context": "https://schema.org",
+          "@@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@@type": "Question",
+              "name": "Car breakdown hone par kya karein? (What to do during a vehicle breakdown?)",
+              "acceptedAnswer": {
+                "@@type": "Answer",
+                "text": "Gaadi ko turant hazard lights on karke safe roadside par park karein. RaahSathi website ya helpline (1800-102-7224) par apna live location share karein. 15-30 minutes me verified mechanic aap tak pahunch jayega."
+              }
+            },
+            {
+              "@@type": "Question",
+              "name": "RaahSathi emergency roadside assistance kitni der me pahunchta hai?",
+              "acceptedAnswer": {
+                "@@type": "Answer",
+                "text": "RaahSathi ka smart dispatch system aapke nearest verified mechanic ko broadcast karta hai, jisse average response time 15 se 30 minutes ke andar hota hai."
+              }
+            },
+            {
+              "@@type": "Question",
+              "name": "RaahSathi par breakdown service charges kya hain?",
+              "acceptedAnswer": {
+                "@@type": "Answer",
+                "text": "RaahSathi standard transparent pricing model follow karta hai starting from ₹49 for small inspections, jumpstart from ₹299, and flat tyre repair from ₹199 bina kisi hidden charges ke."
+              }
+            }
+          ]
         }
         </script>
     }
@@ -455,6 +495,9 @@
                     <a href="/Admin/Reports" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Reports", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-chart-line"></i> Reports
                     </a>
+                    <a href="/Admin/Seo" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Seo", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                        <i class="fa-solid fa-magnifying-glass-chart text-warning"></i> SEO Center
+                    </a>
                     <a href="/Admin/Messages" class="noc-nav-item @(Context.Request.Path.Value?.StartsWith("/Admin/Messages", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                         <i class="fa-solid fa-headset"></i> Support
                     </a>
@@ -528,7 +571,7 @@
                                 <div class="p-1" id="adminNotifItemsList">
                                     <div class="text-center py-4 text-muted small">
                                         <i class="fa-solid fa-circle-check fa-2x mb-2 text-success opacity-80"></i>
-                                        <p class="mb-0">All clear! No pending tasks.</p>
+                                        <p class="mb-0">All operations up to date.</p>
                                     </div>
                                 </div>
                             </div>
@@ -538,13 +581,13 @@
                             <i class="fa-regular fa-clock me-1"></i> IST NOC Live
                         </span>
 
+                        <!-- User Profile Menu -->
                         <div class="dropdown">
-                            <button class="btn btn-outline-warning btn-sm dropdown-toggle font-weight-bold px-2.5 py-1.5" type="button" data-bs-toggle="dropdown" style="font-size: 0.8rem;">
-                                <i class="fa-solid fa-user-shield me-1"></i> <span class="d-none d-sm-inline">RS01A </span>Admin
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle font-weight-bold px-2.5 py-1.5 text-light d-flex align-items-center gap-1.5" type="button" data-bs-toggle="dropdown" style="font-size: 0.8rem; border-color: rgba(255,255,255,0.25); background: rgba(0,0,0,0.3);">
+                                <i class="fa-solid fa-user-shield text-warning"></i> <span>@(Context.User.Identity?.Name ?? "Admin")</span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg py-2">
-                                <li><a class="dropdown-item text-light py-2" href="/Admin/Settings"><i class="fa-solid fa-gear me-2 text-warning"></i> Settings</a></li>
-                                <li><a class="dropdown-item text-danger py-2 font-weight-bold" href="/Auth/Logout"><i class="fa-solid fa-sign-out-alt me-2"></i> Logout</a></li>
+                                <li><a class="dropdown-item text-danger py-1.5 small" href="/Auth/Logout"><i class="fa-solid fa-power-off me-2"></i> Logout</a></li>
                             </ul>
                         </div>
                     </div>
