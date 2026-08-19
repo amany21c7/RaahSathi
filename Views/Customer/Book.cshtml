@@ -38,39 +38,39 @@
 </div>
 
 <div class="row">
-    <!-- Left Column: Interactive Map & Location Lock -->
-    <div class="col-lg-7 mb-4 mb-lg-0">
-        <div class="glass-card h-100 p-0 overflow-hidden d-flex flex-column" style="min-height:560px;">
-            <div class="p-3 bg-dark border-bottom border-secondary d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
-                <h5 class="mb-0 text-white font-weight-bold">
+    <!-- Left Column: Interactive Map & Location Lock (Balanced Proportions) -->
+    <div class="col-lg-5 mb-4 mb-lg-0">
+        <div class="glass-card p-0 overflow-hidden d-flex flex-column shadow-sm" style="min-height: 410px; position: sticky; top: 80px; z-index: 10;">
+            <div class="p-2.5 bg-dark border-bottom border-secondary d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
+                <h6 class="mb-0 text-white font-weight-bold">
                     <i class="fa-solid fa-map-location-dot text-warning me-2"></i> Breakdown Location Map
-                </h5>
+                </h6>
                 <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-warning btn-sm font-weight-bold text-dark text-nowrap shadow-sm" onclick="reDetectGPS()">
-                        <i class="fa-solid fa-crosshairs me-1"></i> My Live Location
+                    <button class="btn btn-warning btn-sm font-weight-bold text-dark text-nowrap shadow-sm" onclick="reDetectGPS()" style="font-size:0.75rem; padding: 2px 8px;">
+                        <i class="fa-solid fa-crosshairs me-1"></i> Live GPS
                     </button>
                 </div>
             </div>
             
             <div class="p-2 bg-dark bg-opacity-90 border-bottom border-secondary d-flex align-items-center gap-2">
                 <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" id="mapSearchInput" class="form-control bg-dark text-white border-secondary" placeholder="Search house/society/landmark/city on map..." onkeypress="if(event.key==='Enter'){event.preventDefault();searchMapLocation();}" />
-                    <button class="btn btn-warning text-dark font-weight-bold" type="button" onclick="searchMapLocation()">Search Map</button>
+                    <span class="input-group-text bg-dark border-secondary text-warning py-1"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="mapSearchInput" class="form-control bg-dark text-white border-secondary py-1" placeholder="Search area/landmark/city on map..." onkeypress="if(event.key==='Enter'){event.preventDefault();searchMapLocation();}" />
+                    <button class="btn btn-warning text-dark font-weight-bold py-1" type="button" onclick="searchMapLocation()">Search</button>
                 </div>
             </div>
             
-            <div id="map-container" style="flex-grow:1; min-height: 440px; height:100%;"></div>
+            <div id="map-container" style="height: 310px; min-height: 310px; width: 100%;"></div>
             
-            <div class="p-3 bg-dark border-top border-secondary text-muted small d-flex justify-content-between align-items-center">
-                <span><i class="fa-solid fa-hand-pointer text-warning me-1"></i> Click map or drag pin to adjust exact location spot.</span>
+            <div class="p-2 bg-dark border-top border-secondary text-muted small d-flex justify-content-between align-items-center" style="font-size:0.72rem;">
+                <span><i class="fa-solid fa-hand-pointer text-warning me-1"></i> Click map to adjust pin.</span>
                 <span class="text-success font-weight-bold" id="gpsAccuracyText"><i class="fa-solid fa-bullseye me-1"></i> GPS Active</span>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: 30-Second Ultra-Fast Booking Form -->
-    <div class="col-lg-5">
+    <!-- Right Column: 30-Second Ultra-Fast Booking Form (Expanded 7-Col for High Visibility) -->
+    <div class="col-lg-7">
         <div class="glass-card">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h4 class="text-white font-weight-bold mb-0">
@@ -90,41 +90,41 @@
                 </span>
             </div>
             <div class="row g-2 mb-3">
-                <div class="col-4 col-sm-4">
+                <div class="col-4 col-md-2">
                     <div id="vPill-Car" class="v-pill p-2 rounded-3 text-center cursor-pointer border active-v-pill" onclick="setVehicleType('Car')" data-bs-toggle="tooltip" title="All Cars and SUVs">
                         <i class="fa-solid fa-car text-warning me-1"></i>
                         <div class="text-white font-weight-bold small">Car/SUV</div>
                     </div>
                 </div>
-                <div class="col-4 col-sm-4">
+                <div class="col-4 col-md-2">
                     <div id="vPill-2-Wheeler" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary" onclick="setVehicleType('2-Wheeler')" data-bs-toggle="tooltip" title="All Bikes and Scooters">
                         <i class="fa-solid fa-motorcycle text-warning me-1"></i>
                         <div class="text-white font-weight-bold small">2-Wheeler</div>
                     </div>
                 </div>
-                <div class="col-4 col-sm-4">
+                <div class="col-4 col-md-2">
                     <div id="vPill-E-Rickshaw" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary position-relative" onclick="setVehicleType('E-Rickshaw')" data-bs-toggle="tooltip" title="EV E-Rickshaw Specialist Dispatch">
                         <span class="badge bg-success text-white position-absolute top-0 end-0 m-1" style="font-size:0.55rem;">EV</span>
                         <i class="fa-solid fa-bolt-lightning text-success me-1"></i>
                         <div class="text-white font-weight-bold small">E-Rickshaw</div>
                     </div>
                 </div>
-                <div class="col-4 col-sm-4">
+                <div class="col-4 col-md-2">
                     <div id="vPill-Auto-Rickshaw" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary" onclick="setVehicleType('Auto-Rickshaw')" data-bs-toggle="tooltip" title="Auto-Rickshaw (CNG / Petrol / LPG)">
                         <span class="me-1" style="font-size: 1.15rem; line-height: 1; vertical-align: middle;">🛺</span>
                         <div class="text-white font-weight-bold small">Auto-Rickshaw</div>
                     </div>
                 </div>
-                <div class="col-4 col-sm-4">
-                    <div id="vPill-Commercial" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary overflow-hidden" onclick="setVehicleType('Commercial')" data-bs-toggle="tooltip" title="All Commercial Vehicles">
+                <div class="col-4 col-md-2">
+                    <div id="vPill-Commercial" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary" onclick="setVehicleType('Commercial')" data-bs-toggle="tooltip" title="All Commercial Vehicles">
                         <i class="fa-solid fa-truck text-warning me-1"></i>
-                        <div class="text-white font-weight-bold text-truncate" style="font-size:0.65rem; line-height:1.2;" title="Bus/Truck/Loader">Commercial</div>
+                        <div class="text-white font-weight-bold small">Commercial</div>
                     </div>
                 </div>
-                <div class="col-4 col-sm-4">
-                    <div id="vPill-Heavy" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary overflow-hidden" onclick="setVehicleType('Heavy')" data-bs-toggle="tooltip" title="All Heavy Vehicles">
+                <div class="col-4 col-md-2">
+                    <div id="vPill-Heavy" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary" onclick="setVehicleType('Heavy')" data-bs-toggle="tooltip" title="All Heavy Vehicles">
                         <i class="fa-solid fa-tractor text-warning me-1"></i>
-                        <div class="text-white font-weight-bold text-truncate" style="font-size:0.65rem; line-height:1.2;" title="Tractor/JCB/Crane">Heavy/JCB</div>
+                        <div class="text-white font-weight-bold small">Heavy/JCB</div>
                     </div>
                 </div>
             </div>
@@ -139,10 +139,10 @@
                     </div>
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label text-white small font-weight-bold mb-1">Registration No. <span class="text-warning font-weight-normal" style="font-size:0.75rem;">(Optional)</span></label>
+                    <label class="form-label text-white small font-weight-bold mb-1">Registration No. <span class="text-warning font-weight-bold">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-id-card"></i></span>
-                        <input type="text" class="form-control glass-input text-white font-weight-bold text-uppercase" id="vehicleRegNumberInput" value="@(preSelectedVehicle?.RegistrationNumber ?? "")" placeholder="e.g. UP16 AB 1234" />
+                        <input type="text" class="form-control glass-input text-white font-weight-bold text-uppercase" id="vehicleRegNumberInput" value="@(preSelectedVehicle?.RegistrationNumber ?? "")" placeholder="e.g. UP16 AB 1234" required />
                     </div>
                 </div>
             </div>
@@ -221,14 +221,17 @@
 
             <!-- Quick Filter & Problem Cards Grid -->
             <div class="mb-3">
-                <div class="d-flex align-items-center justify-content-between mb-1.5">
-                    <span class="text-muted extra-small" style="font-size:0.75rem;">Or click one-touch problem card below:</span>
-                    <div style="max-width: 180px;">
-                        <input type="text" id="problemSearchFilter" class="form-control form-control-sm bg-dark text-white border-secondary" style="font-size:0.72rem; padding: 2px 8px;" placeholder="🔍 Filter problem..." oninput="filterProblemCards(this.value)">
+                <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mt-3 mb-2.5">
+                    <span class="text-white-50 small font-weight-medium">
+                        <i class="fa-solid fa-calculator text-warning me-1"></i> Quick Selection &amp; Approximate Charges:
+                    </span>
+                    <div class="input-group input-group-sm" style="max-width: 220px;">
+                        <span class="input-group-text bg-dark border-secondary text-warning py-1"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="problemSearchFilter" class="form-control bg-dark text-white border-secondary py-1" style="font-size:0.75rem;" placeholder="Search problem..." oninput="filterProblemCards(this.value)">
                     </div>
                 </div>
 
-                <div id="dynamicProblemCardsGrid" class="row g-2 custom-scroll" style="max-height: 250px; overflow-y: auto; padding-right: 2px;">
+                <div id="dynamicProblemCardsGrid" class="row g-2 custom-scroll" style="max-height: 285px; overflow-y: auto; padding-right: 2px;">
                     <!-- Dynamically generated problem cards with exact ₹Min - ₹Max rates -->
                 </div>
             </div>
@@ -993,6 +996,13 @@
                 return;
             }
 
+            var vehicleReg = $('#vehicleRegNumberInput').val().trim();
+            if (!vehicleReg) {
+                alert("Please enter your Vehicle Registration Number (e.g. UP16 AB 1234).");
+                $('#vehicleRegNumberInput').focus();
+                return;
+            }
+
             // If user is not logged in, trigger Guest Verification Modal
             if (!isCustLoggedIn) {
                 var guestModal = new bootstrap.Modal(document.getElementById('guestAuthModal'));
@@ -1048,6 +1058,12 @@
             if (!vehicleNameModel) {
                 alert("Please enter your Vehicle Name & Model.");
                 $('#vehicleNameModelInput').focus();
+                return;
+            }
+
+            if (!registrationNumber) {
+                alert("Please enter your Vehicle Registration Number (e.g. UP16 AB 1234).");
+                $('#vehicleRegNumberInput').focus();
                 return;
             }
 
