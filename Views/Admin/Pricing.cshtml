@@ -123,7 +123,7 @@
                             <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('Car', this)"><i class="fa-solid fa-car me-1 text-warning"></i>Car</button>
                             <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('2-Wheeler', this)"><i class="fa-solid fa-motorcycle me-1 text-warning"></i>Bike</button>
                             <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('E-Rickshaw', this)"><i class="fa-solid fa-bolt text-success me-1"></i>E-Rickshaw</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('Auto-Rickshaw', this)"><i class="fa-solid fa-gas-pump text-warning me-1"></i>Auto</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('Auto-Rickshaw', this)"><i class="fa-solid fa-auto-rickshaw text-warning me-1"></i>Auto</button>
                             <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('Commercial', this)"><i class="fa-solid fa-truck text-warning me-1"></i>Commercial</button>
                             <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('Heavy', this)"><i class="fa-solid fa-tractor text-warning me-1"></i>Heavy</button>
                         </div>
@@ -164,7 +164,7 @@
                                     string catBadgeClass = "bg-secondary text-light";
                                     string catIcon = "fa-car";
                                     if (p.VehicleCategory == "E-Rickshaw") { catBadgeClass = "bg-success bg-opacity-20 text-success border border-success border-opacity-40"; catIcon = "fa-bolt-lightning"; }
-                                    else if (p.VehicleCategory == "Auto-Rickshaw") { catBadgeClass = "bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40"; catIcon = "fa-gas-pump"; }
+                                    else if (p.VehicleCategory == "Auto-Rickshaw") { catBadgeClass = "bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40"; catIcon = "fa-auto-rickshaw"; }
                                     else if (p.VehicleCategory == "2-Wheeler" || p.VehicleCategory == "Bike") { catBadgeClass = "bg-info bg-opacity-20 text-info border border-info border-opacity-40"; catIcon = "fa-motorcycle"; }
                                     else if (p.VehicleCategory == "Commercial") { catBadgeClass = "bg-primary bg-opacity-20 text-primary border border-primary border-opacity-40"; catIcon = "fa-truck"; }
                                     else if (p.VehicleCategory == "Heavy") { catBadgeClass = "bg-danger bg-opacity-20 text-danger border border-danger border-opacity-40"; catIcon = "fa-tractor"; }
@@ -235,7 +235,7 @@
                         { 
                             headerBorder = "border-warning border-opacity-50"; 
                             headerBadge = "bg-warning text-dark"; 
-                            catIcon = "fa-gas-pump text-warning";
+                            catIcon = "fa-auto-rickshaw text-warning";
                         }
                         else if (r.VehicleCategory == "2-Wheeler" || r.VehicleCategory == "Bike") 
                         { 

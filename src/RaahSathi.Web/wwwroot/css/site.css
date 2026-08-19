@@ -28,6 +28,25 @@
     display: inline-block;
     white-space: nowrap;
 }
+
+/* Custom FontAwesome-compatible Auto-Rickshaw icon */
+.fa-auto-rickshaw,
+.fa-solid.fa-auto-rickshaw,
+i.fa-auto-rickshaw {
+    display: inline-block;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    line-height: 1;
+}
+.fa-auto-rickshaw::before,
+.fa-solid.fa-auto-rickshaw::before,
+i.fa-auto-rickshaw::before {
+    content: "🛺";
+    font-style: normal;
+    font-size: 1.25em;
+    vertical-align: -0.08em;
+}
 .raahsathi-brand .raah, .brand-raahsathi .raah {
     color: #ff6b00 !important;
     font-weight: inherit;
