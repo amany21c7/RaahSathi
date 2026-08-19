@@ -466,13 +466,13 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             // Dynamic Programmatic City & Local Breakdown SEO Routes
             try
             {
-                var cities = await _dbContext.Cities.Where(c => c.IsActive).ToListAsync();
+                var cities = await _dbContext.CityServiceAreas.Where(c => c.IsActive).Select(c => c.CityName).Distinct().ToListAsync();
                 foreach (var city in cities)
                 {
-                    AddUrl($"/Home/Services?city={Uri.EscapeDataString(city.CityName)}", "weekly", "0.85");
+                    AddUrl($"/Home/Services?city={Uri.EscapeDataString(city)}", "weekly", "0.85");
                 }
 
-                var serviceProblems = await _dbContext.PricingRules.Select(p => p.ProblemName).Distinct().ToListAsync();
+                var serviceProblems = await _dbContext.ProblemTypePricings.Where(p => p.IsActive).Select(p => p.ProblemName).Distinct().ToListAsync();
                 foreach (var problem in serviceProblems)
                 {
                     AddUrl($"/Home/Services?service={Uri.EscapeDataString(problem)}", "weekly", "0.80");

@@ -1057,13 +1057,20 @@
 
             <!-- Trust Badges Bar -->
             <div class="mb-4">
-                <label class="form-label text-muted small font-weight-bold d-block mb-2">Verified Partner Badges:</label>
+                <label class="form-label text-muted small font-weight-bold d-block mb-2">Verified Partner Badges &amp; Specializations:</label>
                 <div class="d-flex flex-wrap gap-2">
-                    <span class="badge bg-warning text-dark px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-trophy me-1"></i> Top Rated</span>
-                    <span class="badge bg-info text-dark px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-bolt me-1"></i> Fast Response</span>
-                    <span class="badge bg-success text-white px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-battery-full me-1"></i> Battery Expert</span>
-                    <span class="badge bg-primary text-white px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-plug text-warning me-1"></i> EV Certified</span>
-                    <span class="badge bg-dark border border-secondary text-light px-3 py-2 fs-6"><i class="fa-solid fa-award text-warning me-1"></i> 1000+ Jobs Completed</span>
+                    @foreach (var badge in profile.GetBadges())
+                    {
+                        <span class="badge bg-dark border border-warning text-warning px-3 py-2 fs-6 font-weight-bold">@badge</span>
+                    }
+                    @if (profile.Rating >= 4.8)
+                    {
+                        <span class="badge bg-warning text-dark px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-trophy me-1"></i> Top Rated</span>
+                    }
+                    @if (profile.TotalJobs >= 10)
+                    {
+                        <span class="badge bg-dark border border-secondary text-light px-3 py-2 fs-6"><i class="fa-solid fa-award text-warning me-1"></i> @profile.TotalJobs+ Jobs Completed</span>
+                    }
                     <span class="badge bg-success bg-opacity-25 text-success border border-success px-3 py-2 fs-6"><i class="fa-solid fa-circle-check me-1"></i> Verified Partner</span>
                 </div>
             </div>
@@ -1074,11 +1081,11 @@
                 <div class="row g-3 text-center">
                     <div class="col-md-2.4 col-6">
                         <span class="text-muted small d-block">Jobs Completed</span>
-                        <h4 class="text-white font-weight-extrabold mb-0">1,284</h4>
+                        <h4 class="text-white font-weight-extrabold mb-0">@(profile.TotalJobs > 0 ? profile.TotalJobs.ToString() : "1,284")</h4>
                     </div>
                     <div class="col-md-2.4 col-6">
                         <span class="text-muted small d-block">Rating</span>
-                        <h4 class="text-warning font-weight-extrabold mb-0">⭐ 4.9</h4>
+                        <h4 class="text-warning font-weight-extrabold mb-0">⭐ @profile.Rating.ToString("F1")</h4>
                     </div>
                     <div class="col-md-2.4 col-6">
                         <span class="text-muted small d-block">Acceptance</span>
@@ -1097,13 +1104,18 @@
 
             <!-- Skills Checkboxes Selector -->
             <div class="mb-4">
-                <label class="form-label text-white font-weight-bold mb-2"><i class="fa-solid fa-screwdriver-wrench text-warning me-1"></i> Mechanic Skills & Specializations</label>
+                <label class="form-label text-white font-weight-bold mb-2"><i class="fa-solid fa-screwdriver-wrench text-warning me-1"></i> Mechanic Skills &amp; Specializations</label>
                 <div class="d-flex flex-wrap gap-2 p-3 bg-dark bg-opacity-40 rounded-3 border border-secondary">
-                    @foreach (var sk in new[] { "Battery", "Tyre", "Engine", "Electrical", "AC", "Clutch", "Brake", "Diesel", "Petrol", "EV", "Truck", "JCB", "Crane" })
+                    @foreach (var sk in new[] { "Battery", "Tyre", "Engine", "Electrical", "AC", "Clutch", "Brake", "E-Rickshaw EV", "Auto-Rickshaw", "CNG System", "BLDC Motor", "Controller", "Lithium Battery", "Diesel", "Petrol", "Truck", "JCB", "Crane" })
                     {
-                        bool isChecked = (profile.Specialization ?? "").Contains(sk) || (profile.VehicleExpertise ?? "").Contains(sk) || sk == "Battery" || sk == "Engine";
-                        <input type="checkbox" class="btn-check" name="chkSkills" id="chkSkill-@sk" value="@sk" @(isChecked ? "checked" : "") autocomplete="off">
-                        <label class="btn btn-outline-warning rounded-pill px-3 py-1 font-weight-medium" for="chkSkill-@sk">@sk</label>
+                        bool isChecked = (profile.Specialization ?? "").Contains(sk) 
+                                      || (profile.VehicleExpertise ?? "").Contains(sk) 
+                                      || (profile.ErickshawSkills ?? "").Contains(sk) 
+                                      || (profile.AutoSkills ?? "").Contains(sk) 
+                                      || sk == "Battery" || sk == "Engine";
+                        var idSafe = sk.Replace(" ", "-").Replace("&", "and");
+                        <input type="checkbox" class="btn-check" name="chkSkills" id="chkSkill-@idSafe" value="@sk" @(isChecked ? "checked" : "") autocomplete="off">
+                        <label class="btn btn-outline-warning rounded-pill px-3 py-1 font-weight-medium" for="chkSkill-@idSafe">@sk</label>
                     }
                 </div>
             </div>

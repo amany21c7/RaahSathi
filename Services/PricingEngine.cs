@@ -70,9 +70,13 @@ namespace RaahSathi.Services
             if (string.IsNullOrWhiteSpace(vehicleType)) return "Car";
             string v = vehicleType.Trim().ToLower();
 
+            if (v.Contains("e-rickshaw") || v.Contains("erickshaw") || v.Contains("toto") || (v.Contains("ev") && v.Contains("rickshaw")))
+                return "E-Rickshaw";
+            if (v.Contains("auto") || v.Contains("cng auto") || v.Contains("tuk tuk") || v.Contains("tempo") || v.Contains("3-wheeler"))
+                return "Auto-Rickshaw";
             if (v.Contains("2") || v.Contains("bike") || v.Contains("scooter") || v.Contains("wheeler") || v.Contains("motorcycle") || v.Contains("ev bike"))
                 return "2-Wheeler";
-            if (v.Contains("comm") || v.Contains("auto") || v.Contains("rickshaw") || v.Contains("van") || v.Contains("taxi"))
+            if (v.Contains("comm") || v.Contains("van") || v.Contains("taxi") || v.Contains("pickup"))
                 return "Commercial";
             if (v.Contains("heavy") || v.Contains("truck") || v.Contains("bus") || v.Contains("jcb") || v.Contains("crane") || v.Contains("tractor"))
                 return "Heavy";
@@ -150,14 +154,19 @@ namespace RaahSathi.Services
             {
                 result = problemType.ToLower() switch
                 {
-                    "battery dead" or "battery" => (150, 3500),
-                    "flat tyre" or "puncture" => (100, 400),
-                    "fuel finished" or "fuel" => (100, 1100),
-                    "key locked" or "lockout" => (200, 500),
-                    "gearbox issue" or "gearbox" or "clutch" => (400, 2500),
-                    "suspension issue" or "suspension" or "shocker" => (350, 2200),
-                    "brake issue" or "clutch issue" or "brake/clutch" => (200, 800),
-                    "engine problem" or "overheating" or "starting problem" or "engine" => (300, 3000),
+                    "battery dead / low battery" or "battery dead" or "battery" => (150, 2500),
+                    "emergency ev charging" or "charging problem" => (250, 800),
+                    "controller problem" or "controller" => (350, 1800),
+                    "motor problem" or "bldc motor" => (400, 2500),
+                    "battery overheating" => (200, 1200),
+                    "wiring / electrical problem" or "electrical problem" or "wiring" => (150, 850),
+                    "fuel problem" or "cng problem" or "cng gas problem" or "fuel finished" or "fuel" => (150, 950),
+                    "clutch / gear problem" or "gearbox issue" or "gearbox" or "clutch" => (250, 1800),
+                    "flat tyre" or "puncture" or "puncture / tyre problem" => (99, 450),
+                    "key locked" or "ignition / switch problem" or "lockout" => (150, 500),
+                    "suspension issue" or "suspension" or "shocker" => (300, 1800),
+                    "brake issue" or "clutch issue" or "brake/clutch" => (180, 800),
+                    "engine problem" or "overheating" or "vehicle not starting" or "vehicle not moving" or "starting problem" or "engine" => (250, 2500),
                     _ => (150, 1000)
                 };
             }

@@ -3,6 +3,8 @@
     var pricingRules = ViewBag.PricingRules as List<RaahSathi.Models.PricingRule> ?? new List<RaahSathi.Models.PricingRule>();
     var carRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Car") ?? new RaahSathi.Models.PricingRule { BaseFee = 99, PerKmRate = 8 };
     var bikeRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "2-Wheeler") ?? new RaahSathi.Models.PricingRule { BaseFee = 49, PerKmRate = 5 };
+    var erickRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "E-Rickshaw") ?? new RaahSathi.Models.PricingRule { BaseFee = 69, PerKmRate = 6 };
+    var autoRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Auto-Rickshaw") ?? new RaahSathi.Models.PricingRule { BaseFee = 79, PerKmRate = 7 };
     var commRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Commercial") ?? new RaahSathi.Models.PricingRule { BaseFee = 199, PerKmRate = 12 };
     var heavyRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Heavy") ?? new RaahSathi.Models.PricingRule { BaseFee = 299, PerKmRate = 15 };
     var problemTypes = ViewBag.ProblemTypes as List<RaahSathi.Models.ProblemTypePricing> ?? new List<RaahSathi.Models.ProblemTypePricing>();
@@ -37,7 +39,7 @@
             <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span> – India's <span class="text-warning">Connected Roadside</span> Assistance Network
         </h1>
         <p class="lead text-muted mb-4" style="font-size: 1.15rem; line-height: 1.6;">
-            Connecting customers, roadside mechanics, workshops and emergency services across every city, town and highway in India.
+            Connecting customers, roadside mechanics, EV specialists, workshops and emergency services across every city, town and highway in India.
         </p>
         
         <div class="d-flex flex-column flex-md-row gap-3 mb-4 mb-md-5">
@@ -65,7 +67,7 @@
         </div>
     </div>
 
-    <!-- Hero Right: Upfront Cost Estimator 4-Box Grid (Matching Screenshot) -->
+    <!-- Hero Right: Upfront Cost Estimator Grid -->
     <div class="col-lg-6">
         <div class="p-4 rounded-4 text-start border border-secondary border-opacity-30 shadow-lg" style="background: #0f172a;">
             <!-- Header -->
@@ -81,42 +83,61 @@
                 </div>
             </div>
 
-            <!-- 1. Select Vehicle Category 4-Box Grid -->
+            <!-- 1. Select Vehicle Category 6-Box Grid -->
             <label class="form-label text-muted small font-weight-bold mb-2">1. Select Vehicle Category</label>
             <div class="row g-2 mb-4">
                 <!-- Car Box (Default Selected) -->
-                <div class="col-6">
-                    <div id="vBox-Car" class="v-box p-3 rounded-3 text-center cursor-pointer border active-v-box" onclick="selectVehicleCategory('Car')">
-                        <i class="fa-solid fa-car text-warning fa-lg mb-2"></i>
-                        <div class="text-white font-weight-bold small">Car / SUV / Van</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">₹@carRule.BaseFee + ₹@carRule.PerKmRate/km</div>
+                <div class="col-6 col-sm-4">
+                    <div id="vBox-Car" class="v-box p-2.5 rounded-3 text-center cursor-pointer border active-v-box" onclick="selectVehicleCategory('Car')">
+                        <i class="fa-solid fa-car text-warning fa-lg mb-1.5"></i>
+                        <div class="text-white font-weight-bold small">Car / SUV</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">₹@carRule.BaseFee + ₹@carRule.PerKmRate/km</div>
                     </div>
                 </div>
 
                 <!-- 2-Wheeler Box -->
-                <div class="col-6">
-                    <div id="vBox-2-Wheeler" class="v-box p-3 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('2-Wheeler')">
-                        <i class="fa-solid fa-motorcycle text-warning fa-lg mb-2"></i>
-                        <div class="text-white font-weight-bold small">2-Wheeler / Auto</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">₹@bikeRule.BaseFee + ₹@bikeRule.PerKmRate/km</div>
+                <div class="col-6 col-sm-4">
+                    <div id="vBox-2-Wheeler" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('2-Wheeler')">
+                        <i class="fa-solid fa-motorcycle text-warning fa-lg mb-1.5"></i>
+                        <div class="text-white font-weight-bold small">2-Wheeler</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">₹@bikeRule.BaseFee + ₹@bikeRule.PerKmRate/km</div>
+                    </div>
+                </div>
+
+                <!-- E-Rickshaw Box (NEW EV) -->
+                <div class="col-6 col-sm-4">
+                    <div id="vBox-E-Rickshaw" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30 position-relative" onclick="selectVehicleCategory('E-Rickshaw')">
+                        <span class="badge bg-success text-white position-absolute top-0 end-0 m-1" style="font-size: 0.6rem;">EV</span>
+                        <i class="fa-solid fa-bolt-lightning text-success fa-lg mb-1.5"></i>
+                        <div class="text-white font-weight-bold small">E-Rickshaw</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">₹@erickRule.BaseFee + ₹@erickRule.PerKmRate/km</div>
+                    </div>
+                </div>
+
+                <!-- Auto-Rickshaw Box (NEW) -->
+                <div class="col-6 col-sm-4">
+                    <div id="vBox-Auto-Rickshaw" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Auto-Rickshaw')">
+                        <i class="fa-solid fa-gas-pump text-warning fa-lg mb-1.5"></i>
+                        <div class="text-white font-weight-bold small">Auto-Rickshaw</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">₹@autoRule.BaseFee + ₹@autoRule.PerKmRate/km</div>
                     </div>
                 </div>
 
                 <!-- Commercial Box -->
-                <div class="col-6">
-                    <div id="vBox-Commercial" class="v-box p-3 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Commercial')">
-                        <i class="fa-solid fa-truck text-warning fa-lg mb-2"></i>
-                        <div class="text-white font-weight-bold small">Truck / Loader / Pickup</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">₹@commRule.BaseFee + ₹@commRule.PerKmRate/km</div>
+                <div class="col-6 col-sm-4">
+                    <div id="vBox-Commercial" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Commercial')">
+                        <i class="fa-solid fa-truck text-warning fa-lg mb-1.5"></i>
+                        <div class="text-white font-weight-bold small">Commercial</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">₹@commRule.BaseFee + ₹@commRule.PerKmRate/km</div>
                     </div>
                 </div>
 
                 <!-- Heavy Box -->
-                <div class="col-6">
-                    <div id="vBox-Heavy" class="v-box p-3 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Heavy')">
-                        <i class="fa-solid fa-tractor text-warning fa-lg mb-2"></i>
-                        <div class="text-white font-weight-bold small">Heavy JCB / Crane</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">₹@heavyRule.BaseFee + ₹@heavyRule.PerKmRate/km</div>
+                <div class="col-6 col-sm-4">
+                    <div id="vBox-Heavy" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Heavy')">
+                        <i class="fa-solid fa-tractor text-warning fa-lg mb-1.5"></i>
+                        <div class="text-white font-weight-bold small">Heavy / JCB</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">₹@heavyRule.BaseFee + ₹@heavyRule.PerKmRate/km</div>
                     </div>
                 </div>
             </div>
@@ -143,15 +164,20 @@
                     }
                     else
                     {
-                        <option value="150-3500">Battery jump-start/replacement (₹150 - ₹3,500)</option>
-                        <option value="200-800">Flat Tyre / Puncture Repair (₹200 - ₹800)</option>
-                        <option value="250-1200">Emergency Fuel Delivery (₹250 - ₹1,200)</option>
-                        <option value="300-1500">Towing Assistance (₹300 - ₹1,500)</option>
+                        <option value="150-3500" data-category="Car">Battery jump-start/replacement (₹150 - ₹3,500)</option>
+                        <option value="200-800" data-category="Car">Flat Tyre / Puncture Repair (₹200 - ₹800)</option>
+                        <option value="250-1200" data-category="Car">Emergency Fuel Delivery (₹250 - ₹1,200)</option>
+                        <option value="300-1500" data-category="Car">Towing Assistance (₹300 - ₹1,500)</option>
+                        <option value="350-1800" data-category="E-Rickshaw">Controller Problem (₹350 - ₹1,800)</option>
+                        <option value="400-2500" data-category="E-Rickshaw">BLDC Motor Problem (₹400 - ₹2,500)</option>
+                        <option value="250-800" data-category="E-Rickshaw">Emergency EV Charging (₹250 - ₹800)</option>
+                        <option value="150-950" data-category="Auto-Rickshaw">CNG / Fuel Problem (₹150 - ₹950)</option>
+                        <option value="200-1600" data-category="Auto-Rickshaw">Clutch / Gear Problem (₹200 - ₹1,600)</option>
                     }
                 </select>
             </div>
 
-            <!-- Breakdown Summary Box matching Screenshot 2 -->
+            <!-- Breakdown Summary Box -->
             <div class="p-3 rounded-3 bg-dark bg-opacity-80 border border-secondary border-opacity-30 mb-4">
                 <div class="d-flex justify-content-between text-muted small mb-2">
                     <span>Visiting Charge (Layer 1):</span>
@@ -159,17 +185,18 @@
                 </div>
                 <div class="d-flex justify-content-between text-muted small mb-3">
                     <span>Service Fix Range (Layer 2):</span>
-                    <span class="text-white font-weight-bold" id="calcServiceFixRange">₹150 - ₹3500</span>
+                    <span class="text-warning font-weight-bold" id="calcServiceFixRange">₹150 - ₹3500</span>
                 </div>
-                <hr class="my-2 border-secondary border-opacity-30">
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                    <span class="text-white font-weight-bold">Estimated Total Upfront:</span>
-                    <h3 class="font-weight-extrabold mb-0" id="calcTotalUpfrontRange" style="color: #f59e0b; font-family: 'Outfit', sans-serif;">₹289 - ₹3639</h3>
+                <hr class="border-secondary border-opacity-30 my-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-white font-weight-bold">Total Estimated Upfront:</span>
+                    <span class="text-success font-weight-extrabold h5 mb-0" id="calcTotalUpfrontRange">₹289 - ₹3639</span>
                 </div>
             </div>
 
-            <a href="@targetVehicleUrl" class="btn btn-warning w-100 py-3 font-weight-bold text-dark shadow" style="background: #f59e0b; border: none; border-radius: 10px; font-size: 1.1rem;">
-                <i class="fa-solid fa-car me-2"></i> Register Your Vehicle
+            <!-- Action Button -->
+            <a href="@targetVehicleUrl" class="btn btn-warning w-100 font-weight-bold py-2.5 text-dark shadow-sm">
+                <i class="fa-solid fa-arrow-right me-2"></i> Book Instant Assistance
             </a>
         </div>
     </div>
@@ -177,16 +204,17 @@
 
 <style>
     .v-box {
+        transition: all 0.2s ease-in-out;
         background: #1e293b;
-        transition: all 0.2s ease;
     }
     .v-box:hover {
         background: #334155;
+        border-color: #f59e0b !important;
     }
     .active-v-box {
-        border-color: #ff6b00 !important;
-        background: rgba(255, 107, 0, 0.12) !important;
-        box-shadow: 0 0 10px rgba(255, 107, 0, 0.3);
+        background: #334155 !important;
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
     }
 </style>
 
@@ -195,9 +223,28 @@
     const pricingData = {
         "Car": { base: @carRule.BaseFee, rate: @carRule.PerKmRate },
         "2-Wheeler": { base: @bikeRule.BaseFee, rate: @bikeRule.PerKmRate },
+        "E-Rickshaw": { base: @erickRule.BaseFee, rate: @erickRule.PerKmRate },
+        "Auto-Rickshaw": { base: @autoRule.BaseFee, rate: @autoRule.PerKmRate },
         "Commercial": { base: @commRule.BaseFee, rate: @commRule.PerKmRate },
         "Heavy": { base: @heavyRule.BaseFee, rate: @heavyRule.PerKmRate }
     };
+
+    function filterProblemDropdown(cat) {
+        const select = document.getElementById('calcProblem');
+        let hasSelected = false;
+        Array.from(select.options).forEach(opt => {
+            const optCat = opt.getAttribute('data-category');
+            if (!optCat || optCat === cat || optCat === 'All' || (cat === '2-Wheeler' && (optCat === 'Bike' || optCat === '2-Wheeler'))) {
+                opt.style.display = '';
+                if (!hasSelected) {
+                    opt.selected = true;
+                    hasSelected = true;
+                }
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+    }
 
     function selectVehicleCategory(cat) {
         selectedCategory = cat;
@@ -206,6 +253,7 @@
         if (activeBox) {
             activeBox.classList.add('active-v-box');
         }
+        filterProblemDropdown(cat);
         updateEstPrice();
     }
 
@@ -232,10 +280,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        filterProblemDropdown('Car');
         updateEstPrice();
     });
 </script>
-
 
 
 <!-- Technology Moat Section -->

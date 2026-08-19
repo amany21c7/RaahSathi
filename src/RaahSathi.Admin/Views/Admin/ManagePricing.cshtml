@@ -28,7 +28,9 @@
                         <label class="form-label text-muted small">Vehicle Category</label>
                         <select class="form-select glass-input text-white bg-dark border-secondary" name="vehicleCategory" required>
                             <option value="Car">Car / SUV / Van</option>
-                            <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
+                            <option value="2-Wheeler">2-Wheeler (Bike/Scooter)</option>
+                            <option value="E-Rickshaw">⚡ E-Rickshaw (EV 3-Wheeler)</option>
+                            <option value="Auto-Rickshaw">🛺 Auto-Rickshaw (CNG / Petrol / LPG)</option>
                             <option value="Commercial">Commercial (Truck/Bus/Loader/Pickup)</option>
                             <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
                         </select>
@@ -71,18 +73,11 @@
                         @foreach (var r in rules)
                         {
                             string iconClass = "fa-car";
-                            if (r.VehicleCategory.Contains("2-Wheeler") || r.VehicleCategory.Contains("Bike") || r.VehicleCategory.Contains("Auto"))
-                            {
-                                iconClass = "fa-motorcycle";
-                            }
-                            else if (r.VehicleCategory.Contains("Commercial") || r.VehicleCategory.Contains("Truck") || r.VehicleCategory.Contains("Bus"))
-                            {
-                                iconClass = "fa-truck";
-                            }
-                            else if (r.VehicleCategory.Contains("Heavy") || r.VehicleCategory.Contains("JCB") || r.VehicleCategory.Contains("Tractor"))
-                            {
-                                iconClass = "fa-tractor";
-                            }
+                            if (r.VehicleCategory == "E-Rickshaw") iconClass = "fa-bolt-lightning text-success";
+                            else if (r.VehicleCategory == "Auto-Rickshaw") iconClass = "fa-gas-pump text-warning";
+                            else if (r.VehicleCategory.Contains("2-Wheeler") || r.VehicleCategory.Contains("Bike")) iconClass = "fa-motorcycle";
+                            else if (r.VehicleCategory.Contains("Commercial") || r.VehicleCategory.Contains("Truck") || r.VehicleCategory.Contains("Bus")) iconClass = "fa-truck";
+                            else if (r.VehicleCategory.Contains("Heavy") || r.VehicleCategory.Contains("JCB") || r.VehicleCategory.Contains("Tractor")) iconClass = "fa-tractor";
 
                             <tr>
                                 <td class="font-weight-bold text-white"><i class="fa-solid @iconClass text-warning me-2"></i>@r.VehicleCategory</td>
@@ -117,13 +112,15 @@
                 <form action="/Admin/AddProblemType" method="POST" class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label text-muted small">Problem Name / Type</label>
-                        <input type="text" class="form-control glass-input bg-dark text-white border-secondary" name="problemName" placeholder="e.g. Battery jump-start, Engine Overheating" required>
+                        <input type="text" class="form-control glass-input bg-dark text-white border-secondary" name="problemName" placeholder="e.g. Battery jump-start, Controller Problem" required>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label text-muted small">Vehicle Category</label>
                         <select class="form-select glass-input text-white bg-dark border-secondary" name="vehicleCategory" required>
                             <option value="Car">Car / SUV / Van</option>
-                            <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
+                            <option value="2-Wheeler">2-Wheeler (Bike/Scooter)</option>
+                            <option value="E-Rickshaw">⚡ E-Rickshaw (EV 3-Wheeler)</option>
+                            <option value="Auto-Rickshaw">🛺 Auto-Rickshaw (CNG / Petrol / LPG)</option>
                             <option value="Commercial">Commercial (Truck/Bus/Loader)</option>
                             <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
                             <option value="All">All Vehicle Categories</option>
@@ -152,6 +149,8 @@
                         <option value="ALL">All Categories</option>
                         <option value="Car">Car</option>
                         <option value="2-Wheeler">2-Wheeler</option>
+                        <option value="E-Rickshaw">⚡ E-Rickshaw</option>
+                        <option value="Auto-Rickshaw">🛺 Auto-Rickshaw</option>
                         <option value="Commercial">Commercial</option>
                         <option value="Heavy">Heavy</option>
                     </select>
@@ -172,7 +171,9 @@
                         @foreach (var p in problemTypes)
                         {
                             string probIconClass = "fa-car";
-                            if (p.VehicleCategory.Contains("2-Wheeler") || p.VehicleCategory.Contains("Bike")) probIconClass = "fa-motorcycle";
+                            if (p.VehicleCategory == "E-Rickshaw") probIconClass = "fa-bolt-lightning text-success";
+                            else if (p.VehicleCategory == "Auto-Rickshaw") probIconClass = "fa-gas-pump text-warning";
+                            else if (p.VehicleCategory.Contains("2-Wheeler") || p.VehicleCategory.Contains("Bike")) probIconClass = "fa-motorcycle";
                             else if (p.VehicleCategory.Contains("Commercial") || p.VehicleCategory.Contains("Truck")) probIconClass = "fa-truck";
                             else if (p.VehicleCategory.Contains("Heavy") || p.VehicleCategory.Contains("JCB") || p.VehicleCategory.Contains("Tractor")) probIconClass = "fa-tractor";
                             else if (p.VehicleCategory.Contains("All")) probIconClass = "fa-layer-group";

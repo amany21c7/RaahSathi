@@ -71,14 +71,22 @@
 
                 <div class="mb-3">
                     <label class="form-label text-muted small">Full Name</label>
-                    <input type="text" class="form-control glass-input text-white" id="registerName" placeholder="Rahul Sharma">
+                    <input type="text" class="form-control glass-input text-white" id="registerName" placeholder="">
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="form-label text-muted small">10-Digit Mobile Number</label>
                     <div class="input-group">
                         <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
-                        <input type="tel" class="form-control glass-input text-white" id="registerPhone" placeholder="9876543210" maxlength="10">
+                        <input type="tel" class="form-control glass-input text-white" id="registerPhone" placeholder="" maxlength="10">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small">Referral Code <span class="text-warning">(Optional - Get Joining Bonus)</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-gift"></i></span>
+                        <input type="text" class="form-control glass-input text-white font-monospace text-uppercase" id="registerReferralCode" value="@(ViewBag.ReferralCode ?? "")" placeholder="">
                     </div>
                 </div>
 

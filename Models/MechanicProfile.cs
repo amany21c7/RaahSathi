@@ -69,10 +69,16 @@ namespace RaahSathi.Models
         public string VehicleExpertise { get; set; } = string.Empty; // Comma-separated: Bike, Scooter, Car...
         [StringLength(1000)]
         public string Specialization { get; set; } = string.Empty; // Comma-separated: Engine, Electrical, AC...
+
+        [StringLength(1000)]
+        public string ErickshawSkills { get; set; } = string.Empty; // Comma-separated: Lead-Acid Battery, Lithium Battery, Controller, BLDC Motor, Wiring, Charger, DC-DC Converter, Throttle, Differential, Electrical Diagnosis, Puncture/Tyre
+
+        [StringLength(1000)]
+        public string AutoSkills { get; set; } = string.Empty; // Comma-separated: CNG System, Engine, Clutch/Gear, Carburetor/Injector, Puncture, Wiring, Electrical
         public int ServiceRadiusKm { get; set; } = 10;
 
         [StringLength(200)]
-        public string SkillCategory { get; set; } = "Car"; // e.g. "2-Wheeler, Car"
+        public string SkillCategory { get; set; } = "Car"; // e.g. "2-Wheeler, Car, E-Rickshaw, Auto-Rickshaw"
 
         public int ExperienceYears { get; set; } = 1;
 
@@ -115,6 +121,38 @@ namespace RaahSathi.Models
         public System.Collections.Generic.List<MechanicBadge> GetBadges()
         {
             var list = new System.Collections.Generic.List<MechanicBadge>();
+
+            // E-Rickshaw EV Specialist Badges
+            if (!string.IsNullOrEmpty(VehicleExpertise) && VehicleExpertise.Contains("E-Rickshaw", StringComparison.OrdinalIgnoreCase))
+            {
+                list.Add(new MechanicBadge("🟢 E-Rickshaw Specialist", "bg-success bg-opacity-20 text-success border border-success", "fa-solid fa-bolt-lightning"));
+
+                if (IsCertified || KycStatus == "Approved")
+                {
+                    list.Add(new MechanicBadge("🛡️ Verified EV Technician", "bg-primary bg-opacity-20 text-primary border border-primary", "fa-solid fa-shield-halved"));
+                }
+
+                if (!string.IsNullOrEmpty(ErickshawSkills) && ErickshawSkills.Contains("Lithium", StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(new MechanicBadge("⚡ Lithium Battery Pro", "bg-info bg-opacity-20 text-info border border-info", "fa-solid fa-car-battery"));
+                }
+
+                if (!string.IsNullOrEmpty(ErickshawSkills) && (ErickshawSkills.Contains("Controller", StringComparison.OrdinalIgnoreCase) || ErickshawSkills.Contains("BLDC", StringComparison.OrdinalIgnoreCase)))
+                {
+                    list.Add(new MechanicBadge("🔌 Controller & Motor", "bg-warning bg-opacity-20 text-warning border border-warning", "fa-solid fa-microchip"));
+                }
+            }
+
+            // Auto-Rickshaw / CNG Specialist Badges
+            if (!string.IsNullOrEmpty(VehicleExpertise) && (VehicleExpertise.Contains("Auto-Rickshaw", StringComparison.OrdinalIgnoreCase) || VehicleExpertise.Contains("Auto", StringComparison.OrdinalIgnoreCase)))
+            {
+                list.Add(new MechanicBadge("🛺 Auto Specialist", "bg-warning bg-opacity-20 text-warning border border-warning", "fa-solid fa-wrench"));
+
+                if (!string.IsNullOrEmpty(AutoSkills) && AutoSkills.Contains("CNG", StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(new MechanicBadge("⛽ CNG Auto Specialist", "bg-info bg-opacity-20 text-info border border-info", "fa-solid fa-gas-pump"));
+                }
+            }
 
             if (Rating >= 4.8)
             {

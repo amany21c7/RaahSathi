@@ -451,17 +451,17 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
                 sitemapContent.AppendLine("  </url>");
             }
 
-            // Public Core Routes
+            // Core Public Routes
             AddUrl("/", "daily", "1.0");
-            AddUrl("/Home/Services", "weekly", "0.9");
+            AddUrl("/Home/Services", "daily", "0.9");
             AddUrl("/Home/HowItWorks", "weekly", "0.8");
             AddUrl("/Home/AboutUs", "monthly", "0.7");
             AddUrl("/Home/ContactUs", "monthly", "0.7");
-            AddUrl("/Home/Faq", "weekly", "0.6");
-            AddUrl("/Home/Privacy", "yearly", "0.5");
-            AddUrl("/Home/Terms", "yearly", "0.5");
-            AddUrl("/Home/RefundPolicy", "yearly", "0.5");
-            AddUrl("/Home/CancellationPolicy", "yearly", "0.5");
+            AddUrl("/Home/Faq", "weekly", "0.8");
+            AddUrl("/Home/Privacy", "monthly", "0.5");
+            AddUrl("/Home/Terms", "monthly", "0.5");
+            AddUrl("/Home/RefundPolicy", "monthly", "0.5");
+            AddUrl("/Home/CancellationPolicy", "monthly", "0.5");
 
             // Dynamic Programmatic City & Local Breakdown SEO Routes
             try
@@ -495,6 +495,7 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             var robots = new System.Text.StringBuilder();
             robots.AppendLine("User-agent: *");
             robots.AppendLine("Allow: /");
+            robots.AppendLine("Allow: /Home/");
             robots.AppendLine("Disallow: /Admin/");
             robots.AppendLine("Disallow: /Customer/");
             robots.AppendLine("Disallow: /Mechanic/");

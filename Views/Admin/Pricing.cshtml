@@ -105,21 +105,48 @@
     <div class="col-lg-7">
         <div class="card bg-dark border-secondary shadow-sm">
             <div class="card-header border-secondary bg-transparent d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 py-3">
-                <h5 class="text-white mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Problem Types Price Overrides</h5>
+                <div>
+                    <h5 class="text-white mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Problem Types Price Overrides</h5>
+                    <span class="text-muted extra-small" style="font-size:0.75rem;">Total @problemTypes.Count active problem fix rates configured</span>
+                </div>
                 <button type="button" class="btn btn-warning btn-sm font-weight-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addProblemModal">
                     <i class="fa-solid fa-plus me-1"></i> Add City Problem Rate
                 </button>
             </div>
+
+            <!-- Filter Tabs & Search Bar -->
+            <div class="p-3 border-bottom border-secondary bg-black bg-opacity-30">
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-7">
+                        <div class="d-flex flex-wrap gap-1" id="categoryFilterTabs">
+                            <button type="button" class="btn btn-sm btn-warning text-dark font-weight-bold cat-filter-btn active" onclick="filterProblemCategory('ALL', this)">All (@problemTypes.Count)</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('Car', this)"><i class="fa-solid fa-car me-1 text-warning"></i>Car</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('2-Wheeler', this)"><i class="fa-solid fa-motorcycle me-1 text-warning"></i>Bike</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('E-Rickshaw', this)"><i class="fa-solid fa-bolt text-success me-1"></i>E-Rickshaw</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('Auto-Rickshaw', this)"><i class="fa-solid fa-gas-pump text-warning me-1"></i>Auto</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('Commercial', this)"><i class="fa-solid fa-truck text-warning me-1"></i>Commercial</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light cat-filter-btn" onclick="filterProblemCategory('Heavy', this)"><i class="fa-solid fa-tractor text-warning me-1"></i>Heavy</button>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" id="problemSearchTableInput" class="form-control bg-dark text-white border-secondary" placeholder="Search problem or city..." oninput="searchProblemTable(this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover mb-0 align-middle">
-                        <thead>
+                <div class="table-responsive" style="max-height: 650px; overflow-y: auto;">
+                    <table class="table table-dark table-hover mb-0 align-middle" id="adminProblemsTable">
+                        <thead class="sticky-top bg-dark border-secondary">
                             <tr class="border-secondary text-muted small">
                                 <th class="ps-3 py-3">Problem Name</th>
                                 <th>Category</th>
                                 <th>Target City</th>
-                                <th>Min Service Charge</th>
-                                <th>Max Service Charge</th>
+                                <th>Min Charge</th>
+                                <th>Max Charge</th>
                                 <th class="text-end pe-3">Actions</th>
                             </tr>
                         </thead>
@@ -134,9 +161,21 @@
                             {
                                 @foreach (var p in problemTypes)
                                 {
-                                    <tr class="border-secondary">
+                                    string catBadgeClass = "bg-secondary text-light";
+                                    string catIcon = "fa-car";
+                                    if (p.VehicleCategory == "E-Rickshaw") { catBadgeClass = "bg-success bg-opacity-20 text-success border border-success border-opacity-40"; catIcon = "fa-bolt-lightning"; }
+                                    else if (p.VehicleCategory == "Auto-Rickshaw") { catBadgeClass = "bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40"; catIcon = "fa-gas-pump"; }
+                                    else if (p.VehicleCategory == "2-Wheeler" || p.VehicleCategory == "Bike") { catBadgeClass = "bg-info bg-opacity-20 text-info border border-info border-opacity-40"; catIcon = "fa-motorcycle"; }
+                                    else if (p.VehicleCategory == "Commercial") { catBadgeClass = "bg-primary bg-opacity-20 text-primary border border-primary border-opacity-40"; catIcon = "fa-truck"; }
+                                    else if (p.VehicleCategory == "Heavy") { catBadgeClass = "bg-danger bg-opacity-20 text-danger border border-danger border-opacity-40"; catIcon = "fa-tractor"; }
+
+                                    <tr class="border-secondary admin-prob-row" data-category="@p.VehicleCategory" data-name="@p.ProblemName.ToLower()" data-city="@p.CityName.ToLower()">
                                         <td class="ps-3 font-weight-bold text-white">@p.ProblemName</td>
-                                        <td><span class="badge bg-secondary text-light">@p.VehicleCategory</span></td>
+                                        <td>
+                                            <span class="badge @catBadgeClass">
+                                                <i class="fa-solid @catIcon me-1"></i>@p.VehicleCategory
+                                            </span>
+                                        </td>
                                         <td>
                                             @if (p.CityName == "All Cities")
                                             {
@@ -153,7 +192,7 @@
                                             <button type="button" 
                                                     class="btn btn-sm btn-outline-warning me-1 px-2"
                                                     onclick="openEditProblemModal(@p.Id, '@p.ProblemName.Replace("'", "\\'")', '@p.VehicleCategory', '@p.CityName.Replace("'", "\\'")', @p.MinServiceCharge, @p.MaxServiceCharge)"
-                                                    title="Edit City Price Rate">
+                                                    title="Edit Price Rate">
                                                 <i class="fa-solid fa-pen-to-square me-1"></i> Edit
                                             </button>
                                             <form action="/Admin/DeleteProblemType" method="POST" class="d-inline">
@@ -171,23 +210,65 @@
         </div>
     </div>
 
-    <!-- Pricing Engine Tuning Card -->
+    <!-- Pricing Engine Tuning Card (All 6 Vehicles) -->
     <div class="col-lg-5">
         <div class="card bg-dark border-secondary shadow-sm">
             <div class="card-header border-secondary bg-transparent py-3">
-                <h5 class="text-white mb-0"><i class="fa-solid fa-sliders text-warning me-2"></i> Pricing Engine Tuning</h5>
+                <h5 class="text-white mb-0"><i class="fa-solid fa-sliders text-warning me-2"></i> Pricing Engine Base Tuning</h5>
+                <span class="text-muted extra-small" style="font-size:0.75rem;">Configure Layer 1 Visiting &amp; Towing rates for each vehicle type</span>
             </div>
-            <div class="card-body">
+            <div class="card-body" style="max-height: 720px; overflow-y: auto;">
                 <div class="d-flex flex-column gap-3">
                     @foreach (var r in pricingRules)
                     {
-                        <div class="p-3 bg-black bg-opacity-40 rounded border border-secondary">
-                            <h6 class="text-white font-weight-bold mb-3">@r.VehicleCategory Rate Settings</h6>
+                        string headerBorder = "border-secondary";
+                        string headerBadge = "bg-secondary";
+                        string catIcon = "fa-car";
+                        
+                        if (r.VehicleCategory == "E-Rickshaw") 
+                        { 
+                            headerBorder = "border-success border-opacity-50"; 
+                            headerBadge = "bg-success text-white"; 
+                            catIcon = "fa-bolt-lightning text-success";
+                        }
+                        else if (r.VehicleCategory == "Auto-Rickshaw") 
+                        { 
+                            headerBorder = "border-warning border-opacity-50"; 
+                            headerBadge = "bg-warning text-dark"; 
+                            catIcon = "fa-gas-pump text-warning";
+                        }
+                        else if (r.VehicleCategory == "2-Wheeler" || r.VehicleCategory == "Bike") 
+                        { 
+                            headerBorder = "border-info border-opacity-40"; 
+                            headerBadge = "bg-info text-dark"; 
+                            catIcon = "fa-motorcycle text-info";
+                        }
+                        else if (r.VehicleCategory == "Commercial") 
+                        { 
+                            headerBorder = "border-primary border-opacity-40"; 
+                            headerBadge = "bg-primary text-white"; 
+                            catIcon = "fa-truck text-primary";
+                        }
+                        else if (r.VehicleCategory == "Heavy") 
+                        { 
+                            headerBorder = "border-danger border-opacity-40"; 
+                            headerBadge = "bg-danger text-white"; 
+                            catIcon = "fa-tractor text-danger";
+                        }
+
+                        <div class="p-3 bg-black bg-opacity-40 rounded-3 border @headerBorder shadow-sm">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="text-white font-weight-bold mb-0">
+                                    <i class="fa-solid @catIcon me-2"></i>@r.VehicleCategory
+                                </h6>
+                                <span class="badge @headerBadge font-weight-bold">Layer 1 Base Rates</span>
+                            </div>
+
                             <form action="/Admin/UpdatePricingRule" method="POST">
                                 <input type="hidden" name="ruleId" value="@r.Id">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small font-weight-bold">Target City / Region</label>
-                                    <select name="cityName" class="form-select glass-input text-warning font-weight-bold py-1">
+                                <div class="mb-2">
+                                    <label class="form-label text-muted small font-weight-bold mb-1" style="font-size:0.72rem;">Target City / Region</label>
+                                    <select name="cityName" class="form-select glass-input text-warning font-weight-bold py-1" style="font-size:0.8rem;">
                                         <option value="All Cities" selected="@(r.CityName == "All Cities")">🌐 All Cities (National Default)</option>
                                         @foreach (var c in cityNamesList)
                                         {
@@ -195,26 +276,26 @@
                                         }
                                     </select>
                                 </div>
-                                <div class="row g-2 mb-3">
+                                <div class="row g-2 mb-2">
                                     <div class="col-6">
-                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Base Visiting Fee (₹)</label>
-                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseFee" value="@r.BaseFee" step="1" required>
+                                        <label class="form-label text-muted small mb-1" style="font-size:0.72rem;">Base Visiting (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold form-control-sm" name="baseFee" value="@r.BaseFee" step="1" required>
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Visiting Per-KM Rate (₹)</label>
-                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmRate" value="@r.PerKmRate" step="1" required>
+                                        <label class="form-label text-muted small mb-1" style="font-size:0.72rem;">Visiting Per-KM (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold form-control-sm" name="perKmRate" value="@r.PerKmRate" step="1" required>
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Base Towing Fee (₹)</label>
-                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseTowingFee" value="@r.BaseTowingFee" step="1" required>
+                                        <label class="form-label text-muted small mb-1" style="font-size:0.72rem;">Base Towing (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold form-control-sm" name="baseTowingFee" value="@r.BaseTowingFee" step="1" required>
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label text-muted small" style="font-size:0.75rem;">Towing Per-KM Rate (₹)</label>
-                                        <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmTowingRate" value="@r.PerKmTowingRate" step="1" required>
+                                        <label class="form-label text-muted small mb-1" style="font-size:0.72rem;">Towing Per-KM (₹)</label>
+                                        <input type="number" class="form-control glass-input text-white font-weight-bold form-control-sm" name="perKmTowingRate" value="@r.PerKmTowingRate" step="1" required>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn text-white font-weight-bold btn-sm w-100 py-2 shadow-sm" style="background: linear-gradient(135deg, #ff6b00 0%, #e05d00 100%); border: none;">
-                                    <i class="fa-solid fa-circle-check me-1"></i> Apply Rates Update
+                                <button type="submit" class="btn text-white font-weight-bold btn-sm w-100 py-1.5 shadow-sm" style="background: linear-gradient(135deg, #ff6b00 0%, #e05d00 100%); border: none;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Update @r.VehicleCategory Rates
                                 </button>
                             </form>
                         </div>
@@ -247,15 +328,18 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small font-weight-bold">Problem Name</label>
-                        <input type="text" name="problemName" class="form-control glass-input text-white font-weight-bold" placeholder="e.g. Battery Jumpstart" required>
+                        <input type="text" name="problemName" class="form-control glass-input text-white font-weight-bold" placeholder="e.g. Battery Jumpstart, Controller Fault" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small font-weight-bold">Vehicle Category</label>
-                        <select name="vehicleCategory" class="form-select glass-input text-white">
-                            <option value="Car">Car</option>
-                            <option value="2-Wheeler">2-Wheeler (Bike/Scooter)</option>
-                            <option value="Commercial">Commercial / Heavy</option>
-                            <option value="All">All Vehicle Types</option>
+                        <select name="vehicleCategory" class="form-select glass-input text-white font-weight-bold">
+                            <option value="Car">🚗 Car / SUV / Sedan</option>
+                            <option value="2-Wheeler">🏍️ 2-Wheeler (Bike/Scooter)</option>
+                            <option value="E-Rickshaw">⚡ E-Rickshaw (EV 3-Wheeler)</option>
+                            <option value="Auto-Rickshaw">🛺 Auto-Rickshaw (CNG / Petrol / LPG)</option>
+                            <option value="Commercial">🚚 Commercial (Truck / Bus / Loader / Pickup)</option>
+                            <option value="Heavy">🚜 Heavy Equipment (JCB / Tractor / Crane)</option>
+                            <option value="All">🌐 All Vehicle Types</option>
                         </select>
                     </div>
                     <div class="row g-2 mb-3">
@@ -305,11 +389,14 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small font-weight-bold">Vehicle Category</label>
-                        <select name="vehicleCategory" id="editVehicleCategory" class="form-select glass-input text-white">
-                            <option value="Car">Car</option>
-                            <option value="2-Wheeler">2-Wheeler (Bike/Scooter)</option>
-                            <option value="Commercial">Commercial / Heavy</option>
-                            <option value="All">All Vehicle Types</option>
+                        <select name="vehicleCategory" id="editVehicleCategory" class="form-select glass-input text-white font-weight-bold">
+                            <option value="Car">🚗 Car / SUV / Sedan</option>
+                            <option value="2-Wheeler">🏍️ 2-Wheeler (Bike/Scooter)</option>
+                            <option value="E-Rickshaw">⚡ E-Rickshaw (EV 3-Wheeler)</option>
+                            <option value="Auto-Rickshaw">🛺 Auto-Rickshaw (CNG / Petrol / LPG)</option>
+                            <option value="Commercial">🚚 Commercial (Truck / Bus / Loader / Pickup)</option>
+                            <option value="Heavy">🚜 Heavy Equipment (JCB / Tractor / Crane)</option>
+                            <option value="All">🌐 All Vehicle Types</option>
                         </select>
                     </div>
                     <div class="row g-2 mb-3">
@@ -333,6 +420,42 @@
 </div>
 
 <script>
+    let activeFilterCategory = 'ALL';
+
+    function filterProblemCategory(cat, btn) {
+        activeFilterCategory = cat;
+        document.querySelectorAll('.cat-filter-btn').forEach(b => {
+            b.classList.remove('btn-warning', 'text-dark', 'active');
+            b.classList.add('btn-outline-secondary', 'text-light');
+        });
+        btn.classList.remove('btn-outline-secondary', 'text-light');
+        btn.classList.add('btn-warning', 'text-dark', 'active');
+
+        applyFilters();
+    }
+
+    function searchProblemTable(query) {
+        applyFilters();
+    }
+
+    function applyFilters() {
+        var query = (document.getElementById('problemSearchTableInput').value || '').toLowerCase().trim();
+        document.querySelectorAll('.admin-prob-row').forEach(row => {
+            var cat = row.getAttribute('data-category');
+            var name = row.getAttribute('data-name') || '';
+            var city = row.getAttribute('data-city') || '';
+
+            var matchesCategory = (activeFilterCategory === 'ALL' || cat === activeFilterCategory || cat === 'All');
+            var matchesSearch = (!query || name.includes(query) || city.includes(query) || cat.toLowerCase().includes(query));
+
+            if (matchesCategory && matchesSearch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
     function openEditProblemModal(id, name, category, city, minCharge, maxCharge) {
         document.getElementById('editProblemId').value = id;
         document.getElementById('editProblemName').value = name;

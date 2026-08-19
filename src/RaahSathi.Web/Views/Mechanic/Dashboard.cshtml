@@ -10,6 +10,8 @@
     var activeWarning = ViewBag.ActiveWarning as MechanicWarning;
     var supportMessages = ViewBag.SupportMessages as List<MechanicSupportMessage> ?? new List<MechanicSupportMessage>();
     int unreadSupport = ViewBag.UnreadSupportCount as int? ?? 0;
+    var refSummary = ViewBag.ReferralSummary as RaahSathi.Services.ReferralDashboardSummaryDto;
+    var refSettings = ViewBag.ReferralSettings as ReferralProgramSetting ?? refSummary?.Settings ?? new ReferralProgramSetting();
 
     var now = DateTime.UtcNow;
     var mechanicBanners = _dbContext.CmsBanners
@@ -267,6 +269,9 @@
                 </button>
                 <button class="btn btn-premium-secondary btn-sm rounded-pill px-3" onclick="switchMechTab('tab-wallet')">
                     <i class="fa-solid fa-wallet me-1"></i> Earnings
+                </button>
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 font-weight-bold text-dark shadow-sm" onclick="openMechanicReferralModal()">
+                    <i class="fa-solid fa-gift me-1"></i> Refer &amp; Earn <span class="badge bg-dark text-warning ms-1">₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0")</span>
                 </button>
                 <button class="btn btn-outline-info btn-sm rounded-pill px-3 position-relative" onclick="switchMechTab('tab-support')">
                     <i class="fa-solid fa-inbox me-1"></i> Support Inbox
@@ -693,14 +698,14 @@
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <h5 class="text-warning font-weight-bold mb-1">Hyundai i20 (Car)</h5>
-                            <p class="text-muted small mb-2">Registration: <b>UP32 AB 1234</b></p>
-                            <span class="badge bg-secondary text-light mb-2">Problem: Battery Dead</span>
-                            <span class="d-block text-muted small"><i class="fa-solid fa-location-dot text-warning me-1"></i> Sector 62 Noida (Approx 3.8 KM)</span>
+                            <h5 class="text-warning font-weight-bold mb-1">@(pingJob.Vehicle?.Model ?? "Breakdown Vehicle") (@(pingJob.Vehicle?.VehicleType ?? "Car"))</h5>
+                            <p class="text-muted small mb-2">Registration: <b>@(pingJob.Vehicle?.RegistrationNumber ?? "UP16-RS-AUTO")</b></p>
+                            <span class="badge bg-secondary text-light mb-2">Problem: @(pingJob.ProblemType ?? "Breakdown Support")</span>
+                            <span class="d-block text-muted small"><i class="fa-solid fa-location-dot text-warning me-1"></i> @(string.IsNullOrWhiteSpace(pingJob.Address) ? "Nearby Highway NH24" : pingJob.Address)</span>
                         </div>
                         <div class="col-md-6 text-md-end">
                             <span class="text-muted small d-block font-weight-bold">Estimated Job Cost</span>
-                            <h3 class="text-success font-weight-bold mb-2">₹450 – ₹650</h3>
+                            <h3 class="text-success font-weight-bold mb-2">₹@(pingJob.FinalBillAmount > 0 ? pingJob.FinalBillAmount.ToString("N0") : "450 – 650")</h3>
                             <button class="btn btn-success btn-lg px-5 font-weight-bold me-2" onclick="acceptPing(@pingJob.Id)">
                                 <i class="fa-solid fa-check me-1"></i> Accept Request
                             </button>
@@ -726,15 +731,15 @@
                 
                 <!-- Date Filter Input Elements -->
                 <div class="d-flex flex-wrap align-items-center gap-2">
-                    <span class="text-muted small font-weight-medium">Select Range:</span>
-                    <input type="date" id="historyStartDate" class="form-control form-control-sm glass-input text-warning py-1" style="width: 135px; font-size: 0.85rem;" title="Start Date">
+                    <span class="text-muted small font-weight-medium">Filter Range:</span>
+                    <input type="date" id="historyStartDate" class="form-control form-control-sm glass-input text-warning py-1" style="width: 140px; font-size: 0.85rem;" title="Start Date">
                     <span class="text-muted small">to</span>
-                    <input type="date" id="historyEndDate" class="form-control form-control-sm glass-input text-warning py-1" style="width: 135px; font-size: 0.85rem;" title="End Date">
+                    <input type="date" id="historyEndDate" class="form-control form-control-sm glass-input text-warning py-1" style="width: 140px; font-size: 0.85rem;" title="End Date">
                     <button class="btn btn-warning btn-sm font-weight-bold px-3 py-1" onclick="applyHistoryDateFilter()">
                         <i class="fa-solid fa-filter me-1"></i> Apply
                     </button>
-                    <button class="btn btn-outline-secondary btn-sm p-1 px-2" onclick="resetHistoryDateFilter()" title="Reset to Weekly">
-                        <i class="fa-solid fa-rotate"></i>
+                    <button class="btn btn-outline-secondary btn-sm p-1 px-2.5" onclick="resetHistoryDateFilter()" title="Reset to Last 1 Month">
+                        <i class="fa-solid fa-rotate me-1"></i> Reset (1 Month)
                     </button>
                 </div>
             </div>
@@ -761,7 +766,8 @@
                         <tbody>
                             @foreach (var j in pastJobs)
                             {
-                                <tr class="history-job-row" data-date="@(j.CompletedAt?.ToLocalTime().ToString("yyyy-MM-dd") ?? "")">
+                                var jobDate = j.CompletedAt ?? j.CreatedAt;
+                                <tr class="history-job-row" data-date="@jobDate.ToLocalTime().ToString("yyyy-MM-dd")">
                                     <td>
                                         <b>#@j.Id</b>
                                         @if (j.DisputeStatus == "Active")
@@ -776,7 +782,7 @@
                                     <td>@j.Vehicle?.Model</td>
                                     <td><span class="badge bg-warning text-dark">@j.ProblemType</span></td>
                                     <td>@j.Customer?.Name</td>
-                                    <td class="small text-muted">@(j.CompletedAt?.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt") ?? "-")</td>
+                                    <td class="small text-muted">@jobDate.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</td>
                                     <td class="text-success font-weight-bold">₹@j.FinalBillAmount</td>
                                     <td>
                                         <button class="btn btn-outline-info btn-sm font-weight-bold" onclick="showJobInvoiceModal(@j.Id)">
@@ -858,27 +864,36 @@
 
             <!-- Right: Wallet Stats & Statement -->
             <div class="col-lg-7">
-                <div class="row g-3 mb-4">
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 border-secondary text-center">
+                <div class="row g-2 g-md-3 mb-4">
+                    <div class="col-6 col-md">
+                        <div class="glass-card p-3 border-secondary text-center h-100">
                             <span class="text-muted small d-block mb-1">Today's Earnings</span>
                             <h4 class="text-success font-weight-extrabold mb-0" id="lblWalletTodayEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.TodayEarnings).ToString("N2"))</h4>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 border-secondary text-center">
+                    <div class="col-6 col-md">
+                        <div class="glass-card p-3 border-secondary text-center h-100">
                             <span class="text-muted small d-block mb-1">Weekly Earnings</span>
                             <h4 class="text-warning font-weight-extrabold mb-0" id="lblWalletWeeklyEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.WeeklyEarnings).ToString("N2"))</h4>
+                            <span class="text-muted" style="font-size: 0.68rem;">(Current Week)</span>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 border-secondary text-center">
-                            <span class="text-muted small d-block mb-1">Monthly Volume</span>
-                            <h4 class="text-info font-weight-extrabold mb-0" id="lblWalletMonthlyVolume" style="font-family: 'Outfit';">₹@(((double)ViewBag.MonthlyVolume).ToString("N2"))</h4>
+                    <div class="col-6 col-md">
+                        <div class="glass-card p-3 border-secondary text-center h-100">
+                            <span class="text-muted small d-block mb-1">Monthly Earnings</span>
+                            <h4 class="text-info font-weight-extrabold mb-0" id="lblWalletMonthlyVolume" style="font-family: 'Outfit';">₹@(((double)(ViewBag.MonthlyEarnings ?? ViewBag.MonthlyVolume ?? 0)).ToString("N2"))</h4>
+                            <span class="text-muted" style="font-size: 0.68rem;">(Current Month)</span>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 border-danger border-opacity-40 text-center bg-danger bg-opacity-10">
+                    <div class="col-6 col-md">
+                        <div class="glass-card p-3 border-info border-opacity-30 text-center bg-info bg-opacity-10 h-100">
+                            <span class="text-muted small d-block mb-1">Monthly Withdrawn</span>
+                            <h4 class="text-white font-weight-extrabold mb-0" id="lblWalletMonthlyWithdrawal" style="font-family: 'Outfit';">₹@(((double)(ViewBag.MonthlyWithdrawals ?? 0)).ToString("N2"))</h4>
+                            <span class="text-info" style="font-size: 0.68rem;">(Current Month)</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md">
+                        <div class="glass-card p-3 border-danger border-opacity-40 text-center bg-danger bg-opacity-10 h-100">
                             <span class="text-muted small d-block mb-1">Held in Escrow</span>
                             <h4 class="text-danger font-weight-extrabold mb-0" id="lblWalletHeldEarnings" style="font-family: 'Outfit';">₹@(((double)ViewBag.HeldEarnings).ToString("N2"))</h4>
                         </div>
@@ -887,13 +902,36 @@
 
                 <!-- Recent Earnings Statement Card -->
                 <div class="glass-card border-secondary">
-                    <h5 class="text-white font-weight-bold mb-3"><i class="fa-solid fa-file-invoice-dollar text-warning me-2"></i> Recent Earnings Statement</h5>
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3 border-bottom border-secondary border-opacity-30 pb-3">
+                        <div>
+                            <h5 class="text-white font-weight-bold mb-0">
+                                <i class="fa-solid fa-file-invoice-dollar text-warning me-2"></i> Recent Earnings Statement
+                            </h5>
+                            <small class="text-muted" style="font-size: 0.75rem;">Live statements &amp; date range transactions</small>
+                        </div>
+
+                        <!-- Compact Date Filter Controls -->
+                        <div class="d-flex align-items-center flex-nowrap gap-1.5">
+                            <div class="d-flex align-items-center gap-1 bg-dark bg-opacity-75 px-2 py-1 rounded-2 border border-secondary" style="height: 30px;">
+                                <span class="text-muted" style="font-size: 0.72rem;"><i class="fa-regular fa-calendar text-warning me-1"></i>From:</span>
+                                <input type="date" id="txtStatementFromDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0" style="width: 100px; outline: none; font-size: 0.75rem;" onchange="applyStatementDateFilter()">
+                            </div>
+                            <div class="d-flex align-items-center gap-1 bg-dark bg-opacity-75 px-2 py-1 rounded-2 border border-secondary" style="height: 30px;">
+                                <span class="text-muted" style="font-size: 0.72rem;">To:</span>
+                                <input type="date" id="txtStatementToDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0" style="width: 100px; outline: none; font-size: 0.75rem;" onchange="applyStatementDateFilter()">
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 text-light border-secondary shadow-sm" onclick="resetStatementFilter()" title="Reset Date Filter (Default 1 Month)" style="height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem;">
+                                <i class="fa-solid fa-arrow-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-dark table-hover align-middle mb-0">
                             <thead>
                                 <tr class="border-secondary text-muted small">
                                     <th>Job ID</th>
-                                    <th>Date & Time</th>
+                                    <th>Date &amp; Time</th>
                                     <th>Status</th>
                                     <th>Total Bill</th>
                                     <th class="text-end">Net Credited</th>
@@ -934,11 +972,11 @@
                                             <td class="text-white-50">₹@p.Amount.ToString("N2")</td>
                                             @if (p.PaymentStatus == "Released" || p.PaymentStatus == "Completed")
                                             {
-                                                <td class="text-success font-weight-bold text-end">+₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                                <td class="text-success font-weight-bold text-end">+₹@((p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount)).ToString("N2"))</td>
                                             }
                                             else if (p.PaymentStatus == "Held" || p.PaymentStatus == "Pending")
                                             {
-                                                <td class="text-warning font-weight-bold text-end">₹@p.MechanicEarningAmount.ToString("N2") (Held)</td>
+                                                <td class="text-warning font-weight-bold text-end">₹@((p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount)).ToString("N2")) (Held)</td>
                                             }
                                             else if (p.PaymentStatus == "Refunded")
                                             {
@@ -946,18 +984,25 @@
                                             }
                                             else
                                             {
-                                                <td class="text-muted text-end">₹@p.MechanicEarningAmount.ToString("N2")</td>
+                                                <td class="text-muted text-end">₹@((p.MechanicEarningAmount != 0 ? p.MechanicEarningAmount : (p.Amount - p.AdminCommissionAmount)).ToString("N2"))</td>
                                             }
                                         </tr>
                                     }
                                 }
                             </tbody>
+                            <tfoot id="walletTransactionsTableFoot" class="border-top border-secondary">
+                                <tr class="fw-bold bg-dark bg-opacity-75">
+                                    <td colspan="3" class="text-white py-3">
+                                        <i class="fa-solid fa-calculator text-warning me-2"></i> 
+                                        Total Summary (<span id="lblFilteredCount">0</span> Transactions)
+                                    </td>
+                                    <td class="text-info py-3" id="lblFilteredTotalBill">₹0.00</td>
+                                    <td class="text-success text-end py-3 fs-6" id="lblFilteredNetCredited">+₹0.00</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>             </div>
             </div>
         </div>
     </div>
@@ -1012,13 +1057,20 @@
 
             <!-- Trust Badges Bar -->
             <div class="mb-4">
-                <label class="form-label text-muted small font-weight-bold d-block mb-2">Verified Partner Badges:</label>
+                <label class="form-label text-muted small font-weight-bold d-block mb-2">Verified Partner Badges &amp; Specializations:</label>
                 <div class="d-flex flex-wrap gap-2">
-                    <span class="badge bg-warning text-dark px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-trophy me-1"></i> Top Rated</span>
-                    <span class="badge bg-info text-dark px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-bolt me-1"></i> Fast Response</span>
-                    <span class="badge bg-success text-white px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-battery-full me-1"></i> Battery Expert</span>
-                    <span class="badge bg-primary text-white px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-plug text-warning me-1"></i> EV Certified</span>
-                    <span class="badge bg-dark border border-secondary text-light px-3 py-2 fs-6"><i class="fa-solid fa-award text-warning me-1"></i> 1000+ Jobs Completed</span>
+                    @foreach (var badge in profile.GetBadges())
+                    {
+                        <span class="badge bg-dark border border-warning text-warning px-3 py-2 fs-6 font-weight-bold">@badge</span>
+                    }
+                    @if (profile.Rating >= 4.8)
+                    {
+                        <span class="badge bg-warning text-dark px-3 py-2 fs-6 font-weight-bold"><i class="fa-solid fa-trophy me-1"></i> Top Rated</span>
+                    }
+                    @if (profile.TotalJobs >= 10)
+                    {
+                        <span class="badge bg-dark border border-secondary text-light px-3 py-2 fs-6"><i class="fa-solid fa-award text-warning me-1"></i> @profile.TotalJobs+ Jobs Completed</span>
+                    }
                     <span class="badge bg-success bg-opacity-25 text-success border border-success px-3 py-2 fs-6"><i class="fa-solid fa-circle-check me-1"></i> Verified Partner</span>
                 </div>
             </div>
@@ -1029,11 +1081,11 @@
                 <div class="row g-3 text-center">
                     <div class="col-md-2.4 col-6">
                         <span class="text-muted small d-block">Jobs Completed</span>
-                        <h4 class="text-white font-weight-extrabold mb-0">1,284</h4>
+                        <h4 class="text-white font-weight-extrabold mb-0">@(profile.TotalJobs > 0 ? profile.TotalJobs.ToString() : "1,284")</h4>
                     </div>
                     <div class="col-md-2.4 col-6">
                         <span class="text-muted small d-block">Rating</span>
-                        <h4 class="text-warning font-weight-extrabold mb-0">⭐ 4.9</h4>
+                        <h4 class="text-warning font-weight-extrabold mb-0">⭐ @profile.Rating.ToString("F1")</h4>
                     </div>
                     <div class="col-md-2.4 col-6">
                         <span class="text-muted small d-block">Acceptance</span>
@@ -1052,13 +1104,18 @@
 
             <!-- Skills Checkboxes Selector -->
             <div class="mb-4">
-                <label class="form-label text-white font-weight-bold mb-2"><i class="fa-solid fa-screwdriver-wrench text-warning me-1"></i> Mechanic Skills & Specializations</label>
+                <label class="form-label text-white font-weight-bold mb-2"><i class="fa-solid fa-screwdriver-wrench text-warning me-1"></i> Mechanic Skills &amp; Specializations</label>
                 <div class="d-flex flex-wrap gap-2 p-3 bg-dark bg-opacity-40 rounded-3 border border-secondary">
-                    @foreach (var sk in new[] { "Battery", "Tyre", "Engine", "Electrical", "AC", "Clutch", "Brake", "Diesel", "Petrol", "EV", "Truck", "JCB", "Crane" })
+                    @foreach (var sk in new[] { "Battery", "Tyre", "Engine", "Electrical", "AC", "Clutch", "Brake", "E-Rickshaw EV", "Auto-Rickshaw", "CNG System", "BLDC Motor", "Controller", "Lithium Battery", "Diesel", "Petrol", "Truck", "JCB", "Crane" })
                     {
-                        bool isChecked = (profile.Specialization ?? "").Contains(sk) || (profile.VehicleExpertise ?? "").Contains(sk) || sk == "Battery" || sk == "Engine";
-                        <input type="checkbox" class="btn-check" name="chkSkills" id="chkSkill-@sk" value="@sk" @(isChecked ? "checked" : "") autocomplete="off">
-                        <label class="btn btn-outline-warning rounded-pill px-3 py-1 font-weight-medium" for="chkSkill-@sk">@sk</label>
+                        bool isChecked = (profile.Specialization ?? "").Contains(sk) 
+                                      || (profile.VehicleExpertise ?? "").Contains(sk) 
+                                      || (profile.ErickshawSkills ?? "").Contains(sk) 
+                                      || (profile.AutoSkills ?? "").Contains(sk) 
+                                      || sk == "Battery" || sk == "Engine";
+                        var idSafe = sk.Replace(" ", "-").Replace("&", "and");
+                        <input type="checkbox" class="btn-check" name="chkSkills" id="chkSkill-@idSafe" value="@sk" @(isChecked ? "checked" : "") autocomplete="off">
+                        <label class="btn btn-outline-warning rounded-pill px-3 py-1 font-weight-medium" for="chkSkill-@idSafe">@sk</label>
                     }
                 </div>
             </div>
@@ -1696,14 +1753,37 @@
     var todayJobsCountVal = @(ViewBag.TodayJobsCount ?? 0);
     var weeklyJobsCountVal = @(ViewBag.WeeklyJobsCount ?? 0);
 
+    var currentStatementFrom = '';
+    var currentStatementTo = '';
+
+    function applyStatementDateFilter() {
+        currentStatementFrom = $('#txtStatementFromDate').val() || '';
+        currentStatementTo = $('#txtStatementToDate').val() || '';
+        updateWalletStats();
+    }
+
+    function resetStatementFilter() {
+        $('#txtStatementFromDate').val('');
+        $('#txtStatementToDate').val('');
+        currentStatementFrom = '';
+        currentStatementTo = '';
+        updateWalletStats();
+    }
+
     function updateWalletStats() {
-        $.get('/Mechanic/GetWalletStats', function(res) {
-            if (res.success) {
-                $('#lblWalletTodayEarnings').text('₹' + res.todayEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                $('#lblWalletWeeklyEarnings').text('₹' + res.weeklyEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                $('#lblWalletMonthlyVolume').text('₹' + res.monthlyVolume.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                $('#lblWalletPendingSettlement').text('₹' + res.pendingSettlement.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                $('#topTodayEarnings').text('₹' + Math.round(res.todayEarnings).toLocaleString('en-IN'));
+        var query = '';
+        if (currentStatementFrom || currentStatementTo) {
+            query = '?fromDate=' + encodeURIComponent(currentStatementFrom) + '&toDate=' + encodeURIComponent(currentStatementTo);
+        }
+        $.get('/Mechanic/GetWalletStats' + query, function(res) {
+            if (res && res.success) {
+                $('#lblWalletTodayEarnings').text('₹' + (res.todayEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletWeeklyEarnings').text('₹' + (res.weeklyEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletMonthlyVolume').text('₹' + (res.monthlyEarnings || res.monthlyVolume || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletMonthlyWithdrawal').text('₹' + (res.monthlyWithdrawal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletHeldEarnings').text('₹' + (res.heldEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblWalletPendingSettlement').text('₹' + (res.pendingSettlement || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#topTodayEarnings').text('₹' + Math.round(res.todayEarnings || 0).toLocaleString('en-IN'));
 
                 // Update jobs count variables in real-time
                 todayJobsCountVal = res.todayJobsCount || 0;
@@ -1719,8 +1799,8 @@
 
                 // Update Recent Earnings Statement table
                 var tableHtml = '';
-                if (res.transactions.length === 0) {
-                    tableHtml = '<tr><td colspan="5" class="text-muted text-center py-4">No transactions recorded yet.</td></tr>';
+                if (!res.transactions || res.transactions.length === 0) {
+                    tableHtml = '<tr><td colspan="5" class="text-muted text-center py-4"><i class="fa-regular fa-calendar-xmark me-1"></i> No transactions found for selected date range.</td></tr>';
                 } else {
                     res.transactions.forEach(function(tx) {
                         var isDebit = tx.mechanicEarning < 0;
@@ -1730,18 +1810,36 @@
                         var signPrefix = isDebit ? "-" : "+";
                         var absEarning = Math.abs(tx.mechanicEarning);
 
+                        if (tx.status === "Held" || tx.status === "Pending") {
+                            badgeText = "Payment Held";
+                            badgeClass = "bg-warning bg-opacity-15 text-warning border border-warning border-opacity-30";
+                            textClass = "text-warning font-weight-bold";
+                            signPrefix = "";
+                        } else if (tx.status === "Refunded") {
+                            badgeText = "Refunded (Cancelled)";
+                            badgeClass = "bg-danger bg-opacity-15 text-danger border border-danger border-opacity-30";
+                            textClass = "text-danger font-weight-bold";
+                            signPrefix = "";
+                        }
+
                         tableHtml += `
                             <tr>
                                 <td><b>#${tx.jobId}</b></td>
                                 <td class="small text-muted">${tx.createdAt}</td>
                                 <td><span class="badge ${badgeClass} px-2 py-1">${badgeText}</span></td>
-                                <td>₹${tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td class="${textClass}">${signPrefix}₹${absEarning.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td class="text-white-50">₹${tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td class="${textClass} text-end">${signPrefix}₹${absEarning.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
                         `;
                     });
                 }
                 $('#walletTransactionsTableBody').html(tableHtml);
+
+                // Update Table Footer Totals
+                var count = res.transactions ? res.transactions.length : 0;
+                $('#lblFilteredCount').text(count);
+                $('#lblFilteredTotalBill').text('₹' + (res.filteredTotalBill || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                $('#lblFilteredNetCredited').text('+₹' + (res.filteredTotalNetEarning || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
             }
         });
     }
@@ -1817,8 +1915,8 @@
                         if ($('#qrSuccessContainer').length === 0) {
                             $(`<div id="qrSuccessContainer" class="p-4 my-3 rounded bg-success bg-opacity-10 border border-success text-center">
                                 <i class="fa-solid fa-circle-check text-success mb-2" style="font-size: 3rem;"></i>
-                                <h5 class="text-success font-weight-bold">Payment Recieved!</h5>
-                                <p class="text-light small mb-0">Please complete the job and dismiss this alert.</p>
+                                <h5 class="text-success font-weight-bold">Payment Received!</h5>
+                                <p class="text-light small mb-0">Customer has paid the bill online. Click below to complete and credit your wallet.</p>
                                </div>`).insertBefore('#btnConfirmQrPayment');
                         }
                         
@@ -1869,7 +1967,17 @@
     }
 
     if (currentActiveJobId && currentActiveJobId !== "0") {
-        setInterval(pollActiveJobState, 2500);
+        setInterval(pollActiveJobState, 1500);
+    } else {
+        // Standby polling: Only reload if an active job has actually been assigned to this mechanic directly
+        setInterval(function() {
+            if (window.currentDispatchJobId) return; // Do not reload while 15-second dispatch modal is active/ringing
+            $.get('/Mechanic/CheckActiveJobOrPing', function(res) {
+                if (res && res.success && res.hasActiveJob && !window.currentDispatchJobId) {
+                    location.reload();
+                }
+            });
+        }, 3000);
     }
 
     function ackWarning(warningId) {
@@ -2017,25 +2125,35 @@
         var startVal = $('#historyStartDate').val();
         var endVal = $('#historyEndDate').val();
         
-        if (!startVal || !endVal) {
-            alert('Please select both Start Date and End Date.');
-            return;
+        var startDate = null;
+        var endDate = null;
+
+        if (startVal) {
+            startDate = new Date(startVal);
+            startDate.setHours(0, 0, 0, 0);
+        } else {
+            // Default 1 month (30 days) ago
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            startDate.setHours(0, 0, 0, 0);
         }
 
-        var startDate = new Date(startVal);
-        startDate.setHours(0,0,0,0);
-        var endDate = new Date(endVal);
-        endDate.setHours(23,59,59,999);
+        if (endVal) {
+            endDate = new Date(endVal);
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+        }
 
         var visibleCount = 0;
         $('.history-job-row').each(function() {
             var rowDateStr = $(this).data('date');
             if (!rowDateStr) {
-                $(this).addClass('d-none');
-                return;
+                rowDateStr = new Date().toISOString().split('T')[0];
             }
             var rowDate = new Date(rowDateStr);
-            rowDate.setHours(0,0,0,0);
+            rowDate.setHours(0, 0, 0, 0);
             
             if (rowDate >= startDate && rowDate <= endDate) {
                 $(this).removeClass('d-none');
@@ -2058,20 +2176,66 @@
     }
 
     function resetHistoryDateFilter() {
-        var today = new Date();
-        var lastWeek = new Date();
-        lastWeek.setDate(today.getDate() - 7);
-
-        $('#historyStartDate').val(lastWeek.toISOString().split('T')[0]);
-        $('#historyEndDate').val(today.toISOString().split('T')[0]);
+        // Clear input boxes so they are blank by default
+        $('#historyStartDate').val('');
+        $('#historyEndDate').val('');
         
-        applyHistoryDateFilter();
+        // Show jobs from current date back 1 month (30 days)
+        var oneMonthAgo = new Date();
+        oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+        oneMonthAgo.setHours(0, 0, 0, 0);
+
+        var now = new Date();
+        now.setHours(23, 59, 59, 999);
+
+        var visibleCount = 0;
+        $('.history-job-row').each(function() {
+            var rowDateStr = $(this).data('date');
+            if (!rowDateStr) {
+                rowDateStr = new Date().toISOString().split('T')[0];
+            }
+            var rowDate = new Date(rowDateStr);
+            rowDate.setHours(0, 0, 0, 0);
+
+            if (rowDate >= oneMonthAgo && rowDate <= now) {
+                $(this).removeClass('d-none');
+                visibleCount++;
+            } else {
+                $(this).addClass('d-none');
+            }
+        });
+
+        if (visibleCount === 0) {
+            if ($('#historyNoJobsRow').length === 0) {
+                $('table.history-table tbody').append('<tr id="historyNoJobsRow"><td colspan="7" class="text-center text-muted py-4">No completed jobs found in the last 1 month.</td></tr>');
+            } else {
+                $('#historyNoJobsRow').removeClass('d-none');
+            }
+        } else {
+            $('#historyNoJobsRow').addClass('d-none');
+        }
     }
 
     $(document).ready(function() {
         $('#jobInvoiceModal').on('hidden.bs.modal', function () {
             location.reload();
         });
+
+        if ($('#lblCardDispatchCountdown').length > 0) {
+            var cardSeconds = 15;
+            var cardInterval = setInterval(function() {
+                cardSeconds--;
+                if (cardSeconds < 0) cardSeconds = 0;
+                $('#lblCardDispatchCountdown').text(cardSeconds);
+                if (cardSeconds <= 0) {
+                    clearInterval(cardInterval);
+                    var pingId = "@(pingJob?.Id ?? 0)";
+                    if (pingId > 0 && typeof timeoutPing === 'function') {
+                        timeoutPing(pingId);
+                    }
+                }
+            }, 1000);
+        }
     });
 
 </script>
@@ -2227,4 +2391,344 @@
         </div>
     </div>
 </div>
+
+<!-- ======================================================== -->
+<!-- 🎁 MECHANIC REFERRAL HUB & WALLET WITHDRAWAL MODAL -->
+<!-- ======================================================== -->
+<div class="modal fade" id="mechanicReferralModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-white border border-warning border-opacity-40 shadow-2xl" style="border-radius: 18px; overflow: hidden;">
+            <div class="modal-header border-secondary p-3 px-4" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(15, 23, 42, 0.95));">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-warning p-2 text-dark font-weight-bold">
+                        <i class="fa-solid fa-gift fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title font-weight-bold mb-0 text-white" style="font-family: 'Outfit';">Mechanic Partner Referral Program</h5>
+                        <span class="text-muted small">Refer fellow mechanics or onboard customers and earn extra wallet bonuses.</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <!-- Top Earnings Stats -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary text-center">
+                            <span class="text-muted small text-uppercase font-weight-bold">Referral Balance</span>
+                            <h3 class="text-success font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@(refSummary?.ReferralWalletBalance.ToString("N2") ?? "0.00")</h3>
+                            <span class="text-muted small">Withdrawable bonus</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary text-center">
+                            <span class="text-muted small text-uppercase font-weight-bold">Pending Bonuses</span>
+                            <h3 class="text-warning font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@(refSummary?.PendingRewardAmount.ToString("N2") ?? "0.00")</h3>
+                            <span class="text-muted small">@(refSummary?.PendingReferralCount ?? 0) partners/users pending 1st job</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary text-center">
+                            <span class="text-muted small text-uppercase font-weight-bold">Total Disbursed</span>
+                            <h3 class="text-info font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@(refSummary?.LifetimeEarnings.ToString("N2") ?? "0.00")</h3>
+                            <span class="text-muted small">@(refSummary?.SuccessfulReferralCount ?? 0) completed referrals</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dual Share Cards: M2M & M2C -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 border border-warning border-opacity-30 bg-black bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-warning text-dark font-weight-bold">REFER MECHANIC (M2M)</span>
+                                    <span class="text-warning font-weight-bold small">Earn ₹@refSettings.M2M_ReferrerReward.ToString("N0")</span>
+                                </div>
+                                <p class="text-muted small mb-2">Invite partner mechanics to join RaahSathi. Earn ₹@refSettings.M2M_ReferrerReward.ToString("N0") when they get verified and complete 1st job (New mechanic gets ₹@refSettings.M2M_RefereeReward.ToString("N0")).</p>
+                            </div>
+                            <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark w-100" onclick="shareMechanicM2MWhatsApp(@refSettings.M2M_RefereeReward)">
+                                <i class="fa-brands fa-whatsapp me-1 fs-6"></i> Share with Mechanics
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 border border-info border-opacity-30 bg-black bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-info text-dark font-weight-bold">REFER CUSTOMER (M2C)</span>
+                                    <span class="text-info font-weight-bold small">Earn ₹@refSettings.M2C_ReferrerReward.ToString("N0")</span>
+                                </div>
+                                <p class="text-muted small mb-2">Give your code to vehicle owners at your garage. Earn ₹@refSettings.M2C_ReferrerReward.ToString("N0") commission on their 1st breakdown booking (Customer gets ₹@refSettings.M2C_RefereeReward.ToString("N0") discount).</p>
+                            </div>
+                            <button type="button" class="btn btn-info btn-sm font-weight-bold text-white w-100" onclick="shareMechanicM2CWhatsApp(@refSettings.M2C_RefereeReward)">
+                                <i class="fa-brands fa-whatsapp me-1 fs-6"></i> Share with Customers
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unique Referral Code Copy Bar -->
+                <div class="p-3 rounded-3 border border-secondary bg-dark mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <span class="text-muted small font-weight-bold">YOUR UNIQUE PARTNER CODE:</span>
+                        <span class="text-warning font-monospace font-weight-extrabold fs-5 ms-2" id="mechRefCodeText">@(refSummary?.ReferralCode ?? "RSM-PARTNER")</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-warning btn-sm font-weight-bold px-3" onclick="copyMechanicReferralCode()">
+                            <i class="fa-solid fa-copy me-1"></i> <span id="btnCopyMechText">Copy Code</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm font-weight-bold px-3" onclick="shareMechanicSms()">
+                            <i class="fa-solid fa-comment-sms me-1"></i> SMS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs: Referred Network VS Withdrawal Request -->
+                <ul class="nav nav-pills nav-fill mb-3 bg-dark bg-opacity-60 p-1 rounded-3 border border-secondary" id="mechRefModalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active font-weight-bold text-white py-2" id="mechRefFriendsTab" data-bs-toggle="pill" data-bs-target="#mechRefFriendsContent" type="button">
+                            <i class="fa-solid fa-network-wired me-1.5 text-warning"></i> My Referral Network (@(refSummary?.ReferredFriends.Count ?? 0))
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link font-weight-bold text-white py-2" id="mechRefWithdrawTab" data-bs-toggle="pill" data-bs-target="#mechRefWithdrawContent" type="button">
+                            <i class="fa-solid fa-money-bill-wave me-1.5 text-success"></i> Request Bonus Payout
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link font-weight-bold text-white py-2" id="mechRefHistoryTab" data-bs-toggle="pill" data-bs-target="#mechRefHistoryContent" type="button">
+                            <i class="fa-solid fa-clock-rotate-left me-1.5 text-info"></i> Payout Ledger
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="mechRefModalTabsContent">
+                    <!-- Tab 1: Network Tracker -->
+                    <div class="tab-pane fade show active" id="mechRefFriendsContent" role="tabpanel">
+                        @if (refSummary == null || refSummary.ReferredFriends.Count == 0)
+                        {
+                            <div class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-users-gear fa-2x mb-2 text-warning opacity-60"></i>
+                                <p class="mb-1">No referrals recorded under your code yet.</p>
+                                <span class="small text-muted">Share your code with fellow mechanics and customers to start earning bonuses!</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+                                <table class="table table-dark table-sm table-hover mb-0 align-middle">
+                                    <thead class="text-muted small text-uppercase">
+                                        <tr>
+                                            <th>Invited Name</th>
+                                            <th>Role / Stage</th>
+                                            <th>Bonus</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var f in refSummary.ReferredFriends)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="font-weight-bold text-white">@f.FriendName</div>
+                                                    <div class="text-muted small">@f.FriendPhone</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge @(f.StageType == "M2M" ? "bg-warning text-dark" : "bg-info text-dark")">@f.StageType</span>
+                                                </td>
+                                                <td class="text-warning font-weight-bold">+₹@f.ExpectedReward.ToString("N0")</td>
+                                                <td>
+                                                    @if (f.Status == "Completed")
+                                                    {
+                                                        <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Reward Credited</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Pending 1st Service</span>
+                                                    }
+                                                </td>
+                                                <td class="text-muted small">@f.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Tab 2: Withdrawal Form -->
+                    <div class="tab-pane fade" id="mechRefWithdrawContent" role="tabpanel">
+                        <form action="/Mechanic/SubmitReferralWithdrawal" method="POST">
+                            <div class="p-3 bg-black bg-opacity-40 rounded-3 border border-secondary mb-3">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small font-weight-bold">Withdrawal Amount (₹) <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-dark border-secondary text-success">₹</span>
+                                            <input type="number" step="1" min="@refSettings.MinWithdrawalAmount" max="@(refSummary?.ReferralWalletBalance ?? 0)" name="amount" class="form-control glass-input text-white font-weight-bold" placeholder="Min ₹@refSettings.MinWithdrawalAmount.ToString("N0")" required />
+                                        </div>
+                                        <span class="text-muted" style="font-size: 0.72rem;">Available: ₹@(refSummary?.ReferralWalletBalance.ToString("N2") ?? "0.00")</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small font-weight-bold">Payout Method <span class="text-danger">*</span></label>
+                                        <select name="payoutMethod" id="mechPayoutMethodSelect" class="form-select glass-input text-white bg-dark border-secondary" onchange="toggleMechPayoutFields()" required>
+                                            <option value="UPI">UPI (PhonePe, GPay, Paytm)</option>
+                                            <option value="Bank">Bank Account Transfer</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- UPI Details -->
+                            <div id="mechUpiSection" class="mb-3">
+                                <label class="form-label text-muted small font-weight-bold">UPI ID (VPA) <span class="text-danger">*</span></label>
+                                <input type="text" name="upiId" class="form-control glass-input text-white" value="@profile.UpiId" placeholder="e.g. 9876543210@upi" />
+                            </div>
+
+                            <!-- Bank Details -->
+                            <div id="mechBankSection" class="row g-2 mb-3" style="display: none;">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small font-weight-bold">Account Holder Name</label>
+                                    <input type="text" name="accountHolder" class="form-control glass-input text-white" value="@(string.IsNullOrEmpty(profile.AccountHolderName) ? user.Name : profile.AccountHolderName)" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small font-weight-bold">Bank Name</label>
+                                    <input type="text" name="bankName" class="form-control glass-input text-white" value="@profile.BankName" placeholder="e.g. SBI" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small font-weight-bold">Account Number</label>
+                                    <input type="text" name="bankAccount" class="form-control glass-input text-white font-monospace" value="@profile.BankAccountNumber" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small font-weight-bold">IFSC Code</label>
+                                    <input type="text" name="ifsc" class="form-control glass-input text-white text-uppercase" value="@profile.IfscCode" />
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100 font-weight-bold py-2.5 shadow" @((refSummary?.ReferralWalletBalance ?? 0) < refSettings.MinWithdrawalAmount ? "disabled" : "")>
+                                <i class="fa-solid fa-paper-plane me-1"></i> Submit Referral Payout Request
+                            </button>
+                            @if ((refSummary?.ReferralWalletBalance ?? 0) < refSettings.MinWithdrawalAmount)
+                            {
+                                <div class="text-center text-muted small mt-2">
+                                    <i class="fa-solid fa-circle-info text-warning me-1"></i> Minimum withdrawal balance is ₹@refSettings.MinWithdrawalAmount.ToString("N0").
+                                </div>
+                            }
+                        </form>
+                    </div>
+
+                    <!-- Tab 3: History -->
+                    <div class="tab-pane fade" id="mechRefHistoryContent" role="tabpanel">
+                        @if (refSummary == null || refSummary.WithdrawalHistory.Count == 0)
+                        {
+                            <div class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-receipt fa-2x mb-2 text-secondary opacity-60"></i>
+                                <p class="mb-0">No past referral payout requests.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+                                <table class="table table-dark table-sm table-hover mb-0 align-middle">
+                                    <thead class="text-muted small text-uppercase">
+                                        <tr>
+                                            <th>Req ID</th>
+                                            <th>Amount</th>
+                                            <th>Method</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                            <th>Reference / Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var w in refSummary.WithdrawalHistory)
+                                        {
+                                            <tr>
+                                                <td class="font-monospace text-warning font-weight-bold">#REF-W@w.Id.ToString("D4")</td>
+                                                <td class="text-white font-weight-bold">₹@w.Amount.ToString("N2")</td>
+                                                <td><span class="badge bg-secondary">@w.PayoutMethod</span></td>
+                                                <td>
+                                                    @if (w.Status == "Approved")
+                                                    {
+                                                        <span class="badge bg-success">Paid</span>
+                                                    }
+                                                    else if (w.Status == "Pending")
+                                                    {
+                                                        <span class="badge bg-warning text-dark">Pending</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-danger">Rejected</span>
+                                                    }
+                                                </td>
+                                                <td class="text-muted small">@w.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                                <td class="text-muted small">
+                                                    @(string.IsNullOrEmpty(w.TransactionReference) ? w.AdminRemarks : $"{w.TransactionReference} - {w.AdminRemarks}")
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openMechanicReferralModal() {
+        new bootstrap.Modal(document.getElementById('mechanicReferralModal')).show();
+    }
+
+    function toggleMechPayoutFields() {
+        var method = document.getElementById('mechPayoutMethodSelect').value;
+        if (method === 'UPI') {
+            document.getElementById('mechUpiSection').style.display = 'block';
+            document.getElementById('mechBankSection').style.display = 'none';
+        } else {
+            document.getElementById('mechUpiSection').style.display = 'none';
+            document.getElementById('mechBankSection').style.display = 'flex';
+        }
+    }
+
+    function copyMechanicReferralCode() {
+        var code = document.getElementById('mechRefCodeText').textContent.trim();
+        navigator.clipboard.writeText(code).then(function() {
+            var btnText = document.getElementById('btnCopyMechText');
+            btnText.textContent = 'Copied!';
+            setTimeout(function() { btnText.textContent = 'Copy Code'; }, 2000);
+        });
+    }
+
+    function shareMechanicM2MWhatsApp(refereeReward) {
+        var code = document.getElementById('mechRefCodeText').textContent.trim();
+        var shareLink = window.location.origin + '/Auth/Login?ref=' + encodeURIComponent(code) + '&role=Mechanic';
+        var rewardAmt = refereeReward || 150;
+        var msg = "Bhai! 🧰 RaahSathi mechanic partner network join karo aur daily breakdown jobs pao. Mera Referral Code: *" + code + "* use karo to ₹" + rewardAmt + " welcome bonus milega. Register now: " + shareLink;
+        window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg), '_blank');
+    }
+
+    function shareMechanicM2CWhatsApp(refereeReward) {
+        var code = document.getElementById('mechRefCodeText').textContent.trim();
+        var shareLink = window.location.origin + '/Auth/Login?ref=' + encodeURIComponent(code);
+        var rewardAmt = refereeReward || 100;
+        var msg = "Namaste! 🚗 Kabhi bhi raste me car ya bike breakdown ho, to RaahSathi se instant mechanic book karein. Mera coupon code *" + code + "* lagakar pehli service par ₹" + rewardAmt + " discount paayein: " + shareLink;
+        window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg), '_blank');
+    }
+
+    function shareMechanicSms() {
+        var code = document.getElementById('mechRefCodeText').textContent.trim();
+        var shareLink = window.location.origin + '/Auth/Login?ref=' + encodeURIComponent(code);
+        var msg = "Join RaahSathi roadside network! Use referral code: " + code + ". Link: " + shareLink;
+        window.location.href = 'sms:?body=' + encodeURIComponent(msg);
+    }
+</script>
+
 

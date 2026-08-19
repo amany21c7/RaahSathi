@@ -22,6 +22,7 @@ builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddHttpContextAccessor();
 
 // Add Cookie Authentication
@@ -56,6 +57,131 @@ using (var scope = app.Services.CreateScope())
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Vehicles]') AND name = N'VehiclePhotoUrl')
                 BEGIN
                     ALTER TABLE [Vehicles] ADD [VehiclePhotoUrl] nvarchar(500) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'FuelType')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [FuelType] nvarchar(50) NOT NULL DEFAULT 'Petrol';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'BatteryType')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [BatteryType] nvarchar(50) NOT NULL DEFAULT 'Don''t Know';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'IsEmergencyCharging')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [IsEmergencyCharging] bit NOT NULL DEFAULT 0;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'TowingNeeded')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [TowingNeeded] bit NOT NULL DEFAULT 0;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'TowingCharge')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [TowingCharge] float NOT NULL DEFAULT 0.0;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'TowingReason')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [TowingReason] nvarchar(max) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'TowingProofPhoto')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [TowingProofPhoto] nvarchar(500) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'TowingApproved')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [TowingApproved] bit NULL;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'PartsEstimateAmount')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [PartsEstimateAmount] float NOT NULL DEFAULT 0.0;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'PartsEstimateDetails')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [PartsEstimateDetails] nvarchar(max) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'PartsApproved')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [PartsApproved] bit NULL;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'FinalBillAmount')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [FinalBillAmount] float NOT NULL DEFAULT 0.0;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'DisputeStatus')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [DisputeStatus] nvarchar(50) NOT NULL DEFAULT 'None';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'DisputeReason')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [DisputeReason] nvarchar(max) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'DisputeResolution')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [DisputeResolution] nvarchar(max) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'RatingFromCustomer')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [RatingFromCustomer] float NULL;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'FeedbackFromCustomer')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [FeedbackFromCustomer] nvarchar(max) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'RatingFromMechanic')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [RatingFromMechanic] float NULL;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'FeedbackFromMechanic')
+                BEGIN
+                    ALTER TABLE [Jobs] ADD [FeedbackFromMechanic] nvarchar(max) NOT NULL DEFAULT '';
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'TotalReviewsCount')
+                BEGIN
+                    ALTER TABLE [MechanicProfiles] ADD [TotalReviewsCount] int NOT NULL DEFAULT 0;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'RecommendedCount')
+                BEGIN
+                    ALTER TABLE [MechanicProfiles] ADD [RecommendedCount] int NOT NULL DEFAULT 0;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'RecommendationPercentage')
+                BEGIN
+                    ALTER TABLE [MechanicProfiles] ADD [RecommendationPercentage] int NOT NULL DEFAULT 98;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'SuccessRatePercentage')
+                BEGIN
+                    ALTER TABLE [MechanicProfiles] ADD [SuccessRatePercentage] int NOT NULL DEFAULT 95;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'AvgArrivalTimeMins')
+                BEGIN
+                    ALTER TABLE [MechanicProfiles] ADD [AvgArrivalTimeMins] int NOT NULL DEFAULT 18;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = N'DateOfBirth')
+                BEGIN
+                    ALTER TABLE [MechanicProfiles] ADD [DateOfBirth] datetime2 NULL;
                 END;
 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = N'PositiveFeedbackTags')
@@ -676,10 +802,18 @@ using (var scope = app.Services.CreateScope())
             {
                 new PricingRule { VehicleCategory = "Car", BaseFee = 99, PerKmRate = 8, BaseTowingFee = 500, PerKmTowingRate = 20 },
                 new PricingRule { VehicleCategory = "2-Wheeler", BaseFee = 49, PerKmRate = 5, BaseTowingFee = 200, PerKmTowingRate = 10 },
+                new PricingRule { VehicleCategory = "E-Rickshaw", BaseFee = 69, PerKmRate = 6, BaseTowingFee = 250, PerKmTowingRate = 12 },
+                new PricingRule { VehicleCategory = "Auto-Rickshaw", BaseFee = 79, PerKmRate = 7, BaseTowingFee = 300, PerKmTowingRate = 14 },
                 new PricingRule { VehicleCategory = "Commercial", BaseFee = 199, PerKmRate = 12, BaseTowingFee = 1000, PerKmTowingRate = 40 },
                 new PricingRule { VehicleCategory = "Heavy", BaseFee = 299, PerKmRate = 15, BaseTowingFee = 2500, PerKmTowingRate = 80 }
             };
             context.PricingRules.AddRange(rules);
+            context.SaveChanges();
+        }
+        else if (!context.PricingRules.Any(r => r.VehicleCategory == "E-Rickshaw"))
+        {
+            context.PricingRules.Add(new PricingRule { VehicleCategory = "E-Rickshaw", BaseFee = 69, PerKmRate = 6, BaseTowingFee = 250, PerKmTowingRate = 12 });
+            context.PricingRules.Add(new PricingRule { VehicleCategory = "Auto-Rickshaw", BaseFee = 79, PerKmRate = 7, BaseTowingFee = 300, PerKmTowingRate = 14 });
             context.SaveChanges();
         }
 
@@ -699,9 +833,63 @@ using (var scope = app.Services.CreateScope())
                 new ProblemTypePricing { ProblemName = "2-Wheeler Puncture / Chain Repair", VehicleCategory = "2-Wheeler", MinServiceCharge = 80, MaxServiceCharge = 300 },
                 new ProblemTypePricing { ProblemName = "2-Wheeler Spark Plug & Battery", VehicleCategory = "2-Wheeler", MinServiceCharge = 100, MaxServiceCharge = 800 },
                 new ProblemTypePricing { ProblemName = "Commercial Air Brake / Tyre Repair", VehicleCategory = "Commercial", MinServiceCharge = 500, MaxServiceCharge = 4000 },
-                new ProblemTypePricing { ProblemName = "Heavy Vehicle Hydraulic & Engine Repair", VehicleCategory = "Heavy", MinServiceCharge = 1000, MaxServiceCharge = 8000 }
+                new ProblemTypePricing { ProblemName = "Heavy Vehicle Hydraulic & Engine Repair", VehicleCategory = "Heavy", MinServiceCharge = 1000, MaxServiceCharge = 8000 },
+                
+                // E-Rickshaw Specialized Problems
+                new ProblemTypePricing { ProblemName = "Battery Dead / Low Battery", VehicleCategory = "E-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1800 },
+                new ProblemTypePricing { ProblemName = "Emergency EV Charging", VehicleCategory = "E-Rickshaw", MinServiceCharge = 250, MaxServiceCharge = 800 },
+                new ProblemTypePricing { ProblemName = "Controller Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 350, MaxServiceCharge = 1800 },
+                new ProblemTypePricing { ProblemName = "BLDC Motor Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 400, MaxServiceCharge = 2500 },
+                new ProblemTypePricing { ProblemName = "Puncture / Tyre Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 99, MaxServiceCharge = 350 },
+                new ProblemTypePricing { ProblemName = "Wiring / Electrical Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 750 },
+                new ProblemTypePricing { ProblemName = "Vehicle Not Moving", VehicleCategory = "E-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1200 },
+                new ProblemTypePricing { ProblemName = "Ignition / Switch Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 100, MaxServiceCharge = 450 },
+                new ProblemTypePricing { ProblemName = "Battery Overheating", VehicleCategory = "E-Rickshaw", MinServiceCharge = 200, MaxServiceCharge = 1200 },
+                new ProblemTypePricing { ProblemName = "Don't Know (On-Spot EV Diagnostic)", VehicleCategory = "E-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1000 },
+                
+                // Auto-Rickshaw Problem Pricing
+                new ProblemTypePricing { ProblemName = "Battery Dead", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 120, MaxServiceCharge = 1500 },
+                new ProblemTypePricing { ProblemName = "CNG / Fuel Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 950 },
+                new ProblemTypePricing { ProblemName = "Puncture Repair", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 80, MaxServiceCharge = 300 },
+                new ProblemTypePricing { ProblemName = "Engine Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 250, MaxServiceCharge = 2200 },
+                new ProblemTypePricing { ProblemName = "Clutch / Gear Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 200, MaxServiceCharge = 1600 },
+                new ProblemTypePricing { ProblemName = "Vehicle Not Starting", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1200 },
+                new ProblemTypePricing { ProblemName = "Overheating", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 180, MaxServiceCharge = 900 },
+                new ProblemTypePricing { ProblemName = "Electrical Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 800 },
+                new ProblemTypePricing { ProblemName = "General Mechanical Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1200 },
+                new ProblemTypePricing { ProblemName = "Don't Know (Auto Diagnosis)", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1000 }
             };
             context.ProblemTypePricings.AddRange(problemTypes);
+            context.SaveChanges();
+        }
+        else if (!context.ProblemTypePricings.Any(p => p.VehicleCategory == "E-Rickshaw"))
+        {
+            var evProblems = new List<ProblemTypePricing>
+            {
+                new ProblemTypePricing { ProblemName = "Battery Dead / Low Battery", VehicleCategory = "E-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1800 },
+                new ProblemTypePricing { ProblemName = "Emergency EV Charging", VehicleCategory = "E-Rickshaw", MinServiceCharge = 250, MaxServiceCharge = 800 },
+                new ProblemTypePricing { ProblemName = "Controller Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 350, MaxServiceCharge = 1800 },
+                new ProblemTypePricing { ProblemName = "BLDC Motor Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 400, MaxServiceCharge = 2500 },
+                new ProblemTypePricing { ProblemName = "Puncture / Tyre Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 99, MaxServiceCharge = 350 },
+                new ProblemTypePricing { ProblemName = "Wiring / Electrical Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 750 },
+                new ProblemTypePricing { ProblemName = "Vehicle Not Moving", VehicleCategory = "E-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1200 },
+                new ProblemTypePricing { ProblemName = "Ignition / Switch Problem", VehicleCategory = "E-Rickshaw", MinServiceCharge = 100, MaxServiceCharge = 450 },
+                new ProblemTypePricing { ProblemName = "Battery Overheating", VehicleCategory = "E-Rickshaw", MinServiceCharge = 200, MaxServiceCharge = 1200 },
+                new ProblemTypePricing { ProblemName = "Don't Know (On-Spot EV Diagnostic)", VehicleCategory = "E-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1000 },
+                
+                // Auto-Rickshaw Problem Pricing
+                new ProblemTypePricing { ProblemName = "Battery Dead", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 120, MaxServiceCharge = 1500 },
+                new ProblemTypePricing { ProblemName = "CNG / Fuel Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 950 },
+                new ProblemTypePricing { ProblemName = "Puncture Repair", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 80, MaxServiceCharge = 300 },
+                new ProblemTypePricing { ProblemName = "Engine Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 250, MaxServiceCharge = 2200 },
+                new ProblemTypePricing { ProblemName = "Clutch / Gear Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 200, MaxServiceCharge = 1600 },
+                new ProblemTypePricing { ProblemName = "Vehicle Not Starting", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1200 },
+                new ProblemTypePricing { ProblemName = "Overheating", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 180, MaxServiceCharge = 900 },
+                new ProblemTypePricing { ProblemName = "Electrical Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 800 },
+                new ProblemTypePricing { ProblemName = "General Mechanical Problem", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1200 },
+                new ProblemTypePricing { ProblemName = "Don't Know (Auto Diagnosis)", VehicleCategory = "Auto-Rickshaw", MinServiceCharge = 150, MaxServiceCharge = 1000 }
+            };
+            context.ProblemTypePricings.AddRange(evProblems);
             context.SaveChanges();
         }
     }

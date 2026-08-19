@@ -96,11 +96,50 @@ namespace RaahSathi.Services
 
                 // 2. Skill & Problem Match Weight (0.25)
                 double skillScore = 0.3; // Default baseline skill score
-                if (!string.IsNullOrEmpty(profile.SkillCategory))
+                string vTypeLower = (vehicleType ?? "").ToLower();
+                string pTypeLower = (problemType ?? "").ToLower();
+
+                bool isErickshawReq = vTypeLower.Contains("e-rickshaw") || vTypeLower.Contains("erickshaw") || vTypeLower.Contains("toto");
+                bool isAutoReq = vTypeLower.Contains("auto") || vTypeLower.Contains("3-wheeler");
+
+                if (isErickshawReq)
+                {
+                    if (!string.IsNullOrEmpty(profile.VehicleExpertise) && profile.VehicleExpertise.Contains("E-Rickshaw", StringComparison.OrdinalIgnoreCase))
+                    {
+                        skillScore = 0.95; // Top priority for verified E-Rickshaw EV technicians
+
+                        // Check specific EV sub-skills
+                        if (!string.IsNullOrEmpty(profile.ErickshawSkills))
+                        {
+                            var evSkills = profile.ErickshawSkills.ToLower();
+                            if (pTypeLower.Contains("controller") && evSkills.Contains("controller")) skillScore = 1.0;
+                            else if (pTypeLower.Contains("motor") && evSkills.Contains("motor")) skillScore = 1.0;
+                            else if ((pTypeLower.Contains("battery") || pTypeLower.Contains("charging")) && (evSkills.Contains("battery") || evSkills.Contains("charger"))) skillScore = 1.0;
+                        }
+                    }
+                    else
+                    {
+                        skillScore = 0.15; // Penalty for non-EV mechanics on EV breakdowns
+                    }
+                }
+                else if (isAutoReq)
+                {
+                    if (!string.IsNullOrEmpty(profile.VehicleExpertise) && (profile.VehicleExpertise.Contains("Auto-Rickshaw", StringComparison.OrdinalIgnoreCase) || profile.VehicleExpertise.Contains("Auto", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        skillScore = 0.90;
+                        if (!string.IsNullOrEmpty(profile.AutoSkills) && profile.AutoSkills.Contains("cng", StringComparison.OrdinalIgnoreCase))
+                        {
+                            skillScore = 1.0;
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(profile.SkillCategory) && profile.SkillCategory.ToLower().Contains("2-wheeler"))
+                    {
+                        skillScore = 0.50;
+                    }
+                }
+                else if (!string.IsNullOrEmpty(profile.SkillCategory))
                 {
                     var skills = profile.SkillCategory.Split(',').Select(s => s.Trim().ToLower()).ToList();
-                    string vTypeLower = (vehicleType ?? "").ToLower();
-                    string pTypeLower = (problemType ?? "").ToLower();
 
                     if (skills.Contains(vTypeLower) || (vTypeLower.Contains("2-wheeler") && skills.Any(s => s.Contains("bike") || s.Contains("scooter"))))
                     {

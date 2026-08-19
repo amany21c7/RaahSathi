@@ -4,6 +4,8 @@
     var pricingRules = ViewBag.PricingRules as List<RaahSathi.Models.PricingRule> ?? new List<RaahSathi.Models.PricingRule>();
     var carRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Car") ?? new RaahSathi.Models.PricingRule { BaseFee = 99, PerKmRate = 8 };
     var bikeRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "2-Wheeler") ?? new RaahSathi.Models.PricingRule { BaseFee = 49, PerKmRate = 5 };
+    var erickRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "E-Rickshaw") ?? new RaahSathi.Models.PricingRule { BaseFee = 69, PerKmRate = 6 };
+    var autoRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Auto-Rickshaw") ?? new RaahSathi.Models.PricingRule { BaseFee = 79, PerKmRate = 7 };
     var commRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Commercial") ?? new RaahSathi.Models.PricingRule { BaseFee = 199, PerKmRate = 12 };
     var heavyRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Heavy") ?? new RaahSathi.Models.PricingRule { BaseFee = 299, PerKmRate = 15 };
 
@@ -27,7 +29,7 @@
             </div>
             <div id="nearbyBadgeContainer">
                 <span class="badge bg-warning text-dark font-weight-bold px-3 py-2" style="font-size:0.85rem;" id="nearbyMechanicsBadge">
-                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Checking Nearby Mechanics...
+                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Checking Nearby Mechanics &amp; EV Specialists...
                 </span>
             </div>
         </div>
@@ -87,39 +89,52 @@
                 </span>
             </div>
             <div class="row g-2 mb-3">
-                <div class="col-6 col-sm-3">
+                <div class="col-4 col-sm-4">
                     <div id="vPill-Car" class="v-pill p-2 rounded-3 text-center cursor-pointer border active-v-pill" onclick="setVehicleType('Car')" data-bs-toggle="tooltip" title="All Cars and SUVs">
                         <i class="fa-solid fa-car text-warning me-1"></i>
                         <div class="text-white font-weight-bold small">Car/SUV</div>
                     </div>
                 </div>
-                <div class="col-6 col-sm-3">
-                    <div id="vPill-2-Wheeler" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary" onclick="setVehicleType('2-Wheeler')" data-bs-toggle="tooltip" title="All Bikes, Auto, E-Rikshow">
+                <div class="col-4 col-sm-4">
+                    <div id="vPill-2-Wheeler" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary" onclick="setVehicleType('2-Wheeler')" data-bs-toggle="tooltip" title="All Bikes and Scooters">
                         <i class="fa-solid fa-motorcycle text-warning me-1"></i>
-                        <div class="text-white font-weight-bold small">Bike/Auto</div>
+                        <div class="text-white font-weight-bold small">2-Wheeler</div>
                     </div>
                 </div>
-                <div class="col-6 col-sm-3">
+                <div class="col-4 col-sm-4">
+                    <div id="vPill-E-Rickshaw" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary position-relative" onclick="setVehicleType('E-Rickshaw')" data-bs-toggle="tooltip" title="EV E-Rickshaw Specialist Dispatch">
+                        <span class="badge bg-success text-white position-absolute top-0 end-0 m-1" style="font-size:0.55rem;">EV</span>
+                        <i class="fa-solid fa-bolt-lightning text-success me-1"></i>
+                        <div class="text-white font-weight-bold small">E-Rickshaw</div>
+                    </div>
+                </div>
+                <div class="col-4 col-sm-4">
+                    <div id="vPill-Auto-Rickshaw" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary" onclick="setVehicleType('Auto-Rickshaw')" data-bs-toggle="tooltip" title="Auto-Rickshaw (CNG / Petrol / LPG)">
+                        <i class="fa-solid fa-gas-pump text-warning me-1"></i>
+                        <div class="text-white font-weight-bold small">Auto-Rickshaw</div>
+                    </div>
+                </div>
+                <div class="col-4 col-sm-4">
                     <div id="vPill-Commercial" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary overflow-hidden" onclick="setVehicleType('Commercial')" data-bs-toggle="tooltip" title="All Commercial Vehicles">
                         <i class="fa-solid fa-truck text-warning me-1"></i>
-                        <div class="text-white font-weight-bold text-truncate" style="font-size:0.65rem; line-height:1.2;" title="Bus/Truck/Loader">Bus/Truck/Loader</div>
+                        <div class="text-white font-weight-bold text-truncate" style="font-size:0.65rem; line-height:1.2;" title="Bus/Truck/Loader">Commercial</div>
                     </div>
                 </div>
-                <div class="col-6 col-sm-3">
+                <div class="col-4 col-sm-4">
                     <div id="vPill-Heavy" class="v-pill p-2 rounded-3 text-center cursor-pointer border border-secondary overflow-hidden" onclick="setVehicleType('Heavy')" data-bs-toggle="tooltip" title="All Heavy Vehicles">
                         <i class="fa-solid fa-tractor text-warning me-1"></i>
-                        <div class="text-white font-weight-bold text-truncate" style="font-size:0.65rem; line-height:1.2;" title="Tractor/JCB/Crane">Tractor/JCB/Crane</div>
+                        <div class="text-white font-weight-bold text-truncate" style="font-size:0.65rem; line-height:1.2;" title="Tractor/JCB/Crane">Heavy/JCB</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Vehicle Brand & Model and Optional Registration Number (Under 1. Select Vehicle Type) -->
+            <!-- Vehicle Brand & Model and Optional Registration Number -->
             <div class="row g-2 mb-3">
                 <div class="col-md-7">
                     <label class="form-label text-white small font-weight-bold mb-1">Vehicle Name &amp; Model <span class="text-warning font-weight-bold">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-car" id="vehicleModelIcon"></i></span>
-                        <input type="text" class="form-control glass-input text-white font-weight-bold" id="vehicleNameModelInput" value="@(preSelectedVehicle?.Model ?? "")" placeholder="e.g. Hyundai Creta 2022 / Swift Dzire" required />
+                        <input type="text" class="form-control glass-input text-white font-weight-bold" id="vehicleNameModelInput" value="@(preSelectedVehicle?.Model ?? "")" placeholder="e.g. Mahindra Treo / Bajaj RE / Swift" required />
                     </div>
                 </div>
                 <div class="col-md-5">
@@ -131,14 +146,73 @@
                 </div>
             </div>
 
+            <!-- E-Rickshaw Specific Battery Type Selector & Safety Warning -->
+            <div id="erickshawSection" class="p-3 rounded-3 mb-3 border border-success border-opacity-40 bg-dark bg-opacity-70 d-none">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-white small font-weight-bold"><i class="fa-solid fa-car-battery text-success me-1"></i> Battery Technology Type:</span>
+                    <span class="badge bg-success text-white" style="font-size:0.7rem;">EV Verified Flow</span>
+                </div>
+                <div class="d-flex gap-2 mb-2">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="batteryTypeRadio" id="bTypeLead" value="Lead Acid" checked>
+                        <label class="form-check-label text-white small" for="bTypeLead">Lead-Acid</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="batteryTypeRadio" id="bTypeLithium" value="Lithium Ion">
+                        <label class="form-check-label text-white small" for="bTypeLithium">Lithium-Ion</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="batteryTypeRadio" id="bTypeUnknown" value="Don't Know">
+                        <label class="form-check-label text-warning small font-weight-bold" for="bTypeUnknown">Don't Know</label>
+                    </div>
+                </div>
+                <!-- EV Battery Safety Protocol Alert -->
+                <div class="alert alert-warning bg-warning bg-opacity-10 border-warning text-white small p-2 mb-0 rounded" style="font-size:0.75rem; line-height:1.4;">
+                    <i class="fa-solid fa-shield-halved text-warning me-1"></i> <strong>Safety Protocol:</strong> For your safety, do not allow unverified persons to modify, bypass, or remotely access your vehicle's Battery Management System (BMS). RaahSathi dispatches certified EV technicians with authentic diagnostic tools.
+                </div>
+            </div>
 
+            <!-- Auto-Rickshaw Specific Fuel Type Selector -->
+            <div id="autoSection" class="p-3 rounded-3 mb-3 border border-warning border-opacity-40 bg-dark bg-opacity-70 d-none">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-white small font-weight-bold"><i class="fa-solid fa-gas-pump text-warning me-1"></i> Auto-Rickshaw Fuel Type:</span>
+                    <span class="badge bg-warning text-dark font-weight-bold" style="font-size:0.7rem;">CNG Specialist Match</span>
+                </div>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="fuelTypeRadio" id="fTypeCng" value="CNG" checked>
+                        <label class="form-check-label text-white small font-weight-bold" for="fTypeCng">CNG</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="fuelTypeRadio" id="fTypePetrol" value="Petrol">
+                        <label class="form-check-label text-white small" for="fTypePetrol">Petrol</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="fuelTypeRadio" id="fTypeLpg" value="LPG">
+                        <label class="form-check-label text-white small" for="fTypeLpg">LPG</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="fuelTypeRadio" id="fTypeElectric" value="Electric">
+                        <label class="form-check-label text-white small" for="fTypeElectric">Electric</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="fuelTypeRadio" id="fTypeOther" value="Other">
+                        <label class="form-check-label text-muted small" for="fTypeOther">Other</label>
+                    </div>
+                </div>
+            </div>
 
             <!-- Step 2: Issue / Problem Category Selection Cards -->
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="badge bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center font-weight-bold" style="width:20px; height:20px; font-size:0.7rem;">2</span>
-                <label class="form-label text-white small font-weight-bold mb-0">Breakdown Problem</label>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center font-weight-bold" style="width:20px; height:20px; font-size:0.7rem;">2</span>
+                    <label class="form-label text-white small font-weight-bold mb-0" id="problemSectionLabel">Breakdown Problem</label>
+                </div>
+                <span class="text-muted small" style="font-size:0.75rem;">Click problem card</span>
             </div>
-            <div class="row g-2 mb-3">
+
+            <!-- Container A: Car Problems -->
+            <div id="probGrid-Car" class="prob-grid-container row g-2 mb-3">
                 <div class="col-6">
                     <div class="prob-card p-2.5 rounded-3 border border-warning active-prob-card cursor-pointer d-flex align-items-center" onclick="setProblemType('Battery Dead', this)">
                         <i class="fa-solid fa-car-battery text-warning fa-lg me-2"></i>
@@ -167,15 +241,6 @@
                     </div>
                 </div>
                 <div class="col-6">
-                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Key Locked', this)">
-                        <i class="fa-solid fa-key text-warning fa-lg me-2"></i>
-                        <div>
-                            <div class="text-white font-weight-bold small mb-0">Key Locked</div>
-                            <span class="text-muted" style="font-size:0.7rem;">Lockout Unlock</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6">
                     <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Fuel Finished', this)">
                         <i class="fa-solid fa-gas-pump text-warning fa-lg me-2"></i>
                         <div>
@@ -194,30 +259,209 @@
                     </div>
                 </div>
                 <div class="col-6">
-                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Gearbox Issue', this)">
-                        <i class="fa-solid fa-cogs text-warning fa-lg me-2"></i>
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Don\'t Know', this)">
+                        <i class="fa-solid fa-circle-question text-warning fa-lg me-2"></i>
                         <div>
-                            <div class="text-white font-weight-bold small mb-0">Gearbox Issue</div>
-                            <span class="text-muted" style="font-size:0.7rem;">Clutch / Gear Stuck</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Suspension Issue', this)">
-                        <i class="fa-solid fa-sliders text-warning fa-lg me-2"></i>
-                        <div>
-                            <div class="text-white font-weight-bold small mb-0">Suspension Issue</div>
-                            <span class="text-muted" style="font-size:0.7rem;">Shockers / Axle Noise</span>
+                            <div class="text-white font-weight-bold small mb-0">Don't Know</div>
+                            <span class="text-muted" style="font-size:0.7rem;">On-Spot Diagnosis</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Problem Details Description & Vehicle Breakdown Photo Upload (Under 2. Breakdown Problem) -->
+            <!-- Container B: E-Rickshaw EV Dedicated Problems (10 Options) -->
+            <div id="probGrid-E-Rickshaw" class="prob-grid-container row g-2 mb-3 d-none">
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Battery Dead / Low Battery', this)">
+                        <i class="fa-solid fa-car-battery text-danger fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Battery Dead</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Low Voltage / Drop</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Emergency EV Charging', this)">
+                        <i class="fa-solid fa-bolt text-success fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Emergency Charging</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Portable EV Charge</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Controller Problem', this)">
+                        <i class="fa-solid fa-microchip text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Controller Problem</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Mosfet / No Signal</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('BLDC Motor Problem', this)">
+                        <i class="fa-solid fa-gears text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Motor Problem</div>
+                            <span class="text-muted" style="font-size:0.7rem;">BLDC Motor Jam/Noise</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Puncture / Tyre Problem', this)">
+                        <i class="fa-solid fa-circle-dot text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Puncture / Tyre</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Flat Tyre / Tube</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Wiring / Electrical Problem', this)">
+                        <i class="fa-solid fa-plug text-info fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Wiring / Electrical</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Short Circuit / Fuse</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Vehicle Not Moving', this)">
+                        <i class="fa-solid fa-triangle-exclamation text-danger fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Vehicle Not Moving</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Throttle / Cut-off</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Ignition / Switch Problem', this)">
+                        <i class="fa-solid fa-key text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Ignition / Switch</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Key / Forward Switch</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Battery Overheating', this)">
+                        <i class="fa-solid fa-temperature-high text-danger fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Battery Overheating</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Hot Pack / Warning</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Don\'t Know (On-Spot EV Diagnostic)', this)">
+                        <i class="fa-solid fa-circle-question text-success fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Don't Know ❓</div>
+                            <span class="text-muted" style="font-size:0.7rem;">EV Specialist Check</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Container C: Auto-Rickshaw Dedicated Problems (10 Options) -->
+            <div id="probGrid-Auto-Rickshaw" class="prob-grid-container row g-2 mb-3 d-none">
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Battery Dead', this)">
+                        <i class="fa-solid fa-car-battery text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Battery Dead</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Jumpstart / Self Fail</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('CNG / Fuel Problem', this)">
+                        <i class="fa-solid fa-gas-pump text-info fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">CNG / Fuel Problem</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Gas Leakage / Supply</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Puncture Repair', this)">
+                        <i class="fa-solid fa-circle-dot text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Puncture</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Front/Rear Tyre</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Engine Problem', this)">
+                        <i class="fa-solid fa-gears text-danger fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Engine Problem</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Piston / Head / Noise</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Clutch / Gear Problem', this)">
+                        <i class="fa-solid fa-cogs text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Clutch / Gear</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Wire Broken / Slip</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Vehicle Not Starting', this)">
+                        <i class="fa-solid fa-car-burst text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Not Starting</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Spark / Kick / Current</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Overheating', this)">
+                        <i class="fa-solid fa-temperature-high text-danger fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Overheating</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Radiator / Fan</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Electrical Problem', this)">
+                        <i class="fa-solid fa-bolt text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Electrical Problem</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Headlight / Wiring</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('General Mechanical Problem', this)">
+                        <i class="fa-solid fa-wrench text-secondary fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Mechanical Check</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Brake / Cross / Hub</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center" onclick="setProblemType('Don\'t Know (Auto Diagnosis)', this)">
+                        <i class="fa-solid fa-circle-question text-warning fa-lg me-2"></i>
+                        <div>
+                            <div class="text-white font-weight-bold small mb-0">Don't Know ❓</div>
+                            <span class="text-muted" style="font-size:0.7rem;">Auto Mechanic Check</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Problem Details Description & Vehicle Breakdown Photo Upload -->
             <div class="row g-2 mb-3">
                 <div class="col-12">
                     <label class="form-label text-white small font-weight-bold mb-1">Other Problem Details <span class="text-warning font-weight-normal" style="font-size:0.75rem;">(Optional)</span></label>
-                    <textarea class="form-control glass-input text-white font-weight-bold" id="problemDescInput" rows="2" placeholder="Describe problem in detail (e.g. Engine knocking noise, side tire puncture, key broken)..."></textarea>
+                    <textarea class="form-control glass-input text-white font-weight-bold" id="problemDescInput" rows="2" placeholder="Describe problem in detail (e.g. Gaadi chal nahi rahi, meter on ho raha hai but accelerator par response nahi hai)..."></textarea>
                 </div>
                 <div class="col-12">
                     <label class="form-label text-white small font-weight-bold mb-1">Upload Vehicle / Breakdown Photo <span class="text-warning font-weight-normal" style="font-size:0.75rem;">(Optional)</span></label>
@@ -699,7 +943,9 @@
 
             var tooltipMap = {
                 "Car": "All Cars and SUVs",
-                "2-Wheeler": "All Bikes, Auto, E-Rikshow",
+                "2-Wheeler": "All Bikes and Scooters",
+                "E-Rickshaw": "E-Rickshaw EV Specialist Dispatch",
+                "Auto-Rickshaw": "Auto-Rickshaw (CNG / Petrol / LPG)",
                 "Commercial": "All Commercial Vehicles",
                 "Heavy": "All Heavy Vehicles"
             };
@@ -707,14 +953,42 @@
             var iconMap = {
                 "Car": "fa-car",
                 "2-Wheeler": "fa-motorcycle",
+                "E-Rickshaw": "fa-bolt-lightning",
+                "Auto-Rickshaw": "fa-gas-pump",
                 "Commercial": "fa-truck",
                 "Heavy": "fa-tractor"
             };
             var selectedIcon = iconMap[type] || "fa-car";
             $('#vehicleModelIcon').attr('class', 'fa-solid ' + selectedIcon);
 
-            var tooltipText = tooltipMap[type] || "All Cars and SUVs";
+            var tooltipText = tooltipMap[type] || "All Vehicles";
             $('#vehicleCategoryTooltipBadge').html(`<i class="fa-solid fa-circle-info me-1"></i> ${tooltipText}`);
+
+            // Toggle EV & Auto specific sections
+            $('.prob-grid-container').addClass('d-none');
+            if (type === 'E-Rickshaw') {
+                $('#erickshawSection').removeClass('d-none');
+                $('#autoSection').addClass('d-none');
+                $('#probGrid-E-Rickshaw').removeClass('d-none');
+                selectedProblemType = 'Battery Dead / Low Battery';
+                $('#problemSectionLabel').html('E-Rickshaw EV Problem <span class="badge bg-success text-white ms-1">EV Specialized</span>');
+            } else if (type === 'Auto-Rickshaw') {
+                $('#erickshawSection').addClass('d-none');
+                $('#autoSection').removeClass('d-none');
+                $('#probGrid-Auto-Rickshaw').removeClass('d-none');
+                selectedProblemType = 'CNG / Fuel Problem';
+                $('#problemSectionLabel').html('Auto-Rickshaw Problem <span class="badge bg-warning text-dark ms-1">CNG / Auto</span>');
+            } else {
+                $('#erickshawSection').addClass('d-none');
+                $('#autoSection').addClass('d-none');
+                $('#probGrid-Car').removeClass('d-none');
+                selectedProblemType = 'Battery Dead';
+                $('#problemSectionLabel').text('Breakdown Problem');
+            }
+
+            // Set active class on the first card of current grid
+            $(`.prob-grid-container:not(.d-none) .prob-card`).removeClass('active-prob-card border-warning').addClass('border-secondary');
+            $(`.prob-grid-container:not(.d-none) .prob-card:first`).addClass('active-prob-card border-warning').removeClass('border-secondary');
 
             updatePricing();
             fetchNearbyMechanicsInfo();
@@ -761,6 +1035,8 @@
             var ratesMap = {
                 "Car": { base: @carRule.BaseFee, perKm: @carRule.PerKmRate },
                 "2-Wheeler": { base: @bikeRule.BaseFee, perKm: @bikeRule.PerKmRate },
+                "E-Rickshaw": { base: @erickRule.BaseFee, perKm: @erickRule.PerKmRate },
+                "Auto-Rickshaw": { base: @autoRule.BaseFee, perKm: @autoRule.PerKmRate },
                 "Commercial": { base: @commRule.BaseFee, perKm: @commRule.PerKmRate },
                 "Heavy": { base: @heavyRule.BaseFee, perKm: @heavyRule.PerKmRate }
             };
@@ -777,13 +1053,17 @@
             var serviceMin = 150;
             var serviceMax = 1000;
             
-            if (selectedProblemType === "Battery Dead") { serviceMin = 150; serviceMax = 3500; }
-            else if (selectedProblemType === "Flat Tyre") { serviceMin = 100; serviceMax = 400; }
-            else if (selectedProblemType === "Fuel Finished") { serviceMin = 100; serviceMax = 1100; }
-            else if (selectedProblemType === "Key Locked") { serviceMin = 200; serviceMax = 500; }
+            if (selectedProblemType === "Battery Dead" || selectedProblemType === "Battery Dead / Low Battery") { serviceMin = 150; serviceMax = 2500; }
+            else if (selectedProblemType === "Emergency EV Charging") { serviceMin = 250; serviceMax = 800; }
+            else if (selectedProblemType === "Controller Problem") { serviceMin = 350; serviceMax = 1800; }
+            else if (selectedProblemType === "BLDC Motor Problem") { serviceMin = 400; serviceMax = 2500; }
+            else if (selectedProblemType === "Battery Overheating") { serviceMin = 200; serviceMax = 1200; }
+            else if (selectedProblemType === "CNG / Fuel Problem" || selectedProblemType === "Fuel Finished") { serviceMin = 150; serviceMax = 950; }
+            else if (selectedProblemType === "Clutch / Gear Problem" || selectedProblemType === "Gearbox Issue") { serviceMin = 200; serviceMax = 1800; }
+            else if (selectedProblemType === "Flat Tyre" || selectedProblemType === "Puncture / Tyre Problem" || selectedProblemType === "Puncture Repair") { serviceMin = 99; serviceMax = 400; }
+            else if (selectedProblemType === "Key Locked" || selectedProblemType === "Ignition / Switch Problem") { serviceMin = 100; serviceMax = 500; }
             else if (selectedProblemType === "Towing Needed") { serviceMin = 500; serviceMax = 3500; }
-            else if (selectedProblemType === "Engine Problem") { serviceMin = 300; serviceMax = 3000; }
-            else if (selectedProblemType === "Gearbox Issue") { serviceMin = 400; serviceMax = 2500; }
+            else if (selectedProblemType === "Engine Problem") { serviceMin = 250; serviceMax = 2500; }
             else if (selectedProblemType === "Suspension Issue") { serviceMin = 350; serviceMax = 2200; }
 
             $('#serviceRangeText').text('₹' + serviceMin + ' - ₹' + serviceMax.toLocaleString());
@@ -879,12 +1159,19 @@
             var dispatchModal = new bootstrap.Modal(document.getElementById('dispatchModal'));
             dispatchModal.show();
 
+            var fuelType = $('input[name="fuelTypeRadio"]:checked').val() || (selectedVehicleType === 'E-Rickshaw' ? 'Electric' : 'Petrol');
+            var batteryType = $('input[name="batteryTypeRadio"]:checked').val() || "Don't Know";
+            var isEmergencyCharging = selectedProblemType.indexOf('Emergency EV Charging') >= 0;
+
             var formData = new FormData();
             formData.append("vehicleType", selectedVehicleType);
             formData.append("vehicleNameModel", vehicleNameModel);
             formData.append("registrationNumber", registrationNumber);
             formData.append("problemType", selectedProblemType);
             formData.append("problemDescription", problemDescription);
+            formData.append("fuelType", fuelType);
+            formData.append("batteryType", batteryType);
+            formData.append("isEmergencyCharging", isEmergencyCharging);
             formData.append("lat", currentLat);
             formData.append("lng", currentLng);
             formData.append("address", address);

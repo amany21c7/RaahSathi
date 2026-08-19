@@ -26,7 +26,12 @@ namespace RaahSathi.Models
         public string DeclinedMechanicIds { get; set; } = string.Empty;
 
         [StringLength(50)]
-        public string FuelType { get; set; } = "Petrol";
+        public string FuelType { get; set; } = "Petrol"; // "Petrol", "CNG", "Electric", "Diesel", "LPG", "Other"
+
+        [StringLength(50)]
+        public string BatteryType { get; set; } = "Don't Know"; // "Lead Acid", "Lithium Ion", "Don't Know"
+
+        public bool IsEmergencyCharging { get; set; } = false;
 
         [StringLength(1000)]
         public string ProblemDescription { get; set; } = string.Empty;

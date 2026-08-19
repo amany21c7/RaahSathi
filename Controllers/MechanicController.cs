@@ -452,7 +452,7 @@ namespace RaahSathi.Controllers
             string AadhaarNumber, IFormFile AadhaarFrontPhoto, IFormFile AadhaarBackPhoto, IFormFile DrivingLicencePhoto, IFormFile PanCardPhoto, IFormFile SelfiePhoto,
             string ShopName, string ShopAddress, string Pincode, string ShopTiming, IFormFile ShopPhoto,
             int ExperienceYears, bool IsCertified, string GarageName,
-            string[] VehicleExpertise, string[] Specialization, int ServiceRadiusKm)
+            string[] VehicleExpertise, string[]? ErickshawSkills, string[]? AutoSkills, string[] Specialization, int ServiceRadiusKm)
         {
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return RedirectToAction("Login", "Auth");
@@ -521,6 +521,8 @@ namespace RaahSathi.Controllers
             profile.GarageName = GarageName ?? profile.GarageName ?? "";
             profile.ServiceRadiusKm = ServiceRadiusKm;
             profile.VehicleExpertise = VehicleExpertise != null ? string.Join(", ", VehicleExpertise) : (profile.VehicleExpertise ?? "");
+            profile.ErickshawSkills = ErickshawSkills != null ? string.Join(", ", ErickshawSkills) : (profile.ErickshawSkills ?? "");
+            profile.AutoSkills = AutoSkills != null ? string.Join(", ", AutoSkills) : (profile.AutoSkills ?? "");
             profile.Specialization = Specialization != null ? string.Join(", ", Specialization) : (profile.Specialization ?? "");
             
             // Map legacy SkillCategory based on VehicleExpertise
@@ -551,6 +553,8 @@ namespace RaahSathi.Controllers
             profile.ShopTiming ??= "";
             profile.GarageName ??= "";
             profile.VehicleExpertise ??= "";
+            profile.ErickshawSkills ??= "";
+            profile.AutoSkills ??= "";
             profile.Specialization ??= "";
             profile.SkillCategory ??= "Car";
 

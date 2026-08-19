@@ -239,6 +239,9 @@ namespace RaahSathi.Controllers
             string? vehicleNameModel,
             string? registrationNumber,
             string? problemDescription,
+            string? fuelType,
+            string? batteryType,
+            bool isEmergencyCharging,
             IFormFile? problemPhoto)
         {
             User? customer = await GetActiveCustomerAsync();
@@ -370,7 +373,9 @@ namespace RaahSathi.Controllers
                 VehicleId = vehicle.Id,
                 ProblemType = string.IsNullOrWhiteSpace(problemType) ? "Breakdown Support" : problemType,
                 Status = "Requested",
-                FuelType = "Petrol",
+                FuelType = string.IsNullOrWhiteSpace(fuelType) ? (vehicleType == "E-Rickshaw" ? "Electric" : "Petrol") : fuelType,
+                BatteryType = string.IsNullOrWhiteSpace(batteryType) ? "Don't Know" : batteryType,
+                IsEmergencyCharging = isEmergencyCharging || (problemType != null && problemType.Contains("Emergency EV Charging", StringComparison.OrdinalIgnoreCase)),
                 ProblemDescription = string.IsNullOrWhiteSpace(problemDescription) ? "30-Second Fast Request" : problemDescription,
                 ProblemPhotoUrl = photoUrl,
                 Landmark = landmark ?? "Current GPS Location",
