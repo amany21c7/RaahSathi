@@ -492,11 +492,11 @@
                             <div class="row g-2 mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label text-muted small">Estimated Repair Cost (₹)</label>
-                                    <input type="number" id="txtCustomEstimateAmount" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.CustomEstimateAmount > 0 ? activeJob.CustomEstimateAmount : 850)" placeholder="e.g. 850">
+                                    <input type="number" id="txtCustomEstimateAmount" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.CustomEstimateAmount > 0 ? activeJob.CustomEstimateAmount.ToString() : "")" placeholder="Enter Cost (₹)">
                                 </div>
                                 <div class="col-md-8">
                                     <label class="form-label text-muted small">Work Details / Scope</label>
-                                    <input type="text" id="txtCustomEstimateDetails" class="form-control glass-input" value="@(string.IsNullOrEmpty(activeJob.CustomEstimateDetails) ? "On-spot repair & Labour cost" : activeJob.CustomEstimateDetails)" placeholder="e.g. Battery jumpstart & alternator check">
+                                    <input type="text" id="txtCustomEstimateDetails" class="form-control glass-input" value="@(activeJob.CustomEstimateDetails ?? "")" placeholder="Enter Work Scope / Repair Details">
                                 </div>
                             </div>
                             <button class="btn btn-info text-dark font-weight-bold w-100 py-2.5" onclick="submitCustomEstimate()">
@@ -531,19 +531,19 @@
                             <div class="row g-2 mb-3">
                                 <div class="col-md-3">
                                     <label class="form-label text-muted small">Part Name</label>
-                                    <input type="text" id="txtExtraPartName" class="form-control glass-input text-white font-weight-bold" value="@(string.IsNullOrEmpty(activeJob.ExtraPartsName) ? "Exide 12V Battery" : activeJob.ExtraPartsName)" placeholder="e.g. Battery">
+                                    <input type="text" id="txtExtraPartName" class="form-control glass-input text-white font-weight-bold" value="@(activeJob.ExtraPartsName ?? "")" placeholder="Enter Part Name">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label text-muted small">Part MRP (₹)</label>
-                                    <input type="number" id="txtExtraPartMrp" class="form-control glass-input text-info font-weight-bold" value="@(activeJob.PartsMrp > 0 ? activeJob.PartsMrp : 3500)" placeholder="e.g. 3500">
+                                    <input type="number" id="txtExtraPartMrp" class="form-control glass-input text-info font-weight-bold" value="@(activeJob.PartsMrp > 0 ? activeJob.PartsMrp.ToString() : "")" placeholder="MRP (₹)">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label text-muted small">Offered Part Price (₹)</label>
-                                    <input type="number" id="txtExtraPartPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.PartsEstimateAmount > 0 ? activeJob.PartsEstimateAmount : 3200)" placeholder="e.g. 3200">
+                                    <input type="number" id="txtExtraPartPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.PartsEstimateAmount > 0 ? activeJob.PartsEstimateAmount.ToString() : "")" placeholder="Offered Price (₹)">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label text-muted small">Labour Charge (₹)</label>
-                                    <input type="number" id="txtExtraLabourPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.ExtraLabourCharge > 0 ? activeJob.ExtraLabourCharge : 400)" placeholder="e.g. 400">
+                                    <input type="number" id="txtExtraLabourPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.ExtraLabourCharge > 0 ? activeJob.ExtraLabourCharge.ToString() : "")" placeholder="Labour Charge (₹)">
                                 </div>
                             </div>
                             <button class="btn btn-outline-warning font-weight-bold w-100 py-2" onclick="submitSparesQuote()">
