@@ -760,21 +760,20 @@
                 ];
             }
 
-            // Populate Dropdown
-            var selectHtml = '';
+            // Populate Dropdown with default placeholder
+            var selectHtml = '<option value="" disabled selected>Select Vehicle Problem</option>';
             filtered.forEach(function(p, idx) {
                 selectHtml += `<option value="${p.name}" data-min="${p.min}" data-max="${p.max}">${p.name} (₹${p.min} - ₹${p.max})</option>`;
             });
             $('#problemTypeSelect').html(selectHtml);
 
-            // Populate Dynamic Cards Grid
+            // Populate Dynamic Cards Grid (no problem card pre-selected by default)
             var cardsHtml = '';
             filtered.forEach(function(p, idx) {
                 var iconClass = getProblemIcon(p.name);
-                var activeClass = idx === 0 ? 'active-prob-card border-warning' : 'border-secondary';
                 cardsHtml += `
                     <div class="col-6 prob-card-col" data-problem-name="${p.name.toLowerCase()}">
-                        <div class="prob-card p-2.5 rounded-3 border ${activeClass} cursor-pointer d-flex align-items-center justify-content-between h-100" 
+                        <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center justify-content-between h-100" 
                              onclick="setProblemType('${p.name.replace(/'/g, "\\'")}', this)" 
                              data-min="${p.min}" data-max="${p.max}">
                             <div class="d-flex align-items-center">
@@ -791,23 +790,25 @@
             $('#dynamicProblemCardsGrid').html(cardsHtml);
             $('#probCountBadge').text(filtered.length + ' Problems Loaded');
 
-            // Select the first one
-            selectedProblemType = filtered[0].name;
-            $('#problemTypeSelect').val(selectedProblemType);
+            // Do not pre-select any problem by default
+            selectedProblemType = '';
+            $('#problemTypeSelect').val('');
 
             updatePricing();
         }
 
         window.onProblemDropdownChange = function(probName) {
-            selectedProblemType = probName;
+            selectedProblemType = probName || '';
             // Highlight matching card in grid
             $('.prob-card').removeClass('active-prob-card border-warning').addClass('border-secondary');
-            var matchingCard = $(`#dynamicProblemCardsGrid .prob-card-col`).filter(function() {
-                return $(this).attr('data-problem-name') === probName.toLowerCase();
-            }).find('.prob-card');
-            
-            if (matchingCard.length > 0) {
-                matchingCard.addClass('active-prob-card border-warning').removeClass('border-secondary');
+            if (probName) {
+                var matchingCard = $(`#dynamicProblemCardsGrid .prob-card-col`).filter(function() {
+                    return $(this).attr('data-problem-name') === probName.toLowerCase();
+                }).find('.prob-card');
+                
+                if (matchingCard.length > 0) {
+                    matchingCard.addClass('active-prob-card border-warning').removeClass('border-secondary');
+                }
             }
             updatePricing();
         };
@@ -943,14 +944,14 @@
             $('#distanceText').text(dist.toFixed(1) + " km");
 
             // Look up exact min & max service charge from current selection or allProblemTypesList
-            var serviceMin = 150;
-            var serviceMax = 800;
+            var serviceMin = 0;
+            var serviceMax = 0;
             
             var selectedOpt = $('#problemTypeSelect option:selected');
             if (selectedOpt.length > 0 && selectedOpt.data('min')) {
-                serviceMin = parseFloat(selectedOpt.data('min')) || 150;
-                serviceMax = parseFloat(selectedOpt.data('max')) || 800;
-            } else {
+                serviceMin = parseFloat(selectedOpt.data('min')) || 0;
+                serviceMax = parseFloat(selectedOpt.data('max')) || 0;
+            } else if (selectedProblemType) {
                 var found = allProblemTypesList.find(function(p) {
                     return p.name.toLowerCase() === (selectedProblemType || '').toLowerCase();
                 });
@@ -960,11 +961,15 @@
                 }
             }
 
-            $('#serviceRangeText').text('₹' + serviceMin.toLocaleString() + ' - ₹' + serviceMax.toLocaleString());
-            
-            var totalMin = visitingCharge + serviceMin;
-            var totalMax = visitingCharge + serviceMax;
-            $('#totalEstimateText').text('₹' + totalMin.toFixed(0) + ' - ₹' + totalMax.toFixed(0));
+            if (serviceMin > 0 || serviceMax > 0) {
+                $('#serviceRangeText').text('₹' + serviceMin.toLocaleString() + ' - ₹' + serviceMax.toLocaleString());
+                var totalMin = visitingCharge + serviceMin;
+                var totalMax = visitingCharge + serviceMax;
+                $('#totalEstimateText').text('₹' + totalMin.toFixed(0) + ' - ₹' + totalMax.toFixed(0));
+            } else {
+                $('#serviceRangeText').text('Select problem above');
+                $('#totalEstimateText').text('₹' + visitingCharge.toFixed(0) + ' + Repair');
+            }
         }
 
         // Initialize with default vehicle type
@@ -1003,6 +1008,12 @@
                 return;
             }
 
+            if (!selectedProblemType) {
+                alert("Please select your Vehicle Problem from the dropdown or click a problem card.");
+                $('#problemTypeSelect').focus();
+                return;
+            }
+
             // If user is not logged in, trigger Guest Verification Modal
             if (!isCustLoggedIn) {
                 var guestModal = new bootstrap.Modal(document.getElementById('guestAuthModal'));
@@ -1033,7 +1044,7 @@
                 // Show OTP section
                 $('#otpSection').slideDown();
                 $('#btnSubmitGuestAuth').html('Verify OTP &amp; Submit Request 🚀');
-                alert(" Verification OTP sent to +91 " + phone + ". (Use 1234 for testing)");
+                alert("✅ Verification OTP sent to +91 " + phone + ". (Use 1234 for testing)");
                 return;
             }
 
@@ -1064,6 +1075,12 @@
             if (!registrationNumber) {
                 alert("Please enter your Vehicle Registration Number (e.g. UP16 AB 1234).");
                 $('#vehicleRegNumberInput').focus();
+                return;
+            }
+
+            if (!selectedProblemType) {
+                alert("Please select your Vehicle Problem from the dropdown or click a problem card.");
+                $('#problemTypeSelect').focus();
                 return;
             }
 
