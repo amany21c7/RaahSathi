@@ -1,4 +1,5 @@
 @using RaahSathi.Models
+@inject RaahSathi.Services.IPaymentService PaymentService
 @{
     ViewData["Title"] = "Manage Users (Admin)";
     var users = ViewBag.Users as List<User> ?? new List<User>();
@@ -374,7 +375,8 @@
                                                             @foreach (var j in mechJobs)
                                                             {
                                                                 var customerName = users.FirstOrDefault(u2 => u2.Id == j.CustomerId)?.Name ?? "Customer";
-                                                                var escrowEarned = j.Status == "Completed" ? (j.FinalBillAmount * (1 - mechProfile.CommissionRate)) : 0;
+                                                                double partsVal = (j.PartsApproved == true) ? j.PartsEstimateAmount : 0;
+                                                                var escrowEarned = j.Status == "Completed" ? PaymentService.CalculateTieredCommissionAndNetEarnings(j.FinalBillAmount, partsVal).MechanicNetEarningAmount : 0;
                                                                 <tr>
                                                                     <td class="text-muted">@j.CreatedAt.ToString("dd MMM hh:mm tt")</td>
                                                                     <td class="text-white font-weight-bold">@customerName</td>

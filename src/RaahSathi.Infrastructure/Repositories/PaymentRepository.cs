@@ -71,7 +71,6 @@ namespace RaahSathi.Repositories
                 {
                     mechProf.CurrentEarnings += mechanicEarning;
                     mechProf.TotalJobs += 1;
-                    mechProf.CommissionRate = commissionRate;
                 }
             }
 

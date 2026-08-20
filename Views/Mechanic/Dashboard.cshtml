@@ -1,5 +1,6 @@
 @using RaahSathi.Models
 @inject RaahSathi.Data.ApplicationDbContext _dbContext
+@inject RaahSathi.Services.IPaymentService PaymentService
 @{
     ViewData["Title"] = "Mechanic Control Hub";
     var user = ViewBag.User as User ?? new User();
@@ -346,10 +347,12 @@
                         @{
                             double baseEstBill = activeJob.VisitingCharge + activeJob.ServiceChargeMin;
                             double currentBill = activeJob.FinalBillAmount > baseEstBill ? activeJob.FinalBillAmount : baseEstBill;
+                            double activePartsAmt = (activeJob.PartsApproved == true) ? activeJob.PartsEstimateAmount : 0;
+                            var commCalc = PaymentService.CalculateTieredCommissionAndNetEarnings(currentBill, activePartsAmt);
                         }
                         <h3 class="text-success font-weight-extrabold mb-0" style="font-family: 'Outfit';">₹@currentBill.ToString("N2")</h3>
-                        <span class="text-muted extra-small d-block mt-1" style="font-size: 0.76rem;" title="Includes Basic Visiting Charge + Per KM Distance + Vehicle Problem Service Charge">
-                            Platform Fee (deducted after payment): ₹@(Math.Round(currentBill * profile.CommissionRate, 2)) <i class="fa-solid fa-circle-info text-info ms-1" data-bs-toggle="tooltip" title="Platform service fee will be deducted from payout once customer payment completes."></i>
+                        <span class="text-muted extra-small d-block mt-1" style="font-size: 0.76rem;" title="Platform Fee calculated dynamically from live admin rules">
+                            Platform Fee (deducted after payment): ₹@commCalc.AdminCommissionAmount.ToString("N2") <i class="fa-solid fa-circle-info text-info ms-1" data-bs-toggle="tooltip" title="Platform service fee will be deducted upon job payment completion. Net Mechanic Payout: ₹@commCalc.MechanicNetEarningAmount.ToString("N2")"></i>
                         </span>
                     </div>
                 </div>

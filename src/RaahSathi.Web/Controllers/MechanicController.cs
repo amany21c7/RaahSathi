@@ -694,8 +694,8 @@ namespace RaahSathi.Controllers
                         approxLocation = approxLoc,
                         distanceKm = Math.Round(distanceKm, 1),
                         etaMinutes = etaMins,
-                        estEarningsMin = (int)Math.Round((job.VisitingCharge + job.ServiceChargeMin) * (1 - profile.CommissionRate)),
-                        estEarningsMax = (int)Math.Round((job.VisitingCharge + job.ServiceChargeMax) * (1 - profile.CommissionRate)),
+                        estEarningsMin = (int)Math.Round(_paymentService.CalculateTieredCommissionAndNetEarnings(job.VisitingCharge + job.ServiceChargeMin, 0).MechanicNetEarningAmount),
+                        estEarningsMax = (int)Math.Round(_paymentService.CalculateTieredCommissionAndNetEarnings(job.VisitingCharge + job.ServiceChargeMax, 0).MechanicNetEarningAmount),
                         smartScore = 5,
                         smartMatchTag = $"{job.ProblemType} Expert Match",
                         acceptanceChance = "High"
