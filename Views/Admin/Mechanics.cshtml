@@ -25,7 +25,7 @@
 <div class="row g-3 mb-4">
     <!-- Total Mechanics -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8)); cursor: pointer;" onclick="filterByKpi('all')" title="Click to view all mechanics">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Total Mechanics</span>
                 <div class="rounded-circle p-1.5 bg-primary bg-opacity-15 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -39,7 +39,7 @@
 
     <!-- Online / Active -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8)); cursor: pointer;" onclick="filterByKpi('online')" title="Click to filter online mechanics">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Active / Online</span>
                 <div class="rounded-circle p-1.5 bg-success bg-opacity-15 text-success d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -53,7 +53,7 @@
 
     <!-- Pending KYC -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8)); cursor: pointer;" onclick="filterByKpi('pending_kyc')" title="Click to filter pending KYC mechanics">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Pending KYC</span>
                 <div class="rounded-circle p-1.5 bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -67,7 +67,7 @@
 
     <!-- Blocked -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8)); cursor: pointer;" onclick="filterByKpi('blocked')" title="Click to filter blocked mechanics">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Blocked</span>
                 <div class="rounded-circle p-1.5 bg-danger bg-opacity-15 text-danger d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -81,7 +81,7 @@
 
     <!-- New Today -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8)); cursor: pointer;" onclick="filterByKpi('today')" title="Click to filter mechanics joined today">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">New Today</span>
                 <div class="rounded-circle p-1.5 bg-info bg-opacity-15 text-info d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -240,13 +240,17 @@
                                     {
                                         <span class="badge bg-warning text-dark" style="font-size: 0.72rem;"><i class="fa-solid fa-clock me-1"></i> Pending KYC</span>
                                     }
-                                    else if (m.KycStatus == "Rejected")
+                                    else if (m.KycStatus == "Incomplete")
+                                    {
+                                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40" style="font-size: 0.72rem;"><i class="fa-solid fa-hourglass-half me-1"></i> Incomplete</span>
+                                    }
+                                    else if (m.KycStatus == "Rejected" || m.KycStatus == "Suspended")
                                     {
                                         <span class="badge bg-danger text-white" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-xmark me-1"></i> Rejected</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary text-light" style="font-size: 0.72rem;">@m.KycStatus</span>
+                                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40" style="font-size: 0.72rem;"><i class="fa-solid fa-hourglass-half me-1"></i> @(string.IsNullOrEmpty(m.KycStatus) ? "Incomplete" : m.KycStatus)</span>
                                     }
                                 </td>
                                 <td>
@@ -394,7 +398,20 @@
             var matchLoc = (location === "") || (rowLoc.indexOf(location) > -1);
 
             // KYC check
-            var matchKyc = (kyc === "All") || (rowKyc === kyc);
+            var matchKyc = true;
+            if (kyc === "All") {
+                matchKyc = true;
+            } else if (kyc === "Approved") {
+                matchKyc = (rowKyc === "Approved");
+            } else if (kyc === "Pending") {
+                matchKyc = (rowKyc === "Pending" || rowKyc === "Incomplete" || rowKyc === "" || rowKyc === "Under Review");
+            } else if (kyc === "Incomplete") {
+                matchKyc = (rowKyc === "Incomplete" || rowKyc === "");
+            } else if (kyc === "Rejected") {
+                matchKyc = (rowKyc === "Rejected" || rowKyc === "Suspended");
+            } else {
+                matchKyc = (rowKyc === kyc);
+            }
 
             // Online / Blocked status check
             var matchStatus = (status === "All") || (rowStatus === status);
@@ -434,6 +451,22 @@
         $('#filterFromDate').val('');
         $('#filterToDate').val('');
         $('#filterSkill').val('All');
+        applyMechanicFilters();
+    }
+
+    function filterByKpi(type) {
+        resetMechanicFilters();
+        if (type === 'online') {
+            $('#filterStatus').val('Online');
+        } else if (type === 'pending_kyc') {
+            $('#filterKyc').val('Pending');
+        } else if (type === 'blocked') {
+            $('#filterStatus').val('Blocked');
+        } else if (type === 'today') {
+            var todayStr = new Date().toISOString().split('T')[0];
+            $('#filterFromDate').val(todayStr);
+            $('#filterToDate').val(todayStr);
+        }
         applyMechanicFilters();
     }
 
