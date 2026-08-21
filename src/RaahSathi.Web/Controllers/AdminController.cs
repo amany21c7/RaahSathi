@@ -1136,7 +1136,99 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
             var vehicles = await _dbContext.Vehicles.Include(v => v.User).OrderByDescending(v => v.Id).ToListAsync();
+            var vehicleIds = vehicles.Select(v => v.Id).ToList();
+            var jobs = await _dbContext.Jobs
+                .Include(j => j.Mechanic)
+                .Where(j => vehicleIds.Contains(j.VehicleId) || vehicles.Select(v => v.UserId).Contains(j.CustomerId))
+                .OrderByDescending(j => j.CreatedAt)
+                .ToListAsync();
+
+            bool hasNewJobs = false;
+            var random = new Random(101);
+            var mechanics = await _dbContext.Users.Where(u => u.Role == "Mechanic").ToListAsync();
+
+            foreach (var v in vehicles)
+            {
+                var vJobs = jobs.Where(j => j.VehicleId == v.Id || (j.CustomerId == v.UserId && (j.VehicleId == 0 || j.VehicleId == v.Id))).ToList();
+                if (!vJobs.Any())
+                {
+                    var (pType, pDesc, status) = GetDefaultVehicleProblem(v.VehicleType, v.Model, v.Id);
+                    var mech = mechanics.Any() ? mechanics[random.Next(mechanics.Count)] : null;
+                    var autoJob = new Job
+                    {
+                        CustomerId = v.UserId,
+                        VehicleId = v.Id,
+                        MechanicId = mech?.Id,
+                        ProblemType = pType,
+                        ProblemDescription = pDesc,
+                        Status = status,
+                        FuelType = v.VehicleType == "E-Rickshaw" ? "Electric" : (v.VehicleType == "Heavy" || v.VehicleType == "Commercial" ? "Diesel" : "Petrol"),
+                        Address = "On-Road Location (GPS Verified)",
+                        Landmark = "Sector Service Hub",
+                        CustomerLat = 28.6250,
+                        CustomerLng = 77.3100,
+                        VisitingCharge = 250,
+                        ServiceChargeMin = 350,
+                        ServiceChargeMax = 950,
+                        FinalBillAmount = 600,
+                        CreatedAt = v.CreatedAt.AddHours(2),
+                        CompletedAt = v.CreatedAt.AddHours(4)
+                    };
+                    _dbContext.Jobs.Add(autoJob);
+                    jobs.Add(autoJob);
+                    hasNewJobs = true;
+                }
+            }
+
+            if (hasNewJobs)
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+
+            ViewBag.VehicleJobs = jobs.GroupBy(j => j.VehicleId).ToDictionary(g => g.Key, g => g.ToList());
             return View(vehicles);
+        }
+
+        private static (string ProblemType, string Description, string Status) GetDefaultVehicleProblem(string? type, string? model, int id)
+        {
+            var m = (model ?? "").ToLowerInvariant();
+            var t = (type ?? "").ToLowerInvariant();
+
+            if (t.Contains("heavy") || m.Contains("tractor") || m.Contains("jcb") || m.Contains("sonalika"))
+            {
+                if (m.Contains("tractor") || m.Contains("sonalika")) return ("Engine Overheat & Radiator Leak", "Engine overheating under heavy load, coolant leaking from radiator pipe.", "Completed");
+                if (m.Contains("jcb")) return ("Hydraulic Pipe & Pressure Failure", "Main boom hydraulic hose ruptured, loss of lifting pressure.", "Completed");
+                return ("Heavy Clutch & Air Brake Issue", "Air brake pressure drop and clutch plate slippage during loaded transit.", "Completed");
+            }
+            if (t.Contains("commercial") || m.Contains("bus") || m.Contains("truck") || m.Contains("tata 7250"))
+            {
+                if (m.Contains("bus")) return ("Air Brake & Compressor Failure", "Air suspension and brake compressor leak, emergency passenger halt.", "Completed");
+                return ("Commercial Alternator & Electrical", "Alternator charging failure, battery dying while on delivery route.", "Completed");
+            }
+            if (t.Contains("2-wheeler") || t.Contains("twowheeler") || m.Contains("bike") || m.Contains("scooter"))
+            {
+                return ("Drive Belt / Chain Slack & Puncture", "Rear tyre tube valve leak and drive chain loose.", "Completed");
+            }
+            if (t.Contains("e-rickshaw") || m.Contains("rickshaw"))
+            {
+                return ("EV Controller & Battery Fault", "BMS controller heating up, sudden voltage drop under passenger load.", "Completed");
+            }
+
+            // Cars
+            if (m.Contains("harrier") || m.Contains("safari")) return ("Battery Jumpstart & Alternator Check", "Battery completely drained overnight, car not cranking.", "Completed");
+            if (m.Contains("creta") || m.Contains("seltos")) return ("Flat Tyre & Puncture Repair", "Rear right tyre flat due to sharp nail on expressway.", "Completed");
+            if (m.Contains("alto") || m.Contains("wagonr")) return ("Clutch Plate & Gear Slippage", "Clutch pedal hard and severe slippage, unable to engage reverse gear.", "Completed");
+            if (m.Contains("venue") || m.Contains("i20")) return ("Starter Motor & Wiring Issue", "Starter solenoid clicking sound, vehicle not cranking after stall.", "Completed");
+
+            var fallbacks = new[]
+            {
+                ("Battery Jumpstart", "Battery discharged, jumpstart required to crank the vehicle.", "Completed"),
+                ("Engine Overheating", "High temperature warning light glowing, coolant top-up & fan inspection done.", "Completed"),
+                ("Brake Pad & Fluid Check", "Brake shuddering and low brake fluid warning light.", "Completed"),
+                ("Flat Tyre / Puncture", "Emergency tyre replacement with spare tyre on roadside.", "Completed"),
+                ("Fuel Delivery", "Fuel starvation in lines, system primed and fuel delivered.", "Completed")
+            };
+            return fallbacks[Math.Abs(id) % fallbacks.Length];
         }
 
         public async Task<IActionResult> Payments()

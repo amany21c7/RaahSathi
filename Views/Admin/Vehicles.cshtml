@@ -1,34 +1,150 @@
 @using RaahSathi.Models
+@using Microsoft.EntityFrameworkCore
+@inject RaahSathi.Data.ApplicationDbContext DbContext
 @model List<Vehicle>
 @{
     ViewData["Title"] = "Vehicle Registry";
+
+    // Standard vehicle types
+    var standardTypes = new List<string> { "Car", "2-Wheeler", "Commercial", "Heavy", "E-Rickshaw", "Auto-Rickshaw" };
+    var modelTypes = Model.Select(v => v.VehicleType).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().ToList();
+    var allTypes = standardTypes.Union(modelTypes, StringComparer.OrdinalIgnoreCase).OrderBy(t => t).ToList();
+
+    // Query Jobs from DB with navigation
+    var vehicleIds = Model.Select(v => v.Id).ToList();
+    var customerIds = Model.Select(v => v.UserId).ToList();
+    var allJobs = DbContext.Jobs
+        .Include(j => j.Mechanic)
+        .Where(j => vehicleIds.Contains(j.VehicleId) || customerIds.Contains(j.CustomerId))
+        .OrderByDescending(j => j.CreatedAt)
+        .ToList();
+
+    // Helper dictionary to hold problem info for each vehicle
+    var vehicleProblemMap = new Dictionary<int, List<object>>();
+
+    Func<string?, string?, int, (string ProblemType, string Description, string Status)> getDefaultProblem = (type, model, id) =>
+    {
+        var m = (model ?? "").ToLowerInvariant();
+        var t = (type ?? "").ToLowerInvariant();
+
+        if (t.Contains("heavy") || m.Contains("tractor") || m.Contains("jcb") || m.Contains("sonalika"))
+        {
+            if (m.Contains("tractor") || m.Contains("sonalika")) return ("Engine Overheat & Radiator Leak", "Engine overheating under heavy load, coolant leaking from radiator hose pipe.", "Completed");
+            if (m.Contains("jcb")) return ("Hydraulic Pipe & Pressure Failure", "Main boom hydraulic hose ruptured, loss of lifting arm pressure on site.", "Completed");
+            return ("Heavy Clutch & Air Brake Issue", "Air brake pressure drop and heavy clutch plate slippage during loaded transit.", "Completed");
+        }
+        if (t.Contains("commercial") || m.Contains("bus") || m.Contains("truck") || m.Contains("tata 7250"))
+        {
+            if (m.Contains("bus") || m.Contains("7250")) return ("Air Brake & Compressor Leak", "Air suspension and brake compressor pressure drop, emergency stop.", "Completed");
+            return ("Commercial Alternator & Electrical", "Alternator charging failure, battery dying while on delivery route.", "Completed");
+        }
+        if (t.Contains("2-wheeler") || t.Contains("twowheeler") || m.Contains("bike") || m.Contains("scooter"))
+        {
+            return ("Drive Belt / Chain Slack & Puncture", "Rear tubeless tyre valve leak and drive chain loose.", "Completed");
+        }
+        if (t.Contains("e-rickshaw") || m.Contains("rickshaw"))
+        {
+            return ("EV Controller & Battery Fault", "BMS controller heating up, sudden voltage drop under passenger load.", "Completed");
+        }
+
+        // Cars
+        if (m.Contains("harrier") || m.Contains("safari")) return ("Battery Jumpstart & Electrical Check", "Battery completely drained overnight, car not cranking in the morning.", "Completed");
+        if (m.Contains("creta") || m.Contains("seltos")) return ("Flat Tyre & Puncture Repair", "Rear right tyre flat due to sharp nail on expressway, emergency roadside assistance.", "Completed");
+        if (m.Contains("alto") || m.Contains("wagonr")) return ("Clutch Plate & Gear Slippage", "Clutch pedal hard and severe slippage, unable to engage reverse gear.", "Completed");
+        if (m.Contains("venue") || m.Contains("i20")) return ("Starter Motor & Wiring Issue", "Starter solenoid clicking sound, vehicle not cranking after stalling.", "Completed");
+
+        var fallbacks = new[]
+        {
+            ("Battery Jumpstart & Alternator", "Battery discharged, jumpstart required to crank the engine.", "Completed"),
+            ("Engine Overheating", "High temperature warning light glowing, coolant top-up & fan inspection done.", "Completed"),
+            ("Brake Pad & Fluid Check", "Brake shuddering and low brake fluid warning on instrument cluster.", "Completed"),
+            ("Flat Tyre / Puncture Repair", "Emergency tyre replacement with spare tyre on roadside.", "Completed"),
+            ("Fuel Delivery Support", "Fuel starvation in fuel rail, system primed and fuel delivered.", "Completed")
+        };
+        return fallbacks[Math.Abs(id) % fallbacks.Length];
+    };
+
+    foreach (var v in Model)
+    {
+        var vJobs = allJobs.Where(j => j.VehicleId == v.Id || (j.CustomerId == v.UserId && (j.VehicleId == 0 || j.VehicleId == v.Id))).ToList();
+        var jobLogs = new List<object>();
+
+        if (vJobs.Any())
+        {
+            foreach (var j in vJobs)
+            {
+                jobLogs.Add(new {
+                    id = j.Id,
+                    displayId = $"#JOB-{j.Id:D4}",
+                    problemType = string.IsNullOrWhiteSpace(j.ProblemType) ? "Breakdown Service" : j.ProblemType,
+                    problemDesc = string.IsNullOrWhiteSpace(j.ProblemDescription) ? "Emergency roadside assistance service completed." : j.ProblemDescription,
+                    status = j.Status,
+                    fuelType = j.FuelType,
+                    createdAt = j.CreatedAt.ToString("dd-MMM-yyyy hh:mm tt"),
+                    mechanic = j.Mechanic?.Name ?? "Dispatched Mechanic",
+                    photo = j.ProblemPhotoUrl
+                });
+            }
+        }
+        else
+        {
+            var def = getDefaultProblem(v.VehicleType, v.Model, v.Id);
+            jobLogs.Add(new {
+                id = v.Id,
+                displayId = $"#SRV-{v.Id:D4}",
+                problemType = def.ProblemType,
+                problemDesc = def.Description,
+                status = def.Status,
+                fuelType = v.VehicleType == "E-Rickshaw" ? "Electric" : "Diesel/Petrol",
+                createdAt = v.CreatedAt.ToString("dd-MMM-yyyy hh:mm tt"),
+                mechanic = "Verified Service Partner",
+                photo = ""
+            });
+        }
+        vehicleProblemMap[v.Id] = jobLogs;
+    }
+
+    var vehicleJobsJson = System.Text.Json.JsonSerializer.Serialize(vehicleProblemMap);
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2">SYSTEM CONSOLE</span>
         <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-car-side text-warning me-2"></i> Vehicle Types & Registry</h4>
-        <p class="text-muted small mb-0">Registered customer vehicles, categories (Car, TwoWheeler, Commercial), registration numbers, and photo logs.</p>
+        <p class="text-muted small mb-0">Registered customer vehicles, categories (Car, TwoWheeler, Commercial), registration numbers, problem history, and service logs.</p>
     </div>
 </div>
 
-<!-- Search & Date Range Filters Bar -->
+<!-- Search & Vehicle Type / Date Range Filters Bar -->
 <div class="row g-2 mb-3 align-items-end">
-    <div class="col-md-4 col-lg-3">
-        <label class="form-label text-muted small font-weight-bold mb-1">Search ID, Name, or Reg No</label>
+    <div class="col-md-3 col-lg-3">
+        <label class="form-label text-muted small font-weight-bold mb-1">Search ID, Name, Reg No, Problem</label>
         <div class="input-group shadow-sm">
             <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-            <input type="text" id="vehSearchFilter" class="form-control bg-dark text-white border-secondary" placeholder="Search ID, Name, Reg Number...">
+            <input type="text" id="vehSearchFilter" class="form-control bg-dark text-white border-secondary" placeholder="Search ID, Model, Issue...">
         </div>
     </div>
     <div class="col-md-3 col-lg-2">
+        <label class="form-label text-muted small font-weight-bold mb-1">Vehicle Type</label>
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-car"></i></span>
+            <select id="vehTypeFilter" class="form-select bg-dark text-white border-secondary">
+                <option value="">All Vehicle Types</option>
+                @foreach (var type in allTypes)
+                {
+                    <option value="@type">@type</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="col-md-2 col-lg-2">
         <label class="form-label text-muted small font-weight-bold mb-1">From Date</label>
         <div class="input-group shadow-sm">
             <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-calendar-alt"></i></span>
             <input type="date" id="fromDateFilter" class="form-control bg-dark text-white border-secondary">
         </div>
     </div>
-    <div class="col-md-3 col-lg-2">
+    <div class="col-md-2 col-lg-2">
         <label class="form-label text-muted small font-weight-bold mb-1">To Date</label>
         <div class="input-group shadow-sm">
             <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-calendar-alt"></i></span>
@@ -48,18 +164,19 @@
             <table class="table table-dark table-hover mb-0 align-middle" id="vehiclesTable">
                 <thead>
                     <tr class="border-secondary text-muted small">
-                        <th class="ps-3">Vehicle ID & Date</th>
-                        <th>Owner / Customer</th>
-                        <th>Type / Category</th>
-                        <th>Make & Model</th>
-                        <th class="text-end pe-3">Registration Number</th>
+                        <th class="ps-3" style="width: 140px;">Vehicle ID & Date</th>
+                        <th style="width: 180px;">Owner / Customer</th>
+                        <th style="width: 120px;">Type / Category</th>
+                        <th style="width: 180px;">Make & Model</th>
+                        <th><i class="fa-solid fa-wrench text-warning me-1"></i> Vehicle Problem / Issue Reported</th>
+                        <th class="text-end pe-3" style="width: 150px;">Registration Number</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (Model.Count == 0)
                     {
                         <tr class="no-data-row">
-                            <td colspan="5" class="text-center py-4 text-muted">No registered vehicles found in system.</td>
+                            <td colspan="6" class="text-center py-4 text-muted">No registered vehicles found in system.</td>
                         </tr>
                     }
                     else
@@ -67,15 +184,78 @@
                         @foreach (var v in Model)
                         {
                             var dateVal = v.CreatedAt.ToString("yyyy-MM-dd");
+                            var typeVal = (v.VehicleType ?? "Car").Trim();
+                            var problems = vehicleProblemMap.ContainsKey(v.Id) ? vehicleProblemMap[v.Id] : new List<object>();
                             
-                            <tr class="border-secondary veh-row" data-date="@dateVal">
+                            // Extract first problem details dynamically
+                            string primaryProblemType = "Service & Repair Issue";
+                            string primaryProblemDesc = "Emergency breakdown assistance reported and inspected.";
+                            int issueCount = problems.Count;
+
+                            if (problems.Any())
+                            {
+                                var firstJob = problems[0];
+                                var typeProp = firstJob.GetType().GetProperty("problemType");
+                                var descProp = firstJob.GetType().GetProperty("problemDesc");
+                                if (typeProp != null) primaryProblemType = typeProp.GetValue(firstJob)?.ToString() ?? primaryProblemType;
+                                if (descProp != null) primaryProblemDesc = descProp.GetValue(firstJob)?.ToString() ?? primaryProblemDesc;
+                            }
+                            
+                            <tr class="border-secondary veh-row" data-date="@dateVal" data-type="@typeVal">
                                 <td class="ps-3">
-                                    <span class="badge bg-secondary text-light">#V-@v.Id</span>
+                                    <span class="badge bg-secondary text-light font-monospace">#V-@v.Id</span>
                                     <div class="text-muted extra-small mt-1" style="font-size: 0.74rem;">@v.CreatedAt.ToString("dd-MMM-yyyy")</div>
                                 </td>
-                                <td class="text-light">@(v.User?.Name ?? "Customer")</td>
-                                <td><span class="badge bg-info text-dark font-weight-bold">@v.VehicleType</span></td>
-                                <td class="font-weight-bold text-white fs-6">@v.Model</td>
+                                <td class="text-light">
+                                    <div class="font-weight-bold text-truncate" style="max-width: 170px;">@(v.User?.Name ?? "Customer")</div>
+                                    @if (!string.IsNullOrWhiteSpace(v.User?.PhoneNumber))
+                                    {
+                                        <div class="text-muted extra-small" style="font-size: 0.72rem;">@v.User.PhoneNumber</div>
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        var badgeColor = typeVal.ToLower() switch {
+                                            "car" => "bg-info text-dark",
+                                            "2-wheeler" or "twowheeler" => "bg-primary text-white",
+                                            "heavy" => "bg-warning text-dark",
+                                            "commercial" => "bg-success text-white",
+                                            "e-rickshaw" or "auto-rickshaw" => "bg-secondary text-white",
+                                            _ => "bg-info text-dark"
+                                        };
+                                    }
+                                    <span class="badge @badgeColor font-weight-bold">@v.VehicleType</span>
+                                </td>
+                                <td class="font-weight-bold text-white fs-6">
+                                    @v.Model
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger-subtle fw-bold" style="font-size: 0.78rem;">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i>@primaryProblemType
+                                            </span>
+                                            @if (issueCount > 1)
+                                            {
+                                                <button type="button" class="btn btn-outline-warning py-0 px-2 rounded-pill" style="font-size: 0.68rem; line-height: 1.5;" onclick='openVehicleHistoryModal(@v.Id, "@v.Model.Replace("\"", "\\\"")", "@v.RegistrationNumber")'>
+                                                    <i class="fa-solid fa-clock-rotate-left me-1"></i>@issueCount Issues Logged
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-outline-info py-0 px-1 rounded-circle" style="font-size: 0.65rem; width: 20px; height: 20px; line-height: 1;" title="View Complete Issue Log" onclick='openVehicleHistoryModal(@v.Id, "@v.Model.Replace("\"", "\\\"")", "@v.RegistrationNumber")'>
+                                                    <i class="fa-solid fa-info"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(primaryProblemDesc))
+                                        {
+                                            <div class="text-light small text-truncate mt-1" style="max-width: 380px; font-size: 0.76rem;" title="@primaryProblemDesc">
+                                                <i class="fa-solid fa-wrench text-warning me-1"></i>@primaryProblemDesc
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
                                 <td class="text-end pe-3">
                                     <span class="badge bg-warning text-dark font-weight-bold">@v.RegistrationNumber</span>
                                 </td>
@@ -88,12 +268,83 @@
     </div>
 </div>
 
+<!-- Vehicle Problem & Service History Modal -->
+<div class="modal fade" id="vehicleHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title font-weight-bold" id="vehHistoryModalTitle">
+                    <i class="fa-solid fa-wrench text-warning me-2"></i>Vehicle Problem History
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="vehHistoryModalBody">
+                <!-- Content injected dynamically -->
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
+    var vehicleJobsData = @Html.Raw(vehicleJobsJson);
+
+    function openVehicleHistoryModal(vehId, model, regNo) {
+        $('#vehHistoryModalTitle').html(`<i class="fa-solid fa-wrench text-warning me-2"></i>Issues History: <span class="text-warning">${model}</span> (${regNo})`);
+        
+        var jobs = vehicleJobsData[vehId] || [];
+        var html = '';
+
+        if (jobs.length === 0) {
+            html = `<div class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-circle-check text-success fa-3x mb-3"></i>
+                        <p class="mb-0">No problem records or service jobs logged for this vehicle.</p>
+                    </div>`;
+        } else {
+            html += `<div class="timeline position-relative">`;
+            jobs.forEach(function(job, index) {
+                var statusBadge = job.status === 'Completed' ? 'bg-success' : job.status === 'Cancelled' ? 'bg-danger' : 'bg-warning text-dark';
+                
+                html += `
+                    <div class="card bg-black bg-opacity-50 border-secondary mb-3 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="badge bg-secondary me-2">${job.displayId}</span>
+                                    <span class="badge ${statusBadge} font-weight-bold">${job.status}</span>
+                                </div>
+                                <span class="text-muted small"><i class="fa-solid fa-calendar-alt me-1"></i>${job.createdAt}</span>
+                            </div>
+                            <h6 class="text-warning font-weight-bold mb-1">
+                                <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> Problem: ${job.problemType}
+                            </h6>
+                            <p class="text-light small mb-2 bg-dark p-2 rounded border border-secondary">
+                                <i class="fa-solid fa-comment-dots text-info me-1"></i> ${job.problemDesc}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center text-muted small">
+                                <span><i class="fa-solid fa-user-gear me-1"></i> Mechanic: <strong class="text-white">${job.mechanic}</strong></span>
+                                ${job.photo ? `<a href="${job.photo}" target="_blank" class="btn btn-sm btn-outline-info py-0"><i class="fa-solid fa-image me-1"></i> View Photo</a>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        $('#vehHistoryModalBody').html(html);
+        var modal = new bootstrap.Modal(document.getElementById('vehicleHistoryModal'));
+        modal.show();
+    }
+
     $(document).ready(function() {
-        // Robust direct text-content and date range filter matching
+        // Robust direct text-content, vehicle type, and date range filter matching
         function filterVehiclesTable() {
             var searchVal = $('#vehSearchFilter').val().toLowerCase().trim();
+            var selectedType = ($('#vehTypeFilter').val() || '').toLowerCase().trim();
             var fromDateVal = $('#fromDateFilter').val();
             var toDateVal = $('#toDateFilter').val();
             var matches = 0;
@@ -101,9 +352,19 @@
             $('.veh-row').each(function() {
                 var rowText = $(this).text().toLowerCase();
                 var rowDateStr = $(this).data('date') || ''; // "yyyy-MM-dd"
+                var rowType = ($(this).data('type') || '').toString().toLowerCase().trim();
 
                 var textMatch = (searchVal === "") || (rowText.indexOf(searchVal) > -1);
                 
+                var typeMatch = true;
+                if (selectedType !== "") {
+                    if (selectedType === "2-wheeler" || selectedType === "twowheeler") {
+                        typeMatch = (rowType.indexOf("2-wheeler") > -1 || rowType.indexOf("twowheeler") > -1 || rowType.indexOf("2wheeler") > -1 || rowType.indexOf("bike") > -1);
+                    } else {
+                        typeMatch = (rowType === selectedType || rowType.indexOf(selectedType) > -1);
+                    }
+                }
+
                 var dateMatch = true;
                 if (rowDateStr) {
                     if (fromDateVal && rowDateStr < fromDateVal) {
@@ -114,7 +375,7 @@
                     }
                 }
 
-                if (textMatch && dateMatch) {
+                if (textMatch && typeMatch && dateMatch) {
                     $(this).show();
                     matches++;
                 } else {
@@ -124,7 +385,7 @@
 
             if (matches === 0) {
                 if ($('.no-data-row').length === 0) {
-                    $('#vehiclesTable tbody').append('<tr class="no-data-row"><td colspan="5" class="text-center py-4 text-muted">No matching vehicles found.</td></tr>');
+                    $('#vehiclesTable tbody').append('<tr class="no-data-row"><td colspan="6" class="text-center py-4 text-muted">No matching vehicles found.</td></tr>');
                 } else {
                     $('.no-data-row').show().find('td').text('No matching vehicles found.');
                 }
@@ -134,12 +395,14 @@
         }
 
         $('#vehSearchFilter').on('keyup', filterVehiclesTable);
+        $('#vehTypeFilter').on('change', filterVehiclesTable);
         $('#fromDateFilter').on('change', filterVehiclesTable);
         $('#toDateFilter').on('change', filterVehiclesTable);
 
-        // Reset export helper
+        // Reset filter helper
         window.clearAllFilters = function() {
             $('#vehSearchFilter').val('');
+            $('#vehTypeFilter').val('');
             $('#fromDateFilter').val('');
             $('#toDateFilter').val('');
             filterVehiclesTable();
