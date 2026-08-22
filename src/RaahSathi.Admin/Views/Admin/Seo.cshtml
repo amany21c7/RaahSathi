@@ -22,6 +22,9 @@
             </h2>
         </div>
         <div class="d-flex flex-wrap gap-2">
+            <button id="btnOpenSeoSettingsModal" class="btn btn-outline-warning btn-sm rounded-pill px-3 shadow-sm font-weight-bold">
+                <i class="fa-solid fa-sliders me-1"></i> Google & SEO Settings
+            </button>
             <button id="btnRefreshSeoMetrics" class="btn btn-outline-info btn-sm rounded-pill px-3 shadow-sm font-weight-bold">
                 <i class="fa-solid fa-rotate me-1"></i> Refresh Live Data
             </button>
@@ -387,13 +390,82 @@
     </div>
 </div>
 
+<!-- Google Search Console & Global SEO Settings Modal -->
+<div class="modal fade" id="seoSettingsModal" tabindex="-1" aria-labelledby="seoSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg mx-3 mx-sm-auto">
+        <div class="modal-content bg-dark text-white border-secondary border-opacity-30 rounded-4 shadow-lg">
+            <div class="modal-header border-secondary border-opacity-20 py-3">
+                <h5 class="modal-title font-weight-bold text-white d-flex align-items-center gap-2" id="seoSettingsModalLabel">
+                    <i class="fa-solid fa-sliders text-warning"></i> Google Search Console & SEO Configuration
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="formSeoSettings">
+                    <!-- 1. Google Site Verification -->
+                    <div class="mb-3">
+                        <label class="form-label text-warning small font-weight-bold d-flex align-items-center gap-1.5">
+                            <i class="fa-brands fa-google"></i> Google Search Console Verification Meta Tag Content
+                        </label>
+                        <input type="text" class="form-control bg-black bg-opacity-40 border-secondary text-white font-monospace small" id="txtGoogleSiteVerification" placeholder="e.g. 7AbCdEfGhIjKlMnOpQrStUvWxYz1234567890" />
+                        <div class="form-text text-muted extra-small">
+                            Paste the verification code from Google Search Console (<code>&lt;meta name="google-site-verification" content="..." /&gt;</code>).
+                        </div>
+                    </div>
+
+                    <!-- 2. Google Analytics GA4 -->
+                    <div class="mb-3">
+                        <label class="form-label text-info small font-weight-bold d-flex align-items-center gap-1.5">
+                            <i class="fa-solid fa-chart-simple"></i> Google Analytics GA4 Measurement ID
+                        </label>
+                        <input type="text" class="form-control bg-black bg-opacity-40 border-secondary text-white font-monospace small" id="txtGoogleAnalyticsId" placeholder="e.g. G-XXXXXXXXXX" />
+                        <div class="form-text text-muted extra-small">
+                            Google Analytics 4 Stream ID to track real-time organic search visitors and user flow.
+                        </div>
+                    </div>
+
+                    <!-- 3. Default Meta Title -->
+                    <div class="mb-3">
+                        <label class="form-label text-white small font-weight-bold">
+                            Default SEO Title Tag
+                        </label>
+                        <input type="text" class="form-control bg-black bg-opacity-40 border-secondary text-white small" id="txtDefaultMetaTitle" placeholder="RaahSathi | 24x7 Roadside Assistance & Towing Network India" />
+                    </div>
+
+                    <!-- 4. Default Meta Description -->
+                    <div class="mb-3">
+                        <label class="form-label text-white small font-weight-bold">
+                            Default SEO Meta Description
+                        </label>
+                        <textarea class="form-control bg-black bg-opacity-40 border-secondary text-white small" id="txtDefaultMetaDescription" rows="3" placeholder="RaahSathi is India's premier 24x7 connected roadside assistance network..."></textarea>
+                    </div>
+
+                    <!-- 5. Default Keywords -->
+                    <div class="mb-3">
+                        <label class="form-label text-white small font-weight-bold">
+                            Default Focus Keywords (Comma-Separated)
+                        </label>
+                        <textarea class="form-control bg-black bg-opacity-40 border-secondary text-white small" id="txtDefaultMetaKeywords" rows="2" placeholder="roadside assistance, car breakdown service, gadi kharab ho gayi, mechanic near me..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary border-opacity-20 py-3">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-4 font-weight-bold text-dark shadow" id="btnSaveSeoSettings">
+                    <i class="fa-solid fa-check me-1"></i> Save & Apply Instantly
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
     function refreshLiveSeoData() {
         var $btn = $('#btnRefreshSeoMetrics');
-        $btn.html('<i class="fa-solid fa-rotate fa-spin me-1"></i> Syncing...').prop('disabled', true);
+        $btn.html('<i class="fa-solid fa-rotate fa-spin me-1"></i> Updating...').prop('disabled', true);
 
-        $.get('/Admin/GetSeoLiveMetrics', { _t: Date.now() }, function(res) {
+        $.get('/Admin/GetSeoLiveMetrics', function(res) {
             if (res && res.success && res.data) {
                 var d = res.data;
                 $('#lblOrganicClicks').text(Number(d.organicClicks).toLocaleString());
@@ -403,19 +475,26 @@
                 $('#lblTotalJobs').text(d.totalBreakdownJobs);
                 $('#lblActiveCities').text(d.activeCitiesCount);
                 $('#lblActiveServices').text(d.activeServicesCount);
-                $('#lblLastPingTime').html('<i class="fa-regular fa-clock me-1 text-warning"></i> ' + d.lastPingTime);
+                if (d.lastPingTime) {
+                    $('#lblLastPingTime').html('<i class="fa-regular fa-clock me-1 text-warning"></i> ' + d.lastPingTime);
+                }
 
-                // Regional percentages update
+                // Dynamic Percentages
                 $('#badgeNoidaPct').text(d.noidaPct + '%');
                 $('#barNoidaPct').css('width', d.noidaPct + '%');
-                $('#badgeDelhiPct').text(d.delhiPct + '%');
-                $('#barDelhiPct').css('width', d.delhiPct + '%');
+
+                $('#badgeDelhiPct').text(d.delPct || d.delhiPct + '%');
+                $('#barDelhiPct').css('width', (d.delPct || d.delhiPct) + '%');
+
                 $('#badgeGhaziabadPct').text(d.ghaziabadPct + '%');
                 $('#barGhaziabadPct').css('width', d.ghaziabadPct + '%');
+
                 $('#badgeGurgaonPct').text(d.gurgaonPct + '%');
                 $('#barGurgaonPct').css('width', d.gurgaonPct + '%');
+
                 $('#badgeFaridabadPct').text(d.faridabadPct + '%');
                 $('#barFaridabadPct').css('width', d.faridabadPct + '%');
+
                 $('#badgeOthersPct').text(d.othersPct + '%');
                 $('#barOthersPct').css('width', d.othersPct + '%');
 
@@ -468,6 +547,59 @@
 
     // Auto-refresh real-time metrics every 20 seconds
     setInterval(refreshLiveSeoData, 20000);
+
+    // Open SEO & Google Settings Modal
+    $('#btnOpenSeoSettingsModal').click(function() {
+        var $modal = $('#seoSettingsModal');
+        $.get('/Admin/GetSeoSettings', function(res) {
+            if (res && res.success) {
+                $('#txtGoogleSiteVerification').val(res.googleSiteVerification || '');
+                $('#txtGoogleAnalyticsId').val(res.googleAnalyticsId || '');
+                $('#txtDefaultMetaTitle').val(res.defaultMetaTitle || '');
+                $('#txtDefaultMetaDescription').val(res.defaultMetaDescription || '');
+                $('#txtDefaultMetaKeywords').val(res.defaultMetaKeywords || '');
+                $modal.modal('show');
+            } else {
+                alert('⚠️ Failed to load SEO configuration: ' + (res.message || 'Unknown error'));
+            }
+        }).fail(function() {
+            $modal.modal('show');
+        });
+    });
+
+    // Save SEO Settings
+    $('#btnSaveSeoSettings').click(function() {
+        var $btn = $(this);
+        var payload = {
+            googleSiteVerification: $('#txtGoogleSiteVerification').val(),
+            googleAnalyticsId: $('#txtGoogleAnalyticsId').val(),
+            defaultMetaTitle: $('#txtDefaultMetaTitle').val(),
+            defaultMetaDescription: $('#txtDefaultMetaDescription').val(),
+            defaultMetaKeywords: $('#txtDefaultMetaKeywords').val()
+        };
+
+        $btn.html('<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Saving...').prop('disabled', true);
+
+        $.ajax({
+            url: '/Admin/UpdateSeoSettings',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function(res) {
+                if (res && res.success) {
+                    alert('✅ ' + res.message);
+                    $('#seoSettingsModal').modal('hide');
+                } else {
+                    alert('⚠️ Error saving SEO settings: ' + (res.message || 'Unknown error'));
+                }
+                $btn.html('<i class="fa-solid fa-check me-1"></i> Save & Apply Instantly').prop('disabled', false);
+            },
+            error: function() {
+                alert('⚠️ Server connection error while updating SEO settings.');
+                $btn.html('<i class="fa-solid fa-check me-1"></i> Save & Apply Instantly').prop('disabled', false);
+            }
+        });
+    });
 
     $('#btnPingSearchEngines').click(function() {
         var $btn = $(this);

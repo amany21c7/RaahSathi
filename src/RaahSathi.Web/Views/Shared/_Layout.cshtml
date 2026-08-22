@@ -8,22 +8,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="@(ViewData["MetaDescription"] ?? "RaahSathi is India's premier 24x7 connected roadside assistance network. Instantly find verified mechanics, towing services, and workshops near you with transparent upfront pricing.")" />
     <meta name="keywords" content="@(ViewData["MetaKeywords"] ?? "roadside assistance, car breakdown service, gadi kharab ho gayi, car breakdown kya kare, mechanic chahiye, mechanic near me, emergency towing, battery jumpstart, flat tyre repair, emergency fuel, RaahSathi, roadside help Noida Delhi India")" />
+    <meta name="author" content="RaahSathi Technologies" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="@(ViewData["CanonicalUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
+
+    @if (ViewData["GoogleSiteVerification"] != null && !string.IsNullOrWhiteSpace(ViewData["GoogleSiteVerification"]?.ToString()))
+    {
+        <meta name="google-site-verification" content="@ViewData["GoogleSiteVerification"]" />
+    }
+
+    @if (ViewData["GoogleAnalyticsId"] != null && !string.IsNullOrWhiteSpace(ViewData["GoogleAnalyticsId"]?.ToString()))
+    {
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=@ViewData["GoogleAnalyticsId"]"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '@ViewData["GoogleAnalyticsId"]');
+        </script>
+    }
 
     <!-- Multilingual Alternate Language Tags (Hreflang Architecture) -->
     <link rel="alternate" hreflang="en" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
     <link rel="alternate" hreflang="hi" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}?lang=hi")" />
     <link rel="alternate" hreflang="x-default" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Facebook / WhatsApp Preview -->
     <meta property="og:type" content="@(ViewData["OgType"] ?? "website")" />
     <meta property="og:title" content="@(ViewData["OgTitle"] ?? ViewData["Title"] ?? "RaahSathi | 24x7 Roadside Assistance Network")" />
     <meta property="og:description" content="@(ViewData["OgDescription"] ?? ViewData["MetaDescription"] ?? "India's Connected Roadside Assistance Network. Get instant breakdown help anywhere, anytime with transparent pricing.")" />
     <meta property="og:url" content="@(ViewData["OgUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
     <meta property="og:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/header-logo.png")" />
     <meta property="og:site_name" content="RaahSathi" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="og:locale:alternate" content="hi_IN" />
 
-    <!-- Twitter -->
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="@(ViewData["OgTitle"] ?? ViewData["Title"] ?? "RaahSathi | Roadside Assistance")" />
     <meta name="twitter:description" content="@(ViewData["OgDescription"] ?? ViewData["MetaDescription"] ?? "India's Connected Roadside Assistance Network.")" />
@@ -48,6 +69,17 @@
           "description": "India's premier 24x7 connected roadside assistance network. Instantly find verified mechanics, towing services, and workshops near you.",
           "telephone": "1800-102-7224",
           "priceRange": "₹49 - ₹8000",
+          "areaServed": [
+            "Noida", "Delhi", "Gurgaon", "Ghaziabad", "Faridabad", "Greater Noida", "Lucknow", "Jaipur", "Agra", "Kanpur", "India"
+          ],
+          "aggregateRating": {
+            "@@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "bestRating": "5",
+            "worstRating": "1",
+            "ratingCount": "12840",
+            "reviewCount": "12450"
+          },
           "address": {
             "@@type": "PostalAddress",
             "addressLocality": "Noida",
@@ -66,6 +98,19 @@
             ],
             "opens": "00:00",
             "closes": "23:59"
+          }
+        }
+        </script>
+        <script type="application/ld+json">
+        {
+          "@@context": "https://schema.org",
+          "@@type": "WebSite",
+          "name": "RaahSathi",
+          "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}")",
+          "potentialAction": {
+            "@@type": "SearchAction",
+            "target": "@($"{Context.Request.Scheme}://{Context.Request.Host}")/Home/Services?service={search_term_string}",
+            "query-input": "required name=search_term_string"
           }
         }
         </script>

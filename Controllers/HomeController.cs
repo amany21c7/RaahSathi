@@ -23,8 +23,30 @@ namespace RaahSathi.Controllers
             _configuration = configuration;
         }
 
+        private async Task PopulateGlobalSeoDataAsync()
+        {
+            try
+            {
+                var settings = await _dbContext.AdminSystemSettings
+                    .Where(s => s.SettingKey == "GoogleSiteVerificationTag" || s.SettingKey == "GoogleAnalyticsId" || s.SettingKey == "DefaultMetaKeywords")
+                    .ToListAsync();
+                
+                var googleVer = settings.FirstOrDefault(s => s.SettingKey == "GoogleSiteVerificationTag")?.SettingValue;
+                var googleGa = settings.FirstOrDefault(s => s.SettingKey == "GoogleAnalyticsId")?.SettingValue;
+
+                if (!string.IsNullOrEmpty(googleVer)) ViewData["GoogleSiteVerification"] = googleVer;
+                if (!string.IsNullOrEmpty(googleGa)) ViewData["GoogleAnalyticsId"] = googleGa;
+            }
+            catch
+            {
+                // Graceful fallback
+            }
+        }
+
         public async Task<IActionResult> Index()
         {
+            await PopulateGlobalSeoDataAsync();
+
             // Seed base pricing stats for the upfront calculator
             var pricingRules = await _dbContext.PricingRules.ToListAsync();
             ViewBag.PricingRules = pricingRules;
@@ -33,10 +55,10 @@ namespace RaahSathi.Controllers
             // Dynamic SEO Meta info
             ViewData["Title"] = "RaahSathi | 24x7 Roadside Assistance & Towing Network India";
             ViewData["MetaDescription"] = "RaahSathi is India's leading 24x7 on-demand roadside assistance network. Instantly calculate towing costs and hire verified mechanics for puncture repair, battery jumpstart, and fuel delivery near you.";
-            ViewData["MetaKeywords"] = "roadside assistance India, highway mechanic helper, flat tyre repair, towing service Noida, battery jumpstart creta, emergency fuel dispatch, RaahSathi";
+            ViewData["MetaKeywords"] = "roadside assistance India, highway mechanic helper, flat tyre repair, towing service Noida, battery jumpstart creta, emergency fuel dispatch, RaahSathi, car breakdown help";
 
-            var carBase = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Car")?.BaseFee ?? 99;
-            var bikeBase = pricingRules.FirstOrDefault(r => r.VehicleCategory == "2-Wheeler")?.BaseFee ?? 49;
+            var carBase = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Car")?.BaseFee ?? 299;
+            var bikeBase = pricingRules.FirstOrDefault(r => r.VehicleCategory == "2-Wheeler")?.BaseFee ?? 199;
             var host = Request.Host.Value;
             var scheme = Request.Scheme;
 
@@ -73,22 +95,48 @@ namespace RaahSathi.Controllers
             return View();
         }
 
-        public IActionResult HowItWorks()
+        public async Task<IActionResult> HowItWorks()
         {
+            await PopulateGlobalSeoDataAsync();
             ViewData["Title"] = "How RaahSathi Works - Roadside Assistance in 6 Steps";
             ViewData["MetaDescription"] = "Learn how RaahSathi's on-demand roadside assistance works. Follow our simple 6-step dispatch workflow from upfront cost estimation to live GPS mechanic tracking and secure escrow payouts.";
             ViewData["MetaKeywords"] = "how roadside assistance works, towing dispatch process, escrow auto repair payments, live GPS mechanic tracking, RaahSathi process";
             return View();
         }
 
-        public async Task<IActionResult> Services()
+        public async Task<IActionResult> Services(string? city, string? service)
         {
-            ViewData["Title"] = "Services - One platform, every vehicle, every breakdown";
+            await PopulateGlobalSeoDataAsync();
             var pricingRules = await _dbContext.PricingRules.ToListAsync();
             ViewBag.PricingRules = pricingRules;
 
-            ViewData["MetaDescription"] = "Explore RaahSathi's emergency breakdown services. Get upfront prices and prompt dispatch for battery jumpstarts, flat tyre repair, towing, lockouts, fuel delivery, and mechanical checkups.";
-            ViewData["MetaKeywords"] = "battery jumpstart service, flat tyre repair near me, emergency towing services, car lockout help, flatbed towing, highway fuel delivery";
+            if (!string.IsNullOrWhiteSpace(city) && !string.IsNullOrWhiteSpace(service))
+            {
+                ViewData["Title"] = $"24x7 {service} in {city} | Fast 15-Min Mechanic - RaahSathi";
+                ViewData["MetaDescription"] = $"Instant {service} and emergency roadside assistance in {city}. Upfront transparent pricing, verified mechanics, live GPS tracking, and prompt 24x7 dispatch.";
+                ViewData["MetaKeywords"] = $"{service} {city}, mechanic near me {city}, emergency breakdown {city}, 24x7 towing {city}, RaahSathi {city}";
+            }
+            else if (!string.IsNullOrWhiteSpace(city))
+            {
+                ViewData["Title"] = $"24x7 Roadside Assistance in {city} | Mechanics & Towing - RaahSathi";
+                ViewData["MetaDescription"] = $"Best 24x7 emergency roadside assistance network in {city}. Verified mechanics for puncture repair, battery jumpstart, towing, and fuel delivery with upfront pricing.";
+                ViewData["MetaKeywords"] = $"roadside assistance {city}, mechanic near me {city}, car breakdown service {city}, towing service {city}, emergency mechanic {city}";
+            }
+            else if (!string.IsNullOrWhiteSpace(service))
+            {
+                ViewData["Title"] = $"{service} Near Me - 24x7 On-Demand Roadside Assistance | RaahSathi";
+                ViewData["MetaDescription"] = $"Find verified mechanics for {service} near you across India. Instant transparent price estimation, 20-min average arrival, and guaranteed service.";
+                ViewData["MetaKeywords"] = $"{service} near me, fast {service}, 24x7 {service} helpline, car {service}, bike {service}, RaahSathi";
+            }
+            else
+            {
+                ViewData["Title"] = "Services - One platform, every vehicle, every breakdown";
+                ViewData["MetaDescription"] = "Explore RaahSathi's emergency breakdown services. Get upfront prices and prompt dispatch for battery jumpstarts, flat tyre repair, towing, lockouts, fuel delivery, and mechanical checkups.";
+                ViewData["MetaKeywords"] = "battery jumpstart service, flat tyre repair near me, emergency towing services, car lockout help, flatbed towing, highway fuel delivery";
+            }
+
+            ViewBag.SelectedCity = city;
+            ViewBag.SelectedService = service;
             return View();
         }
 
@@ -440,11 +488,12 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
 
             void AddUrl(string path, string frequency, string priority)
             {
+                string encodedPath = path.Replace("&", "&amp;");
                 sitemapContent.AppendLine("  <url>");
-                sitemapContent.AppendLine($"    <loc>{baseUrl}{path}</loc>");
-                sitemapContent.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"en\" href=\"{baseUrl}{path}\" />");
-                sitemapContent.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"hi\" href=\"{baseUrl}{path}?lang=hi\" />");
-                sitemapContent.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"x-default\" href=\"{baseUrl}{path}\" />");
+                sitemapContent.AppendLine($"    <loc>{baseUrl}{encodedPath}</loc>");
+                sitemapContent.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"en\" href=\"{baseUrl}{encodedPath}\" />");
+                sitemapContent.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"hi\" href=\"{baseUrl}{encodedPath}{(path.Contains('?') ? "&amp;" : "?")}lang=hi\" />");
+                sitemapContent.AppendLine($"    <xhtml:link rel=\"alternate\" hreflang=\"x-default\" href=\"{baseUrl}{encodedPath}\" />");
                 sitemapContent.AppendLine($"    <lastmod>{DateTime.UtcNow:yyyy-MM-dd}</lastmod>");
                 sitemapContent.AppendLine($"    <changefreq>{frequency}</changefreq>");
                 sitemapContent.AppendLine($"    <priority>{priority}</priority>");
@@ -453,29 +502,45 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
 
             // Core Public Routes
             AddUrl("/", "daily", "1.0");
-            AddUrl("/Home/Services", "daily", "0.9");
-            AddUrl("/Home/HowItWorks", "weekly", "0.8");
-            AddUrl("/Home/AboutUs", "monthly", "0.7");
-            AddUrl("/Home/ContactUs", "monthly", "0.7");
-            AddUrl("/Home/Faq", "weekly", "0.8");
-            AddUrl("/Home/Privacy", "monthly", "0.5");
-            AddUrl("/Home/Terms", "monthly", "0.5");
-            AddUrl("/Home/RefundPolicy", "monthly", "0.5");
-            AddUrl("/Home/CancellationPolicy", "monthly", "0.5");
+            AddUrl("/Home/Services", "daily", "0.95");
+            AddUrl("/Home/HowItWorks", "weekly", "0.85");
+            AddUrl("/Home/AboutUs", "monthly", "0.80");
+            AddUrl("/Home/ContactUs", "monthly", "0.80");
+            AddUrl("/Home/Faq", "weekly", "0.80");
+            AddUrl("/Home/Privacy", "monthly", "0.50");
+            AddUrl("/Home/Terms", "monthly", "0.50");
+            AddUrl("/Home/RefundPolicy", "monthly", "0.50");
+            AddUrl("/Home/CancellationPolicy", "monthly", "0.50");
 
             // Dynamic Programmatic City & Local Breakdown SEO Routes
             try
             {
                 var cities = await _dbContext.CityServiceAreas.Where(c => c.IsActive).Select(c => c.CityName).Distinct().ToListAsync();
+                if (!cities.Any())
+                {
+                    cities = new List<string> { "Noida", "Delhi", "Gurgaon", "Ghaziabad", "Faridabad", "Greater Noida", "Lucknow", "Jaipur", "Agra", "Kanpur" };
+                }
+
                 foreach (var city in cities)
                 {
-                    AddUrl($"/Home/Services?city={Uri.EscapeDataString(city)}", "weekly", "0.85");
+                    AddUrl($"/Home/Services?city={Uri.EscapeDataString(city)}", "weekly", "0.90");
                 }
 
                 var serviceProblems = await _dbContext.ProblemTypePricings.Where(p => p.IsActive).Select(p => p.ProblemName).Distinct().ToListAsync();
                 foreach (var problem in serviceProblems)
                 {
-                    AddUrl($"/Home/Services?service={Uri.EscapeDataString(problem)}", "weekly", "0.80");
+                    AddUrl($"/Home/Services?service={Uri.EscapeDataString(problem)}", "weekly", "0.85");
+                }
+
+                // Top City + Problem Combinations (Hyper-Local High-Intent Keywords)
+                var topProblems = serviceProblems.Take(5).ToList();
+                var topCities = cities.Take(5).ToList();
+                foreach (var city in topCities)
+                {
+                    foreach (var prob in topProblems)
+                    {
+                        AddUrl($"/Home/Services?city={Uri.EscapeDataString(city)}&service={Uri.EscapeDataString(prob)}", "weekly", "0.80");
+                    }
                 }
             }
             catch
@@ -484,6 +549,7 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             }
 
             sitemapContent.AppendLine("</urlset>");
+            Response.Headers["Cache-Control"] = "public, max-age=3600";
             return Content(sitemapContent.ToString(), "application/xml", System.Text.Encoding.UTF8);
         }
 
