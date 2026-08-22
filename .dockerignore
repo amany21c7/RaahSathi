@@ -1,0 +1,13 @@
+bin/
+obj/
+publish/
+publish_test/
+.vs/
+.vscode/
+.git/
+.github/
+rahi.db
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
