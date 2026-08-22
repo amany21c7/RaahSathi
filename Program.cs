@@ -15,12 +15,14 @@ builder.Services.AddScoped<IPricingEngine, PricingEngine>();
 builder.Services.AddScoped<IDispatchEngine, DispatchEngine>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IWalletRepository, WalletRepository>();
+builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPricingRepository, PricingRepository>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJobService, JobService>();
-builder.Services.AddScoped<IWalletService, WalletService>();
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddHttpContextAccessor();
@@ -49,6 +51,7 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.EnsureCreated(); // Creates RaahSathiDb on SQL Server
+        StoredProcedureInstaller.InstallStoredProceduresAsync(context).GetAwaiter().GetResult(); // Installs sp_ProcessJobPayment, sp_RequestMechanicPayout, sp_ProcessMechanicPayout, sp_UpdateUserProfile
         
         // Auto-create missing columns & tables for existing database
         try

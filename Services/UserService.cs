@@ -1,25 +1,23 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using RaahSathi.Data;
 using RaahSathi.DTOs;
 using RaahSathi.Models;
+using RaahSathi.Repositories;
 
 namespace RaahSathi.Services
 {
     public class UserService : IUserService
     {
-        private readonly ApplicationDbContext _dbContext;
+        private readonly IUserRepository _userRepository;
 
-        public UserService(ApplicationDbContext dbContext)
+        public UserService(IUserRepository userRepository)
         {
-            _dbContext = dbContext;
+            _userRepository = userRepository;
         }
 
         public async Task<UserProfileDto?> GetUserProfileAsync(int userId)
         {
-            var user = await _dbContext.Users.FindAsync(userId);
+            var user = await _userRepository.GetUserByIdAsync(userId);
             if (user == null) return null;
 
             var profileDto = new UserProfileDto
@@ -34,7 +32,7 @@ namespace RaahSathi.Services
 
             if (user.Role == "Mechanic")
             {
-                var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(m => m.UserId == userId);
+                var mechProfile = await _userRepository.GetMechanicProfileAsync(userId);
                 if (mechProfile != null)
                 {
                     profileDto.MechanicProfile = new MechanicProfileDto
@@ -65,64 +63,28 @@ namespace RaahSathi.Services
 
         public async Task<bool> UpdateUserProfileAsync(UpdateProfileRequestDto dto)
         {
-            var user = await _dbContext.Users.FindAsync(dto.UserId);
-            if (user == null) return false;
-
-            if (!string.IsNullOrWhiteSpace(dto.Name))
-            {
-                user.Name = dto.Name.Trim();
-            }
-
-            if (user.Role == "Mechanic")
-            {
-                var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(m => m.UserId == dto.UserId);
-                if (mechProfile != null)
-                {
-                    if (!string.IsNullOrWhiteSpace(dto.ShopName)) mechProfile.ShopName = dto.ShopName.Trim();
-                    if (!string.IsNullOrWhiteSpace(dto.ShopAddress)) mechProfile.ShopAddress = dto.ShopAddress.Trim();
-                    if (!string.IsNullOrWhiteSpace(dto.City)) mechProfile.City = dto.City.Trim();
-                    if (!string.IsNullOrWhiteSpace(dto.VehicleExpertise)) mechProfile.VehicleExpertise = dto.VehicleExpertise.Trim();
-                    if (!string.IsNullOrWhiteSpace(dto.Specialization)) mechProfile.Specialization = dto.Specialization.Trim();
-                    if (!string.IsNullOrWhiteSpace(dto.BankName)) mechProfile.BankName = dto.BankName.Trim();
-                    if (!string.IsNullOrWhiteSpace(dto.BankAccountNumber)) mechProfile.BankAccountNumber = dto.BankAccountNumber.Trim();
-                    if (!string.IsNullOrWhiteSpace(dto.IfscCode)) mechProfile.IfscCode = dto.IfscCode.Trim();
-                    if (!string.IsNullOrWhiteSpace(dto.UpiId)) mechProfile.UpiId = dto.UpiId.Trim();
-                    if (!string.IsNullOrWhiteSpace(dto.AccountHolderName)) mechProfile.AccountHolderName = dto.AccountHolderName.Trim();
-                }
-            }
-
-            await _dbContext.SaveChangesAsync();
-            return true;
+            // Execute via Stored Procedure / Transactional Repository Layer
+            return await _userRepository.UpdateUserProfileViaStoredProcedureAsync(dto);
         }
 
         public async Task<List<Vehicle>> GetUserVehiclesAsync(int customerId)
         {
-            return await _dbContext.Vehicles
-                .Where(v => v.UserId == customerId)
-                .ToListAsync();
+            return await _userRepository.GetUserVehiclesAsync(customerId);
         }
 
         public async Task<Vehicle?> AddVehicleAsync(int customerId, Vehicle vehicle)
         {
-            vehicle.UserId = customerId;
-            _dbContext.Vehicles.Add(vehicle);
-            await _dbContext.SaveChangesAsync();
-            return vehicle;
+            return await _userRepository.AddVehicleAsync(customerId, vehicle);
         }
 
         public async Task<MechanicProfile?> GetMechanicProfileAsync(int userId)
         {
-            return await _dbContext.MechanicProfiles.FirstOrDefaultAsync(m => m.UserId == userId);
+            return await _userRepository.GetMechanicProfileAsync(userId);
         }
 
         public async Task<bool> UpdateMechanicOnlineStatusAsync(int userId, bool isOnline)
         {
-            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(m => m.UserId == userId);
-            if (profile == null) return false;
-
-            profile.IsOnline = isOnline;
-            await _dbContext.SaveChangesAsync();
-            return true;
+            return await _userRepository.UpdateMechanicOnlineStatusAsync(userId, isOnline);
         }
     }
 }

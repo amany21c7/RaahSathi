@@ -95,8 +95,24 @@ namespace RaahSathi.Services
 
             string payId = string.IsNullOrWhiteSpace(paymentId) ? "pay_" + Guid.NewGuid().ToString().Substring(0, 14) : paymentId.Trim();
 
-            // Try executing Stored Procedure first via Repository
-            bool spSuccess = await _paymentRepository.ExecuteProcessEscrowStoredProcedureAsync(job.Id, payId);
+            double baseEst = job.VisitingCharge + job.ServiceChargeMin;
+            double finalBill = job.FinalBillAmount > baseEst ? job.FinalBillAmount : baseEst;
+            double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
+            var commCalc = CalculateTieredCommissionAndNetEarnings(finalBill, partsAmt);
+
+            bool isCash = payId.StartsWith("pay_cash_", StringComparison.OrdinalIgnoreCase);
+            double actualMechanicEarning = isCash ? -commCalc.AdminCommissionAmount : commCalc.MechanicNetEarningAmount;
+
+            // Try executing SQL Server Stored Procedure first via Repository Layer
+            bool spSuccess = await _paymentRepository.ExecuteProcessJobPaymentStoredProcedureAsync(
+                job.Id, 
+                payId, 
+                finalBill, 
+                commCalc.AdminCommissionAmount, 
+                actualMechanicEarning, 
+                commCalc.CommissionRate
+            );
+
             if (spSuccess)
             {
                 try
@@ -107,15 +123,7 @@ namespace RaahSathi.Services
                 return true;
             }
 
-            // Fallback Execution via Repository Layer
-            double baseEst = job.VisitingCharge + job.ServiceChargeMin;
-            double finalBill = job.FinalBillAmount > baseEst ? job.FinalBillAmount : baseEst;
-            double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
-            var commCalc = CalculateTieredCommissionAndNetEarnings(finalBill, partsAmt);
-
-            bool isCash = payId.StartsWith("pay_cash_", StringComparison.OrdinalIgnoreCase);
-            double actualMechanicEarning = isCash ? -commCalc.AdminCommissionAmount : commCalc.MechanicNetEarningAmount;
-
+            // Fallback Execution via Repository Layer with C# atomic transaction
             var paymentModel = new Payment
             {
                 JobId = job.Id,

@@ -12,11 +12,13 @@ namespace RaahSathi.Services
     {
         private readonly IPaymentRepository _paymentRepository;
         private readonly ApplicationDbContext _dbContext;
+        private readonly IReferralService _referralService;
 
-        public PaymentService(IPaymentRepository paymentRepository, ApplicationDbContext dbContext)
+        public PaymentService(IPaymentRepository paymentRepository, ApplicationDbContext dbContext, IReferralService referralService)
         {
             _paymentRepository = paymentRepository;
             _dbContext = dbContext;
+            _referralService = referralService;
         }
 
         private double GetSettingDouble(string key, double defaultValue)
@@ -35,7 +37,6 @@ namespace RaahSathi.Services
 
         public PaymentCommissionCalculationResult CalculateTieredCommissionAndNetEarnings(double totalBillAmount, double partsAmount = 0)
         {
-            // Fetch rates from DB settings or fall back to default
             double rate1 = GetSettingDouble("CommissionPhase1", 8) / 100.0;
             double rate2 = GetSettingDouble("CommissionPhase2", 10) / 100.0;
             double rate3 = GetSettingDouble("CommissionPhase3", 12) / 100.0;
@@ -67,7 +68,6 @@ namespace RaahSathi.Services
             double totalCommission = Math.Round(serviceCommission + partsCommission, 2);
             double mechanicNetEarning = Math.Round(totalBillAmount - totalCommission, 2);
 
-            // Compute effective average rate for backward compatibility
             double effectiveRate = totalBillAmount > 0 ? (totalCommission / totalBillAmount) : serviceCommRate;
 
             return new PaymentCommissionCalculationResult
@@ -84,7 +84,6 @@ namespace RaahSathi.Services
             var job = await _dbContext.Jobs.FindAsync(jobId);
             if (job == null) return false;
 
-            // Idempotency Check: if payment is already processed and released, do not process again
             var existingPayment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
             if (existingPayment != null && (existingPayment.PaymentStatus == "Released" || existingPayment.PaymentStatus == "Completed"))
             {
@@ -93,14 +92,6 @@ namespace RaahSathi.Services
 
             string payId = string.IsNullOrWhiteSpace(paymentId) ? "pay_" + Guid.NewGuid().ToString().Substring(0, 14) : paymentId.Trim();
 
-            // Try executing Stored Procedure first via Repository
-            bool spSuccess = await _paymentRepository.ExecuteProcessEscrowStoredProcedureAsync(job.Id, payId);
-            if (spSuccess)
-            {
-                return true;
-            }
-
-            // Fallback Execution via Repository Layer
             double baseEst = job.VisitingCharge + job.ServiceChargeMin;
             double finalBill = job.FinalBillAmount > baseEst ? job.FinalBillAmount : baseEst;
             double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
@@ -108,6 +99,25 @@ namespace RaahSathi.Services
 
             bool isCash = payId.StartsWith("pay_cash_", StringComparison.OrdinalIgnoreCase);
             double actualMechanicEarning = isCash ? -commCalc.AdminCommissionAmount : commCalc.MechanicNetEarningAmount;
+
+            bool spSuccess = await _paymentRepository.ExecuteProcessJobPaymentStoredProcedureAsync(
+                job.Id, 
+                payId, 
+                finalBill, 
+                commCalc.AdminCommissionAmount, 
+                actualMechanicEarning, 
+                commCalc.CommissionRate
+            );
+
+            if (spSuccess)
+            {
+                try
+                {
+                    await _referralService.ProcessJobCompletionReferralRewardAsync(job.Id);
+                }
+                catch { }
+                return true;
+            }
 
             var paymentModel = new Payment
             {
@@ -187,7 +197,6 @@ namespace RaahSathi.Services
                 ShopAddress = mechProfile?.ShopAddress ?? "Sector 62 Noida",
                 ProblemType = job.ProblemType ?? "Roadside Emergency",
 
-                // Breakdown Items
                 VisitingCharge = job.VisitingCharge,
                 ServiceChargeMin = job.ServiceChargeMin,
                 CustomEstimateAmount = job.CustomEstimateApproved == true ? job.CustomEstimateAmount : 0.0,
@@ -198,7 +207,6 @@ namespace RaahSathi.Services
                 PartsDetails = job.ExtraPartsName,
                 TowingCharge = job.TowingApproved == true ? job.TowingCharge : 0.0,
 
-                // Financial Totals
                 TotalBillAmount = totalBill,
                 AdminCommission = adminCommission,
                 MechanicNetEarning = mechanicNetEarning,

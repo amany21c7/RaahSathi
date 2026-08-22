@@ -1312,36 +1312,40 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
-            if (req == null) return NotFound();
-
-            if (req.Status != "Pending")
+            var dto = new DTOs.AdminProcessPayoutDto
             {
-                TempData["Error"] = "This request has already been processed.";
+                PayoutRequestId = requestId,
+                Action = "Approve",
+                Remarks = string.IsNullOrEmpty(remarks) ? "Payout released by Admin" : remarks,
+                TransactionReference = string.IsNullOrEmpty(referenceNumber) ? Guid.NewGuid().ToString().Substring(0, 12).ToUpper() : referenceNumber
+            };
+
+            bool success = await _walletService.ProcessPayoutRequestAsync(dto);
+            if (!success)
+            {
+                TempData["Error"] = "This request could not be processed or is already completed.";
                 return RedirectToAction("Payments");
             }
 
-            req.Status = "Approved";
-            req.ProcessedAt = DateTime.UtcNow;
-            req.TransactionReference = string.IsNullOrEmpty(referenceNumber) ? Guid.NewGuid().ToString().Substring(0, 12).ToUpper() : referenceNumber;
-            req.AdminRemarks = string.IsNullOrEmpty(remarks) ? "Payout released by Admin" : remarks;
-
-            var supportMsg = new MechanicSupportMessage
+            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
+            if (req != null)
             {
-                MechanicId = req.MechanicId,
-                Title = "💰 Payout Released",
-                MessageText = $"Your payout request for ₹{req.Amount:N2} has been approved and released.\nMethod: {req.PayoutMethod}\nReference Number: {req.TransactionReference}\nRemarks: {req.AdminRemarks}",
-                SenderRole = "Admin",
-                SenderName = "RaahSathi Finance Desk",
-                IsFromAdmin = true,
-                IsRead = false,
-                SentAt = DateTime.UtcNow
-            };
-            _dbContext.MechanicSupportMessages.Add(supportMsg);
+                var supportMsg = new MechanicSupportMessage
+                {
+                    MechanicId = req.MechanicId,
+                    Title = "💰 Payout Released",
+                    MessageText = $"Your payout request for ₹{req.Amount:N2} has been approved and released.\nMethod: {req.PayoutMethod}\nReference Number: {dto.TransactionReference}\nRemarks: {dto.Remarks}",
+                    SenderRole = "Admin",
+                    SenderName = "RaahSathi Finance Desk",
+                    IsFromAdmin = true,
+                    IsRead = false,
+                    SentAt = DateTime.UtcNow
+                };
+                _dbContext.MechanicSupportMessages.Add(supportMsg);
+                await _dbContext.SaveChangesAsync();
+            }
 
-            await _dbContext.SaveChangesAsync();
-
-            TempData["Success"] = $"Payout of ₹{req.Amount:N2} approved and released successfully!";
+            TempData["Success"] = "Payout approved and released successfully via atomic transaction!";
             return RedirectToAction("Payments");
         }
 
@@ -1350,42 +1354,39 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
-            if (req == null) return NotFound();
-
-            if (req.Status != "Pending")
+            var dto = new DTOs.AdminProcessPayoutDto
             {
-                TempData["Error"] = "This request has already been processed.";
+                PayoutRequestId = requestId,
+                Action = "Reject",
+                Remarks = string.IsNullOrEmpty(remarks) ? "Rejected by Admin" : remarks
+            };
+
+            bool success = await _walletService.ProcessPayoutRequestAsync(dto);
+            if (!success)
+            {
+                TempData["Error"] = "This request could not be processed or is already completed.";
                 return RedirectToAction("Payments");
             }
 
-            req.Status = "Rejected";
-            req.ProcessedAt = DateTime.UtcNow;
-            req.AdminRemarks = string.IsNullOrEmpty(remarks) ? "Rejected by Admin" : remarks;
-
-            // Refund held funds
-            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == req.MechanicId);
-            if (profile != null)
+            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
+            if (req != null)
             {
-                profile.CurrentEarnings += req.Amount;
+                var supportMsg = new MechanicSupportMessage
+                {
+                    MechanicId = req.MechanicId,
+                    Title = "❌ Payout Request Rejected",
+                    MessageText = $"Your payout request for ₹{req.Amount:N2} was rejected by Admin.\nReason: {dto.Remarks}\nAmount has been refunded to your wallet balance.",
+                    SenderRole = "Admin",
+                    SenderName = "RaahSathi Finance Desk",
+                    IsFromAdmin = true,
+                    IsRead = false,
+                    SentAt = DateTime.UtcNow
+                };
+                _dbContext.MechanicSupportMessages.Add(supportMsg);
+                await _dbContext.SaveChangesAsync();
             }
 
-            var supportMsg = new MechanicSupportMessage
-            {
-                MechanicId = req.MechanicId,
-                Title = "❌ Payout Request Rejected",
-                MessageText = $"Your payout request for ₹{req.Amount:N2} was rejected by Admin.\nReason: {req.AdminRemarks}\nAmount has been refunded to your wallet balance.",
-                SenderRole = "Admin",
-                SenderName = "RaahSathi Finance Desk",
-                IsFromAdmin = true,
-                IsRead = false,
-                SentAt = DateTime.UtcNow
-            };
-            _dbContext.MechanicSupportMessages.Add(supportMsg);
-
-            await _dbContext.SaveChangesAsync();
-
-            TempData["Success"] = $"Payout request of ₹{req.Amount:N2} rejected. Funds returned to mechanic wallet.";
+            TempData["Success"] = "Payout request rejected and balance refunded to mechanic wallet atomically.";
             return RedirectToAction("Payments");
         }
 

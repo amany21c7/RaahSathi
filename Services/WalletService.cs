@@ -2,35 +2,29 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using RaahSathi.Data;
 using RaahSathi.DTOs;
 using RaahSathi.Models;
+using RaahSathi.Repositories;
 
 namespace RaahSathi.Services
 {
     public class WalletService : IWalletService
     {
-        private readonly ApplicationDbContext _dbContext;
+        private readonly IWalletRepository _walletRepository;
 
-        public WalletService(ApplicationDbContext dbContext)
+        public WalletService(IWalletRepository walletRepository)
         {
-            _dbContext = dbContext;
+            _walletRepository = walletRepository;
         }
 
         public async Task<WalletBalanceDto> GetWalletBalanceAsync(int mechanicId)
         {
-            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == mechanicId);
+            var profile = await _walletRepository.GetMechanicProfileAsync(mechanicId);
             double currentBalance = profile?.CurrentEarnings ?? 0.0;
             int totalJobs = profile?.TotalJobs ?? 0;
 
-            double pendingPayouts = await _dbContext.MechanicPayoutRequests
-                .Where(r => r.MechanicId == mechanicId && r.Status == "Pending")
-                .SumAsync(r => (double?)r.Amount) ?? 0.0;
-
-            double completedPayouts = await _dbContext.MechanicPayoutRequests
-                .Where(r => r.MechanicId == mechanicId && r.Status == "Approved")
-                .SumAsync(r => (double?)r.Amount) ?? 0.0;
+            double pendingPayouts = await _walletRepository.GetPendingPayoutSumAsync(mechanicId);
+            double completedPayouts = await _walletRepository.GetApprovedPayoutSumAsync(mechanicId);
 
             return new WalletBalanceDto
             {
@@ -49,7 +43,7 @@ namespace RaahSathi.Services
                 return new PayoutResponseDto { Success = false, Message = "Minimum payout withdrawal amount is ₹100." };
             }
 
-            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == request.MechanicId);
+            var profile = await _walletRepository.GetMechanicProfileAsync(request.MechanicId);
             if (profile == null)
             {
                 return new PayoutResponseDto { Success = false, Message = "Mechanic profile not found." };
@@ -64,54 +58,23 @@ namespace RaahSathi.Services
                 };
             }
 
-            // Deduct balance from mechanic wallet immediately or hold it
-            profile.CurrentEarnings -= request.Amount;
-
-            var payoutRequest = new MechanicPayoutRequest
-            {
-                MechanicId = request.MechanicId,
-                Amount = request.Amount,
-                PayoutMethod = string.IsNullOrWhiteSpace(request.PayoutMethod) ? "UPI" : request.PayoutMethod,
-                AccountHolderName = request.AccountHolderName ?? profile.AccountHolderName,
-                BankAccountNumber = request.BankAccountNumber ?? profile.BankAccountNumber,
-                BankName = request.BankName ?? profile.BankName,
-                IfscCode = request.IfscCode ?? profile.IfscCode,
-                UpiId = request.UpiId ?? profile.UpiId,
-                Status = "Pending",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _dbContext.MechanicPayoutRequests.Add(payoutRequest);
-            await _dbContext.SaveChangesAsync();
-
-            return new PayoutResponseDto
-            {
-                Success = true,
-                Message = "Payout request submitted successfully. Admin review pending.",
-                PayoutRequestId = payoutRequest.Id,
-                RemainingBalance = profile.CurrentEarnings
-            };
+            // Execute via Stored Procedure / Transactional Repository Layer
+            return await _walletRepository.RequestPayoutViaStoredProcedureAsync(request, profile);
         }
 
         public async Task<List<MechanicPayoutRequest>> GetPayoutRequestsForMechanicAsync(int mechanicId)
         {
-            return await _dbContext.MechanicPayoutRequests
-                .Where(r => r.MechanicId == mechanicId)
-                .OrderByDescending(r => r.CreatedAt)
-                .ToListAsync();
+            return await _walletRepository.GetPayoutRequestsForMechanicAsync(mechanicId);
         }
 
         public async Task<List<PayoutRequestViewModel>> GetAllPayoutRequestsAsync()
         {
-            var requests = await _dbContext.MechanicPayoutRequests
-                .Include(r => r.Mechanic)
-                .OrderByDescending(r => r.CreatedAt)
-                .ToListAsync();
-
+            var requests = await _walletRepository.GetAllPayoutRequestsAsync();
             var list = new List<PayoutRequestViewModel>();
+
             foreach (var req in requests)
             {
-                var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == req.MechanicId);
+                var profile = await _walletRepository.GetMechanicProfileAsync(req.MechanicId);
                 list.Add(new PayoutRequestViewModel
                 {
                     Request = req,
@@ -127,32 +90,8 @@ namespace RaahSathi.Services
 
         public async Task<bool> ProcessPayoutRequestAsync(AdminProcessPayoutDto dto)
         {
-            var payout = await _dbContext.MechanicPayoutRequests.FindAsync(dto.PayoutRequestId);
-            if (payout == null || payout.Status != "Pending") return false;
-
-            if (dto.Action == "Approve")
-            {
-                payout.Status = "Approved";
-                payout.ProcessedAt = DateTime.UtcNow;
-                payout.AdminRemarks = string.IsNullOrWhiteSpace(dto.Remarks) ? "Payout Approved and Transferred" : dto.Remarks;
-                payout.TransactionReference = string.IsNullOrWhiteSpace(dto.TransactionReference) ? "TXN" + Guid.NewGuid().ToString("N").Substring(0, 10).ToUpper() : dto.TransactionReference;
-            }
-            else if (dto.Action == "Reject")
-            {
-                payout.Status = "Rejected";
-                payout.ProcessedAt = DateTime.UtcNow;
-                payout.AdminRemarks = string.IsNullOrWhiteSpace(dto.Remarks) ? "Payout Rejected" : dto.Remarks;
-
-                // Refund the amount back to mechanic wallet
-                var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == payout.MechanicId);
-                if (profile != null)
-                {
-                    profile.CurrentEarnings += payout.Amount;
-                }
-            }
-
-            await _dbContext.SaveChangesAsync();
-            return true;
+            // Execute via Stored Procedure / Transactional Repository Layer
+            return await _walletRepository.ProcessPayoutViaStoredProcedureAsync(dto);
         }
     }
 }

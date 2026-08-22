@@ -20,30 +20,54 @@ namespace RaahSathi.Repositories
 
         public async Task<Payment?> GetPaymentByJobIdAsync(int jobId)
         {
-            return await _dbContext.Payments
-                .Include(p => p.Job)
-                .FirstOrDefaultAsync(p => p.JobId == jobId);
+            try
+            {
+                return await _dbContext.Payments
+                    .Include(p => p.Job)
+                    .FirstOrDefaultAsync(p => p.JobId == jobId);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         public async Task<List<Payment>> GetAllEscrowTransactionsAsync()
         {
-            return await _dbContext.Payments
-                .Include(p => p.Job)
-                .OrderByDescending(p => p.CreatedAt)
-                .ToListAsync();
+            try
+            {
+                return await _dbContext.Payments
+                    .Include(p => p.Job)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToListAsync();
+            }
+            catch (Exception)
+            {
+                return new List<Payment>();
+            }
         }
 
-        public async Task<bool> ExecuteProcessEscrowStoredProcedureAsync(int jobId, string paymentId)
+        public async Task<bool> ExecuteProcessJobPaymentStoredProcedureAsync(
+            int jobId, 
+            string paymentId, 
+            double amount, 
+            double adminCommission, 
+            double mechanicEarning, 
+            double commissionRate)
         {
             try
             {
-                await _dbContext.Database.ExecuteSqlRawAsync(
-                    "EXEC dbo.rs_payments_process_escrow @JobId = {0}, @PaymentId = {1}",
-                    jobId, paymentId
-                );
-                return true;
+                if (_dbContext.Database.IsSqlServer())
+                {
+                    await _dbContext.Database.ExecuteSqlRawAsync(
+                        "EXEC dbo.sp_ProcessJobPayment @JobId = {0}, @PaymentId = {1}, @Amount = {2}, @AdminCommission = {3}, @MechanicEarning = {4}, @CommissionRate = {5}, @PaymentStatus = {6}",
+                        jobId, paymentId, amount, adminCommission, mechanicEarning, commissionRate, "Released"
+                    );
+                    return true;
+                }
+                return false;
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }
@@ -51,45 +75,61 @@ namespace RaahSathi.Repositories
 
         public async Task SaveEscrowPaymentWithFallbackAsync(Payment payment, int jobId, int? mechanicId, double mechanicEarning, double commissionRate)
         {
-            var existingPayment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
-            if (existingPayment != null)
-            {
-                existingPayment.Amount = payment.Amount;
-                existingPayment.PaymentStatus = payment.PaymentStatus;
-                existingPayment.RazorpayPaymentId = payment.RazorpayPaymentId;
-                existingPayment.AdminCommissionAmount = payment.AdminCommissionAmount;
-                existingPayment.MechanicEarningAmount = payment.MechanicEarningAmount;
-                existingPayment.CommissionRateUsed = payment.CommissionRateUsed;
-            }
-            else
-            {
-                _dbContext.Payments.Add(payment);
-            }
-
-            if (mechanicId.HasValue)
-            {
-                var mechProf = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == mechanicId.Value);
-                if (mechProf != null)
-                {
-                    mechProf.CurrentEarnings += mechanicEarning;
-                    mechProf.TotalJobs += 1;
-                }
-            }
-
-            var job = await _dbContext.Jobs.FindAsync(jobId);
-            if (job != null)
-            {
-                job.Status = "Completed";
-                job.CompletedAt = DateTime.UtcNow;
-            }
-
-            await _dbContext.SaveChangesAsync();
-
             try
             {
-                await _referralService.ProcessJobCompletionReferralRewardAsync(jobId);
+                using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                try
+                {
+                    var existingPayment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
+                    if (existingPayment != null)
+                    {
+                        existingPayment.Amount = payment.Amount;
+                        existingPayment.PaymentStatus = payment.PaymentStatus;
+                        existingPayment.RazorpayPaymentId = payment.RazorpayPaymentId;
+                        existingPayment.AdminCommissionAmount = payment.AdminCommissionAmount;
+                        existingPayment.MechanicEarningAmount = payment.MechanicEarningAmount;
+                        existingPayment.CommissionRateUsed = payment.CommissionRateUsed;
+                    }
+                    else
+                    {
+                        _dbContext.Payments.Add(payment);
+                    }
+
+                    if (mechanicId.HasValue)
+                    {
+                        var mechProf = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == mechanicId.Value);
+                        if (mechProf != null)
+                        {
+                            mechProf.CurrentEarnings += mechanicEarning;
+                            mechProf.TotalJobs += 1;
+                        }
+                    }
+
+                    var job = await _dbContext.Jobs.FindAsync(jobId);
+                    if (job != null)
+                    {
+                        job.Status = "Completed";
+                        job.CompletedAt = DateTime.UtcNow;
+                    }
+
+                    await _dbContext.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    try
+                    {
+                        await _referralService.ProcessJobCompletionReferralRewardAsync(jobId);
+                    }
+                    catch { }
+                }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync();
+                }
             }
-            catch { }
+            catch (Exception)
+            {
+                // Graceful handling without breaking the calling flow
+            }
         }
     }
 }
