@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection;
 using RaahSathi.Data;
 using RaahSathi.Services;
 using RaahSathi.Models;
@@ -25,6 +26,11 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddHttpContextAccessor();
 
+// Persist Data Protection Encryption Keys to Database (logins survive deployments and restarts)
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<ApplicationDbContext>()
+    .SetApplicationName("RaahSathi");
+
 // Add Cookie Authentication
 builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -37,7 +43,11 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
     });
 
 // Add services to the container.
-builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
+var mvcBuilder = builder.Services.AddControllersWithViews();
+if (builder.Environment.IsDevelopment())
+{
+    mvcBuilder.AddRazorRuntimeCompilation();
+}
 
 var app = builder.Build();
 
@@ -54,6 +64,15 @@ using (var scope = app.Services.CreateScope())
         try
         {
             context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[DataProtectionKeys]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [DataProtectionKeys] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [FriendlyName] nvarchar(max) NULL,
+                        [Xml] nvarchar(max) NULL
+                    );
+                END;
+
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Vehicles]') AND name = N'VehiclePhotoUrl')
                 BEGIN
                     ALTER TABLE [Vehicles] ADD [VehiclePhotoUrl] nvarchar(500) NOT NULL DEFAULT '';

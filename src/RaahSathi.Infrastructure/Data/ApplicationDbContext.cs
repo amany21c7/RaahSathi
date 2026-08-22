@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using RaahSathi.Models;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace RaahSathi.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : DbContext, IDataProtectionKeyContext
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -19,6 +20,7 @@ namespace RaahSathi.Data
             _httpContextAccessor = httpContextAccessor;
         }
 
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Vehicle> Vehicles { get; set; }
         public DbSet<MechanicProfile> MechanicProfiles { get; set; }
