@@ -50,10 +50,10 @@ namespace RaahSathi.Controllers
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
 
             // Set secure cookies for front-end/view compatibility
-            var options = new CookieOptions { Expires = DateTime.UtcNow.AddDays(30), HttpOnly = true, IsEssential = true, SameSite = SameSiteMode.Lax, Secure = true };
+            var options = new CookieOptions { Expires = DateTime.UtcNow.AddDays(30), HttpOnly = true, IsEssential = true, SameSite = SameSiteMode.Lax, Secure = HttpContext.Request.IsHttps };
             Response.Cookies.Append("RaahSathiUserRole", user.Role, options);
             Response.Cookies.Append("RaahSathiUserId", user.Id.ToString(), options);
-            Response.Cookies.Append("RaahSathiUserName", user.Name, new CookieOptions { Expires = DateTime.UtcNow.AddDays(30), HttpOnly = false, IsEssential = true, SameSite = SameSiteMode.Lax });
+            Response.Cookies.Append("RaahSathiUserName", user.Name, new CookieOptions { Expires = DateTime.UtcNow.AddDays(30), HttpOnly = false, IsEssential = true, SameSite = SameSiteMode.Lax, Secure = HttpContext.Request.IsHttps });
 
             if (user.Role == "Customer")
             {

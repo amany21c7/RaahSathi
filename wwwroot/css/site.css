@@ -874,3 +874,103 @@ body { top: 0px !important; }
         z-index: 1052;
     }
 }
+
+/* ==========================================================================
+   📱 COMPREHENSIVE RESPONSIVENESS SYSTEM (MOBILE, IPAD/TABLET & PC)
+   ========================================================================== */
+
+/* 1. Global Viewport & Touch Ergonomics */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
+/* Prevent iOS Safari Automatic Zoom on Form Inputs */
+@media (max-width: 768px) {
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="search"],
+    select,
+    textarea,
+    .form-control,
+    .glass-input {
+        font-size: 16px !important;
+        min-height: 46px !important;
+    }
+
+    /* Generous Touch Targets */
+    .btn,
+    .nav-link,
+    .portal-pill,
+    .dropdown-item {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .glass-card {
+        padding: 1.25rem !important;
+        border-radius: 16px !important;
+        margin-bottom: 1rem;
+    }
+
+    /* Modal Responsive Touch Optimization */
+    .modal-dialog {
+        margin: 0.75rem auto;
+        max-width: 95vw !important;
+    }
+    .modal-content {
+        border-radius: 20px !important;
+    }
+}
+
+/* 2. Responsive Table Wrappers with Native Smooth Scroll */
+.table-responsive,
+.table-responsive-sm,
+.table-responsive-md,
+.table-responsive-lg {
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.4);
+    border-radius: 4px;
+}
+
+/* 3. Tablet & iPad Screen Adjustments (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .container, .container-fluid {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    .stat-card-number {
+        font-size: 1.75rem !important;
+    }
+
+    .noc-main {
+        padding: 1rem !important;
+    }
+}
+
+/* 4. Large Desktop PC Enhancements (1200px+) */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1280px;
+    }
+}

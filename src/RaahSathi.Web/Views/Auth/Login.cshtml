@@ -17,15 +17,20 @@
             <!-- ------------------------------------------------------------- -->
             <div id="panelLogin">
                 <!-- Role Selection -->
-                <div class="mb-4 d-flex justify-content-center gap-2">
+                <div class="mb-4 d-flex justify-content-center gap-2 flex-wrap">
                     <input type="radio" class="btn-check" name="loginRole" id="loginRoleCustomer" value="Customer" @(targetRole == "Customer" ? "checked" : "") autocomplete="off">
-                    <label class="btn btn-outline-warning rounded-pill px-4" for="loginRoleCustomer">
+                    <label class="btn btn-outline-warning rounded-pill px-3 px-md-4 py-2" for="loginRoleCustomer">
                         <i class="fa-solid fa-car me-1"></i> Customer
                     </label>
 
                     <input type="radio" class="btn-check" name="loginRole" id="loginRoleMechanic" value="Mechanic" @(targetRole == "Mechanic" ? "checked" : "") autocomplete="off">
-                    <label class="btn btn-outline-warning rounded-pill px-4" for="loginRoleMechanic">
+                    <label class="btn btn-outline-warning rounded-pill px-3 px-md-4 py-2" for="loginRoleMechanic">
                         <i class="fa-solid fa-wrench me-1"></i> Mechanic
+                    </label>
+
+                    <input type="radio" class="btn-check" name="loginRole" id="loginRoleAdmin" value="Admin" @(targetRole == "Admin" ? "checked" : "") autocomplete="off">
+                    <label class="btn btn-outline-danger rounded-pill px-3 px-md-4 py-2" for="loginRoleAdmin">
+                        <i class="fa-solid fa-shield-halved me-1"></i> Admin
                     </label>
                 </div>
 
@@ -42,13 +47,19 @@
                     <input type="password" class="form-control glass-input text-white" id="loginPassword" placeholder="••••••••" autocomplete="new-password" value="">
                 </div>
 
-                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3" id="btnLoginSubmit">
+                <button class="btn btn-premium-primary w-100 py-2.5 font-weight-bold mb-3 shadow" id="btnLoginSubmit">
                     Secure Login <i class="fa-solid fa-unlock ms-1"></i>
                 </button>
 
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between flex-wrap gap-2">
                     <a href="#" id="lnkShowRegister" class="text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-user-plus me-1"></i> Create Account</a>
                     <a href="#" id="lnkShowForgot" class="text-muted small" style="text-decoration:none;"><i class="fa-solid fa-circle-question me-1"></i> Forgot Password?</a>
+                </div>
+
+                <div class="text-center mt-3 pt-3 border-top border-secondary border-opacity-25">
+                    <a href="#" id="adminBackdoor" class="text-muted small text-decoration-none d-inline-flex align-items-center gap-1 hover-warning">
+                        <i class="fa-solid fa-shield-halved text-danger"></i> <span class="text-secondary">Admin NOC Portal Login</span>
+                    </a>
                 </div>
             </div>
 
@@ -161,7 +172,7 @@
                     <label class="form-label text-muted small">10-Digit Mobile Number</label>
                     <div class="input-group">
                         <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
-                        <input type="tel" class="form-control glass-input text-white" id="forgotPhone" placeholder="9876543210" maxlength="10">
+                        <input type="tel" class="form-control glass-input text-white" id="forgotPhone" placeholder="" maxlength="10">
                     </div>
                 </div>
 
@@ -352,6 +363,11 @@ $(document).ready(function() {
         $('input[name="loginRole"][value="' + initialRole + '"]').prop('checked', true);
         $('input[name="registerRole"][value="' + initialRole + '"]').prop('checked', true);
         $('input[name="forgotRole"][value="' + initialRole + '"]').prop('checked', true);
+    }
+
+    var passedRefCode = "@(ViewBag.ReferralCode ?? "")";
+    if (passedRefCode && passedRefCode.length > 0) {
+        showPanel('panelRegisterDetails', 'Register Account', 'fa-gift', 'Joining with Referral Code: ' + passedRefCode);
     }
 
     // Dynamic role sync on user selection change
@@ -578,6 +594,7 @@ $(document).ready(function() {
     var regPhone = "";
     var regRole = "";
     var regName = "";
+    var regReferralCode = "";
 
     $('#btnRegisterSendOtp').click(function() {
         regRole = $('input[name="registerRole"]:checked').val();
@@ -588,6 +605,7 @@ $(document).ready(function() {
 
         regPhone = $('#registerPhone').val().trim();
         regName = $('#registerName').val().trim();
+        regReferralCode = $('#registerReferralCode').val().trim();
 
         if (!regName) {
             alert('Please enter your full name.');
@@ -651,7 +669,8 @@ $(document).ready(function() {
             name: regName,
             phoneNumber: regPhone,
             role: regRole,
-            password: password
+            password: password,
+            referralCode: regReferralCode
         }, function(res) {
             if (res.success) {
                 window.location.href = res.redirect;
