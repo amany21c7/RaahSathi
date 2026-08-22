@@ -14,9 +14,12 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# Render uses port 8080 by default for .NET 9
+# Render environment and stability configurations
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_USE_POLLING_FILE_WATCHER=true
+ENV DOTNET_EnableDiagnostics=0
+
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "RaahSathi.dll"]
