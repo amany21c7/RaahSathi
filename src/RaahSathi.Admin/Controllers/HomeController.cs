@@ -581,6 +581,7 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
                 n.Id,
                 n.Title,
                 n.Message,
+                n.TargetAudience,
                 SentAt = n.SentAt.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")
             }).ToList();
 

@@ -950,7 +950,7 @@
                                     <i class="fa-solid fa-bell"></i>
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light d-none" id="notificationBadge" style="font-size: 0.65rem; padding: 0.25em 0.4em;">0</span>
                                 </button>
-                                <div class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg p-0" id="notificationDropdownMenu" style="width: 320px; max-height: 400px; overflow-y: auto; z-index: 1050; border-radius: 12px;">
+                                <div class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg p-0" id="notificationDropdownMenu" style="width: 320px; max-width: 90vw; max-height: 400px; overflow-y: auto; z-index: 1050; border-radius: 12px;">
                                     <div class="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
                                         <h6 class="text-white font-weight-bold mb-0" style="font-family:'Outfit';"><i class="fa-solid fa-bell text-warning me-1.5"></i> Live Announcements</h6>
                                         <span class="badge bg-secondary text-light small" id="notificationCountBadge">0 New</span>
@@ -1766,13 +1766,22 @@
                                     }
                                 }
                                 
-                                // Auto popup logic:
-                                // 1. Guest user on Home Page: show on page load/refresh (unless closed in current session)
-                                // 2. Logged-in user: show once on first login/view, never again after dismissed
+                                // Auto popup logic strictly based on Admin's Target Audience setting:
                                 var shouldPopup = false;
-                                if (!isUserAuthenticated && onHome) {
-                                    if (!sessionDismissedBroadcastIds.includes(nid)) {
-                                        shouldPopup = true;
+                                var audience = (n.targetAudience || '').toLowerCase();
+                                var isHomepageOnly = (audience.indexOf('homepage') !== -1);
+
+                                if (!isUserAuthenticated) {
+                                    if (isHomepageOnly) {
+                                        // Admin chose Homepage Visitors -> Show popup ONLY on Homepage
+                                        if (onHome && !sessionDismissedBroadcastIds.includes(nid)) {
+                                            shouldPopup = true;
+                                        }
+                                    } else {
+                                        // Admin chose All Users -> Show popup on any public page (unless dismissed in session)
+                                        if (!sessionDismissedBroadcastIds.includes(nid)) {
+                                            shouldPopup = true;
+                                        }
                                     }
                                 } else if (isUserAuthenticated) {
                                     if (!dismissedNotifs.includes(nid) && !sessionDismissedBroadcastIds.includes(nid)) {
@@ -2379,7 +2388,7 @@
 
     <!-- Premium Custom Broadcast Alert Modal -->
     <div class="modal fade" id="raahSathiBroadcastModal" tabindex="-1" aria-labelledby="broadcastModalTitle" aria-hidden="true" style="backdrop-filter: blur(8px); z-index: 106000;">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered mx-3 mx-sm-auto">
             <div class="modal-content border-0 shadow-lg position-relative" style="background: linear-gradient(145deg, #101c36, #090e1c); border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); border: 1px solid rgba(245, 158, 11, 0.25);">
                 <!-- Top-Right Close Button -->
                 <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 shadow-none" data-bs-dismiss="modal" aria-label="Close" style="z-index: 10; opacity: 0.75; cursor: pointer;"></button>
