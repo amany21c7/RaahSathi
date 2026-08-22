@@ -71,9 +71,27 @@ namespace RaahSathi.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login(string? role, string? switchRole, string? @ref)
+        public async Task<IActionResult> Login(string? role, string? switchRole, string? @ref)
         {
             string? targetRole = role ?? switchRole;
+            bool isAdminRequest = string.Equals(targetRole, "Admin", StringComparison.OrdinalIgnoreCase);
+
+            if (isAdminRequest)
+            {
+                if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+                {
+                    return RedirectToAction("Dashboard", "Admin");
+                }
+
+                if (User.Identity?.IsAuthenticated == true)
+                {
+                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                }
+
+                ViewBag.TargetRole = "Admin";
+                ViewBag.ReferralCode = @ref ?? string.Empty;
+                return View();
+            }
 
             if (User.Identity?.IsAuthenticated == true)
             {
@@ -111,21 +129,24 @@ namespace RaahSathi.Controllers
         [Route("AdminRahiSarhiLogin")]
         [Route("AdminRahiSathiLogin")]
         [Route("AdminRaahSathiLogin")]
-        public IActionResult AdminRahiSarhiLogin()
+        public async Task<IActionResult> AdminRahiSarhiLogin()
         {
             if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
             {
                 return RedirectToAction("Dashboard", "Admin");
             }
-            else
+
+            if (User.Identity?.IsAuthenticated == true)
             {
-                Response.Cookies.Delete("RaahSathiCustomerUserId");
-                Response.Cookies.Delete("RaahSathiMechanicUserId");
-                Response.Cookies.Delete("RaahSathiAdminUserId");
-                Response.Cookies.Delete("RaahSathiUserRole");
-                Response.Cookies.Delete("RaahSathiUserId");
-                Response.Cookies.Delete("RaahSathiUserName");
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             }
+
+            Response.Cookies.Delete("RaahSathiCustomerUserId");
+            Response.Cookies.Delete("RaahSathiMechanicUserId");
+            Response.Cookies.Delete("RaahSathiAdminUserId");
+            Response.Cookies.Delete("RaahSathiUserRole");
+            Response.Cookies.Delete("RaahSathiUserId");
+            Response.Cookies.Delete("RaahSathiUserName");
 
             ViewBag.TargetRole = "Admin";
             return View("Login");

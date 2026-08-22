@@ -17,20 +17,15 @@
             <!-- ------------------------------------------------------------- -->
             <div id="panelLogin">
                 <!-- Role Selection -->
-                <div class="mb-4 d-flex justify-content-center gap-2 flex-wrap">
+                <div class="mb-4 d-flex justify-content-center gap-2">
                     <input type="radio" class="btn-check" name="loginRole" id="loginRoleCustomer" value="Customer" @(targetRole == "Customer" ? "checked" : "") autocomplete="off">
-                    <label class="btn btn-outline-warning rounded-pill px-3 px-md-4 py-2" for="loginRoleCustomer">
+                    <label class="btn btn-outline-warning rounded-pill px-4" for="loginRoleCustomer">
                         <i class="fa-solid fa-car me-1"></i> Customer
                     </label>
 
                     <input type="radio" class="btn-check" name="loginRole" id="loginRoleMechanic" value="Mechanic" @(targetRole == "Mechanic" ? "checked" : "") autocomplete="off">
-                    <label class="btn btn-outline-warning rounded-pill px-3 px-md-4 py-2" for="loginRoleMechanic">
+                    <label class="btn btn-outline-warning rounded-pill px-4" for="loginRoleMechanic">
                         <i class="fa-solid fa-wrench me-1"></i> Mechanic
-                    </label>
-
-                    <input type="radio" class="btn-check" name="loginRole" id="loginRoleAdmin" value="Admin" @(targetRole == "Admin" ? "checked" : "") autocomplete="off">
-                    <label class="btn btn-outline-danger rounded-pill px-3 px-md-4 py-2" for="loginRoleAdmin">
-                        <i class="fa-solid fa-shield-halved me-1"></i> Admin
                     </label>
                 </div>
 
@@ -54,12 +49,6 @@
                 <div class="d-flex justify-content-between flex-wrap gap-2">
                     <a href="#" id="lnkShowRegister" class="text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-user-plus me-1"></i> Create Account</a>
                     <a href="#" id="lnkShowForgot" class="text-muted small" style="text-decoration:none;"><i class="fa-solid fa-circle-question me-1"></i> Forgot Password?</a>
-                </div>
-
-                <div class="text-center mt-3 pt-3 border-top border-secondary border-opacity-25">
-                    <a href="#" id="adminBackdoor" class="text-muted small text-decoration-none d-inline-flex align-items-center gap-1 hover-warning">
-                        <i class="fa-solid fa-shield-halved text-danger"></i> <span class="text-secondary">Admin NOC Portal Login</span>
-                    </a>
                 </div>
             </div>
 
@@ -416,9 +405,16 @@ $(document).ready(function() {
         openAdminModal();
     });
 
-    // Auto open modal if user requested Admin portal (/Auth/Login?role=Admin)
-    if ("@targetRole" === "Admin") {
-        openAdminModal();
+    // Auto open modal if user requested Admin portal (/Auth/Login?role=admin, /AdminRaahiSathiLogin, etc.)
+    var reqRole = ("@(targetRole ?? "")").toLowerCase();
+    var urlParams = new URLSearchParams(window.location.search);
+    var qRole = (urlParams.get('role') || '').toLowerCase();
+    var path = window.location.pathname.toLowerCase();
+
+    if (reqRole === "admin" || qRole === "admin" || path.indexOf("admin") !== -1) {
+        setTimeout(function() {
+            openAdminModal();
+        }, 150);
     }
 
     $('#btnAdminModalLogin').click(function() {

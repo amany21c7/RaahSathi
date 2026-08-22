@@ -153,6 +153,12 @@ namespace RaahSathi.Controllers
                 return RedirectToAction("Dashboard");
             }
 
+            if (string.IsNullOrWhiteSpace(registrationNumber))
+            {
+                TempData["Error"] = "Please enter Vehicle Registration Number.";
+                return RedirectToAction("Dashboard");
+            }
+
             string photoUrl = string.Empty;
             if (vehiclePhoto != null && vehiclePhoto.Length > 0)
             {
