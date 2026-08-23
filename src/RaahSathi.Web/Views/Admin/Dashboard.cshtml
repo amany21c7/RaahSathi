@@ -272,16 +272,24 @@
     </div>
 </div>
 
-<div class="row">
-    <!-- Left Column: Operations (KYC & Disputes) -->
-    <div class="col-lg-7">
-        <!-- KYC Approval Section -->
-        <div class="glass-card mb-4 border-info border-opacity-30">
-            <h4 class="text-white mb-4"><i class="fa-solid fa-address-card text-info me-2"></i> Partner Onboarding Queue</h4>
+<div class="row g-4 mb-4">
+    <!-- Partner Onboarding Queue -->
+    <div class="col-lg-6 col-12">
+        <div class="glass-card h-100 border-info border-opacity-30">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="text-white mb-0"><i class="fa-solid fa-address-card text-info me-2"></i> Partner Onboarding Queue</h4>
+                @if (pendingMechanics.Count > 0)
+                {
+                    <span class="badge bg-warning text-dark font-weight-bold">@pendingMechanics.Count Pending</span>
+                }
+            </div>
             
             @if (pendingMechanics.Count == 0)
             {
-                <p class="text-muted py-3 mb-0 text-center">No pending KYC approvals in onboarding queue.</p>
+                <div class="text-center py-5">
+                    <i class="fa-solid fa-clipboard-check text-success fs-1 mb-2 d-block opacity-75"></i>
+                    <p class="text-muted mb-0">No pending KYC approvals in onboarding queue.</p>
+                </div>
             }
             else
             {
@@ -296,7 +304,7 @@
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="badge bg-warning text-dark">KYC Audit</span>
-                                    <a href="/Admin/ReviewKyc/@m.UserId" class="btn btn-outline-info btn-xs py-1 px-2" style="font-size: 0.75rem;"><i class="fa-solid fa-eye me-1"></i> View Docs</a>
+                                    <button type="button" class="btn btn-outline-info btn-xs py-1 px-2 open-kyc-modal" data-id="@m.UserId" style="font-size: 0.75rem;"><i class="fa-solid fa-eye me-1"></i> View Docs</button>
                                 </div>
                             </div>
                             
@@ -338,12 +346,14 @@
                                 <form action="/Admin/ApproveKyc" method="POST" class="d-inline">
                                     <input type="hidden" name="userId" value="@m.UserId">
                                     <input type="hidden" name="status" value="Approved">
-                                    <button type="submit" class="btn btn-premium-primary btn-sm"><i class="fa-solid fa-check me-1"></i> Approve KYC</button>
+                                    <input type="hidden" name="returnUrl" value="/Admin/Dashboard">
+                                    <button type="submit" class="btn btn-premium-primary btn-sm font-weight-bold" onclick="return confirm('Verify & Approve KYC for partner @(m.User?.Name)?');"><i class="fa-solid fa-circle-check me-1"></i> Approve KYC</button>
                                 </form>
                                 <form action="/Admin/ApproveKyc" method="POST" class="d-inline">
                                     <input type="hidden" name="userId" value="@m.UserId">
                                     <input type="hidden" name="status" value="Rejected">
-                                    <button type="submit" class="btn btn-premium-secondary btn-sm text-danger border-danger border-opacity-40"><i class="fa-solid fa-xmark me-1"></i> Reject</button>
+                                    <input type="hidden" name="returnUrl" value="/Admin/Dashboard">
+                                    <button type="submit" class="btn btn-premium-secondary btn-sm text-danger border-danger border-opacity-40 font-weight-bold" onclick="return confirm('Reject KYC application for partner @(m.User?.Name)?');"><i class="fa-solid fa-circle-xmark me-1"></i> Reject</button>
                                 </form>
                             </div>
                         </div>
@@ -351,14 +361,25 @@
                 </div>
             }
         </div>
+    </div>
 
-        <!-- Dispute Center Section -->
-        <div class="glass-card border-danger border-opacity-30">
-            <h4 class="text-white mb-4"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Escrow Dispute Resolution Center</h4>
+    <!-- Escrow Dispute Center Section -->
+    <div class="col-lg-6 col-12">
+        <div class="glass-card h-100 border-danger border-opacity-30">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="text-white mb-0"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Escrow Dispute Resolution Center</h4>
+                @if (disputes.Count > 0)
+                {
+                    <span class="badge bg-danger text-white font-weight-bold">@disputes.Count Active</span>
+                }
+            </div>
             
             @if (disputes.Count == 0)
             {
-                <p class="text-muted py-3 mb-0 text-center">No active disputes filed. Escrow ledger clear.</p>
+                <div class="text-center py-5">
+                    <i class="fa-solid fa-shield-check text-success fs-1 mb-2 d-block opacity-75"></i>
+                    <p class="text-muted mb-0">No active disputes filed. Escrow ledger clear.</p>
+                </div>
             }
             else
             {
@@ -395,57 +416,22 @@
             }
         </div>
     </div>
+</div>
 
-    <!-- Right Column: Persistent Pricing Rule Editor -->
-    <div class="col-lg-5">
-        <div class="glass-card border-warning border-opacity-30">
-            <h4 class="text-white mb-4"><i class="fa-solid fa-sliders text-warning me-2"></i> Pricing Engine Tuning</h4>
-            
-            <div class="d-flex flex-column gap-4">
-                @{
-                    var dashboardCityNames = cityAreas.Select(c => c.CityName).Distinct().OrderBy(c => c).ToList();
-                }
-                @foreach (var r in pricingRules)
-                {
-                    <div class="p-3 bg-dark bg-opacity-40 rounded border border-secondary">
-                        <h6 class="text-white font-weight-bold mb-3">@r.VehicleCategory Rate Settings</h6>
-                        <form action="/Admin/UpdatePricingRule" method="POST">
-                            <input type="hidden" name="ruleId" value="@r.Id">
-                            <input type="hidden" name="returnUrl" value="/Admin/Dashboard">
-                            <div class="mb-3">
-                                <label class="form-label text-muted small font-weight-bold" style="font-size:0.75rem;">Target City / Region</label>
-                                <select name="cityName" class="form-select glass-input text-warning font-weight-bold py-1">
-                                    <option value="All Cities" selected="@(r.CityName == "All Cities")">🌐 All Cities (National Default)</option>
-                                    @foreach (var c in dashboardCityNames)
-                                    {
-                                        <option value="@c" selected="@(r.CityName == c)">📍 @c</option>
-                                    }
-                                </select>
-                            </div>
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Base Visiting Fee (₹)</label>
-                                    <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseFee" value="@r.BaseFee" step="1" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Visiting Per-KM Rate (₹)</label>
-                                    <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmRate" value="@r.PerKmRate" step="1" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Base Towing Fee (₹)</label>
-                                    <input type="number" class="form-control glass-input text-white font-weight-bold" name="baseTowingFee" value="@r.BaseTowingFee" step="1" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label text-muted small" style="font-size:0.75rem;">Towing Per-KM Rate (₹)</label>
-                                    <input type="number" class="form-control glass-input text-white font-weight-bold" name="perKmTowingRate" value="@r.PerKmTowingRate" step="1" required>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn text-white font-weight-bold btn-sm w-100 py-2 shadow-sm" style="background: linear-gradient(135deg, #ff6b00 0%, #e05d00 100%); border: none;">
-                                <i class="fa-solid fa-circle-check me-1"></i> Apply Rates Update
-                            </button>
-                        </form>
+<!-- KYC Review Modal -->
+<div class="modal fade" id="kycReviewModal" tabindex="-1" aria-labelledby="kycReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning" id="kycReviewModalLabel"><i class="fa-solid fa-id-card me-2"></i> KYC Audit & Review Panel</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="var m = bootstrap.Modal.getOrCreateInstance(document.getElementById('kycReviewModal')); if(m) m.hide();"></button>
+            </div>
+            <div class="modal-body p-4" id="kycReviewModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Loading KYC details...</span>
                     </div>
-                }
+                </div>
             </div>
         </div>
     </div>
@@ -850,6 +836,18 @@
                 alert('⚠️ ' + res.message);
             }
         });
+    });
+
+    // Open KYC Review Modal from Dashboard
+    $(document).on('click', '.open-kyc-modal', function() {
+        var id = $(this).data('id');
+        $('#kycReviewModalBody').html('<div class="text-center py-5"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading KYC details...</span></div></div>');
+        
+        var modalEl = document.getElementById('kycReviewModal');
+        var myModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        myModal.show();
+        
+        $('#kycReviewModalBody').load('/Admin/ReviewKyc/' + id + '?partial=true');
     });
 
     // Auto-poll telemetry & pipeline stepper in real-time

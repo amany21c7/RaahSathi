@@ -515,10 +515,13 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ApproveKyc(int userId, string status, bool? approve)
+        public async Task<IActionResult> ApproveKyc(int userId, string status, bool? approve, string? returnUrl = null)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
-            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+            var profile = await _dbContext.MechanicProfiles
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+                
             if (profile != null)
             {
                 // Fallback for cached forms sending 'approve' instead of 'status'
@@ -535,7 +538,7 @@ namespace RaahSathi.Controllers
                         profile.IsOnline = false;
                     }
                     await _dbContext.SaveChangesAsync();
-                    TempData["Success"] = $"KYC status updated to {status}.";
+                    TempData["Success"] = $"KYC status for {profile.User?.Name ?? "mechanic"} updated to {status}.";
                 }
             }
             
@@ -544,8 +547,13 @@ namespace RaahSathi.Controllers
                 return Json(new { success = true, status = status });
             }
 
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
             string referer = Request.Headers["Referer"].ToString();
-            if (!string.IsNullOrEmpty(referer))
+            if (!string.IsNullOrEmpty(referer) && !referer.Contains("/Admin/ReviewKyc", StringComparison.OrdinalIgnoreCase))
             {
                 return Redirect(referer);
             }
