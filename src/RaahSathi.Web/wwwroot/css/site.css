@@ -831,24 +831,32 @@ body { top: 0px !important; }
     display: flex; 
     align-items: center; 
     padding: 0.68rem 1.1rem; 
-    color: #94A3B8; 
-    text-decoration: none; 
+    color: #38BDF8 !important; 
+    text-decoration: none !important; 
     font-weight: 500; 
     font-size: 0.88rem; 
     border-radius: 8px; 
     margin: 3px 10px; 
     transition: all 0.2s ease; 
 }
-.noc-middle-item:hover, .noc-middle-item.active { 
-    background-color: rgba(245, 158, 11, 0.15); 
-    color: #F59E0B; 
-    font-weight: 600; 
-}
 .noc-middle-item i { 
     width: 22px; 
     font-size: 1.05rem; 
     margin-right: 10px; 
     text-align: center; 
+    color: #38BDF8 !important; 
+}
+.noc-middle-item.active { 
+    background-color: rgba(245, 158, 11, 0.18) !important; 
+    color: #F59E0B !important; 
+    font-weight: 600 !important; 
+}
+.noc-middle-item.active i { 
+    color: #F59E0B !important; 
+}
+.noc-middle-item:hover:not(.active) { 
+    background-color: rgba(56, 189, 248, 0.12) !important; 
+    color: #60A5FA !important; 
 }
 
 /* 📱 Mobile & Tablet Responsive Media Queries */
@@ -866,3 +874,217 @@ body { top: 0px !important; }
         z-index: 1052;
     }
 }
+
+/* ==========================================================================
+   📱 COMPREHENSIVE RESPONSIVENESS SYSTEM (MOBILE, IPAD/TABLET & PC)
+   ========================================================================== */
+
+/* 1. Global Viewport & Touch Ergonomics */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
+/* Prevent iOS Safari Automatic Zoom on Form Inputs */
+@media (max-width: 768px) {
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="search"],
+    select,
+    textarea,
+    .form-control,
+    .glass-input {
+        font-size: 16px !important;
+        min-height: 46px !important;
+    }
+
+    /* Generous Touch Targets */
+    .btn,
+    .nav-link,
+    .portal-pill,
+    .dropdown-item {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .glass-card {
+        padding: 1.25rem !important;
+        border-radius: 16px !important;
+        margin-bottom: 1rem;
+    }
+
+    /* Modal Responsive Touch Optimization */
+    .modal-dialog {
+        margin: 0.75rem auto;
+        max-width: 95vw !important;
+    }
+    .modal-content {
+        border-radius: 20px !important;
+    }
+}
+
+/* 2. Responsive Table Wrappers with Native Smooth Scroll */
+.table-responsive,
+.table-responsive-sm,
+.table-responsive-md,
+.table-responsive-lg {
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.4);
+    border-radius: 4px;
+}
+
+/* 3. Tablet & iPad Screen Adjustments (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .container, .container-fluid {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    .stat-card-number {
+        font-size: 1.75rem !important;
+    }
+
+    .noc-main {
+        padding: 1rem !important;
+    }
+}
+
+/* 4. Large Desktop PC Enhancements (1200px+) */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1280px;
+    }
+}
+
+/* ==========================================================================
+   📱 MOBILE & TABLET 5-BLOCK HOMEPAGE & PERFORMANCE SYSTEM
+   ========================================================================== */
+.mob-hero-section {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.mob-hero-title {
+    font-size: 1.65rem;
+    line-height: 1.25;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.02em;
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+    .mob-hero-title {
+        font-size: 2.1rem;
+    }
+}
+
+.mob-trust-strip {
+    background: rgba(15, 23, 42, 0.7);
+    border-radius: 12px;
+}
+
+.mob-chip-card {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.75rem 0.65rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.mob-chip-card:active, .mob-chip-card:hover {
+    background: #1e293b;
+    border-color: rgba(255, 107, 0, 0.6);
+    transform: translateY(-2px);
+}
+
+.mob-chip-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.mob-step-card {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+}
+
+.mob-stat-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+}
+
+/* 📱 Sticky Mobile Bottom Emergency Bar (< 992px) */
+.mob-sticky-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(7, 12, 22, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 107, 0, 0.35);
+    padding: 0.6rem 0.85rem;
+    z-index: 1040;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.65);
+}
+
+/* 📱 Mobile Accordion Footer Styling (< 992px) */
+.mob-footer-accordion .accordion-item {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 10px !important;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+}
+
+.mob-footer-accordion .accordion-button {
+    background: rgba(15, 23, 42, 0.6) !important;
+    color: #f1f5f9 !important;
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 0.75rem 1rem;
+    box-shadow: none !important;
+}
+
+.mob-footer-accordion .accordion-button:not(.collapsed) {
+    color: #ff6b00 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mob-footer-accordion .accordion-body {
+    padding: 0.85rem 1rem;
+    background: rgba(10, 16, 28, 0.85);
+}
+

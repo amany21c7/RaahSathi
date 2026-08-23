@@ -399,7 +399,8 @@
                               || Context.Request.Path.Value?.StartsWith("/Admin/Notifications", StringComparison.OrdinalIgnoreCase) == true
                               || Context.Request.Path.Value?.StartsWith("/Admin/Cms", StringComparison.OrdinalIgnoreCase) == true
                               || Context.Request.Path.Value?.StartsWith("/Admin/Account", StringComparison.OrdinalIgnoreCase) == true
-                              || Context.Request.Path.Value?.StartsWith("/Admin/Admins", StringComparison.OrdinalIgnoreCase) == true;
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Admins", StringComparison.OrdinalIgnoreCase) == true
+                              || Context.Request.Path.Value?.StartsWith("/Admin/Referrals", StringComparison.OrdinalIgnoreCase) == true;
         
         bool isSettingsHubPage = Context.Request.Path.Value?.Equals("/Admin/Settings", StringComparison.OrdinalIgnoreCase) == true;
         
@@ -440,6 +441,8 @@
     {
         <style>
             body { background-color: #0F172A !important; color: #F8FAFC !important; font-family: 'Inter', 'Outfit', sans-serif; margin: 0; }
+            .noc-sidebar { width: 260px; background-color: #111827; border-right: 1px solid #1E293B; position: fixed; top: 0; bottom: 0; left: 0; z-index: 1045; overflow-y: auto; display: flex; flex-direction: column; }
+            .noc-sidebar-brand { padding: 1.25rem 1.25rem; border-bottom: 1px solid #1E293B; background: linear-gradient(180deg, #111827 0%, #0F172A 100%); }
             .noc-sidebar a.noc-nav-item, .noc-settings-menu-drawer a.noc-middle-item { display: flex; align-items: center; padding: 0.65rem 1rem; color: #38BDF8 !important; text-decoration: none !important; font-weight: 500; font-size: 0.88rem; border-radius: 8px; margin: 2px 10px; transition: all 0.2s ease; }
             .noc-sidebar a.noc-nav-item i, .noc-settings-menu-drawer a.noc-middle-item i { width: 22px; font-size: 1.05rem; margin-right: 10px; text-align: center; color: #38BDF8 !important; }
             .noc-sidebar a.noc-nav-item.active, .noc-settings-menu-drawer a.noc-middle-item.active { background-color: rgba(245, 158, 11, 0.18) !important; color: #F59E0B !important; font-weight: 600 !important; }
@@ -614,7 +617,7 @@
                                 <div class="p-1" id="adminNotifItemsList">
                                     <div class="text-center py-4 text-muted small">
                                         <i class="fa-solid fa-circle-check fa-2x mb-2 text-success opacity-80"></i>
-                                        <p class="mb-0">All clear! No pending tasks.</p>
+                                        <p class="mb-0">All operations up to date.</p>
                                     </div>
                                 </div>
                             </div>
@@ -624,12 +627,13 @@
                             <i class="fa-regular fa-clock me-1"></i> IST NOC Live
                         </span>
 
+                        <!-- User Profile Menu -->
                         <div class="dropdown">
-                            <button class="btn btn-outline-warning btn-sm dropdown-toggle font-weight-bold px-2.5 py-1.5" type="button" data-bs-toggle="dropdown" style="font-size: 0.8rem;">
-                                <i class="fa-solid fa-user-shield me-1"></i> <span class="d-none d-sm-inline">RS01A </span>Admin
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle font-weight-bold px-2.5 py-1.5 text-light d-flex align-items-center gap-1.5" type="button" data-bs-toggle="dropdown" style="font-size: 0.8rem; border-color: rgba(255,255,255,0.25); background: rgba(0,0,0,0.3);">
+                                <i class="fa-solid fa-user-shield text-warning"></i> <span>@(Context.User.Identity?.Name ?? "Admin")</span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg py-2">
-                                <li><a class="dropdown-item text-danger py-2 font-weight-bold" href="/Auth/Logout"><i class="fa-solid fa-sign-out-alt me-2"></i> Logout</a></li>
+                                <li><a class="dropdown-item text-danger py-1.5 small" href="/Auth/Logout"><i class="fa-solid fa-power-off me-2"></i> Logout</a></li>
                             </ul>
                         </div>
                     </div>
@@ -666,6 +670,9 @@
                         </a>
                         <a href="/Admin/Cms" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Cms", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                             <i class="fa-solid fa-images"></i> CMS
+                        </a>
+                        <a href="/Admin/Referrals" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Referrals", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-gift text-warning"></i> Referrals Program
                         </a>
                         <a href="/Admin/Account" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Account", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                             <i class="fa-solid fa-building-columns"></i> Admin Accounts
@@ -1035,107 +1042,194 @@
             </main>
         </div>
 
-        <footer class="site-footer text-muted border-top border-secondary border-opacity-30 pt-5 pb-4" style="background: linear-gradient(180deg, #0a1324 0%, #060b15 100%);">
+        <footer class="site-footer text-muted border-top border-secondary border-opacity-30 pt-4 pt-lg-5 pb-5 pb-lg-4 mb-5 mb-lg-0" style="background: linear-gradient(180deg, #0a1324 0%, #060b15 100%);">
             <div class="container">
-                <div class="row g-4 mb-4">
-                    <!-- Column 1: Brand & Emergency Hotline Banner -->
-                    <div class="col-lg-4 col-md-6 mb-3">
-                        <div class="d-flex align-items-center mb-3">
-                            <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi Logo" style="height: 42px; border-radius: 10px; object-fit: contain; border: 1.5px solid #ff6b00;" class="me-2 shadow" />
-                            <span class="font-weight-extrabold" style="font-family:'Outfit', sans-serif; font-size:1.4rem; letter-spacing:0.5px;"><span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span></span>
+                <!-- 💻 Desktop Footer Grid (>= 992px) -->
+                <div class="d-none d-lg-block">
+                    <div class="row g-4 mb-4">
+                        <!-- Column 1: Brand & Emergency Hotline Banner -->
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi Logo" style="height: 42px; border-radius: 10px; object-fit: contain; border: 1.5px solid #ff6b00;" class="me-2 shadow" />
+                                <span class="font-weight-extrabold" style="font-family:'Outfit', sans-serif; font-size:1.4rem; letter-spacing:0.5px;"><span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span></span>
+                            </div>
+                            <p class="text-muted small mb-3" style="line-height: 1.4;">India's connected roadside assistance network. Instant breakdown dispatch for 2-wheelers, cars, commercial, and heavy vehicles across cities and highways.</p>
+                            
+                            <!-- Emergency Support Highlight Box -->
+                            <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-40 rounded-3 d-flex align-items-center justify-content-between mb-3">
+                                <div>
+                                    <span class="badge bg-danger text-white mb-1 font-weight-bold" style="font-size: 0.7rem;">24×7 EMERGENCY HOTLINE</span>
+                                    <div class="text-white font-weight-extrabold" style="font-size: 1.15rem; font-family: 'Outfit';">
+                                        <i class="fa-solid fa-phone-volume text-danger me-2"></i> 1800-102-7224
+                                    </div>
+                                </div>
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="btn btn-danger btn-sm font-weight-bold px-3 py-2">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i> SOS
+                                </a>
+                            </div>
                         </div>
-                        <p class="text-muted small mb-3" style="line-height: 1.4;">India's connected roadside assistance network. Instant breakdown dispatch for 2-wheelers, cars, commercial, and heavy vehicles across cities and highways.</p>
-                        
-                        <!-- Emergency Support Highlight Box -->
-                        <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-40 rounded-3 d-flex align-items-center justify-content-between mb-3">
-                            <div>
-                                <span class="badge bg-danger text-white mb-1 font-weight-bold" style="font-size: 0.7rem;">24×7 EMERGENCY HOTLINE</span>
-                                <div class="text-white font-weight-extrabold" style="font-size: 1.15rem; font-family: 'Outfit';">
-                                    <i class="fa-solid fa-phone-volume text-danger me-2"></i> 1800-102-7224
+
+                        <!-- Column 2: Quick Links -->
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <h6 class="text-white font-weight-bold mb-3" style="font-family: 'Inter';">Navigation</h6>
+                            <ul class="list-unstyled mb-0" style="line-height: 2;">
+                                <li><a href="/" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> Home</a></li>
+                                <li><a href="/Home/Services" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> Services</a></li>
+                                <li><a href="/Home/HowItWorks" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> How It Works</a></li>
+                                <li><a href="/Home/AboutUs" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> About Us</a></li>
+                                <li><a href="/Home/ContactUs" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> Contact Us</a></li>
+                                <li><a href="/Auth/Login?role=Mechanic" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> Join as Mechanic</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Column 3: Trust & Legal Links -->
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <h6 class="text-white font-weight-bold mb-3" style="font-family: 'Inter';">Legal &amp; Trust</h6>
+                            <ul class="list-unstyled mb-0" style="line-height: 2;">
+                                <li><a href="/Home/Terms" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-file-contract text-warning me-1 small"></i> Terms &amp; Conditions</a></li>
+                                <li><a href="/Home/Privacy" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-user-shield text-warning me-1 small"></i> Privacy Policy</a></li>
+                                <li><a href="/Home/RefundPolicy" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-rotate-left text-warning me-1 small"></i> Refund Policy</a></li>
+                                <li><a href="/Home/CancellationPolicy" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-ban text-warning me-1 small"></i> Cancellation Policy</a></li>
+                                <li><a href="/Home/Faq" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-circle-question text-warning me-1 small"></i> FAQs &amp; Knowledgebase</a></li>
+                                <li><a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-headset text-warning me-1 small"></i> Emergency Support 24×7</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Column 4: Emergency Assistance Hours & Network Status -->
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <h6 class="text-white font-weight-bold mb-3" style="font-family: 'Inter';">Network Status</h6>
+                            <div class="p-3 bg-dark bg-opacity-60 border border-secondary border-opacity-30 rounded-3 mb-2">
+                                <div class="d-flex align-items-center text-success small font-weight-bold mb-1">
+                                    <i class="fa-solid fa-circle text-success me-2 animate-pulse" style="font-size:0.6rem;"></i> Live System Dispatch: ONLINE
+                                </div>
+                                <span class="text-muted" style="font-size: 0.78rem;">Average Arrival ETA: Under 25 Mins</span>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="btn btn-outline-warning btn-sm flex-fill py-2"><i class="fa-solid fa-phone me-1"></i> Call 1800 Hotline</a>
+                                <a href="https://wa.me/919876543210" target="_blank" class="btn btn-outline-success btn-sm flex-fill py-2"><i class="fa-brands fa-whatsapp me-1"></i> WhatsApp</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 📱 Mobile & Tablet 3-Accordion Footer (< 992px) -->
+                <div class="d-lg-none mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi Logo" style="height: 36px; border-radius: 8px; object-fit: contain; border: 1.5px solid #ff6b00;" class="me-2 shadow" />
+                        <span class="font-weight-extrabold" style="font-family:'Outfit', sans-serif; font-size:1.25rem;"><span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span></span>
+                    </div>
+
+                    <div class="accordion mob-footer-accordion" id="mobFooterAccordion">
+                        <!-- Accordion 1: Company & Navigation -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingCompany">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCompany" aria-expanded="false" aria-controls="collapseCompany">
+                                    <i class="fa-solid fa-building text-warning me-2"></i> Company &amp; Services
+                                </button>
+                            </h2>
+                            <div id="collapseCompany" class="accordion-collapse collapse" aria-labelledby="headingCompany" data-bs-parent="#mobFooterAccordion">
+                                <div class="accordion-body">
+                                    <div class="row g-2">
+                                        <div class="col-6"><a href="/" class="text-muted text-decoration-none small d-block py-1 hover-warning">• Home</a></div>
+                                        <div class="col-6"><a href="/Home/Services" class="text-muted text-decoration-none small d-block py-1 hover-warning">• Services</a></div>
+                                        <div class="col-6"><a href="/Home/HowItWorks" class="text-muted text-decoration-none small d-block py-1 hover-warning">• How It Works</a></div>
+                                        <div class="col-6"><a href="/Home/AboutUs" class="text-muted text-decoration-none small d-block py-1 hover-warning">• About Us</a></div>
+                                        <div class="col-6"><a href="/Home/ContactUs" class="text-muted text-decoration-none small d-block py-1 hover-warning">• Contact Us</a></div>
+                                        <div class="col-6"><a href="/Auth/Login?role=Mechanic" class="text-warning text-decoration-none small d-block py-1 font-weight-bold">• Join as Partner</a></div>
+                                    </div>
                                 </div>
                             </div>
-                            <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="btn btn-danger btn-sm font-weight-bold px-3 py-2">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> SOS
-                            </a>
+                        </div>
+
+                        <!-- Accordion 2: Support & Emergency -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingSupport">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSupport" aria-expanded="false" aria-controls="collapseSupport">
+                                    <i class="fa-solid fa-headset text-info me-2"></i> 24×7 Emergency &amp; Support
+                                </button>
+                            </h2>
+                            <div id="collapseSupport" class="accordion-collapse collapse" aria-labelledby="headingSupport" data-bs-parent="#mobFooterAccordion">
+                                <div class="accordion-body">
+                                    <div class="d-flex flex-column gap-2">
+                                        <a href="tel:18001027224" class="btn btn-outline-danger btn-sm text-start"><i class="fa-solid fa-phone-volume me-2"></i> 1800-102-7224 (Toll-Free)</a>
+                                        <a href="https://wa.me/919876543210" target="_blank" class="btn btn-outline-success btn-sm text-start"><i class="fa-brands fa-whatsapp me-2"></i> WhatsApp Support</a>
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="btn btn-outline-warning btn-sm text-start"><i class="fa-solid fa-triangle-exclamation me-2"></i> 24×7 Highway SOS</a>
+                                        <a href="/Home/Faq" class="text-muted small py-1"><i class="fa-solid fa-circle-question me-1 text-warning"></i> FAQs &amp; Help Center</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion 3: Legal & Trust -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingLegal">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLegal" aria-expanded="false" aria-controls="collapseLegal">
+                                    <i class="fa-solid fa-shield-halved text-success me-2"></i> Legal &amp; Policies
+                                </button>
+                            </h2>
+                            <div id="collapseLegal" class="accordion-collapse collapse" aria-labelledby="headingLegal" data-bs-parent="#mobFooterAccordion">
+                                <div class="accordion-body">
+                                    <div class="row g-2">
+                                        <div class="col-6"><a href="/Home/Terms" class="text-muted text-decoration-none small d-block py-1">• Terms of Service</a></div>
+                                        <div class="col-6"><a href="/Home/Privacy" class="text-muted text-decoration-none small d-block py-1">• Privacy Policy</a></div>
+                                        <div class="col-6"><a href="/Home/RefundPolicy" class="text-muted text-decoration-none small d-block py-1">• Refund Policy</a></div>
+                                        <div class="col-6"><a href="/Home/CancellationPolicy" class="text-muted text-decoration-none small d-block py-1">• Cancellation</a></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <!-- Column 2: Quick Links -->
-                    <div class="col-lg-2 col-md-6 mb-3">
-                        <h6 class="text-white font-weight-bold mb-3" style="font-family: 'Inter';">Navigation</h6>
-                        <ul class="list-unstyled mb-0" style="line-height: 2;">
-                            <li><a href="/" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> Home</a></li>
-                            <li><a href="/Home/Services" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> Services</a></li>
-                            <li><a href="/Home/HowItWorks" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> How It Works</a></li>
-                            <li><a href="/Home/AboutUs" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> About Us</a></li>
-                            <li><a href="/Home/ContactUs" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> Contact Us</a></li>
-                            <li><a href="/Auth/Login?role=Mechanic" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-angle-right text-warning me-1 small"></i> Join as Mechanic</a></li>
-                        </ul>
-                    </div>
-
-                <!-- Column 3: Trust & Legal Links -->
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <h6 class="text-white font-weight-bold mb-3" style="font-family: 'Inter';">Legal &amp; Trust</h6>
-                    <ul class="list-unstyled mb-0" style="line-height: 2;">
-                        <li><a href="/Home/Terms" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-file-contract text-warning me-1 small"></i> Terms &amp; Conditions</a></li>
-                        <li><a href="/Home/Privacy" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-user-shield text-warning me-1 small"></i> Privacy Policy</a></li>
-                        <li><a href="/Home/RefundPolicy" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-rotate-left text-warning me-1 small"></i> Refund Policy</a></li>
-                        <li><a href="/Home/CancellationPolicy" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-ban text-warning me-1 small"></i> Cancellation Policy</a></li>
-                        <li><a href="/Home/Faq" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-circle-question text-warning me-1 small"></i> FAQs &amp; Knowledgebase</a></li>
-                        <li><a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="text-muted text-decoration-none hover-warning"><i class="fa-solid fa-headset text-warning me-1 small"></i> Emergency Support 24×7</a></li>
-                    </ul>
                 </div>
 
-                <!-- Column 4: Emergency Assistance Hours & Network Status -->
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <h6 class="text-white font-weight-bold mb-3" style="font-family: 'Inter';">Network Status</h6>
-                    <div class="p-3 bg-dark bg-opacity-60 border border-secondary border-opacity-30 rounded-3 mb-2">
-                        <div class="d-flex align-items-center text-success small font-weight-bold mb-1">
-                            <i class="fa-solid fa-circle text-success me-2 animate-pulse" style="font-size:0.6rem;"></i> Live System Dispatch: ONLINE
-                        </div>
-                        <span class="text-muted" style="font-size: 0.78rem;">Average Arrival ETA: Under 25 Mins</span>
-                    </div>
-                    <div class="d-flex gap-2 mt-3">
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="btn btn-outline-warning btn-sm flex-fill py-2"><i class="fa-solid fa-phone me-1"></i> Call 1800 Hotline</a>
-                        <a href="https://wa.me/919876543210" target="_blank" class="btn btn-outline-success btn-sm flex-fill py-2"><i class="fa-brands fa-whatsapp me-1"></i> WhatsApp</a>
-                    </div>
-                </div>
-            </div>
+                <hr class="border-secondary border-opacity-30 my-4">
 
-            <hr class="border-secondary border-opacity-30 my-4">
-
-            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between text-muted small">
-                <div class="d-flex align-items-center flex-wrap gap-2 mb-2 mb-md-0">
-                    <span>&copy; 2026 - <span class="notranslate" translate="no"><span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span></span> Roadside Assistance Network. All rights reserved.</span>
-                    <span class="text-secondary opacity-50 d-none d-sm-inline">•</span>
-                    <span class="notranslate font-weight-bold d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2 shadow-sm" translate="no" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.82rem;">
-                        <span style="color: #FF9933; font-weight: 800; letter-spacing: 0.3px;">Make</span>
-                        <span style="color: #FFFFFF; font-weight: 800; letter-spacing: 0.3px;">In</span>
-                        <span style="color: #00E676; font-weight: 800; letter-spacing: 0.3px;">India</span>
-                    </span>
-                </div>
-                <div class="d-flex gap-3 mt-2 mt-md-0 flex-wrap">
-                    @if (isSuperAdmin)
-                    {
-                        <a href="/testing-manual.html" target="_blank" class="text-warning text-decoration-none font-weight-bold"><i class="fa-solid fa-book-open me-1"></i> Testing Manual</a>
+                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between text-muted small">
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-2 mb-md-0">
+                        <span>&copy; 2026 - <span class="notranslate" translate="no"><span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span></span> Roadside Assistance Network.</span>
+                        <span class="text-secondary opacity-50 d-none d-sm-inline">•</span>
+                        <span class="notranslate font-weight-bold d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2 shadow-sm" translate="no" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.82rem;">
+                            <span style="color: #FF9933; font-weight: 800; letter-spacing: 0.3px;">Make</span>
+                            <span style="color: #FFFFFF; font-weight: 800; letter-spacing: 0.3px;">In</span>
+                            <span style="color: #00E676; font-weight: 800; letter-spacing: 0.3px;">India</span>
+                        </span>
+                    </div>
+                    <div class="d-flex gap-3 mt-2 mt-md-0 flex-wrap">
+                        @if (isSuperAdmin)
+                        {
+                            <a href="/testing-manual.html" target="_blank" class="text-warning text-decoration-none font-weight-bold"><i class="fa-solid fa-book-open me-1"></i> Testing Manual</a>
+                            <span>•</span>
+                        }
+                        <a href="/Home/Privacy" class="text-muted text-decoration-none">Privacy Policy</a>
                         <span>•</span>
-                    }
-                    <a href="/Home/Privacy" class="text-muted text-decoration-none">Privacy Policy</a>
-                    <span>•</span>
-                    <a href="/Home/Faq" class="text-muted text-decoration-none">FAQs</a>
-                    <span>•</span>
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="text-muted text-decoration-none">Emergency Support</a>
+                        <a href="/Home/Faq" class="text-muted text-decoration-none">FAQs</a>
+                        <span>•</span>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="text-muted text-decoration-none">Emergency Support</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </footer>
+        </footer>
 
-    <!-- Emergency Support Modal -->
-    <div class="modal fade" id="emergencySupportModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content glass-card border-danger border-opacity-40" style="background: linear-gradient(135deg, rgba(18, 31, 53, 0.98) 0%, rgba(10, 19, 36, 0.99) 100%);">
-                <div class="modal-header border-secondary border-opacity-30">
-                    <h5 class="modal-title text-white font-weight-bold">
+        @if (!isAdminPage)
+        {
+            <!-- 📱 Sticky Mobile Bottom Emergency Action Bar (< 992px) -->
+            <div class="mob-sticky-bottom-bar d-lg-none">
+                <div class="d-flex align-items-center gap-2">
+                    <a href="tel:18001027224" class="btn btn-outline-danger btn-sm font-weight-bold px-3 py-2 text-nowrap d-flex align-items-center gap-1.5" style="border-radius: 10px;">
+                        <i class="fa-solid fa-phone-volume"></i> <span>1800 Call</span>
+                    </a>
+                    <a href="/Customer/Book" class="btn btn-warning flex-fill font-weight-bold py-2 text-dark shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="background: linear-gradient(135deg, #ff6b00 0%, #e05d00 100%); color: #ffffff !important; border: none; border-radius: 10px; font-size: 0.92rem;">
+                        <i class="fa-solid fa-car-burst"></i> <span>Get Help Now</span>
+                    </a>
+                </div>
+            </div>
+        }
+
+        <!-- Emergency Support Modal -->
+        <div class="modal fade" id="emergencySupportModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content glass-card border-danger border-opacity-40" style="background: linear-gradient(135deg, rgba(18, 31, 53, 0.98) 0%, rgba(10, 19, 36, 0.99) 100%);">
+                    <div class="modal-header border-secondary border-opacity-30">
+                        <h5 class="modal-title text-white font-weight-bold">
                         <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> 24×7 Emergency Highway Support
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>

@@ -3,6 +3,8 @@
     var pricingRules = ViewBag.PricingRules as List<RaahSathi.Models.PricingRule> ?? new List<RaahSathi.Models.PricingRule>();
     var carRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Car") ?? new RaahSathi.Models.PricingRule { BaseFee = 99, PerKmRate = 8 };
     var bikeRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "2-Wheeler") ?? new RaahSathi.Models.PricingRule { BaseFee = 49, PerKmRate = 5 };
+    var erickRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "E-Rickshaw") ?? new RaahSathi.Models.PricingRule { BaseFee = 69, PerKmRate = 6 };
+    var autoRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Auto-Rickshaw") ?? new RaahSathi.Models.PricingRule { BaseFee = 79, PerKmRate = 7 };
     var commRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Commercial") ?? new RaahSathi.Models.PricingRule { BaseFee = 199, PerKmRate = 12 };
     var heavyRule = pricingRules.FirstOrDefault(r => r.VehicleCategory == "Heavy") ?? new RaahSathi.Models.PricingRule { BaseFee = 299, PerKmRate = 15 };
     var problemTypes = ViewBag.ProblemTypes as List<RaahSathi.Models.ProblemTypePricing> ?? new List<RaahSathi.Models.ProblemTypePricing>();
@@ -10,194 +12,611 @@
     string targetVehicleUrl = isCustLoggedIn ? "/Customer/Dashboard?action=addVehicle" : "/Auth/Login?role=Customer&returnUrl=/Customer/Dashboard?action=addVehicle";
 }
 
-<!-- Top Full-Width Highlighted Tagline Banner -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="premium-tagline-banner py-2 px-3 rounded-3 text-center d-flex align-items-center justify-content-center flex-wrap gap-2">
-            <span class="d-flex align-items-center gap-2">
-                <i class="fa-solid fa-shield-halved text-warning animate-pulse-slow"></i>
-                <span class="tagline-text">Fast, Trusted &amp; Reliable Roadside Assistance</span>
+<!-- =========================================================================
+     📱 MOBILE & TABLET 5-BLOCK AIRY HOMEPAGE (< 992px)
+     ========================================================================= -->
+<div class="d-lg-none">
+    <!-- Block 1: Mobile Hero Section -->
+    <section class="mob-hero-section text-start mb-4">
+        <div class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill bg-warning bg-opacity-20 text-warning mb-2 border border-warning border-opacity-30" style="font-size: 0.76rem; font-weight: 600;">
+            <i class="fa-solid fa-bolt text-warning animate-pulse-slow"></i>
+            <span>Avg arrival under 25 min</span>
+        </div>
+
+        <h1 class="mob-hero-title font-weight-extrabold text-white mb-2">
+            <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span> – 24×7 Roadside Help
+        </h1>
+        <p class="text-muted small mb-3" style="line-height: 1.5; font-size: 0.92rem;">
+            Instant verified mechanic dispatch for cars, bikes & commercial vehicles across India.
+        </p>
+
+        <!-- Primary Dominant CTA -->
+        <a href="/Customer/Book" class="btn btn-premium-primary btn-lg w-100 font-weight-bold py-3 shadow-lg mb-2.5 text-center d-flex align-items-center justify-content-center gap-2" style="border-radius: 12px; font-size: 1.05rem;">
+            <i class="fa-solid fa-car-burst"></i>
+            <span>Get Help Now</span>
+        </a>
+
+        <!-- Secondary Actions Strip -->
+        <div class="d-flex justify-content-between align-items-center px-1 text-muted small mb-3">
+            <button type="button" class="btn btn-link text-warning p-0 text-decoration-none small font-weight-bold d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#quickEstimatorModal">
+                <i class="fa-solid fa-calculator"></i> Check Fair Estimate
+            </button>
+            <a href="/Auth/Login?role=Mechanic" class="text-muted text-decoration-none small d-flex align-items-center gap-1">
+                Join as Partner <i class="fa-solid fa-arrow-right-long text-warning" style="font-size: 0.75rem;"></i>
+            </a>
+        </div>
+
+        <!-- Compact 2-Line Key Metrics Strip (Saves vertical space) -->
+        <div class="mob-trust-strip py-2.5 px-3 rounded-3 d-flex justify-content-between align-items-center text-center border border-secondary border-opacity-20">
+            <div class="flex-fill">
+                <strong class="text-warning d-block font-weight-extrabold" style="font-size: 0.95rem;">⚡ 25 Mins</strong>
+                <span class="text-muted" style="font-size: 0.68rem; text-transform: uppercase;">Avg ETA</span>
+            </div>
+            <div class="border-end border-secondary border-opacity-30" style="height: 24px;"></div>
+            <div class="flex-fill">
+                <strong class="text-warning d-block font-weight-extrabold" style="font-size: 0.95rem;">🛡️ 100% KYC</strong>
+                <span class="text-muted" style="font-size: 0.68rem; text-transform: uppercase;">Verified</span>
+            </div>
+            <div class="border-end border-secondary border-opacity-30" style="height: 24px;"></div>
+            <div class="flex-fill">
+                <strong class="text-warning d-block font-weight-extrabold" style="font-size: 0.95rem;">💰 Upfront</strong>
+                <span class="text-muted" style="font-size: 0.68rem; text-transform: uppercase;">Fair Pricing</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Block 2: Quick Emergency Services (6 Touch Chips) -->
+    <section class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2.5">
+            <h6 class="text-white font-weight-bold mb-0" style="font-size: 0.95rem;">
+                <i class="fa-solid fa-wrench text-warning me-1.5"></i> Quick Emergency Services
+            </h6>
+            <span class="text-muted small" style="font-size: 0.72rem;">1-Tap Assistance</span>
+        </div>
+        <div class="row g-2">
+            <div class="col-6">
+                <a href="/Customer/Book?problem=Flat+Tyre" class="mob-chip-card">
+                    <div class="mob-chip-icon bg-warning bg-opacity-20 text-warning">
+                        <i class="fa-solid fa-circle-dot"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-white font-weight-bold small text-truncate">Flat Tyre</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Puncture fix</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="/Customer/Book?problem=Battery+Jumpstart" class="mob-chip-card">
+                    <div class="mob-chip-icon bg-info bg-opacity-20 text-info">
+                        <i class="fa-solid fa-car-battery"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-white font-weight-bold small text-truncate">Battery Jump</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Quick boost</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="/Customer/Book?problem=Towing" class="mob-chip-card">
+                    <div class="mob-chip-icon bg-danger bg-opacity-20 text-danger">
+                        <i class="fa-solid fa-truck-pickup"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-white font-weight-bold small text-truncate">Towing Help</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Safe recovery</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="/Customer/Book?problem=Fuel+Delivery" class="mob-chip-card">
+                    <div class="mob-chip-icon bg-success bg-opacity-20 text-success">
+                        <i class="fa-solid fa-gas-pump"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-white font-weight-bold small text-truncate">Fuel Delivery</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Petrol / Diesel</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="/Customer/Book?problem=Key+Lockout" class="mob-chip-card">
+                    <div class="mob-chip-icon bg-warning bg-opacity-20 text-warning">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-white font-weight-bold small text-truncate">Lockout / Key</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Instant unlock</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="/Customer/Book?problem=EV+Charging" class="mob-chip-card">
+                    <div class="mob-chip-icon bg-success bg-opacity-20 text-success">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-white font-weight-bold small text-truncate">EV Breakdown</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Motor & Charge</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Block 3: How It Works (3 Clean Steps) -->
+    <section class="mb-4">
+        <h6 class="text-white font-weight-bold mb-2.5" style="font-size: 0.95rem;">
+            <i class="fa-solid fa-route text-warning me-1.5"></i> How It Works
+        </h6>
+        <div class="row g-2">
+            <div class="col-12">
+                <div class="mob-step-card d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-warning bg-opacity-20 text-warning d-flex align-items-center justify-content-center font-weight-bold" style="width: 32px; height: 32px; min-width: 32px;">1</div>
+                    <div>
+                        <strong class="text-white d-block small font-weight-bold">Select Vehicle &amp; Issue</strong>
+                        <span class="text-muted" style="font-size: 0.75rem;">Choose breakdown problem and share live GPS location.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="mob-step-card d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-warning bg-opacity-20 text-warning d-flex align-items-center justify-content-center font-weight-bold" style="width: 32px; height: 32px; min-width: 32px;">2</div>
+                    <div>
+                        <strong class="text-white d-block small font-weight-bold">See Upfront Fair Estimate</strong>
+                        <span class="text-muted" style="font-size: 0.75rem;">Guaranteed upfront rates with zero verbal bargaining.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="mob-step-card d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-success bg-opacity-20 text-success d-flex align-items-center justify-content-center font-weight-bold" style="width: 32px; height: 32px; min-width: 32px;">3</div>
+                    <div>
+                        <strong class="text-white d-block small font-weight-bold">Mechanic Arrives in ~25m</strong>
+                        <span class="text-muted" style="font-size: 0.75rem;">Verified technician reaches your spot with live GPS tracking.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Block 4: Trust Proof (3 Compact Stats) -->
+    <section class="mb-4">
+        <div class="row g-2">
+            <div class="col-4">
+                <div class="mob-stat-item">
+                    <h5 class="font-weight-extrabold text-warning mb-0" style="font-size: 1.15rem;">50K+</h5>
+                    <span class="text-muted" style="font-size: 0.7rem;">Drivers</span>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="mob-stat-item">
+                    <h5 class="font-weight-extrabold text-info mb-0" style="font-size: 1.15rem;">8,000+</h5>
+                    <span class="text-muted" style="font-size: 0.7rem;">Mechanics</span>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="mob-stat-item">
+                    <h5 class="font-weight-extrabold text-success mb-0" style="font-size: 1.15rem;">24×7</h5>
+                    <span class="text-muted" style="font-size: 0.7rem;">Helpline</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Block 5: Single Featured Review & Rating Summary -->
+    <section class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2.5">
+            <div class="d-flex align-items-center gap-1.5">
+                <span class="text-warning small"><i class="fa-solid fa-star"></i></span>
+                <strong class="text-white small">4.9 / 5.0 Rating</strong>
+            </div>
+            <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30" style="font-size: 0.68rem;">12,400+ Reviews</span>
+        </div>
+
+        <!-- 1 Featured Review Card -->
+        <div class="p-3 rounded-3 border border-secondary border-opacity-20 bg-dark bg-opacity-60 mb-2">
+            <p class="text-light small mb-2" style="line-height: 1.45; font-style: italic;">
+                "Stuck at 2 AM on Yamuna Expressway with a dead Creta battery. RaahSathi dispatched a mechanic in 18 minutes at the exact upfront price shown on the app!"
+            </p>
+            <div class="d-flex align-items-center justify-content-between pt-2 border-top border-secondary border-opacity-20">
+                <span class="text-white small font-weight-bold">Rohan Sharma</span>
+                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-shield-check text-success me-1"></i> Verified Customer</span>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary btn-sm w-100 py-2 text-muted" data-bs-toggle="collapse" data-bs-target="#moreMobileReviews" aria-expanded="false" style="font-size: 0.8rem;">
+            <i class="fa-solid fa-comments me-1"></i> View More Driver Stories
+        </button>
+
+        <div class="collapse mt-2" id="moreMobileReviews">
+            <div class="p-3 rounded-3 border border-secondary border-opacity-20 bg-dark bg-opacity-60 mb-2">
+                <p class="text-light small mb-2" style="line-height: 1.45; font-style: italic;">
+                    "As a workshop partner in Jaipur, RaahSathi gives instant job alerts and wallet payouts within seconds. Transparent and trustworthy!"
+                </p>
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top border-secondary border-opacity-20">
+                    <span class="text-white small font-weight-bold">Vikram Singh</span>
+                    <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-user-gear text-info me-1"></i> Verified Mechanic</span>
+                </div>
+            </div>
+            <div class="p-3 rounded-3 border border-secondary border-opacity-20 bg-dark bg-opacity-60">
+                <p class="text-light small mb-2" style="line-height: 1.45; font-style: italic;">
+                    "My Royal Enfield clutch cable snapped on Delhi-Gurgaon highway at midnight. Live GPS tracking gave complete peace of mind."
+                </p>
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top border-secondary border-opacity-20">
+                    <span class="text-white small font-weight-bold">Ananya Verma</span>
+                    <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-motorcycle text-warning me-1"></i> Verified Rider</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- =========================================================================
+     💻 DESKTOP & LAPTOP RICH HOMEPAGE (>= 992px) - INTACT & HIGH PERFORMANCE
+     ========================================================================= -->
+<div class="d-none d-lg-block">
+    <!-- Top Full-Width Highlighted Tagline Banner -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="premium-tagline-banner py-2 px-3 rounded-3 text-center d-flex align-items-center justify-content-center flex-wrap gap-2">
+                <span class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-warning animate-pulse-slow"></i>
+                    <span class="tagline-text">Fast, Trusted &amp; Reliable Roadside Assistance</span>
+                </span>
+                <span class="tagline-divider mx-1 d-none d-md-inline text-muted opacity-50">•</span>
+                <span class="tagline-badge">
+                    <i class="fa-solid fa-clock me-1 text-warning"></i> Anytime, Anywhere
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row align-items-center min-vh-75 py-2 py-md-4">
+        <!-- Hero Left: Premium Heading & Concept -->
+        <div class="col-lg-6 text-start mb-4 mb-lg-0">
+            <span class="badge bg-warning text-dark mb-3 px-3 py-2 font-weight-bold" style="border-radius: 20px; font-size: 0.85rem; letter-spacing: 1px;">
+                <i class="fa-solid fa-bolt me-1"></i> Average Response: Under 25 Minutes
             </span>
-            <span class="tagline-divider mx-1 d-none d-md-inline text-muted opacity-50">•</span>
-            <span class="tagline-badge">
-                <i class="fa-solid fa-clock me-1 text-warning"></i> Anytime, Anywhere
-            </span>
+
+            <h1 class="display-5 font-weight-bold text-white mb-4" style="line-height: 1.15; font-family: 'Inter', sans-serif;">
+                <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span> – India's <span class="text-warning">Connected Roadside</span> Assistance Network
+            </h1>
+            <p class="lead text-muted mb-4" style="font-size: 1.15rem; line-height: 1.6;">
+                Connecting customers, roadside mechanics, EV specialists, workshops and emergency services across every city, town and highway in India.
+            </p>
+            
+            <div class="d-flex flex-row gap-3 mb-5">
+                <a href="/Customer/Book" class="btn btn-premium-primary btn-lg">
+                    <i class="fa-solid fa-car-burst me-2"></i> Get Help Now
+                </a>
+                <a href="/Auth/Login?role=Mechanic" class="btn btn-premium-secondary btn-lg">
+                    <i class="fa-solid fa-wrench me-2"></i> Join as Partner Mechanic
+                </a>
+            </div>
+
+            <div class="row text-white text-opacity-80">
+                <div class="col-4">
+                    <h3 class="font-weight-extrabold text-warning mb-0" style="font-family: 'Inter', sans-serif;">25 Mins</h3>
+                    <span class="text-muted" style="font-size: 0.85rem;">Avg. Dispatch ETA</span>
+                </div>
+                <div class="col-4">
+                    <h3 class="font-weight-extrabold text-warning mb-0" style="font-family: 'Inter', sans-serif;">100%</h3>
+                    <span class="text-muted" style="font-size: 0.85rem;">KYC Verified Partners</span>
+                </div>
+                <div class="col-4">
+                    <h3 class="font-weight-extrabold text-warning mb-0" style="font-family: 'Inter', sans-serif;">Upfront</h3>
+                    <span class="text-muted" style="font-size: 0.85rem;">Zero Verbal Negotiation</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Right: Upfront Cost Estimator Grid -->
+        <div class="col-lg-6">
+            <div class="p-4 rounded-4 text-start border border-secondary border-opacity-30 shadow-lg" style="background: #0f172a;">
+                <!-- Header -->
+                <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                    <h4 class="text-white font-weight-bold mb-0" style="font-family: 'Inter', sans-serif;">
+                        <i class="fa-solid fa-calculator text-warning me-2"></i> Upfront Cost Estimator
+                    </h4>
+                    <div class="text-end">
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 px-3 py-1 font-weight-bold" style="font-size: 0.82rem; letter-spacing: 0.3px;">
+                            <i class="fa-solid fa-circle-info me-1"></i> Approximate Charges
+                        </span>
+                        <div class="text-muted small mt-1" style="font-size: 0.73rem; opacity: 0.85;">Based on average market rates.</div>
+                    </div>
+                </div>
+
+                <!-- 1. Select Vehicle Category 6-Box Grid -->
+                <label class="form-label text-muted small font-weight-bold mb-2">1. Select Vehicle Category</label>
+                <div class="row g-2 mb-4">
+                    <!-- Car Box (Default Selected) -->
+                    <div class="col-4">
+                        <div id="vBox-Car" class="v-box p-2.5 rounded-3 text-center cursor-pointer border active-v-box" onclick="selectVehicleCategory('Car')">
+                            <i class="fa-solid fa-car text-warning fa-lg mb-1.5"></i>
+                            <div class="text-white font-weight-bold small">Car / SUV</div>
+                            <div class="text-muted" style="font-size: 0.72rem;">₹@carRule.BaseFee + ₹@carRule.PerKmRate/km</div>
+                        </div>
+                    </div>
+
+                    <!-- 2-Wheeler Box -->
+                    <div class="col-4">
+                        <div id="vBox-2-Wheeler" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('2-Wheeler')">
+                            <i class="fa-solid fa-motorcycle text-warning fa-lg mb-1.5"></i>
+                            <div class="text-white font-weight-bold small">2-Wheeler</div>
+                            <div class="text-muted" style="font-size: 0.72rem;">₹@bikeRule.BaseFee + ₹@bikeRule.PerKmRate/km</div>
+                        </div>
+                    </div>
+
+                    <!-- E-Rickshaw Box (NEW EV) -->
+                    <div class="col-4">
+                        <div id="vBox-E-Rickshaw" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30 position-relative" onclick="selectVehicleCategory('E-Rickshaw')">
+                            <span class="badge bg-success text-white position-absolute top-0 end-0 m-1" style="font-size: 0.6rem;">EV</span>
+                            <i class="fa-solid fa-bolt-lightning text-success fa-lg mb-1.5"></i>
+                            <div class="text-white font-weight-bold small">E-Rickshaw</div>
+                            <div class="text-muted" style="font-size: 0.72rem;">₹@erickRule.BaseFee + ₹@erickRule.PerKmRate/km</div>
+                        </div>
+                    </div>
+
+                    <!-- Auto-Rickshaw Box (NEW) -->
+                    <div class="col-4">
+                        <div id="vBox-Auto-Rickshaw" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Auto-Rickshaw')">
+                            <div class="mb-1.5" style="font-size: 1.4rem; line-height: 1.2;">🛺</div>
+                            <div class="text-white font-weight-bold small">Auto-Rickshaw</div>
+                            <div class="text-muted" style="font-size: 0.72rem;">₹@autoRule.BaseFee + ₹@autoRule.PerKmRate/km</div>
+                        </div>
+                    </div>
+
+                    <!-- Commercial Box -->
+                    <div class="col-4">
+                        <div id="vBox-Commercial" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Commercial')">
+                            <i class="fa-solid fa-truck text-warning fa-lg mb-1.5"></i>
+                            <div class="text-white font-weight-bold small">Commercial</div>
+                            <div class="text-muted" style="font-size: 0.72rem;">₹@commRule.BaseFee + ₹@commRule.PerKmRate/km</div>
+                        </div>
+                    </div>
+
+                    <!-- Heavy Box -->
+                    <div class="col-4">
+                        <div id="vBox-Heavy" class="v-box p-2.5 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Heavy')">
+                            <i class="fa-solid fa-tractor text-warning fa-lg mb-1.5"></i>
+                            <div class="text-white font-weight-bold small">Heavy / JCB</div>
+                            <div class="text-muted" style="font-size: 0.72rem;">₹@heavyRule.BaseFee + ₹@heavyRule.PerKmRate/km</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Estimated Distance Slider (Max 30 KM) -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between text-muted small mb-2">
+                        <span class="font-weight-bold">2. Estimated Distance (to Mechanic)</span>
+                        <span class="text-warning font-weight-bold" id="calcDistKmDisplay">5 km</span>
+                    </div>
+                    <input type="range" class="form-range" id="calcDistance" min="1" max="30" value="5" oninput="updateEstPrice()">
+                </div>
+
+                <!-- 3. Select Problem Type Dropdown -->
+                <div class="mb-4">
+                    <label class="form-label text-muted small font-weight-bold mb-2">3. Select Problem Type</label>
+                    <select id="calcProblem" class="form-select bg-dark text-white border-secondary" onchange="updateEstPrice()">
+                        @if (problemTypes != null && problemTypes.Any())
+                        {
+                            foreach (var pt in problemTypes)
+                            {
+                                <option value="@pt.MinServiceCharge-@pt.MaxServiceCharge" data-category="@pt.VehicleCategory">@pt.ProblemName (₹@pt.MinServiceCharge - ₹@pt.MaxServiceCharge)</option>
+                            }
+                        }
+                        else
+                        {
+                            <option value="150-3500" data-category="Car">Battery jump-start/replacement (₹150 - ₹3,500)</option>
+                            <option value="200-800" data-category="Car">Flat Tyre / Puncture Repair (₹200 - ₹800)</option>
+                            <option value="250-1200" data-category="Car">Emergency Fuel Delivery (₹250 - ₹1,200)</option>
+                            <option value="300-1500" data-category="Car">Towing Assistance (₹300 - ₹1,500)</option>
+                            <option value="350-1800" data-category="E-Rickshaw">Controller Problem (₹350 - ₹1,800)</option>
+                            <option value="400-2500" data-category="E-Rickshaw">BLDC Motor Problem (₹400 - ₹2,500)</option>
+                            <option value="250-800" data-category="E-Rickshaw">Emergency EV Charging (₹250 - ₹800)</option>
+                            <option value="150-950" data-category="Auto-Rickshaw">CNG / Fuel Problem (₹150 - ₹950)</option>
+                            <option value="200-1600" data-category="Auto-Rickshaw">Clutch / Gear Problem (₹200 - ₹1,600)</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Breakdown Summary Box -->
+                <div class="p-3 rounded-3 bg-dark bg-opacity-80 border border-secondary border-opacity-30 mb-4">
+                    <div class="d-flex justify-content-between text-muted small mb-2">
+                        <span>Visiting Charge (Layer 1):</span>
+                        <span class="text-white font-weight-bold" id="calcVisitingCharge">₹139.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small mb-3">
+                        <span>Service Fix Range (Layer 2):</span>
+                        <span class="text-warning font-weight-bold" id="calcServiceFixRange">₹150 - ₹3500</span>
+                    </div>
+                    <hr class="border-secondary border-opacity-30 my-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-white font-weight-bold">Total Estimated Upfront:</span>
+                        <span class="text-success font-weight-extrabold h5 mb-0" id="calcTotalUpfrontRange">₹289 - ₹3639</span>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <a href="@targetVehicleUrl" class="btn btn-warning w-100 font-weight-bold py-2.5 text-dark shadow-sm">
+                    <i class="fa-solid fa-arrow-right me-2"></i> Book Instant Assistance
+                </a>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="row align-items-center min-vh-75 py-2 py-md-4">
-    <!-- Hero Left: Premium Heading & Concept -->
-    <div class="col-lg-6 text-start mb-4 mb-lg-0">
-        <span class="badge bg-warning text-dark mb-3 px-3 py-2 font-weight-bold" style="border-radius: 20px; font-size: 0.85rem; letter-spacing: 1px;">
-            <i class="fa-solid fa-bolt me-1"></i> Average Response: Under 25 Minutes
-        </span>
-
-        <h1 class="display-5 display-md-3 font-weight-bold text-white mb-4" style="line-height: 1.15; font-family: 'Inter', sans-serif;">
-            <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span> – India's <span class="text-warning">Connected Roadside</span> Assistance Network
-        </h1>
-        <p class="lead text-muted mb-4" style="font-size: 1.15rem; line-height: 1.6;">
-            Connecting customers, roadside mechanics, workshops and emergency services across every city, town and highway in India.
-        </p>
-        
-        <div class="d-flex flex-column flex-md-row gap-3 mb-4 mb-md-5">
-            <a href="/Customer/Book" class="btn btn-premium-primary btn-lg w-100 w-md-auto">
-                <i class="fa-solid fa-car-burst me-2"></i> Get Help Now
-            </a>
-            <a href="/Auth/Login?role=Mechanic" class="btn btn-premium-secondary btn-lg w-100 w-md-auto">
-                <i class="fa-solid fa-wrench me-2"></i> Join as Partner Mechanic
-            </a>
-        </div>
-
-        <div class="row text-white text-opacity-80">
-            <div class="col-sm-4 col-6 mb-3">
-                <h3 class="font-weight-extrabold text-warning mb-0" style="font-family: 'Inter', sans-serif;">25 Mins</h3>
-                <span class="text-muted" style="font-size: 0.85rem;">Avg. Dispatch ETA</span>
+<!-- =========================================================================
+     📱 QUICK ESTIMATOR MODAL (STREAMLINED FOR MOBILE & TABLETS)
+     ========================================================================= -->
+<div class="modal fade" id="quickEstimatorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary text-light">
+            <div class="modal-header border-secondary py-3">
+                <h6 class="modal-title text-warning font-weight-bold mb-0">
+                    <i class="fa-solid fa-calculator me-1.5"></i> Upfront Cost Estimator
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="col-sm-4 col-6 mb-3">
-                <h3 class="font-weight-extrabold text-warning mb-0" style="font-family: 'Inter', sans-serif;">100%</h3>
-                <span class="text-muted" style="font-size: 0.85rem;">KYC Verified Partners</span>
-            </div>
-            <div class="col-sm-4 col-6 mb-3">
-                <h3 class="font-weight-extrabold text-warning mb-0" style="font-family: 'Inter', sans-serif;">Upfront</h3>
-                <span class="text-muted" style="font-size: 0.85rem;">Zero Verbal Negotiation</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Hero Right: Upfront Cost Estimator 4-Box Grid (Matching Screenshot) -->
-    <div class="col-lg-6">
-        <div class="p-4 rounded-4 text-start border border-secondary border-opacity-30 shadow-lg" style="background: #0f172a;">
-            <!-- Header -->
-            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-                <h4 class="text-white font-weight-bold mb-0" style="font-family: 'Inter', sans-serif;">
-                    <i class="fa-solid fa-calculator text-warning me-2"></i> Upfront Cost Estimator
-                </h4>
-                <div class="text-end">
-                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 px-3 py-1 font-weight-bold" style="font-size: 0.82rem; letter-spacing: 0.3px;">
-                        <i class="fa-solid fa-circle-info me-1"></i> Approximate Charges
-                    </span>
-                    <div class="text-muted small mt-1" style="font-size: 0.73rem; opacity: 0.85;">Based on average market rates.</div>
-                </div>
-            </div>
-
-            <!-- 1. Select Vehicle Category 4-Box Grid -->
-            <label class="form-label text-muted small font-weight-bold mb-2">1. Select Vehicle Category</label>
-            <div class="row g-2 mb-4">
-                <!-- Car Box (Default Selected) -->
-                <div class="col-6">
-                    <div id="vBox-Car" class="v-box p-3 rounded-3 text-center cursor-pointer border active-v-box" onclick="selectVehicleCategory('Car')">
-                        <i class="fa-solid fa-car text-warning fa-lg mb-2"></i>
-                        <div class="text-white font-weight-bold small">Car / SUV / Van</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">₹@carRule.BaseFee + ₹@carRule.PerKmRate/km</div>
+            <div class="modal-body p-3">
+                <!-- Vehicle Selector Pills -->
+                <label class="form-label text-muted small font-weight-bold mb-2">Select Vehicle</label>
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <button type="button" class="btn btn-outline-warning btn-sm w-100 mob-v-btn active" data-v="Car" onclick="selectModalVehicle('Car')">
+                            <i class="fa-solid fa-car d-block mb-1"></i> Car/SUV
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 mob-v-btn" data-v="2-Wheeler" onclick="selectModalVehicle('2-Wheeler')">
+                            <i class="fa-solid fa-motorcycle d-block mb-1"></i> 2-Wheeler
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 mob-v-btn" data-v="E-Rickshaw" onclick="selectModalVehicle('E-Rickshaw')">
+                            <i class="fa-solid fa-bolt d-block mb-1"></i> E-Rickshaw
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 mob-v-btn" data-v="Auto-Rickshaw" onclick="selectModalVehicle('Auto-Rickshaw')">
+                            <div class="d-block mb-1" style="font-size:1.1rem; line-height:1;">🛺</div> Auto
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 mob-v-btn" data-v="Commercial" onclick="selectModalVehicle('Commercial')">
+                            <i class="fa-solid fa-truck d-block mb-1"></i> Commercial
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 mob-v-btn" data-v="Heavy" onclick="selectModalVehicle('Heavy')">
+                            <i class="fa-solid fa-tractor d-block mb-1"></i> Heavy
+                        </button>
                     </div>
                 </div>
 
-                <!-- 2-Wheeler Box -->
-                <div class="col-6">
-                    <div id="vBox-2-Wheeler" class="v-box p-3 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('2-Wheeler')">
-                        <i class="fa-solid fa-motorcycle text-warning fa-lg mb-2"></i>
-                        <div class="text-white font-weight-bold small">2-Wheeler / Auto</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">₹@bikeRule.BaseFee + ₹@bikeRule.PerKmRate/km</div>
-                    </div>
-                </div>
-
-                <!-- Commercial Box -->
-                <div class="col-6">
-                    <div id="vBox-Commercial" class="v-box p-3 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Commercial')">
-                        <i class="fa-solid fa-truck text-warning fa-lg mb-2"></i>
-                        <div class="text-white font-weight-bold small">Truck / Loader / Pickup</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">₹@commRule.BaseFee + ₹@commRule.PerKmRate/km</div>
-                    </div>
-                </div>
-
-                <!-- Heavy Box -->
-                <div class="col-6">
-                    <div id="vBox-Heavy" class="v-box p-3 rounded-3 text-center cursor-pointer border border-secondary border-opacity-30" onclick="selectVehicleCategory('Heavy')">
-                        <i class="fa-solid fa-tractor text-warning fa-lg mb-2"></i>
-                        <div class="text-white font-weight-bold small">Heavy JCB / Crane</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">₹@heavyRule.BaseFee + ₹@heavyRule.PerKmRate/km</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. Estimated Distance Slider (Max 30 KM) -->
-            <div class="mb-4">
-                <div class="d-flex justify-content-between text-muted small mb-2">
-                    <span class="font-weight-bold">2. Estimated Distance (to Mechanic)</span>
-                    <span class="text-warning font-weight-bold" id="calcDistKmDisplay">5 km</span>
-                </div>
-                <input type="range" class="form-range" id="calcDistance" min="1" max="30" value="5" oninput="updateEstPrice()">
-            </div>
-
-            <!-- 3. Select Problem Type Dropdown -->
-            <div class="mb-4">
-                <label class="form-label text-muted small font-weight-bold mb-2">3. Select Problem Type</label>
-                <select id="calcProblem" class="form-select bg-dark text-white border-secondary" onchange="updateEstPrice()">
-                    @if (problemTypes != null && problemTypes.Any())
-                    {
-                        foreach (var pt in problemTypes)
+                <!-- Problem Selector -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small font-weight-bold mb-1">Select Problem</label>
+                    <select id="modalCalcProblem" class="form-select bg-black text-white border-secondary small py-2" onchange="updateModalEstPrice()">
+                        @if (problemTypes != null && problemTypes.Any())
                         {
-                            <option value="@pt.MinServiceCharge-@pt.MaxServiceCharge" data-category="@pt.VehicleCategory">@pt.ProblemName (₹@pt.MinServiceCharge - ₹@pt.MaxServiceCharge)</option>
+                            foreach (var pt in problemTypes)
+                            {
+                                <option value="@pt.MinServiceCharge-@pt.MaxServiceCharge" data-category="@pt.VehicleCategory">@pt.ProblemName (₹@pt.MinServiceCharge - ₹@pt.MaxServiceCharge)</option>
+                            }
                         }
-                    }
-                    else
-                    {
-                        <option value="150-3500">Battery jump-start/replacement (₹150 - ₹3,500)</option>
-                        <option value="200-800">Flat Tyre / Puncture Repair (₹200 - ₹800)</option>
-                        <option value="250-1200">Emergency Fuel Delivery (₹250 - ₹1,200)</option>
-                        <option value="300-1500">Towing Assistance (₹300 - ₹1,500)</option>
-                    }
-                </select>
-            </div>
+                        else
+                        {
+                            <option value="150-3500" data-category="Car">Battery jump-start/replacement (₹150 - ₹3,500)</option>
+                            <option value="200-800" data-category="Car">Flat Tyre / Puncture Repair (₹200 - ₹800)</option>
+                            <option value="250-1200" data-category="Car">Emergency Fuel Delivery (₹250 - ₹1,200)</option>
+                            <option value="300-1500" data-category="Car">Towing Assistance (₹300 - ₹1,500)</option>
+                            <option value="350-1800" data-category="E-Rickshaw">Controller Problem (₹350 - ₹1,800)</option>
+                            <option value="400-2500" data-category="E-Rickshaw">BLDC Motor Problem (₹400 - ₹2,500)</option>
+                            <option value="250-800" data-category="E-Rickshaw">Emergency EV Charging (₹250 - ₹800)</option>
+                            <option value="150-950" data-category="Auto-Rickshaw">CNG / Fuel Problem (₹150 - ₹950)</option>
+                            <option value="200-1600" data-category="Auto-Rickshaw">Clutch / Gear Problem (₹200 - ₹1,600)</option>
+                        }
+                    </select>
+                </div>
 
-            <!-- Breakdown Summary Box matching Screenshot 2 -->
-            <div class="p-3 rounded-3 bg-dark bg-opacity-80 border border-secondary border-opacity-30 mb-4">
-                <div class="d-flex justify-content-between text-muted small mb-2">
-                    <span>Visiting Charge (Layer 1):</span>
-                    <span class="text-white font-weight-bold" id="calcVisitingCharge">₹139.00</span>
+                <!-- Distance Slider -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                        <span>Estimated Distance</span>
+                        <span class="text-warning font-weight-bold" id="modalCalcDistDisplay">5 km</span>
+                    </div>
+                    <input type="range" class="form-range" id="modalCalcDistance" min="1" max="30" value="5" oninput="updateModalEstPrice()">
                 </div>
-                <div class="d-flex justify-content-between text-muted small mb-3">
-                    <span>Service Fix Range (Layer 2):</span>
-                    <span class="text-white font-weight-bold" id="calcServiceFixRange">₹150 - ₹3500</span>
-                </div>
-                <hr class="my-2 border-secondary border-opacity-30">
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                    <span class="text-white font-weight-bold">Estimated Total Upfront:</span>
-                    <h3 class="font-weight-extrabold mb-0" id="calcTotalUpfrontRange" style="color: #f59e0b; font-family: 'Outfit', sans-serif;">₹289 - ₹3639</h3>
-                </div>
-            </div>
 
-            <a href="@targetVehicleUrl" class="btn btn-warning w-100 py-3 font-weight-bold text-dark shadow" style="background: #f59e0b; border: none; border-radius: 10px; font-size: 1.1rem;">
-                <i class="fa-solid fa-car me-2"></i> Register Your Vehicle
-            </a>
+                <!-- Estimate Breakdown Box -->
+                <div class="p-2.5 rounded-3 bg-black border border-secondary border-opacity-30 mb-3">
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                        <span>Visiting Fee:</span>
+                        <span class="text-white font-weight-bold" id="modalCalcVisiting">₹139.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                        <span>Service Range:</span>
+                        <span class="text-warning font-weight-bold" id="modalCalcService">₹150 - ₹3500</span>
+                    </div>
+                    <hr class="border-secondary border-opacity-30 my-1.5">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong class="text-white small">Estimated Total:</strong>
+                        <strong class="text-success h6 mb-0" id="modalCalcTotal">₹289 - ₹3639</strong>
+                    </div>
+                </div>
+
+                <a href="@targetVehicleUrl" class="btn btn-warning w-100 font-weight-bold py-2.5 text-dark shadow-sm">
+                    <i class="fa-solid fa-arrow-right me-1.5"></i> Book Instant Assistance
+                </a>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
     .v-box {
+        transition: all 0.2s ease-in-out;
         background: #1e293b;
-        transition: all 0.2s ease;
     }
     .v-box:hover {
         background: #334155;
+        border-color: #f59e0b !important;
     }
     .active-v-box {
-        border-color: #ff6b00 !important;
-        background: rgba(255, 107, 0, 0.12) !important;
-        box-shadow: 0 0 10px rgba(255, 107, 0, 0.3);
+        background: #334155 !important;
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
     }
 </style>
 
 <script>
     let selectedCategory = 'Car';
+    let modalSelectedCategory = 'Car';
     const pricingData = {
         "Car": { base: @carRule.BaseFee, rate: @carRule.PerKmRate },
         "2-Wheeler": { base: @bikeRule.BaseFee, rate: @bikeRule.PerKmRate },
+        "E-Rickshaw": { base: @erickRule.BaseFee, rate: @erickRule.PerKmRate },
+        "Auto-Rickshaw": { base: @autoRule.BaseFee, rate: @autoRule.PerKmRate },
         "Commercial": { base: @commRule.BaseFee, rate: @commRule.PerKmRate },
         "Heavy": { base: @heavyRule.BaseFee, rate: @heavyRule.PerKmRate }
     };
+
+    function filterProblemDropdown(cat) {
+        const select = document.getElementById('calcProblem');
+        if (!select) return;
+        let hasSelected = false;
+        Array.from(select.options).forEach(opt => {
+            const optCat = opt.getAttribute('data-category');
+            if (!optCat || optCat === cat || optCat === 'All' || (cat === '2-Wheeler' && (optCat === 'Bike' || optCat === '2-Wheeler'))) {
+                opt.style.display = '';
+                if (!hasSelected) {
+                    opt.selected = true;
+                    hasSelected = true;
+                }
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+    }
+
+    function filterModalProblemDropdown(cat) {
+        const select = document.getElementById('modalCalcProblem');
+        if (!select) return;
+        let hasSelected = false;
+        Array.from(select.options).forEach(opt => {
+            const optCat = opt.getAttribute('data-category');
+            if (!optCat || optCat === cat || optCat === 'All' || (cat === '2-Wheeler' && (optCat === 'Bike' || optCat === '2-Wheeler'))) {
+                opt.style.display = '';
+                if (!hasSelected) {
+                    opt.selected = true;
+                    hasSelected = true;
+                }
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+    }
 
     function selectVehicleCategory(cat) {
         selectedCategory = cat;
@@ -206,12 +625,32 @@
         if (activeBox) {
             activeBox.classList.add('active-v-box');
         }
+        filterProblemDropdown(cat);
         updateEstPrice();
     }
 
+    function selectModalVehicle(cat) {
+        modalSelectedCategory = cat;
+        document.querySelectorAll('.mob-v-btn').forEach(el => {
+            el.classList.remove('btn-outline-warning', 'active');
+            el.classList.add('btn-outline-secondary');
+        });
+        const btn = document.querySelector(`.mob-v-btn[data-v="${cat}"]`);
+        if (btn) {
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-outline-warning', 'active');
+        }
+        filterModalProblemDropdown(cat);
+        updateModalEstPrice();
+    }
+
     function updateEstPrice() {
-        const dist = parseFloat(document.getElementById('calcDistance').value) || 0;
-        const problemVal = document.getElementById('calcProblem').value || "150-3500";
+        const distEl = document.getElementById('calcDistance');
+        const probEl = document.getElementById('calcProblem');
+        if (!distEl || !probEl) return;
+
+        const dist = parseFloat(distEl.value) || 0;
+        const problemVal = probEl.value || "150-3500";
         const parts = problemVal.split('-');
         const minFix = parseFloat(parts[0]) || 0;
         const maxFix = parseFloat(parts[1]) || 0;
@@ -225,267 +664,301 @@
         const minTotal = Math.round(visitingCharge + minFix);
         const maxTotal = Math.round(visitingCharge + maxFix);
 
-        document.getElementById('calcDistKmDisplay').innerText = dist + ' km';
-        document.getElementById('calcVisitingCharge').innerText = '₹' + visitingCharge.toFixed(2);
-        document.getElementById('calcServiceFixRange').innerText = '₹' + minFix + ' - ₹' + maxFix;
-        document.getElementById('calcTotalUpfrontRange').innerText = '₹' + minTotal + ' - ₹' + maxTotal;
+        const distDisplay = document.getElementById('calcDistKmDisplay');
+        const visitDisplay = document.getElementById('calcVisitingCharge');
+        const servDisplay = document.getElementById('calcServiceFixRange');
+        const totalDisplay = document.getElementById('calcTotalUpfrontRange');
+
+        if (distDisplay) distDisplay.innerText = dist + ' km';
+        if (visitDisplay) visitDisplay.innerText = '₹' + visitingCharge.toFixed(2);
+        if (servDisplay) servDisplay.innerText = '₹' + minFix + ' - ₹' + maxFix;
+        if (totalDisplay) totalDisplay.innerText = '₹' + minTotal + ' - ₹' + maxTotal;
+    }
+
+    function updateModalEstPrice() {
+        const distEl = document.getElementById('modalCalcDistance');
+        const probEl = document.getElementById('modalCalcProblem');
+        if (!distEl || !probEl) return;
+
+        const dist = parseFloat(distEl.value) || 0;
+        const problemVal = probEl.value || "150-3500";
+        const parts = problemVal.split('-');
+        const minFix = parseFloat(parts[0]) || 0;
+        const maxFix = parseFloat(parts[1]) || 0;
+
+        const data = pricingData[modalSelectedCategory] || pricingData["Car"];
+
+        const baseVal = data.base;
+        const distVal = (dist * 2) * data.rate;
+        const visitingCharge = baseVal + distVal;
+
+        const minTotal = Math.round(visitingCharge + minFix);
+        const maxTotal = Math.round(visitingCharge + maxFix);
+
+        const distDisplay = document.getElementById('modalCalcDistDisplay');
+        const visitDisplay = document.getElementById('modalCalcVisiting');
+        const servDisplay = document.getElementById('modalCalcService');
+        const totalDisplay = document.getElementById('modalCalcTotal');
+
+        if (distDisplay) distDisplay.innerText = dist + ' km';
+        if (visitDisplay) visitDisplay.innerText = '₹' + visitingCharge.toFixed(2);
+        if (servDisplay) servDisplay.innerText = '₹' + minFix + ' - ₹' + maxFix;
+        if (totalDisplay) totalDisplay.innerText = '₹' + minTotal + ' - ₹' + maxTotal;
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        filterProblemDropdown('Car');
         updateEstPrice();
+        filterModalProblemDropdown('Car');
+        updateModalEstPrice();
     });
 </script>
 
-
-
-<!-- Technology Moat Section -->
-<div class="py-5">
-    <div class="text-center mb-5">
-        <h2 class="display-6 font-weight-bold text-white mb-2" style="font-family: 'Inter', sans-serif;">
-            Why <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span> Leads India's Assistance Infrastructure
-        </h2>
-        <p class="text-muted lead max-w-700 mx-auto">
-            Traditional roadside assistance relies on manual calls and random pricing. RaahSathi solves this with proprietary technology pillars.
-        </p>
-    </div>
-
-    <div class="row g-4 text-start">
-        <div class="col-md-4">
-            <div class="glass-card p-4 h-100 border border-secondary border-opacity-30">
-                <div class="rounded-circle bg-warning bg-opacity-20 p-3 mb-3 d-inline-block text-warning">
-                    <i class="fa-solid fa-diagram-project fa-2x"></i>
-                </div>
-                <h4 class="h5 text-white font-weight-bold mb-2">4-Layer Pricing Moat</h4>
-                <p class="text-muted mb-0" style="font-size: 0.95rem; line-height: 1.6;">
-                    Guarantees zero price manipulation by weighting Base Charge, Per-KM Rates, Surge Factors, and Time Slashing dynamically.
-                </p>
-            </div>
+<!-- =========================================================================
+     💻 DESKTOP ONLY: Technology Moat, Trust Stats & Testimonials (>= 992px)
+     ========================================================================= -->
+<div class="d-none d-lg-block">
+    <!-- Technology Moat Section -->
+    <div class="py-5">
+        <div class="text-center mb-5">
+            <h2 class="display-6 font-weight-bold text-white mb-2" style="font-family: 'Inter', sans-serif;">
+                Why <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span> Leads India's Assistance Infrastructure
+            </h2>
+            <p class="text-muted lead max-w-700 mx-auto">
+                Traditional roadside assistance relies on manual calls and random pricing. RaahSathi solves this with proprietary technology pillars.
+            </p>
         </div>
-        <div class="col-md-4">
-            <div class="glass-card p-4 h-100 border border-secondary border-opacity-30">
-                <div class="rounded-circle bg-warning bg-opacity-20 p-3 mb-3 d-inline-block text-warning">
-                    <i class="fa-solid fa-shield-cat fa-2x"></i>
-                </div>
-                <h4 class="h5 text-white font-weight-bold mb-2">Escrow Financial Lock</h4>
-                <p class="text-muted mb-0" style="font-size: 0.95rem; line-height: 1.6;">
-                    Payments are authorized upfront and held securely in escrow until both customer and mechanic confirm job completion.
-                </p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="glass-card p-4 h-100 border border-secondary border-opacity-30">
-                <div class="rounded-circle bg-warning bg-opacity-20 p-3 mb-3 d-inline-block text-warning">
-                    <i class="fa-solid fa-user-shield fa-2x"></i>
-                </div>
-                <h4 class="h5 text-white font-weight-bold mb-2">100% KYC Audit</h4>
-                <p class="text-muted mb-0" style="font-size: 0.95rem; line-height: 1.6;">
-                    Every mechanic on our platform undergoes strict identity, workshop location, and background verification before taking calls.
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Trust & Stats Dashboard Section matching screenshot -->
-<div class="py-4 my-4">
-    <div class="rounded-4 p-4 text-start border shadow-sm" style="background: rgba(30, 41, 59, 0.2); border: 1px solid rgba(255, 255, 255, 0.08) !important; backdrop-filter: blur(12px);">
-        <div class="row align-items-center g-4">
-            <!-- Left Side: Star Rating & Title -->
-            <div class="col-lg-4 text-start">
-                <div class="d-flex align-items-center mb-2">
-                    <span class="text-warning h6 mb-0 me-1"><i class="fa-solid fa-star"></i></span>
-                    <span class="text-warning h6 mb-0 me-1"><i class="fa-solid fa-star"></i></span>
-                    <span class="text-warning h6 mb-0 me-1"><i class="fa-solid fa-star"></i></span>
-                    <span class="text-warning h6 mb-0 me-1"><i class="fa-solid fa-star"></i></span>
-                    <span class="text-warning h6 mb-0 me-2"><i class="fa-solid fa-star"></i></span>
-                    <span class="badge text-dark font-weight-bold" style="background: #f59e0b; border-radius: 8px; font-size: 0.72rem; padding: 3px 6px;">4.9 / 5.0 Rating</span>
-                </div>
-                <h3 class="text-white font-weight-bold mb-2" style="font-family: 'Inter', sans-serif; font-size: 1.25rem;">
-                    Trusted by Drivers Across India
-                </h3>
-                <div class="text-muted small" style="font-size: 0.8rem; line-height: 1.4;">
-                    <i class="fa-solid fa-circle-check text-success me-1"></i> Verified by 100% KYC-audited emergency response network
-                </div>
-            </div>
-
-            <!-- Right Side: 4 Horizontal Cards Grid -->
-            <div class="col-lg-8">
-                <div class="row g-2 text-center">
-                    <!-- Customers Card -->
-                    <div class="col-sm-3 col-6">
-                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
-                                <i class="fa-solid fa-users text-warning small"></i>
-                            </div>
-                            <h4 class="font-weight-extrabold mb-0" style="color: #f59e0b; font-family: 'Outfit', sans-serif; font-size: 1.2rem;">50,000+</h4>
-                            <div class="text-muted" style="font-size: 0.75rem;">Customers</div>
-                        </div>
+        <div class="row g-4 text-start">
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100 border border-secondary border-opacity-30">
+                    <div class="rounded-circle bg-warning bg-opacity-20 p-3 mb-3 d-inline-block text-warning">
+                        <i class="fa-solid fa-diagram-project fa-2x"></i>
                     </div>
-
-                    <!-- Mechanics Card -->
-                    <div class="col-sm-3 col-6">
-                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 32px; height: 32px; background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
-                                <i class="fa-solid fa-wrench text-info small"></i>
-                            </div>
-                            <h4 class="font-weight-extrabold mb-0" style="color: #06b6d4; font-family: 'Outfit', sans-serif; font-size: 1.2rem;">8,000+</h4>
-                            <div class="text-muted" style="font-size: 0.75rem;">Mechanics</div>
-                        </div>
-                    </div>
-
-                    <!-- Cities Card -->
-                    <div class="col-sm-3 col-6">
-                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 32px; height: 32px; background: rgba(34, 197, 94, 0.15); color: #22c55e;">
-                                <i class="fa-solid fa-building text-success small"></i>
-                            </div>
-                            <h4 class="font-weight-extrabold mb-0" style="color: #22c55e; font-family: 'Outfit', sans-serif; font-size: 1.2rem;">20+</h4>
-                            <div class="text-muted" style="font-size: 0.75rem;">Cities</div>
-                        </div>
-                    </div>
-
-                    <!-- Support Card -->
-                    <div class="col-sm-3 col-6">
-                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 32px; height: 32px; background: rgba(239, 68, 68, 0.15); color: #ef4444;">
-                                <i class="fa-solid fa-headset text-danger small"></i>
-                            </div>
-                            <h4 class="font-weight-extrabold mb-0" style="color: #ef4444; font-family: 'Outfit', sans-serif; font-size: 1.2rem;">24×7</h4>
-                            <div class="text-muted" style="font-size: 0.75rem;">Support</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Testimonials & Real Driver/Mechanic Reviews Section -->
-<div class="py-5 my-2">
-    <div class="text-center mb-5">
-        <span class="badge bg-warning bg-opacity-20 text-warning px-3 py-2 rounded-pill font-weight-bold mb-2 border border-warning border-opacity-30">
-            <i class="fa-solid fa-comments me-1"></i> Real Stories &amp; Reviews
-        </span>
-        <h2 class="display-6 font-weight-bold text-white mb-2" style="font-family: 'Inter', sans-serif;">
-            Trusted by Drivers &amp; Mechanics Across India
-        </h2>
-        <p class="text-muted lead max-w-700 mx-auto" style="font-size: 1rem;">
-            Real experiences from highway travelers, city commuters, and verified partner mechanics.
-        </p>
-    </div>
-
-    <div class="row g-4 text-start">
-        <!-- 🚗 Story 1: Yamuna Expressway Customer -->
-        <div class="col-md-4">
-            <div class="p-4 rounded-4 h-100 border border-secondary border-opacity-30 shadow-lg d-flex flex-column justify-content-between" style="background: #0f172a;">
-                <div>
-                    <!-- Star Rating & Badge -->
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="text-warning small">
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                        </div>
-                        <span class="badge text-dark font-weight-bold" style="background: #22c55e; border-radius: 20px; padding: 5px 12px; font-size: 0.75rem;">
-                            <i class="fa-solid fa-circle-check me-1"></i> Verified Customer
-                        </span>
-                    </div>
-
-                    <!-- Story Text -->
-                    <p class="text-light mb-4" style="font-size: 0.95rem; line-height: 1.6; font-style: italic;">
-                        "Stuck at 2 AM on Yamuna Expressway with a completely dead Creta battery. RaahSathi dispatched a mechanic in 18 minutes at the exact upfront price shown on the app! Zero verbal negotiation."
+                    <h4 class="h5 text-white font-weight-bold mb-2">4-Layer Pricing Moat</h4>
+                    <p class="text-muted mb-0" style="font-size: 0.95rem; line-height: 1.6;">
+                        Guarantees zero price manipulation by weighting Base Charge, Per-KM Rates, Surge Factors, and Time Slashing dynamically.
                     </p>
                 </div>
-
-                <!-- User Profile -->
-                <div class="d-flex align-items-center pt-3 border-top border-secondary border-opacity-20">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3 font-weight-bold shadow" style="width: 44px; height: 44px; background: #f59e0b; color: #0f172a;">
-                        <i class="fa-solid fa-car fa-lg"></i>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100 border border-secondary border-opacity-30">
+                    <div class="rounded-circle bg-warning bg-opacity-20 p-3 mb-3 d-inline-block text-warning">
+                        <i class="fa-solid fa-shield-cat fa-2x"></i>
                     </div>
-                    <div>
-                        <h6 class="text-white font-weight-bold mb-0">Rohan Sharma</h6>
-                        <span class="text-muted small">Hyundai Creta Driver • Yamuna Expressway</span>
+                    <h4 class="h5 text-white font-weight-bold mb-2">Escrow Financial Lock</h4>
+                    <p class="text-muted mb-0" style="font-size: 0.95rem; line-height: 1.6;">
+                        Payments are authorized upfront and held securely in escrow until both customer and mechanic confirm job completion.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100 border border-secondary border-opacity-30">
+                    <div class="rounded-circle bg-warning bg-opacity-20 p-3 mb-3 d-inline-block text-warning">
+                        <i class="fa-solid fa-user-shield fa-2x"></i>
+                    </div>
+                    <h4 class="h5 text-white font-weight-bold mb-2">100% KYC Audit</h4>
+                    <p class="text-muted mb-0" style="font-size: 0.95rem; line-height: 1.6;">
+                        Every mechanic on our platform undergoes strict identity, workshop location, and background verification before taking calls.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trust & Stats Dashboard Section matching screenshot -->
+    <div class="py-4 my-4">
+        <div class="rounded-4 p-4 text-start border shadow-sm" style="background: rgba(30, 41, 59, 0.2); border: 1px solid rgba(255, 255, 255, 0.08) !important; backdrop-filter: blur(12px);">
+            <div class="row align-items-center g-4">
+                <!-- Left Side: Star Rating & Title -->
+                <div class="col-lg-4 text-start">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="text-warning h6 mb-0 me-1"><i class="fa-solid fa-star"></i></span>
+                        <span class="text-warning h6 mb-0 me-1"><i class="fa-solid fa-star"></i></span>
+                        <span class="text-warning h6 mb-0 me-1"><i class="fa-solid fa-star"></i></span>
+                        <span class="text-warning h6 mb-0 me-1"><i class="fa-solid fa-star"></i></span>
+                        <span class="text-warning h6 mb-0 me-2"><i class="fa-solid fa-star"></i></span>
+                        <span class="badge text-dark font-weight-bold" style="background: #f59e0b; border-radius: 8px; font-size: 0.72rem; padding: 3px 6px;">4.9 / 5.0 Rating</span>
+                    </div>
+                    <h3 class="text-white font-weight-bold mb-2" style="font-family: 'Inter', sans-serif; font-size: 1.25rem;">
+                        Trusted by Drivers Across India
+                    </h3>
+                    <div class="text-muted small" style="font-size: 0.8rem; line-height: 1.4;">
+                        <i class="fa-solid fa-circle-check text-success me-1"></i> Verified by 100% KYC-audited emergency response network
+                    </div>
+                </div>
+
+                <!-- Right Side: 4 Horizontal Cards Grid -->
+                <div class="col-lg-8">
+                    <div class="row g-2 text-center">
+                        <!-- Customers Card -->
+                        <div class="col-sm-3 col-6">
+                            <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                                    <i class="fa-solid fa-users text-warning small"></i>
+                                </div>
+                                <h4 class="font-weight-extrabold mb-0" style="color: #f59e0b; font-family: 'Outfit', sans-serif; font-size: 1.2rem;">50,000+</h4>
+                                <div class="text-muted" style="font-size: 0.75rem;">Customers</div>
+                            </div>
+                        </div>
+
+                        <!-- Mechanics Card -->
+                        <div class="col-sm-3 col-6">
+                            <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 32px; height: 32px; background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
+                                    <i class="fa-solid fa-wrench text-info small"></i>
+                                </div>
+                                <h4 class="font-weight-extrabold mb-0" style="color: #06b6d4; font-family: 'Outfit', sans-serif; font-size: 1.2rem;">8,000+</h4>
+                                <div class="text-muted" style="font-size: 0.75rem;">Mechanics</div>
+                            </div>
+                        </div>
+
+                        <!-- Cities Card -->
+                        <div class="col-sm-3 col-6">
+                            <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 32px; height: 32px; background: rgba(34, 197, 94, 0.15); color: #22c55e;">
+                                    <i class="fa-solid fa-building text-success small"></i>
+                                </div>
+                                <h4 class="font-weight-extrabold mb-0" style="color: #22c55e; font-family: 'Outfit', sans-serif; font-size: 1.2rem;">20+</h4>
+                                <div class="text-muted" style="font-size: 0.75rem;">Cities</div>
+                            </div>
+                        </div>
+
+                        <!-- Support Card -->
+                        <div class="col-sm-3 col-6">
+                            <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 32px; height: 32px; background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                                    <i class="fa-solid fa-headset text-danger small"></i>
+                                </div>
+                                <h4 class="font-weight-extrabold mb-0" style="color: #ef4444; font-family: 'Outfit', sans-serif; font-size: 1.2rem;">24×7</h4>
+                                <div class="text-muted" style="font-size: 0.75rem;">Support</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- 🛠️ Story 2: Jaipur Partner Mechanic -->
-        <div class="col-md-4">
-            <div class="p-4 rounded-4 h-100 border border-secondary border-opacity-30 shadow-lg d-flex flex-column justify-content-between" style="background: #0f172a;">
-                <div>
-                    <!-- Star Rating & Badge -->
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="text-warning small">
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                        </div>
-                        <span class="badge text-dark font-weight-bold" style="background: #06b6d4; border-radius: 20px; padding: 5px 12px; font-size: 0.75rem;">
-                            <i class="fa-solid fa-user-gear me-1"></i> Verified Mechanic
-                        </span>
-                    </div>
+    <!-- Testimonials & Real Driver/Mechanic Reviews Section -->
+    <div class="py-5 my-2">
+        <div class="text-center mb-5">
+            <span class="badge bg-warning bg-opacity-20 text-warning px-3 py-2 rounded-pill font-weight-bold mb-2 border border-warning border-opacity-30">
+                <i class="fa-solid fa-comments me-1"></i> Real Stories &amp; Reviews
+            </span>
+            <h2 class="display-6 font-weight-bold text-white mb-2" style="font-family: 'Inter', sans-serif;">
+                Trusted by Drivers &amp; Mechanics Across India
+            </h2>
+            <p class="text-muted lead max-w-700 mx-auto" style="font-size: 1rem;">
+                Real experiences from highway travelers, city commuters, and verified partner mechanics.
+            </p>
+        </div>
 
-                    <!-- Story Text -->
-                    <p class="text-light mb-4" style="font-size: 0.95rem; line-height: 1.6; font-style: italic;">
-                        "As a verified workshop partner in Jaipur, RaahSathi gives me instant job alerts and direct wallet payouts within seconds of completing a breakdown job. 100% fair and transparent platform!"
-                    </p>
-                </div>
-
-                <!-- User Profile -->
-                <div class="d-flex align-items-center pt-3 border-top border-secondary border-opacity-20">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3 font-weight-bold shadow" style="width: 44px; height: 44px; background: #06b6d4; color: #0f172a;">
-                        <i class="fa-solid fa-wrench fa-lg"></i>
-                    </div>
+        <div class="row g-4 text-start">
+            <!-- 🚗 Story 1: Yamuna Expressway Customer -->
+            <div class="col-md-4">
+                <div class="p-4 rounded-4 h-100 border border-secondary border-opacity-30 shadow-lg d-flex flex-column justify-content-between" style="background: #0f172a;">
                     <div>
-                        <h6 class="text-white font-weight-bold mb-0">Vikram Singh</h6>
-                        <span class="text-muted small">Master Technician • Jaipur Workshop</span>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="text-warning small">
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                            </div>
+                            <span class="badge text-dark font-weight-bold" style="background: #22c55e; border-radius: 20px; padding: 5px 12px; font-size: 0.75rem;">
+                                <i class="fa-solid fa-circle-check me-1"></i> Verified Customer
+                            </span>
+                        </div>
+
+                        <p class="text-light mb-4" style="font-size: 0.95rem; line-height: 1.6; font-style: italic;">
+                            "Stuck at 2 AM on Yamuna Expressway with a completely dead Creta battery. RaahSathi dispatched a mechanic in 18 minutes at the exact upfront price shown on the app! Zero verbal negotiation."
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center pt-3 border-top border-secondary border-opacity-20">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center me-3 font-weight-bold shadow" style="width: 44px; height: 44px; background: #f59e0b; color: #0f172a;">
+                            <i class="fa-solid fa-car fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-white font-weight-bold mb-0">Rohan Sharma</h6>
+                            <span class="text-muted small">Hyundai Creta Driver • Yamuna Expressway</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- 🏍️ Story 3: Delhi NCR Rider -->
-        <div class="col-md-4">
-            <div class="p-4 rounded-4 h-100 border border-secondary border-opacity-30 shadow-lg d-flex flex-column justify-content-between" style="background: #0f172a;">
-                <div>
-                    <!-- Star Rating & Badge -->
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="text-warning small">
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                            <i class="fa-solid fa-star"></i>
-                        </div>
-                        <span class="badge text-dark font-weight-bold" style="background: #f59e0b; border-radius: 20px; padding: 5px 12px; font-size: 0.75rem;">
-                            <i class="fa-solid fa-motorcycle me-1"></i> Verified Rider
-                        </span>
-                    </div>
-
-                    <!-- Story Text -->
-                    <p class="text-light mb-4" style="font-size: 0.95rem; line-height: 1.6; font-style: italic;">
-                        "My Royal Enfield clutch cable snapped on Delhi-Gurgaon highway at midnight. The live GPS tracking link gave my family complete peace of mind while patrol mechanics arrived."
-                    </p>
-                </div>
-
-                <!-- User Profile -->
-                <div class="d-flex align-items-center pt-3 border-top border-secondary border-opacity-20">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3 font-weight-bold shadow" style="width: 44px; height: 44px; background: #ef4444; color: #ffffff;">
-                        <i class="fa-solid fa-motorcycle fa-lg"></i>
-                    </div>
+            <!-- 🛠️ Story 2: Jaipur Partner Mechanic -->
+            <div class="col-md-4">
+                <div class="p-4 rounded-4 h-100 border border-secondary border-opacity-30 shadow-lg d-flex flex-column justify-content-between" style="background: #0f172a;">
                     <div>
-                        <h6 class="text-white font-weight-bold mb-0">Ananya Verma</h6>
-                        <span class="text-muted small">Royal Enfield Rider • Delhi NCR</span>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="text-warning small">
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                            </div>
+                            <span class="badge text-dark font-weight-bold" style="background: #06b6d4; border-radius: 20px; padding: 5px 12px; font-size: 0.75rem;">
+                                <i class="fa-solid fa-user-gear me-1"></i> Verified Mechanic
+                            </span>
+                        </div>
+
+                        <p class="text-light mb-4" style="font-size: 0.95rem; line-height: 1.6; font-style: italic;">
+                            "As a verified workshop partner in Jaipur, RaahSathi gives me instant job alerts and direct wallet payouts within seconds of completing a breakdown job. 100% fair and transparent platform!"
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center pt-3 border-top border-secondary border-opacity-20">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center me-3 font-weight-bold shadow" style="width: 44px; height: 44px; background: #06b6d4; color: #0f172a;">
+                            <i class="fa-solid fa-wrench fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-white font-weight-bold mb-0">Vikram Singh</h6>
+                            <span class="text-muted small">Master Technician • Jaipur Workshop</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🏍️ Story 3: Delhi NCR Rider -->
+            <div class="col-md-4">
+                <div class="p-4 rounded-4 h-100 border border-secondary border-opacity-30 shadow-lg d-flex flex-column justify-content-between" style="background: #0f172a;">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="text-warning small">
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                                <i class="fa-solid fa-star"></i>
+                            </div>
+                            <span class="badge text-dark font-weight-bold" style="background: #f59e0b; border-radius: 20px; padding: 5px 12px; font-size: 0.75rem;">
+                                <i class="fa-solid fa-motorcycle me-1"></i> Verified Rider
+                            </span>
+                        </div>
+
+                        <p class="text-light mb-4" style="font-size: 0.95rem; line-height: 1.6; font-style: italic;">
+                            "My Royal Enfield clutch cable snapped on Delhi-Gurgaon highway at midnight. The live GPS tracking link gave my family complete peace of mind while patrol mechanics arrived."
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center pt-3 border-top border-secondary border-opacity-20">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center me-3 font-weight-bold shadow" style="width: 44px; height: 44px; background: #ef4444; color: #ffffff;">
+                            <i class="fa-solid fa-motorcycle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-white font-weight-bold mb-0">Ananya Verma</h6>
+                            <span class="text-muted small">Royal Enfield Rider • Delhi NCR</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 
 
