@@ -30,20 +30,25 @@
             Instant verified mechanic dispatch for cars, bikes & commercial vehicles across India.
         </p>
 
-        <!-- Primary Dominant CTA -->
-        <a href="/Customer/Book" class="btn btn-premium-primary btn-lg w-100 font-weight-bold py-3 shadow-lg mb-2.5 text-center d-flex align-items-center justify-content-center gap-2" style="border-radius: 12px; font-size: 1.05rem;">
-            <i class="fa-solid fa-car-burst"></i>
-            <span>Get Help Now</span>
-        </a>
-
-        <!-- Secondary Actions Strip -->
-        <div class="d-flex justify-content-between align-items-center px-1 text-muted small mb-3">
-            <button type="button" class="btn btn-link text-warning p-0 text-decoration-none small font-weight-bold d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#quickEstimatorModal">
-                <i class="fa-solid fa-calculator"></i> Check Fair Estimate
-            </button>
-            <a href="/Auth/Login?role=Mechanic" class="text-muted text-decoration-none small d-flex align-items-center gap-1">
-                Join as Partner <i class="fa-solid fa-arrow-right-long text-warning" style="font-size: 0.75rem;"></i>
+        <!-- 3 Sequential Mobile Action Buttons -->
+        <div class="d-flex flex-column gap-2 mb-3">
+            <!-- 1. Primary CTA: Get Help Now -->
+            <a href="/Customer/Book" class="btn btn-premium-primary btn-lg w-100 font-weight-bold py-2.5 shadow-lg text-center d-flex align-items-center justify-content-center gap-2" style="border-radius: 12px; font-size: 1rem;">
+                <i class="fa-solid fa-car-burst"></i>
+                <span>Get Help Now</span>
             </a>
+
+            <!-- 2. Secondary CTA: Join as Partner Mechanic -->
+            <a href="/Auth/Login?role=Mechanic" class="btn btn-premium-secondary btn-lg w-100 font-weight-bold py-2.5 text-center d-flex align-items-center justify-content-center gap-2" style="border-radius: 12px; font-size: 0.95rem;">
+                <i class="fa-solid fa-wrench"></i>
+                <span>Join as Partner Mechanic</span>
+            </a>
+
+            <!-- 3. Tertiary CTA: Check Fair Estimate (Modal Trigger) -->
+            <button type="button" class="btn btn-outline-warning btn-lg w-100 font-weight-bold py-2.5 text-center d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#quickEstimatorModal" style="border-radius: 12px; font-size: 0.95rem; background: rgba(245, 158, 11, 0.08);">
+                <i class="fa-solid fa-calculator"></i>
+                <span>Check Fair Estimate</span>
+            </button>
         </div>
 
         <!-- Compact 2-Line Key Metrics Strip (Saves vertical space) -->
@@ -65,7 +70,7 @@
         </div>
     </section>
 
-    <!-- Block 2: Quick Emergency Services (6 Touch Chips) -->
+    <!-- Block 2: Quick Emergency Services (6 Requested Service Types with Icons) -->
     <section class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-2.5">
             <h6 class="text-white font-weight-bold mb-0" style="font-size: 0.95rem;">
@@ -74,6 +79,20 @@
             <span class="text-muted small" style="font-size: 0.72rem;">1-Tap Assistance</span>
         </div>
         <div class="row g-2">
+            <!-- 1. Engine / Motor Problem -->
+            <div class="col-6">
+                <a href="/Customer/Book?problem=Engine+Problem" class="mob-chip-card">
+                    <div class="mob-chip-icon bg-danger bg-opacity-20 text-danger">
+                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-white font-weight-bold small text-truncate">Engine / Motor</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Noise & overheat</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 2. Flat Tyre / Puncture -->
             <div class="col-6">
                 <a href="/Customer/Book?problem=Flat+Tyre" class="mob-chip-card">
                     <div class="mob-chip-icon bg-warning bg-opacity-20 text-warning">
@@ -81,62 +100,59 @@
                     </div>
                     <div class="overflow-hidden">
                         <div class="text-white font-weight-bold small text-truncate">Flat Tyre</div>
-                        <div class="text-muted" style="font-size: 0.7rem;">Puncture fix</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Puncture / Stepney</div>
                     </div>
                 </a>
             </div>
-            <div class="col-6">
-                <a href="/Customer/Book?problem=Battery+Jumpstart" class="mob-chip-card">
-                    <div class="mob-chip-icon bg-info bg-opacity-20 text-info">
-                        <i class="fa-solid fa-car-battery"></i>
-                    </div>
-                    <div class="overflow-hidden">
-                        <div class="text-white font-weight-bold small text-truncate">Battery Jump</div>
-                        <div class="text-muted" style="font-size: 0.7rem;">Quick boost</div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-6">
-                <a href="/Customer/Book?problem=Towing" class="mob-chip-card">
-                    <div class="mob-chip-icon bg-danger bg-opacity-20 text-danger">
-                        <i class="fa-solid fa-truck-pickup"></i>
-                    </div>
-                    <div class="overflow-hidden">
-                        <div class="text-white font-weight-bold small text-truncate">Towing Help</div>
-                        <div class="text-muted" style="font-size: 0.7rem;">Safe recovery</div>
-                    </div>
-                </a>
-            </div>
+
+            <!-- 3. Fuel / Charging Problem -->
             <div class="col-6">
                 <a href="/Customer/Book?problem=Fuel+Delivery" class="mob-chip-card">
                     <div class="mob-chip-icon bg-success bg-opacity-20 text-success">
                         <i class="fa-solid fa-gas-pump"></i>
                     </div>
                     <div class="overflow-hidden">
-                        <div class="text-white font-weight-bold small text-truncate">Fuel Delivery</div>
-                        <div class="text-muted" style="font-size: 0.7rem;">Petrol / Diesel</div>
+                        <div class="text-white font-weight-bold small text-truncate">Fuel / Delivery</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Petrol & Diesel</div>
                     </div>
                 </a>
             </div>
+
+            <!-- 4. Electrical / Wiring Problem -->
             <div class="col-6">
-                <a href="/Customer/Book?problem=Key+Lockout" class="mob-chip-card">
-                    <div class="mob-chip-icon bg-warning bg-opacity-20 text-warning">
-                        <i class="fa-solid fa-key"></i>
+                <a href="/Customer/Book?problem=Electrical+Problem" class="mob-chip-card">
+                    <div class="mob-chip-icon bg-info bg-opacity-20 text-info">
+                        <i class="fa-solid fa-bolt-lightning"></i>
                     </div>
                     <div class="overflow-hidden">
-                        <div class="text-white font-weight-bold small text-truncate">Lockout / Key</div>
-                        <div class="text-muted" style="font-size: 0.7rem;">Instant unlock</div>
+                        <div class="text-white font-weight-bold small text-truncate">Electrical / Wire</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Fuse & Battery</div>
                     </div>
                 </a>
             </div>
+
+            <!-- 5. Transmission / Clutch Problem -->
+            <div class="col-6">
+                <a href="/Customer/Book?problem=Clutch+Problem" class="mob-chip-card">
+                    <div class="mob-chip-icon bg-warning bg-opacity-20 text-warning">
+                        <i class="fa-solid fa-gear"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-white font-weight-bold small text-truncate">Clutch / Gear</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Transmission wire</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 6. EV Battery / Charging Problem -->
             <div class="col-6">
                 <a href="/Customer/Book?problem=EV+Charging" class="mob-chip-card">
                     <div class="mob-chip-icon bg-success bg-opacity-20 text-success">
-                        <i class="fa-solid fa-bolt"></i>
+                        <i class="fa-solid fa-charging-station"></i>
                     </div>
                     <div class="overflow-hidden">
-                        <div class="text-white font-weight-bold small text-truncate">EV Breakdown</div>
-                        <div class="text-muted" style="font-size: 0.7rem;">Motor & Charge</div>
+                        <div class="text-white font-weight-bold small text-truncate">EV Battery / Charge</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Controller & Motor</div>
                     </div>
                 </a>
             </div>
