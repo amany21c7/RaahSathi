@@ -14,13 +14,13 @@
     <div class="col-md-4">
         <div class="p-3.5 rounded bg-dark border border-secondary shadow-sm">
             <span class="text-muted small d-block mb-1">Total System Revenue</span>
-            <h3 class="text-primary font-weight-extrabold mb-0">₹@(((double)(ViewBag.TotalRevenue ?? 184250)).ToString("N0"))</h3>
+            <h3 class="text-primary font-weight-extrabold mb-0">₹@(((double)(ViewBag.TotalRevenue ?? 0.0)).ToString("N0"))</h3>
         </div>
     </div>
     <div class="col-md-4">
         <div class="p-3.5 rounded bg-dark border border-secondary shadow-sm">
             <span class="text-muted small d-block mb-1">Total Resolved Jobs</span>
-            <h3 class="text-success font-weight-extrabold mb-0">@(ViewBag.CompletedJobsCount ?? 742)</h3>
+            <h3 class="text-success font-weight-extrabold mb-0">@(ViewBag.CompletedJobsCount ?? 0)</h3>
         </div>
     </div>
     <div class="col-md-4">

@@ -50,16 +50,30 @@ namespace RaahSathi.Controllers
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
             // Stats
+            DateTime today = DateTime.Today;
             int onlineMechanics = await _dbContext.MechanicProfiles.CountAsync(m => m.IsOnline);
+            int liveRequests = await _dbContext.Jobs.CountAsync(j => j.Status == "Requested");
             int activeRequests = await _dbContext.Jobs.CountAsync(j => j.Status != "Completed" && j.Status != "Cancelled");
+            int pendingRequests = await _dbContext.Jobs.CountAsync(j => j.Status == "Requested" && j.MechanicId == null);
+            int completedToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed" && (j.CompletedAt >= today || (j.CompletedAt == null && j.CreatedAt >= today)));
+            int cancelledToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled" && (j.CompletedAt >= today || (j.CompletedAt == null && j.CreatedAt >= today)));
             int totalJobs = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed");
-            double totalRevenue = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").SumAsync(p => (double?)p.Amount) ?? 0.0;
             
-            // Tiered Admin Commission Vault Calculation (using dynamic phase/parts rates)
-            var releasedPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").ToListAsync();
+            // Rates
             double rate1 = (await GetSettingDoubleAsync("CommissionPhase1", 8)) / 100.0;
             double rate2 = (await GetSettingDoubleAsync("CommissionPhase2", 10)) / 100.0;
             double rate3 = (await GetSettingDoubleAsync("CommissionPhase3", 12)) / 100.0;
+
+            // Today's Revenue & Commission
+            var todayPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released" && p.CreatedAt >= today).ToListAsync();
+            double todayRevenue = todayPayments.Sum(p => p.Amount);
+            double todayCommission = todayPayments.Sum(p => p.AdminCommissionAmount > 0 
+                ? p.AdminCommissionAmount 
+                : (p.Amount < 1000 ? p.Amount * rate1 : (p.Amount <= 3000 ? p.Amount * rate2 : p.Amount * rate3)));
+
+            // Tiered Admin Commission Vault Calculation (all-time released payments)
+            var releasedPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released").ToListAsync();
+            double totalRevenue = releasedPayments.Sum(p => p.Amount);
             double totalCommissionEarned = releasedPayments.Sum(p => p.AdminCommissionAmount > 0 
                 ? p.AdminCommissionAmount 
                 : (p.Amount < 1000 ? p.Amount * rate1 : (p.Amount <= 3000 ? p.Amount * rate2 : p.Amount * rate3)));
@@ -102,8 +116,15 @@ namespace RaahSathi.Controllers
             ViewBag.AvailableMechanics = availableMechanics;
 
             ViewBag.OnlineMechanics = onlineMechanics;
+            ViewBag.LiveRequests = liveRequests;
             ViewBag.ActiveRequests = activeRequests;
+            ViewBag.PendingRequests = pendingRequests;
+            ViewBag.CompletedToday = completedToday;
+            ViewBag.CancelledToday = cancelledToday;
             ViewBag.TotalJobs = totalJobs;
+
+            ViewBag.TodayRevenue = todayRevenue;
+            ViewBag.TodayCommission = todayCommission;
             ViewBag.TotalRevenue = totalRevenue;
             ViewBag.TotalCommissionEarned = totalCommissionEarned;
             ViewBag.TotalWithdrawn = totalWithdrawn;
@@ -2194,17 +2215,8 @@ namespace RaahSathi.Controllers
             int activeJobs = await _dbContext.Jobs.CountAsync(j => j.Status != "Completed" && j.Status != "Cancelled");
             int pendingRequests = await _dbContext.Jobs.CountAsync(j => j.Status == "Requested" && j.MechanicId == null);
             
-            int completedToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed" && (j.CompletedAt >= today || j.CreatedAt >= today));
-            if (completedToday == 0)
-            {
-                completedToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed");
-            }
-
-            int cancelledToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled" && (j.CompletedAt >= today || j.CreatedAt >= today));
-            if (cancelledToday == 0)
-            {
-                cancelledToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled");
-            }
+            int completedToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Completed" && (j.CompletedAt >= today || (j.CompletedAt == null && j.CreatedAt >= today)));
+            int cancelledToday = await _dbContext.Jobs.CountAsync(j => j.Status == "Cancelled" && (j.CompletedAt >= today || (j.CompletedAt == null && j.CreatedAt >= today)));
 
             var todayPayments = await _dbContext.Payments.Where(p => p.PaymentStatus == "Released" && p.CreatedAt >= today).ToListAsync();
             double todayRevenue = todayPayments.Sum(p => p.Amount);
