@@ -266,6 +266,7 @@
 
                             <form action="/Admin/UpdatePricingRule" method="POST">
                                 <input type="hidden" name="ruleId" value="@r.Id">
+                                <input type="hidden" name="returnUrl" value="/Admin/Pricing">
                                 <div class="mb-2">
                                     <label class="form-label text-muted small font-weight-bold mb-1" style="font-size:0.72rem;">Target City / Region</label>
                                     <select name="cityName" class="form-select glass-input text-warning font-weight-bold py-1" style="font-size:0.8rem;">

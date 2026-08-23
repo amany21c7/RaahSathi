@@ -185,6 +185,7 @@
                             <h6 class="text-white font-weight-bold mb-3">@r.VehicleCategory Rate Settings</h6>
                             <form action="/Admin/UpdatePricingRule" method="POST">
                                 <input type="hidden" name="ruleId" value="@r.Id">
+                                <input type="hidden" name="returnUrl" value="/Admin/Pricing">
                                 <div class="mb-3">
                                     <label class="form-label text-muted small font-weight-bold">Target City / Region</label>
                                     <select name="cityName" class="form-select glass-input text-warning font-weight-bold py-1">

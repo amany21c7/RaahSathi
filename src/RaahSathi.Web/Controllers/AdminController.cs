@@ -226,22 +226,64 @@ namespace RaahSathi.Controllers
 
         [HttpPost("/Admin/UpdatePricingRule")]
         [HttpPost("/Admin/UpdatePricing")]
-        public async Task<IActionResult> UpdatePricingRule(int ruleId, double baseFee, double perKmRate, double baseTowingFee = 0, double perKmTowingRate = 0, double baseTowing = 0, double perKmTowing = 0)
+        public async Task<IActionResult> UpdatePricingRule(int ruleId, string? cityName, double baseFee, double perKmRate, double baseTowingFee = 0, double perKmTowingRate = 0, double baseTowing = 0, double perKmTowing = 0, string? returnUrl = null)
         {
-            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
-            var rule = await _dbContext.PricingRules.FindAsync(ruleId);
-            if (rule != null)
+            if (!IsAdmin())
             {
-                rule.BaseFee = baseFee;
-                rule.PerKmRate = perKmRate;
-                rule.BaseTowingFee = baseTowingFee > 0 ? baseTowingFee : baseTowing;
-                rule.PerKmTowingRate = perKmTowingRate > 0 ? perKmTowingRate : perKmTowing;
-                
-                await _dbContext.SaveChangesAsync();
-                TempData["Success"] = $"Pricing rates updated for: {rule.VehicleCategory}";
+                if (Request.Headers["X-Requested-With"].ToString().Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Json(new { success = false, message = "Unauthorized access." });
+                }
+                return RedirectToAction("Login", "Auth");
             }
 
-            return RedirectToAction("Dashboard");
+            double finalBaseTowing = baseTowingFee > 0 ? baseTowingFee : baseTowing;
+            double finalPerKmTowing = perKmTowingRate > 0 ? perKmTowingRate : perKmTowing;
+            string targetCity = string.IsNullOrWhiteSpace(cityName) ? "All Cities" : cityName;
+
+            bool success = await _pricingService.UpdateCategoryBaseRatesAsync(ruleId, targetCity, baseFee, perKmRate, finalBaseTowing, finalPerKmTowing);
+            if (!success)
+            {
+                var rule = await _dbContext.PricingRules.FindAsync(ruleId);
+                if (rule != null)
+                {
+                    rule.CityName = targetCity;
+                    rule.BaseFee = baseFee;
+                    rule.PerKmRate = perKmRate;
+                    rule.BaseTowingFee = finalBaseTowing;
+                    rule.PerKmTowingRate = finalPerKmTowing;
+                    await _dbContext.SaveChangesAsync();
+                    success = true;
+                }
+            }
+
+            if (success)
+            {
+                await LogAdminActionAsync("UPDATE_BASE_PRICING", $"Updated Pricing Rule ID {ruleId} ({targetCity}) -> Base: ₹{baseFee}, PerKM: ₹{perKmRate}, BaseTowing: ₹{finalBaseTowing}, PerKmTowing: ₹{finalPerKmTowing}");
+                TempData["Success"] = "Pricing rates updated successfully!";
+            }
+            else
+            {
+                TempData["Error"] = "Failed to update pricing rates. Invalid rule ID or values.";
+            }
+
+            if (Request.Headers["X-Requested-With"].ToString().Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
+            {
+                return Json(new { success = success, message = success ? "Pricing Rule updated successfully." : "Failed to update pricing rule." });
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            string referer = Request.Headers["Referer"].ToString();
+            if (!string.IsNullOrEmpty(referer))
+            {
+                return Redirect(referer);
+            }
+
+            return RedirectToAction("Pricing");
         }
 
         [HttpPost]
@@ -2387,25 +2429,7 @@ namespace RaahSathi.Controllers
             return Json(new { success = true, category, title, type = "Job", items = jobs });
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UpdatePricingRule(int ruleId, string cityName, double baseFee, double perKmRate, double baseTowingFee, double perKmTowingRate)
-        {
-            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized access." });
 
-            bool success = await _pricingService.UpdateCategoryBaseRatesAsync(ruleId, cityName, baseFee, perKmRate, baseTowingFee, perKmTowingRate);
-            if (!success) return Json(new { success = false, message = "Invalid pricing rule values." });
-
-            await LogAdminActionAsync("UPDATE_BASE_PRICING", $"Updated Rule ID {ruleId} ({cityName}) -> Base: ₹{baseFee}, PerKM: ₹{perKmRate}, BaseTowing: ₹{baseTowingFee}, PerKmTowing: ₹{perKmTowingRate}");
-
-            string referer = Request.Headers["Referer"].ToString();
-            if (!string.IsNullOrEmpty(referer) && !Request.Headers["X-Requested-With"].ToString().Equals("XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
-            {
-                TempData["Success"] = "Pricing Engine Tuning rates updated successfully!";
-                return Redirect(referer);
-            }
-
-            return Json(new { success = true, message = "Pricing Rule updated successfully." });
-        }
 
         [HttpPost]
         public async Task<IActionResult> SaveCommissionSettings(double phase1, double phase2, double phase3, double parts)
