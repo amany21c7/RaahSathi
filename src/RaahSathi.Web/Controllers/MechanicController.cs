@@ -641,14 +641,14 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated" });
 
-            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            var profile = await _dbContext.MechanicProfiles.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile == null || !profile.IsOnline || profile.KycStatus != "Approved")
             {
                 return Json(new { success = true, hasJob = false });
             }
 
             // Check if mechanic already has an assigned active job
-            var activeJob = await _dbContext.Jobs
+            var activeJob = await _dbContext.Jobs.AsNoTracking()
                 .FirstOrDefaultAsync(j => j.MechanicId == user.Id && j.Status != "Completed" && j.Status != "Cancelled");
 
             if (activeJob != null)
@@ -659,7 +659,7 @@ namespace RaahSathi.Controllers
             // Check if the current alert job was accepted by another mechanic
             if (currentAlertJobId.HasValue)
             {
-                var trackedJob = await _dbContext.Jobs.FindAsync(currentAlertJobId.Value);
+                var trackedJob = await _dbContext.Jobs.AsNoTracking().FirstOrDefaultAsync(j => j.Id == currentAlertJobId.Value);
                 if (trackedJob == null || (trackedJob.MechanicId != null && trackedJob.MechanicId != user.Id) || trackedJob.Status != "Requested")
                 {
                     return Json(new { success = true, hasJob = false, wasTaken = true, takenMessage = "This job request has been accepted by another mechanic." });
@@ -667,7 +667,7 @@ namespace RaahSathi.Controllers
             }
 
             // Search for unassigned "Requested" jobs within 15 km radius
-            var requestedJobs = await _dbContext.Jobs
+            var requestedJobs = await _dbContext.Jobs.AsNoTracking()
                 .Include(j => j.Customer)
                 .Include(j => j.Vehicle)
                 .Where(j => j.Status == "Requested" && j.MechanicId == null)
@@ -1153,13 +1153,8 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated" });
 
-            var job = await _dbContext.Jobs.FindAsync(jobId);
-            if (job == null || job.MechanicId != user.Id) return Json(new { success = false, message = "Job not found" });
-
-            if (job.Status == "Driving")
-            {
-                await Services.JobSimulationHelper.SimulateMovementAsync(_dbContext, job);
-            }
+            var job = await _dbContext.Jobs.AsNoTracking().FirstOrDefaultAsync(j => j.Id == jobId && j.MechanicId == user.Id);
+            if (job == null) return Json(new { success = false, message = "Job not found" });
 
             double inactiveSeconds = 0;
             if ((job.Status == "Accepted" || job.Status == "Driving") && job.LastMovementTime.HasValue)
@@ -1168,6 +1163,7 @@ namespace RaahSathi.Controllers
             }
 
             int unreadChatCount = await _dbContext.JobChatMessages
+                .AsNoTracking()
                 .CountAsync(m => m.JobId == jobId && m.SenderRole == "Customer" && !m.IsRead);
 
             return Json(new
@@ -1587,19 +1583,20 @@ namespace RaahSathi.Controllers
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false });
 
-            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            var profile = await _dbContext.MechanicProfiles.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile == null) return Json(new { success = false });
 
-            var activeJob = await _dbContext.Jobs
+            var activeJob = await _dbContext.Jobs.AsNoTracking()
                 .FirstOrDefaultAsync(j => j.MechanicId == user.Id && j.Status != "Completed" && j.Status != "Cancelled");
 
             bool hasPing = false;
             int? pingJobId = null;
             if (profile.IsOnline && profile.KycStatus == "Approved" && activeJob == null)
             {
-                var ping = await _dbContext.Jobs
+                var ping = await _dbContext.Jobs.AsNoTracking()
                     .Where(j => j.Status == "Requested" && j.MechanicId == null)
                     .OrderByDescending(j => j.CreatedAt)
+                    .Select(j => new { j.Id, j.CreatedAt })
                     .FirstOrDefaultAsync();
 
                 if (ping != null && (DateTime.UtcNow - ping.CreatedAt).TotalSeconds < 300)

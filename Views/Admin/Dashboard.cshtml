@@ -850,9 +850,9 @@
         $('#kycReviewModalBody').load('/Admin/ReviewKyc/' + id + '?partial=true');
     });
 
-    // Auto-poll telemetry & pipeline stepper in real-time
-    setInterval(pollAdminTelemetry, 2500);
-    setInterval(pollLivePipelineStepper, 3000);
+    // Auto-poll telemetry & pipeline stepper in real-time (optimized 10s to keep server & UI ultra-fast)
+    setInterval(pollAdminTelemetry, 10000);
+    setInterval(pollLivePipelineStepper, 10000);
     pollAdminTelemetry();
     pollLivePipelineStepper();
 </script>
