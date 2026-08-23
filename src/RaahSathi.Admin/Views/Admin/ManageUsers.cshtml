@@ -449,7 +449,7 @@
         <div class="modal-content bg-dark border-secondary text-light">
             <div class="modal-header border-secondary">
                 <h5 class="modal-title text-warning" id="kycReviewModalLabel"><i class="fa-solid fa-id-card me-2"></i> KYC Audit & Review Panel</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="var m = bootstrap.Modal.getOrCreateInstance(document.getElementById('kycReviewModal')); if(m) m.hide();"></button>
             </div>
             <div class="modal-body p-4" id="kycReviewModalBody">
                 <div class="text-center py-5">
@@ -469,10 +469,11 @@ $(document).ready(function() {
     $('.open-kyc-modal').on('click', function() {
         var id = $(this).data('id');
         // Reset modal body loading spinner
-        $('#kycReviewModalBody').html('<div class="text-center py-5"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+        $('#kycReviewModalBody').html('<div class="text-center py-5"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading KYC details...</span></div></div>');
         
         // Show modal
-        var myModal = new bootstrap.Modal(document.getElementById('kycReviewModal'));
+        var modalEl = document.getElementById('kycReviewModal');
+        var myModal = bootstrap.Modal.getOrCreateInstance(modalEl);
         myModal.show();
         
         // Load partial content
