@@ -1444,8 +1444,8 @@
     });
 
     // Step Status Advances with Payment Validation
-    function advanceStatus(nextStatus) {
-        var activeJobId = "@(activeJob?.Id ?? 0)";
+    function advanceStatus(nextStatus, directJobId) {
+        var activeJobId = directJobId || parseInt("@(activeJob?.Id ?? 0)") || parseInt(currentActiveJobId) || 0;
         if (activeJobId > 0) {
             $.post('/Mechanic/AdvanceJobStatus', { jobId: activeJobId, newStatus: nextStatus }, function(res) {
                 if (res && res.success) {
@@ -1456,7 +1456,11 @@
                 } else if (res) {
                     alert(res.message || 'Could not update status.');
                 }
+            }).fail(function() {
+                location.reload();
             });
+        } else {
+            location.reload();
         }
     }
 
@@ -1847,9 +1851,9 @@
         });
     }
 
-    // Run on load and poll every 3 seconds
+    // Run on load and poll every 5 seconds (throttled to avoid CPU spikes & DB lock contention)
     updateWalletStats();
-    setInterval(updateWalletStats, 3000);
+    setInterval(updateWalletStats, 5000);
 
     // Job Stats Range Toggle Listener
     $('#jobStatRangeSelect').change(function() {
@@ -1871,7 +1875,7 @@
     function pollActiveJobState() {
         if (!currentActiveJobId || currentActiveJobId === "0") return;
 
-        $.get('/Mechanic/GetActiveJobState?jobId=' + currentActiveJobId, function(res) {
+        $.get('/Mechanic/GetActiveJobState?jobId=' + currentActiveJobId + '&_t=' + Date.now(), function(res) {
             if (res && res.success) {
                 // Update unread chat message badge
                 if (res.unreadChatCount > 0 && !$('#liveChatMechModal').hasClass('show')) {
@@ -1970,17 +1974,17 @@
     }
 
     if (currentActiveJobId && currentActiveJobId !== "0") {
-        setInterval(pollActiveJobState, 1500);
+        setInterval(pollActiveJobState, 2500);
     } else {
         // Standby polling: Only reload if an active job has actually been assigned to this mechanic directly
         setInterval(function() {
             if (window.currentDispatchJobId) return; // Do not reload while 15-second dispatch modal is active/ringing
-            $.get('/Mechanic/CheckActiveJobOrPing', function(res) {
+            $.get('/Mechanic/CheckActiveJobOrPing?_t=' + Date.now(), function(res) {
                 if (res && res.success && res.hasActiveJob && !window.currentDispatchJobId) {
                     location.reload();
                 }
             });
-        }, 3000);
+        }, 3500);
     }
 
     function ackWarning(warningId) {

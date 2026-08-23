@@ -2448,13 +2448,22 @@
                 function acceptPing(jobId) {
                     window.stopSirenAlert();
                     if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
+                    
+                    var modalEl = document.getElementById('incomingDispatchModal');
+                    if (modalEl) {
+                        var instance = bootstrap.Modal.getInstance(modalEl);
+                        if (instance) instance.hide();
+                    }
+                    
                     $.post('/Mechanic/AcceptJob', { jobId: jobId }, function(res) {
-                        if (res.success) {
-                            window.location.href = '/Mechanic/Dashboard';
+                        if (res && res.success) {
+                            window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
                         } else {
-                            alert(res.message);
+                            alert(res?.message || 'Could not accept job.');
                             window.location.reload();
                         }
+                    }).fail(function() {
+                        window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
                     });
                 }
                 window.acceptPing = acceptPing;
@@ -2500,10 +2509,10 @@
                 }
                 window.snoozePing = snoozePing;
 
-                // Web Worker for background intervals
+                // Web Worker for background intervals (optimized 2.5s for fast response without server starvation)
                 try {
                     var blob = new Blob([
-                        "setInterval(function() { postMessage('tick'); }, 1000);"
+                        "setInterval(function() { postMessage('tick'); }, 2500);"
                     ], { type: "text/javascript" });
                     var worker = new Worker(URL.createObjectURL(blob));
                     worker.onmessage = function(e) {
@@ -2511,7 +2520,7 @@
                     };
                     window.pollIncomingDispatchRequests();
                 } catch (err) {
-                    setInterval(window.pollIncomingDispatchRequests, 1000);
+                    setInterval(window.pollIncomingDispatchRequests, 2500);
                     window.pollIncomingDispatchRequests();
                 }
             });

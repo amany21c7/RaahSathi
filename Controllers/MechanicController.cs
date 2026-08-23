@@ -605,7 +605,7 @@ namespace RaahSathi.Controllers
         public async Task<IActionResult> AcceptJob(int jobId)
         {
             var user = await GetActiveMechanicUserAsync();
-            if (user == null) return RedirectToAction("Login", "Auth");
+            if (user == null) return Json(new { success = false, message = "Not authenticated." });
 
             var job = await _dbContext.Jobs.FindAsync(jobId);
             if (job == null) return Json(new { success = false, message = "Job not found." });
@@ -622,9 +622,17 @@ namespace RaahSathi.Controllers
             job.LastLocationUpdateTime = DateTime.UtcNow;
             job.IsSimulationPaused = false;
 
+            // Ensure mechanic profile has realistic coordinates near customer if uninitialized
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (profile != null && (profile.Latitude == 0.0 || profile.Longitude == 0.0))
+            {
+                profile.Latitude = job.CustomerLat + 0.015;
+                profile.Longitude = job.CustomerLng + 0.015;
+            }
+
             await _dbContext.SaveChangesAsync();
 
-            return Json(new { success = true });
+            return Json(new { success = true, jobId = job.Id });
         }
 
         [HttpGet]
