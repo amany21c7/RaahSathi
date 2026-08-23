@@ -435,7 +435,7 @@
                         <div class="alert alert-info bg-dark border-info text-info small mb-3">
                             <i class="fa-solid fa-car-side me-2"></i> Confirm when you start driving towards the customer.
                         </div>
-                        <button class="btn btn-premium-primary w-100 py-3 font-weight-bold" onclick="advanceStatus('Driving')">
+                        <button class="btn btn-premium-primary w-100 py-3 font-weight-bold" onclick="advanceStatus('Driving', this)">
                             <i class="fa-solid fa-car-side me-2"></i> Start Driving to Location
                         </button>
                     }
@@ -444,7 +444,7 @@
                         <div class="alert alert-info bg-dark border-info text-info small mb-3">
                             <i class="fa-solid fa-location-dot me-2"></i> Click when you reach the customer breakdown spot.
                         </div>
-                        <button class="btn btn-premium-primary w-100 py-3 font-weight-bold" onclick="advanceStatus('Arrived')">
+                        <button class="btn btn-premium-primary w-100 py-3 font-weight-bold" onclick="advanceStatus('Arrived', this)">
                             <i class="fa-solid fa-location-dot me-2"></i> I Have Arrived at Location
                         </button>
 
@@ -481,7 +481,7 @@
                         <div class="alert alert-warning bg-dark border-warning text-warning small mb-3">
                             <i class="fa-solid fa-magnifying-glass me-2"></i> Perform on-spot inspection to diagnose the vehicle issue.
                         </div>
-                        <button class="btn btn-warning text-dark w-100 py-3 font-weight-bold" onclick="advanceStatus('Inspecting')">
+                        <button class="btn btn-warning text-dark w-100 py-3 font-weight-bold" onclick="advanceStatus('Inspecting', this)">
                             <i class="fa-solid fa-stethoscope me-2"></i> Begin On-Spot Inspection
                         </button>
                     }
@@ -502,7 +502,7 @@
                                     <input type="text" id="txtCustomEstimateDetails" class="form-control glass-input" value="@(activeJob.CustomEstimateDetails ?? "")" placeholder="Enter Work Scope / Repair Details">
                                 </div>
                             </div>
-                            <button class="btn btn-info text-dark font-weight-bold w-100 py-2.5" onclick="submitCustomEstimate()">
+                            <button class="btn btn-info text-dark font-weight-bold w-100 py-2.5" onclick="submitCustomEstimate(this)">
                                 <i class="fa-solid fa-paper-plane me-1"></i> Send Estimate for Customer Approval
                             </button>
 
@@ -549,7 +549,7 @@
                                     <input type="number" id="txtExtraLabourPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.ExtraLabourCharge > 0 ? activeJob.ExtraLabourCharge.ToString() : "")" placeholder="Labour Charge (₹)">
                                 </div>
                             </div>
-                            <button class="btn btn-outline-warning font-weight-bold w-100 py-2" onclick="submitSparesQuote()">
+                            <button class="btn btn-outline-warning font-weight-bold w-100 py-2" onclick="submitSparesQuote(this)">
                                 <i class="fa-solid fa-plus me-1"></i> Send Extra Parts Quote to Customer
                             </button>
 
@@ -573,7 +573,7 @@
                             }
                         </div>
 
-                        <button class="btn btn-success w-100 py-3 font-weight-bold fs-5 shadow-lg" onclick="advanceStatus('Repairing')">
+                        <button class="btn btn-success w-100 py-3 font-weight-bold fs-5 shadow-lg" onclick="advanceStatus('Repairing', this)">
                             <i class="fa-solid fa-play me-2"></i> Start Repair Work
                         </button>
                     }
@@ -604,7 +604,7 @@
                                         <input type="number" id="txtExtraLabourPrice" class="form-control glass-input text-warning font-weight-bold" value="@(activeJob.ExtraLabourCharge > 0 ? activeJob.ExtraLabourCharge.ToString() : "")" placeholder="e.g. 300">
                                     </div>
                                 </div>
-                                <button class="btn btn-outline-warning font-weight-bold w-100 py-2" onclick="submitSparesQuote()">
+                                <button class="btn btn-outline-warning font-weight-bold w-100 py-2" onclick="submitSparesQuote(this)">
                                     <i class="fa-solid fa-plus me-1"></i> Send Extra Parts Quote to Customer
                                 </button>
 
@@ -648,7 +648,7 @@
                             
                             @if (activeJob.Status != "Completed")
                             {
-                                <button type="button" class="btn btn-success btn-lg w-100 py-3 font-weight-bold shadow" onclick="advanceStatus('Completed')">
+                                <button type="button" class="btn btn-success btn-lg w-100 py-3 font-weight-bold shadow" onclick="advanceStatus('Completed', this)">
                                     <i class="fa-solid fa-circle-check me-2"></i> Mark Repair Completed
                                 </button>
                             }
@@ -1443,58 +1443,87 @@
         resetHistoryDateFilter();
     });
 
-    // Step Status Advances with Payment Validation
-    function advanceStatus(nextStatus, directJobId) {
+    // Step Status Advances with Instant Touch Feedback & Payment Validation
+    function advanceStatus(nextStatus, btnElement, directJobId) {
         var activeJobId = directJobId || parseInt("@(activeJob?.Id ?? 0)") || parseInt(currentActiveJobId) || 0;
+        var $btn = btnElement ? $(btnElement) : $('button[onclick*="advanceStatus(\'' + nextStatus + '\'"]');
+        var originalBtnHtml = $btn.length ? $btn.html() : '';
+        
+        if ($btn.length) {
+            $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Updating...');
+        }
+
         if (activeJobId > 0) {
             $.post('/Mechanic/AdvanceJobStatus', { jobId: activeJobId, newStatus: nextStatus }, function(res) {
                 if (res && res.success) {
-                    location.reload();
+                    window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
                 } else if (res && res.requiresPayment) {
+                    if ($btn.length) { $btn.prop('disabled', false).html(originalBtnHtml); }
                     alert(res.message);
                     openPaymentQrModal(activeJobId);
                 } else if (res) {
+                    if ($btn.length) { $btn.prop('disabled', false).html(originalBtnHtml); }
                     alert(res.message || 'Could not update status.');
                 }
             }).fail(function() {
-                location.reload();
+                window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
             });
         } else {
-            location.reload();
+            window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
         }
     }
 
-    // Submit Custom Estimate
-    function submitCustomEstimate() {
-        var activeJobId = "@(activeJob?.Id ?? 0)";
+    // Submit Custom Estimate with Touch Feedback
+    function submitCustomEstimate(btnElement) {
+        var activeJobId = parseInt("@(activeJob?.Id ?? 0)") || parseInt(currentActiveJobId) || 0;
         var amount = $('#txtCustomEstimateAmount').val();
         var details = $('#txtCustomEstimateDetails').val();
+        var $btn = btnElement ? $(btnElement) : $('#btnSubmitCustomEst');
+        var originalHtml = $btn.length ? $btn.html() : '';
 
         if (activeJobId > 0 && amount > 0) {
+            if ($btn.length) { $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Sending...'); }
             $.post('/Mechanic/SubmitCustomEstimate', { jobId: activeJobId, amount: amount, details: details }, function(res) {
-                if (res.success) {
+                if (res && res.success) {
                     alert('✅ Custom Repair Estimate ₹' + amount + ' sent to customer for approval!');
-                    location.reload();
+                    window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
+                } else {
+                    if ($btn.length) { $btn.prop('disabled', false).html(originalHtml); }
+                    alert(res?.message || 'Error submitting estimate.');
                 }
+            }).fail(function() {
+                window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
             });
+        } else {
+            alert('Please enter a valid estimate amount.');
         }
     }
 
-    // Submit Extra Parts Quote
-    function submitSparesQuote() {
-        var activeJobId = "@(activeJob?.Id ?? 0)";
+    // Submit Extra Parts Quote with Touch Feedback
+    function submitSparesQuote(btnElement) {
+        var activeJobId = parseInt("@(activeJob?.Id ?? 0)") || parseInt(currentActiveJobId) || 0;
         var partName = $('#txtExtraPartName').val();
         var partsMrp = $('#txtExtraPartMrp').val() || 0;
         var partPrice = $('#txtExtraPartPrice').val();
         var labourPrice = $('#txtExtraLabourPrice').val() || 0;
+        var $btn = btnElement ? $(btnElement) : $('#btnSubmitSpares');
+        var originalHtml = $btn.length ? $btn.html() : '';
 
         if (activeJobId > 0 && partPrice > 0) {
+            if ($btn.length) { $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Sending...'); }
             $.post('/Mechanic/SubmitSparesQuote', { jobId: activeJobId, partName: partName, partPrice: partPrice, labourPrice: labourPrice, partsMrp: partsMrp }, function(res) {
-                if (res.success) {
-                    alert('✅ Extra Parts quote (MRP ₹' + (partsMrp > 0 ? partsMrp : partPrice) + ' -> Billed ₹' + partPrice + ' + Labour ₹' + labourPrice + ') sent for customer approval!');
-                    location.reload();
+                if (res && res.success) {
+                    alert('✅ Extra Parts quote sent for customer approval!');
+                    window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
+                } else {
+                    if ($btn.length) { $btn.prop('disabled', false).html(originalHtml); }
+                    alert(res?.message || 'Error submitting spare parts quote.');
                 }
+            }).fail(function() {
+                window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
             });
+        } else {
+            alert('Please enter part name and offered price.');
         }
     }
 

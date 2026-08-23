@@ -2365,6 +2365,11 @@
 
                 // Real-Time Dispatch Checker
                 window.pollIncomingDispatchRequests = function() {
+                    // If an active job is open on mechanic dashboard, skip standby polling to ensure instant button response
+                    if (typeof currentActiveJobId !== 'undefined' && currentActiveJobId && currentActiveJobId !== "0" && currentActiveJobId !== 0) {
+                        return;
+                    }
+
                     $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: window.currentDispatchJobId, _t: Date.now() }, function(res) {
                         if (res && res.success) {
                             if (res.hasActiveJob) {
