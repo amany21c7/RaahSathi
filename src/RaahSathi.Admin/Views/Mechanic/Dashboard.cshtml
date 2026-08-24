@@ -297,23 +297,22 @@
             </div>
 
             <!-- 📱 Mobile Buttons Layout (< 992px): Centered Status Switch (Larger) & Centered Refer & Earn -->
-            <div class="d-flex flex-column align-items-center justify-content-center w-100 d-lg-none mt-3 gap-2.5">
+            <div class="d-flex flex-column align-items-center justify-content-center w-100 d-lg-none mt-3 gap-3">
                 <!-- Centered & Larger Status Switch -->
-                <div class="d-inline-flex align-items-center justify-content-center gap-2.5 px-3.5 py-1.5 rounded-pill bg-dark bg-opacity-60 border border-secondary border-opacity-40 shadow-sm">
-                    <span class="text-white font-weight-bold" id="lblSwitchOnline" style="font-size: 0.95rem;">
+                <div class="d-inline-flex align-items-center justify-content-center px-4 py-2 rounded-pill bg-dark bg-opacity-75 border border-secondary border-opacity-50 shadow-sm" style="gap: 16px;">
+                    <span class="text-white font-weight-bold" id="lblSwitchOnline" style="font-size: 1.05rem; letter-spacing: 0.3px;">
                         @(profile.IsOnline ? "Status: Online" : "Status: Offline")
                     </span>
-                    <div class="form-check form-switch p-0 m-0 d-flex align-items-center">
-                        <input class="form-check-input ms-0" type="checkbox" role="switch" id="toggleOnlineSwitch" @(profile.IsOnline ? "checked" : "") onclick="toggleMechanicOnlineState()" style="width: 3.4em; height: 1.7em; cursor: pointer;">
+                    <div class="form-check form-switch p-0 m-0 d-inline-flex align-items-center" style="min-height: auto;">
+                        <input class="form-check-input m-0" type="checkbox" role="switch" id="toggleOnlineSwitch" @(profile.IsOnline ? "checked" : "") onclick="toggleMechanicOnlineState()" style="width: 3.8em; height: 1.9em; cursor: pointer;">
                     </div>
                 </div>
 
-                <!-- Centered Refer & Earn Button -->
+                <!-- Centered Refer & Earn Button (Clean, Smaller, without duplicate balance badge) -->
                 <div class="d-flex justify-content-center w-100">
-                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-4 py-1.5 font-weight-bold text-dark shadow-sm d-inline-flex align-items-center justify-content-center gap-2" onclick="openMechanicReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); font-size: 0.85rem;">
-                        <i class="fa-solid fa-gift animate-bounce" style="font-size: 0.85rem;"></i>
+                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 font-weight-bold text-dark shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5" onclick="openMechanicReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); font-size: 0.78rem;">
+                        <i class="fa-solid fa-gift animate-bounce" style="font-size: 0.75rem;"></i>
                         <span>Refer &amp; Earn ₹100</span>
-                        <span class="badge bg-dark text-warning ms-1" style="font-size: 0.75rem;">₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0")</span>
                     </button>
                 </div>
             </div>
