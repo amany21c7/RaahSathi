@@ -1011,6 +1011,7 @@ namespace RaahSathi.Controllers
         public async Task<IActionResult> GetJobInvoiceDetails(int jobId)
         {
             var job = await _dbContext.Jobs
+                .AsNoTracking()
                 .Include(j => j.Customer)
                 .Include(j => j.Vehicle)
                 .Include(j => j.Mechanic)
@@ -1018,8 +1019,8 @@ namespace RaahSathi.Controllers
 
             if (job == null) return Json(new { success = false, message = "Job not found." });
 
-            var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == job.MechanicId);
-            var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.JobId == jobId);
+            var mechProfile = await _dbContext.MechanicProfiles.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == job.MechanicId);
+            var payment = await _dbContext.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.JobId == jobId);
 
             double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
             double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;

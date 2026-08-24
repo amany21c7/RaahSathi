@@ -635,12 +635,12 @@
 
                         <div class="d-flex flex-column gap-2">
                             <div class="d-flex align-items-center gap-2 w-100">
-                                <button type="button" class="btn btn-warning text-dark btn-lg flex-grow-1 py-3 font-weight-bold shadow" onclick="openPaymentQrModal(@activeJob.Id)">
+                                <button type="button" class="btn btn-warning text-dark btn-lg flex-grow-1 py-3 font-weight-bold shadow" onclick="openPaymentQrModal(@activeJob.Id, this)">
                                     <i class="fa-solid fa-qrcode me-2"></i> Collect Payment (UPI QR)
                                 </button>
                                 @if (activeJob.Status != "Completed")
                                 {
-                                    <button type="button" class="btn btn-info text-dark py-2.5 px-3 font-weight-bold shadow" onclick="settleJobInCash(@activeJob.Id)" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%) !important; border: none; font-size: 0.9rem; min-width: 130px; border-radius: 8px;">
+                                    <button type="button" class="btn btn-info text-dark py-2.5 px-3 font-weight-bold shadow" onclick="settleJobInCash(@activeJob.Id, this)" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%) !important; border: none; font-size: 0.9rem; min-width: 130px; border-radius: 8px;">
                                         <i class="fa-solid fa-money-bill-wave me-1"></i> Pay in Cash
                                     </button>
                                 }
@@ -2026,15 +2026,34 @@
     var currentQrJobId = 0;
     var isOnlinePaymentConfirmed = false;
 
-    function openPaymentQrModal(jobId) {
+    function openPaymentQrModal(jobId, btnElement) {
         currentQrJobId = jobId;
         isOnlinePaymentConfirmed = false;
+        
+        var $btn = btnElement ? $(btnElement) : $('button[onclick*="openPaymentQrModal"]');
+        var originalBtnHtml = $btn.length ? $btn.html() : '';
+        if ($btn.length) {
+            $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Opening QR...');
+        }
+
         $('#qrCodeImg').parent().show();
         $('#qrSuccessContainer').remove();
-        $('#btnConfirmQrPayment').html('<i class="fa-solid fa-check-circle me-2"></i> Confirm Customer Paid & Credit Wallet')
+        $('#btnConfirmQrPayment').prop('disabled', false)
+                                 .html('<i class="fa-solid fa-check-circle me-2"></i> Confirm Customer Paid & Credit Wallet')
                                  .removeClass('btn-primary')
                                  .addClass('btn-success');
-        $.get('/Mechanic/GetJobInvoiceDetails?jobId=' + jobId, function (res) {
+        
+        // Instantly pop open the modal in 0ms!
+        var modalEl = document.getElementById('paymentQrModal');
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+
+        // Restore button state
+        setTimeout(function() {
+            if ($btn.length) { $btn.prop('disabled', false).html(originalBtnHtml); }
+        }, 600);
+
+        $.get('/Mechanic/GetJobInvoiceDetails?jobId=' + jobId + '&_t=' + Date.now(), function (res) {
             if (res && res.success) {
                 $('#qrModalJobId').text('JOB #' + res.jobId);
                 $('#qrModalTotalAmount').text('₹' + res.totalBillAmount.toFixed(2));
@@ -2057,9 +2076,6 @@
                 var upiString = encodeURIComponent(`upi://pay?pa=${res.adminUpiId}&pn=${res.adminAccountHolderName}&am=${res.totalBillAmount.toFixed(2)}&cu=INR&tn=Job+RS-${res.jobId}`);
                 var qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${upiString}`;
                 $('#qrCodeImg').attr('src', qrUrl);
-
-                var modal = new bootstrap.Modal(document.getElementById('paymentQrModal'));
-                modal.show();
             } else {
                 alert('Could not fetch payment details.');
             }
@@ -2068,34 +2084,52 @@
 
     $('#btnConfirmQrPayment').click(function () {
         if (isOnlinePaymentConfirmed) {
-            location.reload();
+            window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
             return;
         }
         if (!currentQrJobId) return;
+
+        var $btn = $(this);
+        var origHtml = $btn.html();
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Confirming & Crediting Wallet...');
+
         $.post('/Mechanic/CollectPaymentWithQr', { jobId: currentQrJobId }, function (res) {
             if (res && res.success) {
                 var qrModal = bootstrap.Modal.getInstance(document.getElementById('paymentQrModal'));
                 if (qrModal) qrModal.hide();
 
                 alert(res.message);
-                location.reload();
+                window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
             } else {
-                alert(res.message || 'Payment processing failed.');
+                $btn.prop('disabled', false).html(origHtml);
+                alert(res?.message || 'Payment processing failed.');
             }
+        }).fail(function() {
+            window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
         });
     });
 
-    function settleJobInCash(jobId) {
+    function settleJobInCash(jobId, btnElement) {
         if (!confirm("Are you sure you collected the cash payment directly from the customer? Platform commission will be automatically debited from your wallet balance.")) {
             return;
         }
+
+        var $btn = btnElement ? $(btnElement) : $('button[onclick*="settleJobInCash"]');
+        var originalBtnHtml = $btn.length ? $btn.html() : '';
+        if ($btn.length) {
+            $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Settling Cash...');
+        }
+
         $.post('/Mechanic/SettleCashPayment', { jobId: jobId }, function (res) {
             if (res && res.success) {
                 alert(res.message);
-                location.reload();
+                window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
             } else {
-                alert(res.message || 'Error processing cash settlement.');
+                if ($btn.length) { $btn.prop('disabled', false).html(originalBtnHtml); }
+                alert(res?.message || 'Error processing cash settlement.');
             }
+        }).fail(function() {
+            window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
         });
     }
 
