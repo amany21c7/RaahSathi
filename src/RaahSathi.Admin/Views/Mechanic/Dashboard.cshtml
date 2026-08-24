@@ -239,23 +239,90 @@
     <!-- 🟢 TOP STATS HEADER & GO ONLINE CONTROLLER -->
     <div class="glass-card mb-4 p-3 p-md-4 border-warning border-opacity-30">
         <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-3 border-bottom border-secondary border-opacity-40 pb-3">
-            <div class="d-flex align-items-center gap-3">
-                <img src="@(string.IsNullOrEmpty(profile.ProfilePhotoUrl) ? "/images/default_avatar.png" : profile.ProfilePhotoUrl)" class="rounded-circle border border-warning" style="width: 52px; height: 52px; object-fit: cover;" />
-                <div>
-                    <h4 class="text-white font-weight-bold mb-0" style="font-family: 'Outfit';">@user.Name</h4>
-                    <div class="d-flex align-items-center gap-2 mt-1">
-                        <span class="badge @(profile.IsOnline ? "bg-success text-white" : "bg-secondary text-light") rounded-pill px-3 py-1 font-weight-bold" id="badgeOnlineStatus">
-                            <i class="fa-solid fa-circle me-1" style="font-size:0.6rem;"></i> @(profile.IsOnline ? "🟢 ONLINE" : "⚪ OFFLINE")
-                        </span>
-                        <span class="text-muted small">| <i class="fa-solid fa-shield-halved text-warning me-1"></i> KYC: <b>@profile.KycStatus</b></span>
+            <!-- Profile Info Header (with Mobile 3-Lines Dropdown) -->
+            <div class="d-flex align-items-center justify-content-between w-100 w-lg-auto">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="@(string.IsNullOrEmpty(profile.ProfilePhotoUrl) ? "/images/default_avatar.png" : profile.ProfilePhotoUrl)" class="rounded-circle border border-warning" style="width: 52px; height: 52px; object-fit: cover;" />
+                    <div>
+                        <h4 class="text-white font-weight-bold mb-0" style="font-family: 'Outfit';">@user.Name</h4>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <span class="badge @(profile.IsOnline ? "bg-success text-white" : "bg-secondary text-light") rounded-pill px-3 py-1 font-weight-bold" id="badgeOnlineStatus">
+                                <i class="fa-solid fa-circle me-1" style="font-size:0.6rem;"></i> @(profile.IsOnline ? "🟢 ONLINE" : "⚪ OFFLINE")
+                            </span>
+                            <span class="text-muted small">| <i class="fa-solid fa-shield-halved text-warning me-1"></i> KYC: <b>@profile.KycStatus</b></span>
+                        </div>
                     </div>
+                </div>
+
+                <!-- 📱 Mobile 3-Lines Dropdown Menu (Top Right) -->
+                <div class="dropdown d-lg-none">
+                    <button class="btn btn-outline-warning btn-sm rounded-3 px-2.5 py-1.5 shadow-sm text-warning d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-color: rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.1); width: 38px; height: 38px;">
+                        <i class="fa-solid fa-bars fs-5"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg py-2" style="min-width: 210px; z-index: 1050; border-radius: 12px;">
+                        <li>
+                            <a class="dropdown-item text-light py-2 px-3 small d-flex align-items-center gap-2" href="javascript:void(0)" onclick="switchMechTab('tab-profile')">
+                                <i class="fa-solid fa-user-gear text-warning" style="width: 20px;"></i> Profile
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-light py-2 px-3 small d-flex align-items-center gap-2" href="javascript:void(0)" onclick="switchMechTab('tab-requests')">
+                                <i class="fa-solid fa-bell text-warning" style="width: 20px;"></i> Requests (@(pingJob != null ? 1 : 0))
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-light py-2 px-3 small d-flex align-items-center gap-2" href="javascript:void(0)" onclick="switchMechTab('tab-jobs')">
+                                <i class="fa-solid fa-wrench text-warning" style="width: 20px;"></i> My Jobs
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-light py-2 px-3 small d-flex align-items-center gap-2" href="javascript:void(0)" onclick="switchMechTab('tab-wallet')">
+                                <i class="fa-solid fa-wallet text-warning" style="width: 20px;"></i> Earnings
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider border-secondary opacity-25"></li>
+                        <li>
+                            <a class="dropdown-item text-info py-2 px-3 small d-flex align-items-center justify-content-between" href="javascript:void(0)" onclick="switchMechTab('tab-support')">
+                                <span class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-inbox text-info" style="width: 20px;"></i> Support Inbox
+                                </span>
+                                @if (unreadSupport > 0)
+                                {
+                                    <span class="badge bg-danger rounded-pill">@unreadSupport</span>
+                                }
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </div>
 
-            <div class="d-flex flex-wrap align-items-center gap-2">
+            <!-- 📱 Mobile Buttons Layout (< 992px): Status (Left) & Home (Right), then Refer & Earn (Center) -->
+            <div class="d-flex flex-column gap-2.5 w-100 d-lg-none mt-2">
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <div class="form-check form-switch fs-5 d-flex align-items-center gap-2 mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="toggleOnlineSwitch" @(profile.IsOnline ? "checked" : "") onclick="toggleMechanicOnlineState()">
+                        <label class="form-check-label text-white small font-weight-bold" for="toggleOnlineSwitch" id="lblSwitchOnline">
+                            @(profile.IsOnline ? "Status: Online" : "Status: Offline")
+                        </label>
+                    </div>
+                    <button class="btn btn-premium-primary btn-sm rounded-pill px-4 font-weight-bold shadow-sm" onclick="switchMechTab('tab-home')">
+                        <i class="fa-solid fa-house me-1"></i> Home
+                    </button>
+                </div>
+                <div class="w-100">
+                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-4 py-2 font-weight-bold text-dark shadow-sm w-100 d-flex align-items-center justify-content-center gap-2" onclick="openMechanicReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
+                        <i class="fa-solid fa-gift fs-6 animate-bounce"></i>
+                        <span>Refer &amp; Earn ₹150</span>
+                        <span class="badge bg-dark text-warning ms-1">₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0")</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 💻 Desktop Navigation Buttons (>= 992px) -->
+            <div class="d-none d-lg-flex flex-wrap align-items-center gap-2">
                 <div class="form-check form-switch me-2 fs-5 d-flex align-items-center gap-2">
-                    <input class="form-check-input" type="checkbox" role="switch" id="toggleOnlineSwitch" @(profile.IsOnline ? "checked" : "") onclick="toggleMechanicOnlineState()">
-                    <label class="form-check-label text-white small font-weight-bold" for="toggleOnlineSwitch" id="lblSwitchOnline">
+                    <input class="form-check-input" type="checkbox" role="switch" id="toggleOnlineSwitchDesktop" @(profile.IsOnline ? "checked" : "") onclick="toggleMechanicOnlineState()">
+                    <label class="form-check-label text-white small font-weight-bold" for="toggleOnlineSwitchDesktop" id="lblSwitchOnlineDesktop">
                         @(profile.IsOnline ? "Status: Online" : "Status: Offline")
                     </label>
                 </div>
@@ -1388,15 +1455,15 @@
         isOnline = online;
         if (online) {
             $('#badgeOnlineStatus').removeClass('bg-secondary text-light').addClass('bg-success text-white').html('<i class="fa-solid fa-circle me-1" style="font-size:0.6rem;"></i> 🟢 ONLINE');
-            $('#toggleOnlineSwitch').prop('checked', true);
-            $('#lblSwitchOnline').text('Status: Online');
+            $('#toggleOnlineSwitch, #toggleOnlineSwitchDesktop').prop('checked', true);
+            $('#lblSwitchOnline, #lblSwitchOnlineDesktop').text('Status: Online');
             $('#dispatchTitleText').text('RaahSathi Dispatch Network Active');
             $('#dispatchDescText').text('Standing by for breakdown assistance requests within your selected service radius.');
             $('#goOnlineBtnContainer').html('');
         } else {
             $('#badgeOnlineStatus').removeClass('bg-success text-white').addClass('bg-secondary text-light').html('<i class="fa-solid fa-circle me-1" style="font-size:0.6rem;"></i> ⚪ OFFLINE');
-            $('#toggleOnlineSwitch').prop('checked', false);
-            $('#lblSwitchOnline').text('Status: Offline');
+            $('#toggleOnlineSwitch, #toggleOnlineSwitchDesktop').prop('checked', false);
+            $('#lblSwitchOnline, #lblSwitchOnlineDesktop').text('Status: Offline');
             $('#dispatchTitleText').text('You Are Currently Offline');
             $('#dispatchDescText').text('Switch status to Online in the top bar to start receiving incoming assistance pings.');
             $('#goOnlineBtnContainer').html('<button class="btn btn-premium-primary btn-lg px-5 py-3 font-weight-bold" onclick="toggleMechanicOnlineState()"><i class="fa-solid fa-power-off me-2"></i> Go Online Now</button>');
