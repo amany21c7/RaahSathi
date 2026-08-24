@@ -1264,8 +1264,23 @@
 
     @if (!isAdminPage)
     {
+    <style>
+        .ai-floating-widget-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1050;
+            transition: bottom 0.3s ease, right 0.3s ease;
+        }
+        @@media (max-width: 991.98px) {
+            .ai-floating-widget-container {
+                bottom: 82px !important;
+                right: 16px !important;
+            }
+        }
+    </style>
     <!-- Small Floating AI Chatbot Widget (Bottom Right) -->
-    <div id="aiFloatingWidgetContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;">
+    <div id="aiFloatingWidgetContainer" class="ai-floating-widget-container">
         <!-- Compact AI Chat Popup Window -->
         <div id="aiChatWindow" class="card shadow-lg border-warning border-opacity-40 text-start d-none" style="width: 310px; max-width: 90vw; background: #0f172a; border-radius: 16px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;">
             <!-- Header -->
