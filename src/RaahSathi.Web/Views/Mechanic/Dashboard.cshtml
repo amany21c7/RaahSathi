@@ -237,7 +237,7 @@
     }
 
     <!-- 🟢 TOP STATS HEADER & GO ONLINE CONTROLLER -->
-    <div class="glass-card mb-4 p-3 p-md-4 border-warning border-opacity-30">
+    <div class="glass-card mb-4 p-3 p-md-4 border-warning border-opacity-30" id="mechMainOverviewCard">
         <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-3 border-bottom border-secondary border-opacity-40 pb-3">
             <!-- Profile Info Header (with Mobile 3-Lines Dropdown) -->
             <div class="d-flex align-items-center justify-content-between w-100 w-lg-auto">
@@ -752,6 +752,12 @@
     <!-- ==================== TAB 2: REQUESTS ==================== -->
     <div id="tab-requests" class="mech-tab-content" style="display:none;">
         <div class="glass-card mb-4 border-info border-opacity-30">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-30">
+                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold d-inline-flex align-items-center gap-2 shadow-sm" onclick="switchMechTab('tab-home')">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Back to Dashboard</span>
+                </button>
+                <span class="badge bg-dark border border-secondary text-info small font-weight-bold"><i class="fa-solid fa-bell me-1"></i> Incoming Requests</span>
+            </div>
             <h4 class="text-white font-weight-bold mb-3"><i class="fa-solid fa-bell text-info me-2"></i> Incoming Assistance Requests</h4>
 
             @if (pingJob != null && activeJob == null)
@@ -796,6 +802,12 @@
     <!-- ==================== TAB 3: JOBS ==================== -->
     <div id="tab-jobs" class="mech-tab-content" style="display:none;">
         <div class="glass-card mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-30">
+                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold d-inline-flex align-items-center gap-2 shadow-sm" onclick="switchMechTab('tab-home')">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Back to Dashboard</span>
+                </button>
+                <span class="badge bg-dark border border-secondary text-warning small font-weight-bold"><i class="fa-solid fa-wrench me-1"></i> Completed Jobs</span>
+            </div>
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3 pb-2 border-bottom border-secondary border-opacity-30">
                 <h4 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Completed Repair History</h4>
                 
@@ -870,6 +882,12 @@
 
     <!-- ==================== TAB 4: WALLET ==================== -->
     <div id="tab-wallet" class="mech-tab-content" style="display:none;">
+        <div class="glass-card mb-4 p-3 border-secondary d-flex align-items-center justify-content-between">
+            <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold d-inline-flex align-items-center gap-2 shadow-sm" onclick="switchMechTab('tab-home')">
+                <i class="fa-solid fa-arrow-left"></i> <span>Back to Dashboard</span>
+            </button>
+            <span class="text-white font-weight-bold small"><i class="fa-solid fa-wallet text-warning me-1"></i> Earnings &amp; Payouts</span>
+        </div>
         <div class="row g-4">
             <!-- Left: Neo-banking Card & Quick Actions -->
             <div class="col-lg-5">
@@ -1080,6 +1098,12 @@
     <!-- ==================== TAB 5: SUPPORT INBOX ==================== -->
     <div id="tab-support" class="mech-tab-content" style="display:none;">
         <div class="glass-card mb-4 border-info border-opacity-30">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-30">
+                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold d-inline-flex align-items-center gap-2 shadow-sm" onclick="switchMechTab('tab-home')">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Back to Dashboard</span>
+                </button>
+                <span class="badge bg-dark border border-secondary text-info small font-weight-bold"><i class="fa-solid fa-headset me-1"></i> Support Helpdesk</span>
+            </div>
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 border-bottom border-secondary border-opacity-40 pb-3">
                 <div>
                     <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-headset text-info me-2"></i> Operations & Support Team Inbox</h4>
@@ -1123,7 +1147,13 @@
     <!-- ==================== TAB 6: PROFILE & SKILLS ==================== -->
     <div id="tab-profile" class="mech-tab-content" style="display:none;">
         <div class="glass-card mb-4 border-warning border-opacity-30">
-            <h4 class="text-white font-weight-bold mb-4"><i class="fa-solid fa-user-gear text-warning me-2"></i> Mechanic Profile & Settings</h4>
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-30">
+                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold d-inline-flex align-items-center gap-2 shadow-sm" onclick="switchMechTab('tab-home')">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Back to Dashboard</span>
+                </button>
+                <span class="badge bg-dark border border-secondary text-warning small font-weight-bold"><i class="fa-solid fa-user-gear me-1"></i> Mechanic Profile</span>
+            </div>
+            <h4 class="text-white font-weight-bold mb-4"><i class="fa-solid fa-user-gear text-warning me-2"></i> Mechanic Profile &amp; Settings</h4>
 
             <!-- Trust Badges Bar -->
             <div class="mb-4">
@@ -1440,6 +1470,20 @@
     function switchMechTab(tabId) {
         $('.mech-tab-content').hide();
         $('#' + tabId).show();
+
+        // On mobile screens (< 992px), hide overview card for sub-tabs to give clean native app-like screen
+        if ($(window).width() < 992) {
+            if (tabId === 'tab-home') {
+                $('#mechMainOverviewCard').show();
+            } else {
+                $('#mechMainOverviewCard').hide();
+            }
+        } else {
+            $('#mechMainOverviewCard').show();
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
         $('.bottom-mech-nav button, .glass-card button').removeClass('active');
         $('#navBtn-' + tabId).addClass('active');
 
