@@ -1844,17 +1844,28 @@
     // Toggle Online/Offline State
     function toggleMechanicOnlineState() {
         try {
+            if (typeof window.unlockSirenAudio === 'function') {
+                window.unlockSirenAudio();
+            }
             if (!window.sirenAudioCtx) {
                 window.sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
             if (window.sirenAudioCtx.state === 'suspended') {
                 window.sirenAudioCtx.resume();
             }
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
         } catch(e) {}
 
         $.post('/Mechanic/ToggleOnline', function(res) {
             if (res.success) {
                 updateOnlineUI(res.isOnline);
+                if (res.isOnline) {
+                    if (typeof window.unlockSirenAudio === 'function') {
+                        window.unlockSirenAudio();
+                    }
+                }
             }
         });
     }

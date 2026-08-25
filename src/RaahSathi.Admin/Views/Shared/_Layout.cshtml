@@ -2270,25 +2270,155 @@
             </div>
         </div>
 
+        <!-- 🚨 Unstoppable HTML5 Siren Audio Element -->
+        <audio id="rsSirenAudioElement" preload="auto" loop style="display:none;"></audio>
+
         <script type="text/javascript">
             $(document).ready(function() {
                 let dispatchCountdownTimer = null;
                 let dispatchSecondsLeft = 15;
+                let titleFlashInterval = null;
+                let originalDocTitle = document.title;
+                let sirenVibrationInterval = null;
                 
                 window.currentDispatchJobId = null;
                 window.sirenAudioCtx = null;
                 window.sirenRepeatInterval = null;
+                window.sirenAudioUnlocked = false;
+
+                // 🔊 Generate In-Memory Emergency Siren PCM WAV (Piercing High-Low Wail)
+                function generateSirenWavBlob() {
+                    try {
+                        var sampleRate = 22050;
+                        var duration = 2.0; // 2 seconds loop
+                        var numSamples = Math.floor(sampleRate * duration);
+                        var buffer = new ArrayBuffer(44 + numSamples * 2);
+                        var view = new DataView(buffer);
+
+                        function writeString(offset, string) {
+                            for (var i = 0; i < string.length; i++) {
+                                view.setUint8(offset + i, string.charCodeAt(i));
+                            }
+                        }
+                        writeString(0, 'RIFF');
+                        view.setUint32(4, 36 + numSamples * 2, true);
+                        writeString(8, 'WAVE');
+                        writeString(12, 'fmt ');
+                        view.setUint32(16, 16, true);
+                        view.setUint16(20, 1, true); // PCM
+                        view.setUint16(22, 1, true); // Mono
+                        view.setUint32(24, sampleRate, true);
+                        view.setUint32(28, sampleRate * 2, true);
+                        view.setUint16(32, 2, true);
+                        view.setUint16(34, 16, true);
+                        writeString(36, 'data');
+                        view.setUint32(40, numSamples * 2, true);
+
+                        var phase1 = 0;
+                        var phase2 = 0;
+                        for (var i = 0; i < numSamples; i++) {
+                            var t = i / sampleRate;
+                            // Fast sweeping siren 650Hz -> 1450Hz
+                            var freq1 = 650 + 800 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 1.5 * t - Math.PI / 2));
+                            var freq2 = freq1 * 1.05; // Harmonic detune
+
+                            phase1 += 2 * Math.PI * freq1 / sampleRate;
+                            phase2 += 2 * Math.PI * freq2 / sampleRate;
+
+                            var sample = (Math.sin(phase1) * 0.65 + Math.sin(phase2) * 0.35);
+                            sample = Math.max(-1, Math.min(1, sample));
+                            var intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                            view.setInt16(44 + i * 2, intSample, true);
+                        }
+                        return new Blob([buffer], { type: 'audio/wav' });
+                    } catch(e) {
+                        return null;
+                    }
+                }
+
+                // Initialize Siren Audio Element
+                var sirenBlob = generateSirenWavBlob();
+                if (sirenBlob) {
+                    var sirenAudioEl = document.getElementById('rsSirenAudioElement');
+                    if (sirenAudioEl) {
+                        sirenAudioEl.src = URL.createObjectURL(sirenBlob);
+                    }
+                }
+
+                // 🔓 Proactive Audio Unlocker
+                window.unlockSirenAudio = function() {
+                    try {
+                        if (!window.sirenAudioCtx) {
+                            window.sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        }
+                        if (window.sirenAudioCtx.state === 'suspended') {
+                            window.sirenAudioCtx.resume();
+                        }
+                        var audioEl = document.getElementById('rsSirenAudioElement');
+                        if (audioEl && !window.sirenAudioUnlocked) {
+                            audioEl.volume = 1.0;
+                            var playPromise = audioEl.play();
+                            if (playPromise !== undefined) {
+                                playPromise.then(function() {
+                                    audioEl.pause();
+                                    audioEl.currentTime = 0;
+                                    window.sirenAudioUnlocked = true;
+                                }).catch(function() {});
+                            }
+                        }
+                        // Request notification permissions if supported
+                        if ('Notification' in window && Notification.permission === 'default') {
+                            Notification.requestPermission();
+                        }
+                    } catch(e) {}
+                };
+
+                // Unlock on any user gesture anywhere on the screen
+                $(document).on('click touchstart mousedown keydown', function() {
+                    window.unlockSirenAudio();
+                });
 
                 window.stopSirenAlert = function() {
                     if (window.sirenRepeatInterval) {
                         clearInterval(window.sirenRepeatInterval);
                         window.sirenRepeatInterval = null;
                     }
+                    if (sirenVibrationInterval) {
+                        clearInterval(sirenVibrationInterval);
+                        sirenVibrationInterval = null;
+                    }
+                    if (titleFlashInterval) {
+                        clearInterval(titleFlashInterval);
+                        titleFlashInterval = null;
+                        document.title = originalDocTitle;
+                    }
+                    if (navigator.vibrate) {
+                        navigator.vibrate(0);
+                    }
+                    var audioEl = document.getElementById('rsSirenAudioElement');
+                    if (audioEl) {
+                        try {
+                            audioEl.pause();
+                            audioEl.currentTime = 0;
+                        } catch(e) {}
+                    }
                 };
 
                 window.playSirenAlert = function() {
                     window.stopSirenAlert();
-                    
+                    window.unlockSirenAudio();
+
+                    // 1. Play HTML5 loop audio (Works in background & mobile)
+                    var audioEl = document.getElementById('rsSirenAudioElement');
+                    if (audioEl) {
+                        try {
+                            audioEl.currentTime = 0;
+                            audioEl.volume = 1.0;
+                            audioEl.play().catch(function() {});
+                        } catch(e) {}
+                    }
+
+                    // 2. Play Web Audio API synthesized multi-oscillator burst
                     function triggerSirenBurst() {
                         try {
                             if (!window.sirenAudioCtx) {
@@ -2305,97 +2435,68 @@
                     function runSiren() {
                         try {
                             let now = window.sirenAudioCtx.currentTime;
-
-                            // 3-Pulse Heavy Dual-Ring PCR Siren (Detuned Sawtooths + Thick Bass + Crossover Chorus)
+                            // 3-Pulse Heavy Dual-Ring PCR Siren
                             for (let i = 0; i < 3; i++) {
                                 let startTime = now + (i * 0.9);
 
-                                // High Ring 1 (Sawtooth)
                                 let osc1a = window.sirenAudioCtx.createOscillator();
                                 let gain1a = window.sirenAudioCtx.createGain();
                                 osc1a.type = 'sawtooth';
                                 osc1a.frequency.setValueAtTime(600, startTime);
-                                osc1a.frequency.linearRampToValueAtTime(1400, startTime + 0.4);
+                                osc1a.frequency.linearRampToValueAtTime(1450, startTime + 0.4);
                                 osc1a.frequency.linearRampToValueAtTime(600, startTime + 0.85);
                                 osc1a.detune.setValueAtTime(-15, startTime);
-
-                                gain1a.gain.setValueAtTime(0.6, startTime);
+                                gain1a.gain.setValueAtTime(0.7, startTime);
                                 gain1a.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-
                                 osc1a.connect(gain1a);
                                 gain1a.connect(window.sirenAudioCtx.destination);
                                 osc1a.start(startTime);
                                 osc1a.stop(startTime + 0.87);
 
-                                // High Ring 2 (Sawtooth)
                                 let osc1b = window.sirenAudioCtx.createOscillator();
                                 let gain1b = window.sirenAudioCtx.createGain();
                                 osc1b.type = 'sawtooth';
                                 osc1b.frequency.setValueAtTime(630, startTime);
-                                osc1b.frequency.linearRampToValueAtTime(1430, startTime + 0.4);
+                                osc1b.frequency.linearRampToValueAtTime(1480, startTime + 0.4);
                                 osc1b.frequency.linearRampToValueAtTime(630, startTime + 0.85);
                                 osc1b.detune.setValueAtTime(15, startTime);
-
-                                gain1b.gain.setValueAtTime(0.6, startTime);
+                                gain1b.gain.setValueAtTime(0.7, startTime);
                                 gain1b.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-
                                 osc1b.connect(gain1b);
                                 gain1b.connect(window.sirenAudioCtx.destination);
                                 osc1b.start(startTime);
                                 osc1b.stop(startTime + 0.87);
-
-                                // Dual Square Bass Sub-harmonic 1
-                                let osc2a = window.sirenAudioCtx.createOscillator();
-                                let gain2a = window.sirenAudioCtx.createGain();
-                                osc2a.type = 'square';
-                                osc2a.frequency.setValueAtTime(280, startTime);
-                                osc2a.frequency.linearRampToValueAtTime(680, startTime + 0.4);
-                                osc2a.frequency.linearRampToValueAtTime(280, startTime + 0.85);
-                                osc2a.detune.setValueAtTime(-8, startTime);
-
-                                gain2a.gain.setValueAtTime(0.4, startTime);
-                                gain2a.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-
-                                osc2a.connect(gain2a);
-                                gain2a.connect(window.sirenAudioCtx.destination);
-                                osc2a.start(startTime);
-                                osc2a.stop(startTime + 0.87);
-
-                                // Dual Square Bass Sub-harmonic 2
-                                let osc2b = window.sirenAudioCtx.createOscillator();
-                                let gain2b = window.sirenAudioCtx.createGain();
-                                osc2b.type = 'square';
-                                osc2b.frequency.setValueAtTime(285, startTime);
-                                osc2b.frequency.linearRampToValueAtTime(685, startTime + 0.4);
-                                osc2b.frequency.linearRampToValueAtTime(285, startTime + 0.85);
-                                osc2b.detune.setValueAtTime(8, startTime);
-
-                                gain2b.gain.setValueAtTime(0.4, startTime);
-                                gain2b.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-
-                                osc2b.connect(gain2b);
-                                gain2b.connect(window.sirenAudioCtx.destination);
-                                osc2b.start(startTime);
-                                osc2b.stop(startTime + 0.87);
                             }
                         } catch(e) {}
                     }
 
                     triggerSirenBurst();
                     window.sirenRepeatInterval = setInterval(triggerSirenBurst, 2700);
-                };
 
-                // Unlock AudioContext on interaction
-                $(document).on('click touchstart mousedown keydown', function() {
-                    try {
-                        if (!window.sirenAudioCtx) {
-                            window.sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                        }
-                        if (window.sirenAudioCtx.state === 'suspended') {
-                            window.sirenAudioCtx.resume();
-                        }
-                    } catch(e) {}
-                });
+                    // 3. Heavy Physical Vibration Alert on Mobile Devices
+                    if (navigator.vibrate) {
+                        navigator.vibrate([600, 200, 600, 200, 600, 200, 600]);
+                        sirenVibrationInterval = setInterval(function() {
+                            if (navigator.vibrate) {
+                                navigator.vibrate([600, 200, 600, 200, 600, 200, 600]);
+                            }
+                        }, 2500);
+                    }
+
+                    // 4. Flashing Tab / Window Title for Instant Visual Alert
+                    let flashState = false;
+                    titleFlashInterval = setInterval(function() {
+                        flashState = !flashState;
+                        document.title = flashState ? "🚨🚨 (1) NEW JOB ALERT! - RaahSathi" : "⚡⚡ ACCEPT DISPATCH NOW! (15s)";
+                    }, 500);
+
+                    // 5. Request Screen WakeLock (Keep phone active)
+                    if ('wakeLock' in navigator) {
+                        try {
+                            navigator.wakeLock.request('screen').catch(function() {});
+                        } catch(e) {}
+                    }
+                };
 
                 // Real-Time Dispatch Checker
                 window.pollIncomingDispatchRequests = function() {
@@ -2429,6 +2530,35 @@
                                 window.currentDispatchJobId = null;
                                 
                                 var modalEl = document.getElementById('incomingDispatchModal');
+                                if (modalEl) {
+                                    var instance = bootstrap.Modal.getInstance(modalEl);
+                                    if (instance) instance.hide();
+                                }
+                            }
+                        }
+                    });
+                };
+
+                function openDispatchModal(data) {
+                    window.playSirenAlert();
+                    
+                    // 🚨 Native Web / Mobile System Push Notification (Works when tab/app is minimized)
+                    try {
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            var notif = new Notification('🚨 NEW BREAKDOWN JOB ALERT!', {
+                                body: (data.vehicleModel || 'Vehicle') + ' (' + (data.problemType || 'Emergency') + ') • Est. ₹' + data.estEarningsMin + '-₹' + data.estEarningsMax + ' • ' + data.distanceKm + ' KM away',
+                                icon: '/favicon.ico',
+                                tag: 'raahsathi-job-' + data.jobId,
+                                requireInteraction: true
+                            });
+                            notif.onclick = function() {
+                                window.focus();
+                                notif.close();
+                            };
+                        }
+                    } catch(e) {}
+
+                    $('#lblDispVehicle').text(data.vehicleModel + ' (' + data.vehicleType + ')');  var modalEl = document.getElementById('incomingDispatchModal');
                                 if (modalEl) {
                                     var instance = bootstrap.Modal.getInstance(modalEl);
                                     if (instance) instance.hide();
