@@ -280,6 +280,11 @@
                                 <i class="fa-solid fa-wallet text-warning" style="width: 20px;"></i> Earnings
                             </a>
                         </li>
+                        <li>
+                            <a class="dropdown-item text-light py-2 px-3 small d-flex align-items-center gap-2" href="javascript:void(0)" onclick="switchMechTab('tab-bank')">
+                                <i class="fa-solid fa-building-columns text-warning" style="width: 20px;"></i> Bank Details
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider border-secondary opacity-25"></li>
                         <li>
                             <a class="dropdown-item text-info py-2 px-3 small d-flex align-items-center justify-content-between" href="javascript:void(0)" onclick="switchMechTab('tab-support')">
@@ -1230,6 +1235,99 @@
         </div>
     </div>
 
+    <!-- ==================== TAB: BANK DETAILS (MOBILE & TABLET DEDICATED TAB) ==================== -->
+    <div id="tab-bank" class="mech-tab-content" style="display:none;">
+        <div class="glass-card mb-4 p-3 p-md-4">
+            <!-- Top Back Bar -->
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-30">
+                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold d-inline-flex align-items-center gap-2 shadow-sm" onclick="switchMechTab('tab-home')">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Back</span>
+                </button>
+                <span class="badge bg-dark border border-secondary text-warning small font-weight-bold px-2.5 py-1.5">
+                    <i class="fa-solid fa-building-columns me-1"></i> Bank Details
+                </span>
+            </div>
+
+            <div class="mb-4">
+                <h4 class="text-white font-weight-bold mb-1" style="font-family: 'Outfit', sans-serif;">
+                    <i class="fa-solid fa-building-columns text-warning me-2"></i> Bank Account &amp; Payout Setup
+                </h4>
+                <div class="text-muted small">Link your verified bank account and UPI ID to receive instant direct payouts for completed repair jobs.</div>
+            </div>
+
+            <!-- Payout Mode Selection & Inputs -->
+            <div class="p-3 p-md-4 rounded-3 border border-secondary border-opacity-30 mb-4" style="background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px);">
+                
+                <!-- Preferred Payout Choice -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small d-block font-weight-bold text-uppercase mb-2" style="letter-spacing: 0.5px;">Preferred Payout Mode:</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        <input type="radio" class="btn-check" name="radPayoutMethodMobile" id="radMethodUPIMobile" value="UPI" @(profile.PreferredPayoutMethod == "UPI" || string.IsNullOrEmpty(profile.PreferredPayoutMethod) ? "checked" : "") onchange="syncPayoutRadio('UPI')">
+                        <label class="btn btn-outline-success rounded-pill px-3 py-1.5 font-weight-medium flex-fill" for="radMethodUPIMobile"><i class="fa-solid fa-mobile-screen me-1"></i> UPI Direct</label>
+
+                        <input type="radio" class="btn-check" name="radPayoutMethodMobile" id="radMethodBankMobile" value="Bank" @(profile.PreferredPayoutMethod == "Bank" ? "checked" : "") onchange="syncPayoutRadio('Bank')">
+                        <label class="btn btn-outline-info rounded-pill px-3 py-1.5 font-weight-medium flex-fill" for="radMethodBankMobile"><i class="fa-solid fa-building-columns me-1"></i> Bank Account</label>
+
+                        <input type="radio" class="btn-check" name="radPayoutMethodMobile" id="radMethodCashMobile" value="Cash" @(profile.PreferredPayoutMethod == "Cash" ? "checked" : "") onchange="syncPayoutRadio('Cash')">
+                        <label class="btn btn-outline-warning rounded-pill px-3 py-1.5 font-weight-medium flex-fill" for="radMethodCashMobile"><i class="fa-solid fa-money-bill-1 me-1"></i> Cash Settle</label>
+                    </div>
+                </div>
+
+                <!-- UPI & Cash Row -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <label class="form-label text-muted small font-weight-bold mb-1">UPI ID (Google Pay, PhonePe, Paytm)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-success"><i class="fa-solid fa-qrcode"></i></span>
+                            <input type="text" id="txtMobileUpi" class="form-control glass-input text-success font-weight-bold" value="@profile.UpiId" placeholder="e.g. 9876543210@paytm / name@upi" oninput="$('#txtProfileUpi').val(this.value)">
+                        </div>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="p-3 rounded-3 border border-secondary border-opacity-30 bg-dark bg-opacity-50">
+                            <div class="form-check form-switch m-0 fs-6">
+                                <input class="form-check-input" type="checkbox" id="chkAcceptsCashMobile" @(profile.AcceptsCash ? "checked" : "") onchange="$('#chkAcceptsCash').prop('checked', this.checked)">
+                                <label class="form-check-label text-light small font-weight-bold" for="chkAcceptsCashMobile">
+                                    💵 Accept On-Spot Direct Cash from Customers
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bank Account Fields -->
+                <div class="border-top border-secondary border-opacity-30 pt-3">
+                    <span class="text-muted small d-block mb-3 font-weight-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fa-solid fa-landmark text-warning me-1"></i> Direct Bank Account Details:</span>
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label text-muted small font-weight-bold mb-1">Account Holder Name</label>
+                            <input type="text" id="txtMobileHolderName" class="form-control glass-input text-white" value="@profile.AccountHolderName" placeholder="As per bank passbook" oninput="$('#txtProfileHolderName').val(this.value)">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label text-muted small font-weight-bold mb-1">Bank Name</label>
+                            <input type="text" id="txtMobileBankName" class="form-control glass-input text-white" value="@profile.BankName" placeholder="e.g. SBI, HDFC, ICICI" oninput="$('#txtBankName').val(this.value)">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label text-muted small font-weight-bold mb-1">Bank Account Number</label>
+                            <input type="text" id="txtMobileAccountNo" class="form-control glass-input text-white font-monospace" value="@profile.BankAccountNumber" placeholder="Enter bank account number" oninput="$('#txtAccountNo').val(this.value)">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label text-muted small font-weight-bold mb-1">IFSC Code</label>
+                            <input type="text" id="txtMobileIfscCode" class="form-control glass-input text-white text-uppercase" value="@profile.IfscCode" placeholder="e.g. SBIN0001234" oninput="$('#txtIfscCode').val(this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="d-flex justify-content-center justify-content-md-start">
+                <button class="btn btn-premium-primary font-weight-bold px-5 py-3 shadow-lg rounded-pill w-100 w-md-auto d-flex align-items-center justify-content-center gap-2" id="btnSaveBankDetailsMobile" onclick="saveBankDetailsOnly(this)" style="min-height: 48px;">
+                    <i class="fa-solid fa-floppy-disk"></i> <span>Save Bank Details</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ==================== TAB 5: SUPPORT INBOX ==================== -->
     <div id="tab-support" class="mech-tab-content" style="display:none;">
         <div class="glass-card mb-4 border-info border-opacity-30">
@@ -1453,10 +1551,10 @@
                 </div>
             </div>
 
-            <!-- Payment & Settlement Preferences (ALL OPTIONAL) -->
-            <div class="mb-4">
+            <!-- Payment & Settlement Preferences (Laptop & PC only) -->
+            <div class="mb-4 d-none d-lg-block">
                 <label class="form-label text-white font-weight-bold mb-2">
-                    <i class="fa-solid fa-wallet text-success me-1"></i> Payment & Payout Preferences <span class="badge bg-secondary font-weight-normal ms-2">All Optional</span>
+                    <i class="fa-solid fa-wallet text-success me-1"></i> Payment &amp; Payout Preferences <span class="badge bg-secondary font-weight-normal ms-2">All Optional</span>
                 </label>
                 <div class="p-3 bg-dark bg-opacity-40 rounded-3 border border-secondary">
                     
@@ -1956,6 +2054,63 @@
             error: function(err) {
                 saveBtn.prop('disabled', false).html(originalBtnHtml);
                 alert('❌ Server error updating profile. Please try again.');
+            }
+        });
+    }
+
+    function syncPayoutRadio(val) {
+        $('input[name="radPayoutMethod"][value="' + val + '"]').prop('checked', true);
+        $('input[name="radPayoutMethodMobile"][value="' + val + '"]').prop('checked', true);
+    }
+
+    function saveBankDetailsOnly(btnElement) {
+        var $btn = btnElement ? $(btnElement) : $('#btnSaveBankDetailsMobile');
+        var originalBtnHtml = $btn.html();
+        
+        var upi = $('#txtMobileUpi').val() || $('#txtProfileUpi').val() || '';
+        var bankName = $('#txtMobileBankName').val() || $('#txtBankName').val() || '';
+        var accNo = $('#txtMobileAccountNo').val() || $('#txtAccountNo').val() || '';
+        var ifsc = $('#txtMobileIfscCode').val() || $('#txtIfscCode').val() || '';
+        var holderName = $('#txtMobileHolderName').val() || $('#txtProfileHolderName').val() || '';
+        var payoutMethod = $('input[name="radPayoutMethodMobile"]:checked').val() || $('input[name="radPayoutMethod"]:checked').val() || 'UPI';
+        var acceptsCash = $('#chkAcceptsCashMobile').is(':checked') || $('#chkAcceptsCash').is(':checked');
+
+        var formData = new FormData();
+        formData.append('upiId', upi);
+        formData.append('bankName', bankName);
+        formData.append('accountNumber', accNo);
+        formData.append('ifscCode', ifsc);
+        formData.append('accountHolderName', holderName);
+        formData.append('preferredPayoutMethod', payoutMethod);
+        formData.append('acceptsCash', acceptsCash);
+
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving Bank Details...');
+
+        $.ajax({
+            url: '/Mechanic/UpdateProfileSettings',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                $btn.prop('disabled', false).html(originalBtnHtml);
+                if (res.success) {
+                    alert('✅ Bank and payout details saved successfully!');
+                    // Sync inputs
+                    $('#txtProfileUpi').val(upi);
+                    $('#txtBankName').val(bankName);
+                    $('#txtAccountNo').val(accNo);
+                    $('#txtIfscCode').val(ifsc);
+                    $('#txtProfileHolderName').val(holderName);
+                    $('input[name="radPayoutMethod"][value="' + payoutMethod + '"]').prop('checked', true);
+                    $('#chkAcceptsCash').prop('checked', acceptsCash);
+                } else {
+                    alert('❌ ' + (res.message || 'Error saving bank details.'));
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).html(originalBtnHtml);
+                alert('❌ Server error saving bank details. Please try again.');
             }
         });
     }
