@@ -800,48 +800,73 @@
 
     <!-- ==================== TAB 3: JOBS ==================== -->
     <div id="tab-jobs" class="mech-tab-content" style="display:none;">
-        <div class="glass-card mb-4">
+        <div class="glass-card mb-4 p-3 p-md-4">
             <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-30">
                 <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold d-inline-flex align-items-center gap-2 shadow-sm" onclick="switchMechTab('tab-home')">
                     <i class="fa-solid fa-arrow-left"></i> <span>Back</span>
                 </button>
-                <span class="badge bg-dark border border-secondary text-warning small font-weight-bold"><i class="fa-solid fa-wrench me-1"></i> Completed Jobs</span>
+                <span class="badge bg-dark border border-secondary text-warning small font-weight-bold px-2.5 py-1.5"><i class="fa-solid fa-wrench me-1"></i> Completed Jobs</span>
             </div>
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3 pb-2 border-bottom border-secondary border-opacity-30">
-                <h4 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Completed Repair History</h4>
-                
-                <!-- Date Filter Input Elements -->
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <span class="text-muted small font-weight-medium">Filter Range:</span>
-                    <input type="date" id="historyStartDate" class="form-control form-control-sm glass-input text-warning py-1" style="width: 140px; font-size: 0.85rem;" title="Start Date">
-                    <span class="text-muted small">to</span>
-                    <input type="date" id="historyEndDate" class="form-control form-control-sm glass-input text-warning py-1" style="width: 140px; font-size: 0.85rem;" title="End Date">
-                    <button class="btn btn-warning btn-sm font-weight-bold px-3 py-1" onclick="applyHistoryDateFilter()">
-                        <i class="fa-solid fa-filter me-1"></i> Apply
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm p-1 px-2.5" onclick="resetHistoryDateFilter()" title="Reset to Last 1 Month">
-                        <i class="fa-solid fa-rotate me-1"></i> Reset (1 Month)
-                    </button>
+
+            <!-- Header & Responsive Filter Bar -->
+            <div class="mb-4">
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-3">
+                    <div>
+                        <h4 class="text-white font-weight-bold mb-1" style="font-family: 'Outfit', sans-serif;">
+                            <i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> Completed Repair History
+                        </h4>
+                        <div class="text-muted small">View all past roadside repair jobs, customer details &amp; earnings breakdown.</div>
+                    </div>
+                    
+                    <!-- Date Filter Container -->
+                    <div class="p-2.5 rounded-3 border border-secondary border-opacity-25 w-100 w-lg-auto" style="background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px);">
+                        <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                            <div class="d-flex align-items-center gap-1.5 flex-grow-1">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-dark border-secondary text-muted px-2" style="font-size: 0.75rem;"><i class="fa-regular fa-calendar"></i></span>
+                                    <input type="date" id="historyStartDate" class="form-control form-control-sm glass-input text-warning py-1" style="min-width: 115px; font-size: 0.82rem;" title="Start Date">
+                                </div>
+                                <span class="text-muted small px-1">to</span>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-dark border-secondary text-muted px-2" style="font-size: 0.75rem;"><i class="fa-regular fa-calendar"></i></span>
+                                    <input type="date" id="historyEndDate" class="form-control form-control-sm glass-input text-warning py-1" style="min-width: 115px; font-size: 0.82rem;" title="End Date">
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-1.5">
+                                <button type="button" class="btn btn-warning btn-sm font-weight-bold px-3 py-1.5 flex-grow-1 flex-sm-grow-0 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-sm" onclick="applyHistoryDateFilter()" style="border-radius: 8px; min-height: 36px;">
+                                    <i class="fa-solid fa-filter"></i> <span>Apply</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm px-2.5 py-1.5 text-light d-inline-flex align-items-center justify-content-center gap-1" onclick="resetHistoryDateFilter()" title="Reset to Last 1 Month" style="border-radius: 8px; min-height: 36px;">
+                                    <i class="fa-solid fa-rotate"></i> <span>Reset (1M)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             @if (pastJobs.Count == 0)
             {
-                <p class="text-muted text-center py-4 mb-0">No completed job history recorded yet.</p>
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-folder-open fa-3x mb-3 opacity-30 text-warning"></i>
+                    <h6 class="text-white font-weight-bold mb-1">No Completed Job History</h6>
+                    <p class="small text-muted mb-0">You haven't completed any roadside repair jobs yet.</p>
+                </div>
             }
             else
             {
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover align-middle history-table">
-                        <thead>
+                <!-- DESKTOP VIEW: Clean Table Layout (d-none d-md-block) -->
+                <div class="d-none d-md-block table-responsive">
+                    <table class="table table-dark table-hover align-middle history-table mb-0">
+                        <thead class="table-dark text-muted small" style="border-bottom: 2px solid rgba(255,255,255,0.1);">
                             <tr>
-                                <th>Job ID</th>
-                                <th>Vehicle</th>
-                                <th>Problem</th>
-                                <th>Customer</th>
-                                <th>Date</th>
-                                <th>Total Bill</th>
-                                <th>Actions</th>
+                                <th style="width: 11%;">Job ID</th>
+                                <th style="width: 18%;">Vehicle</th>
+                                <th style="width: 20%;">Problem</th>
+                                <th style="width: 18%;">Customer</th>
+                                <th style="width: 16%;">Date &amp; Time</th>
+                                <th style="width: 10%;">Total Bill</th>
+                                <th style="width: 7%;" class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -850,30 +875,133 @@
                                 var jobDate = j.CompletedAt ?? j.CreatedAt;
                                 <tr class="history-job-row" data-date="@jobDate.ToLocalTime().ToString("yyyy-MM-dd")">
                                     <td>
-                                        <b>#@j.Id</b>
+                                        <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-30 font-weight-bold px-2 py-1">#@j.Id</span>
                                         @if (j.DisputeStatus == "Active")
                                         {
                                             <span class="badge bg-danger text-white d-block mt-1 font-weight-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-triangle-exclamation"></i> PAYMENT HELD</span>
                                         }
                                         else if (j.DisputeStatus == "Resolved")
                                         {
-                                            <span class="badge bg-success text-white d-block mt-1 font-weight-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-circle-check"></i> DISPUTE RESOLVED</span>
+                                            <span class="badge bg-success text-white d-block mt-1 font-weight-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-circle-check"></i> RESOLVED</span>
                                         }
                                     </td>
-                                    <td>@j.Vehicle?.Model</td>
-                                    <td><span class="badge bg-warning text-dark">@j.ProblemType</span></td>
-                                    <td>@j.Customer?.Name</td>
-                                    <td class="small text-muted">@jobDate.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</td>
-                                    <td class="text-success font-weight-bold">₹@j.FinalBillAmount</td>
                                     <td>
-                                        <button class="btn btn-outline-info btn-sm font-weight-bold" onclick="showJobInvoiceModal(@j.Id)">
-                                            <i class="fa-solid fa-receipt me-1"></i> View Receipt
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-car text-warning opacity-75"></i>
+                                            <div>
+                                                <span class="text-white font-weight-bold d-block">@(string.IsNullOrWhiteSpace(j.Vehicle?.Model) ? "Vehicle" : j.Vehicle?.Model)</span>
+                                                @if (!string.IsNullOrWhiteSpace(j.Vehicle?.RegistrationNumber))
+                                                {
+                                                    <span class="text-muted small" style="font-size: 0.72rem;">@j.Vehicle?.RegistrationNumber</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-warning text-dark font-weight-bold px-2.5 py-1">@j.ProblemType</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <i class="fa-solid fa-circle-user text-secondary"></i>
+                                            <span class="text-light">@(string.IsNullOrWhiteSpace(j.Customer?.Name) ? "Customer" : j.Customer?.Name)</span>
+                                        </div>
+                                    </td>
+                                    <td class="small text-muted">@jobDate.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</td>
+                                    <td class="text-success font-weight-bold fs-6">₹@j.FinalBillAmount</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-outline-info btn-sm font-weight-bold d-inline-flex align-items-center gap-1" onclick="showJobInvoiceModal(@j.Id)">
+                                            <i class="fa-solid fa-receipt"></i> <span>Receipt</span>
                                         </button>
                                     </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
+                </div>
+
+                <!-- MOBILE VIEW: Stacked Card-Based List (d-md-none) -->
+                <div class="d-md-none">
+                    <div id="historyNoJobsCard" class="text-center text-muted py-5 d-none">
+                        <i class="fa-solid fa-clock-rotate-left fa-3x mb-3 opacity-30 text-warning"></i>
+                        <h6 class="text-white font-weight-bold mb-1">No Jobs Found</h6>
+                        <p class="small text-muted mb-0">No completed jobs found for the selected date range.</p>
+                    </div>
+
+                    @foreach (var j in pastJobs)
+                    {
+                        var jobDate = j.CompletedAt ?? j.CreatedAt;
+                        <div class="history-job-row history-mobile-card mb-3 p-3 rounded-3" data-date="@jobDate.ToLocalTime().ToString("yyyy-MM-dd")" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 4px solid #ff6b00; box-shadow: 0 4px 16px rgba(0,0,0,0.35); backdrop-filter: blur(10px);">
+                            <!-- Row 1: Header (Job ID + Status Badge + Date/Time) -->
+                            <div class="d-flex align-items-center justify-content-between mb-2.5">
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40 font-weight-extrabold px-2 py-1" style="font-size: 0.82rem; border-radius: 6px;">
+                                        #@j.Id
+                                    </span>
+                                    @if (j.DisputeStatus == "Active")
+                                    {
+                                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-40 font-weight-bold px-2 py-1" style="font-size: 0.72rem; border-radius: 6px;">
+                                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Payment Held
+                                        </span>
+                                    }
+                                    else if (j.DisputeStatus == "Resolved")
+                                    {
+                                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40 font-weight-bold px-2 py-1" style="font-size: 0.72rem; border-radius: 6px;">
+                                            <i class="fa-solid fa-circle-check me-1"></i> Resolved
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40 font-weight-bold px-2 py-1" style="font-size: 0.72rem; border-radius: 6px;">
+                                            <i class="fa-solid fa-circle-check me-1"></i> Completed
+                                        </span>
+                                    }
+                                </div>
+                                <div class="text-muted small d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                    <i class="fa-regular fa-clock opacity-60"></i>
+                                    <span>@jobDate.ToLocalTime().ToString("dd MMM yyyy • hh:mm tt")</span>
+                                </div>
+                            </div>
+
+                            <!-- Row 2: Vehicle Title & Problem Badge -->
+                            <div class="d-flex align-items-center justify-content-between mb-2 gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; font-size: 0.9rem;">
+                                        <i class="fa-solid fa-car"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-white font-weight-bold mb-0" style="font-family: 'Outfit', sans-serif; font-size: 1rem;">
+                                            @(string.IsNullOrWhiteSpace(j.Vehicle?.Model) ? "Vehicle Assistance" : j.Vehicle?.Model)
+                                        </h6>
+                                        @if (!string.IsNullOrWhiteSpace(j.Vehicle?.RegistrationNumber))
+                                        {
+                                            <span class="text-muted small" style="font-size: 0.72rem; letter-spacing: 0.5px;">@j.Vehicle?.RegistrationNumber</span>
+                                        }
+                                    </div>
+                                </div>
+                                <span class="badge bg-warning text-dark font-weight-bold px-2.5 py-1 rounded-pill flex-shrink-0" style="font-size: 0.74rem;">
+                                    @j.ProblemType
+                                </span>
+                            </div>
+
+                            <!-- Row 3: Customer Details & Total Bill Box -->
+                            <div class="p-2.5 rounded-3 mb-2.5 d-flex align-items-center justify-content-between" style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05);">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-circle-user text-secondary" style="font-size: 1.25rem;"></i>
+                                    <div>
+                                        <span class="text-muted d-block" style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px;">Customer</span>
+                                        <span class="text-white font-weight-medium small">@(string.IsNullOrWhiteSpace(j.Customer?.Name) ? "Verified Customer" : j.Customer?.Name)</span>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="text-muted d-block" style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px;">Total Bill</span>
+                                    <span class="text-success font-weight-extrabold" style="font-size: 1.2rem; font-family: 'Outfit', sans-serif;">₹@j.FinalBillAmount</span>
+                                </div>
+                            </div>
+
+                            <!-- Row 4: Action Button (View Receipt / Details) -->
+                            <button type="button" class="btn btn-outline-warning btn-sm w-100 font-weight-bold py-2 d-flex align-items-center justify-content-center gap-2 rounded-pill shadow-sm" onclick="showJobInvoiceModal(@j.Id)" style="min-height: 44px; font-size: 0.88rem; border-color: rgba(255, 107, 0, 0.5); background: rgba(255, 107, 0, 0.08);">
+                                <i class="fa-solid fa-receipt text-warning"></i> <span>View Receipt &amp; Details</span> <i class="fa-solid fa-chevron-right small opacity-75 ms-auto"></i>
+                            </button>
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -2496,15 +2624,17 @@
             }
         });
 
-        // Toggle placeholder row
+        // Toggle placeholder row & mobile card
         if (visibleCount === 0) {
             if ($('#historyNoJobsRow').length === 0) {
                 $('table.history-table tbody').append('<tr id="historyNoJobsRow"><td colspan="7" class="text-center text-muted py-4">No completed jobs found for the selected date range.</td></tr>');
             } else {
                 $('#historyNoJobsRow').removeClass('d-none');
             }
+            $('#historyNoJobsCard').removeClass('d-none');
         } else {
             $('#historyNoJobsRow').addClass('d-none');
+            $('#historyNoJobsCard').addClass('d-none');
         }
     }
 
@@ -2544,8 +2674,10 @@
             } else {
                 $('#historyNoJobsRow').removeClass('d-none');
             }
+            $('#historyNoJobsCard').removeClass('d-none');
         } else {
             $('#historyNoJobsRow').addClass('d-none');
+            $('#historyNoJobsCard').addClass('d-none');
         }
     }
 
