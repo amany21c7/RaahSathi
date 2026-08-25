@@ -293,10 +293,28 @@
     <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
     <title>@(ViewData["Title"] ?? "RaahSathi | Roadside Assistance")</title>
-    <link rel="shortcut icon" type="image/png" href="~/favicon.png?v=8" asp-append-version="true" />
-    <link rel="icon" type="image/png" href="~/favicon.png?v=8" asp-append-version="true" />
-    <link rel="icon" type="image/x-icon" href="~/favicon.ico?v=8" asp-append-version="true" />
-    <link rel="apple-touch-icon" href="~/favicon.png?v=8" asp-append-version="true" />
+
+    <!-- 📲 Progressive Web App (PWA) & Mobile Meta Tags -->
+    <meta name="theme-color" content="#ff6b00" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RaahSathi" />
+    <meta name="application-name" content="RaahSathi" />
+    <meta name="msapplication-TileColor" content="#0f172a" />
+    <meta name="msapplication-TileImage" content="/images/icon-192.png" />
+
+    <!-- 🌐 Manifest & Multi-Resolution Favicons -->
+    <link rel="manifest" href="~/manifest.json" />
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico?v=9" asp-append-version="true" />
+    <link rel="shortcut icon" type="image/png" href="~/favicon.png?v=9" asp-append-version="true" />
+    <link rel="icon" type="image/png" sizes="16x16" href="~/favicon.png?v=9" asp-append-version="true" />
+    <link rel="icon" type="image/png" sizes="32x32" href="~/favicon.png?v=9" asp-append-version="true" />
+    <link rel="icon" type="image/png" sizes="64x64" href="~/favicon.png?v=9" asp-append-version="true" />
+    <link rel="icon" type="image/png" sizes="192x192" href="~/images/icon-192.png?v=9" asp-append-version="true" />
+    <link rel="icon" type="image/png" sizes="512x512" href="~/images/icon-512.png?v=9" asp-append-version="true" />
+    <link rel="apple-touch-icon" sizes="180x180" href="~/images/apple-touch-icon.png?v=9" asp-append-version="true" />
+    <link rel="mask-icon" href="~/images/icon-maskable-192.png?v=9" color="#ff6b00" />
     
     <!-- Premium Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1008,6 +1026,11 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- 📲 PWA Install App Button -->
+                            <button type="button" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5 font-weight-bold rounded-pill text-warning shadow-sm ms-1" id="navPwaInstallBtn" onclick="triggerPwaInstall()" style="font-size: 0.8rem; border-color: rgba(255, 107, 0, 0.5); background: rgba(255, 107, 0, 0.08);" title="Install RaahSathi App on your phone/PC">
+                                <i class="fa-solid fa-mobile-screen-button"></i> <span class="d-none d-sm-inline">Install App</span><span class="d-sm-none">App</span>
+                            </button>
 
                             @if (activeRole != "Guest")
                             {
@@ -2680,6 +2703,185 @@
                             submitBtn.innerHTML = originalBtnHtml;
                         }
                     });
+            });
+        })();
+    </script>
+
+    <!-- =========================================================================
+         📲 PWA NATIVE MOBILE APP INSTALLATION BANNER & PROMPT
+         ========================================================================= -->
+    <style>
+        .pwa-install-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 24px);
+            max-width: 460px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1.5px solid rgba(255, 107, 0, 0.5);
+            border-radius: 16px;
+            z-index: 105000;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 107, 0, 0.25);
+            animation: pwaSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @@keyframes pwaSlideUp {
+            from { opacity: 0; transform: translate(-50%, 40px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        .pwa-install-banner .pulse-ring {
+            box-shadow: 0 0 0 0 rgba(255, 107, 0, 0.7);
+            animation: pwaPulseRing 2s infinite cubic-bezier(0.66, 0, 0, 1);
+        }
+
+        @@keyframes pwaPulseRing {
+            to { box-shadow: 0 0 0 10px rgba(255, 107, 0, 0); }
+        }
+    </style>
+
+    <div id="pwaInstallBanner" class="pwa-install-banner" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between p-2.5 p-sm-3">
+            <div class="d-flex align-items-center gap-2.5 flex-grow-1 overflow-hidden me-2">
+                <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi App" class="rounded-3 shadow-sm flex-shrink-0 pulse-ring" style="width: 44px; height: 44px; object-fit: cover; border: 1.5px solid #ff6b00;" />
+                <div class="overflow-hidden text-start">
+                    <div class="d-flex align-items-center gap-1.5">
+                        <strong class="text-white font-weight-bold text-truncate" style="font-size: 0.92rem;">RaahSathi App</strong>
+                        <span class="badge bg-warning text-dark font-weight-extrabold py-0.5 px-1.5" style="font-size: 0.65rem; border-radius: 4px;">FAST</span>
+                    </div>
+                    <span class="text-muted text-truncate d-block small" style="font-size: 0.76rem;">⚡ 14-Min Roadside Help • 24×7 SOS</span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold px-3 py-1.5 shadow d-inline-flex align-items-center gap-1.5 text-dark" id="btnPwaInstall" onclick="triggerPwaInstall()" style="border-radius: 20px; font-size: 0.82rem;">
+                    <i class="fa-solid fa-download"></i> <span>Install</span>
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm text-muted rounded-circle p-1 border-0" onclick="dismissPwaBanner()" title="Close" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-xmark" style="font-size: 0.85rem;"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- iOS Safari "Add to Home Screen" Instructions Modal -->
+    <div class="modal fade" id="iosPwaInstallModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-dark text-white border-warning" style="border-radius: 16px;">
+                <div class="modal-header border-secondary border-opacity-30 pb-2">
+                    <h6 class="modal-title text-warning font-weight-bold"><i class="fa-brands fa-apple me-2"></i> Install on iPhone / iPad</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-3">
+                    <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi" class="rounded-3 shadow mb-2" style="width: 56px; height: 56px; border: 2px solid #ff6b00;" />
+                    <h6 class="text-white font-weight-bold mb-1">Install RaahSathi</h6>
+                    <p class="text-muted extra-small mb-3">Add to your home screen for instant 1-tap emergency assistance:</p>
+                    <div class="text-start bg-secondary bg-opacity-10 p-2.5 rounded-3 border border-secondary border-opacity-20 small">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1">1</span>
+                            <span>Tap the <strong>Share</strong> button <i class="fa-solid fa-arrow-up-from-bracket text-warning ms-1"></i> in Safari toolbar</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1">2</span>
+                            <span>Scroll down & tap <strong>"Add to Home Screen"</strong> <i class="fa-regular fa-square-plus text-warning ms-1"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 justify-content-center">
+                    <button type="button" class="btn btn-warning btn-sm font-weight-bold px-4 rounded-pill text-dark" data-bs-dismiss="modal">Got It</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PWA Installation Engine & Service Worker Registration -->
+    <script>
+        (function() {
+            var deferredPrompt = null;
+            var isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+            // 1. Register Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                        .then(function (registration) {
+                            console.log('✅ RaahSathi PWA: Service Worker active with scope:', registration.scope);
+                        })
+                        .catch(function (error) {
+                            console.warn('⚠️ RaahSathi PWA: Service Worker registration failed:', error);
+                        });
+                });
+            }
+
+            // 2. Listen for BeforeInstallPrompt event (Android / Chrome / Edge)
+            window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                deferredPrompt = e;
+                window.pwaDeferredPrompt = e;
+                
+                // Check if dismissed recently (within 5 days)
+                var dismissedAt = localStorage.getItem('raah_pwa_dismissed');
+                var fiveDays = 5 * 24 * 60 * 60 * 1000;
+                if (!dismissedAt || (Date.now() - parseInt(dismissedAt)) > fiveDays) {
+                    showPwaBanner();
+                }
+            });
+
+            function showPwaBanner() {
+                if (isStandalone) return;
+                var banner = document.getElementById('pwaInstallBanner');
+                if (banner) {
+                    banner.style.display = 'block';
+                }
+            }
+
+            window.dismissPwaBanner = function() {
+                var banner = document.getElementById('pwaInstallBanner');
+                if (banner) {
+                    banner.style.display = 'none';
+                }
+                localStorage.setItem('raah_pwa_dismissed', Date.now().toString());
+            };
+
+            window.triggerPwaInstall = function() {
+                var promptEvent = deferredPrompt || window.pwaDeferredPrompt;
+                if (promptEvent) {
+                    promptEvent.prompt();
+                    promptEvent.userChoice.then(function (choiceResult) {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('User accepted RaahSathi PWA installation');
+                            window.dismissPwaBanner();
+                        } else {
+                            console.log('User dismissed RaahSathi PWA installation');
+                        }
+                        deferredPrompt = null;
+                        window.pwaDeferredPrompt = null;
+                    });
+                } else if (isIos && !isStandalone) {
+                    var modalEl = document.getElementById('iosPwaInstallModal');
+                    if (modalEl && window.bootstrap) {
+                        var modal = new bootstrap.Modal(modalEl);
+                        modal.show();
+                    }
+                } else {
+                    if (isStandalone) {
+                        alert('✅ RaahSathi is already installed and running as an app!');
+                    } else {
+                        alert('📲 To install RaahSathi App on your device:\n\n1. Tap your browser menu (⋮ or Share)\n2. Select "Install App" or "Add to Home screen"');
+                    }
+                }
+            };
+
+            // 3. Track App Installed
+            window.addEventListener('appinstalled', function () {
+                console.log('🎉 RaahSathi PWA was successfully installed on device!');
+                window.dismissPwaBanner();
+                if (window.alert) {
+                    window.alert('🎉 RaahSathi App has been installed on your device!');
+                }
             });
         })();
     </script>

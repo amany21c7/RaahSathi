@@ -1,0 +1,62 @@
+{
+  "name": "RaahSathi – 24x7 Roadside Assistance Network",
+  "short_name": "RaahSathi",
+  "description": "India's premier 24x7 connected roadside assistance network for instant mechanic dispatch, emergency breakdown service, tyre repair & towing.",
+  "start_url": "/?source=pwa",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#ff6b00",
+  "scope": "/",
+  "lang": "en-IN",
+  "categories": ["utilities", "travel", "auto-and-vehicles", "productivity"],
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Get Emergency Help",
+      "short_name": "Get Help",
+      "description": "Request immediate roadside assistance & mechanic",
+      "url": "/Customer/Book?source=pwa_shortcut",
+      "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Partner Mechanic Login",
+      "short_name": "Mechanic",
+      "description": "Open Mechanic partner portal",
+      "url": "/Auth/Login?role=Mechanic&source=pwa_shortcut",
+      "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Customer Dashboard",
+      "short_name": "Dashboard",
+      "description": "Track active requests and service history",
+      "url": "/Customer/Dashboard?source=pwa_shortcut",
+      "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
