@@ -215,35 +215,6 @@
     </div>
 </div>
 
-<!-- 8. Floating Live Chat Widget (Bottom Right) -->
-<div class="position-fixed bottom-0 end-0 p-3 p-md-4" style="z-index: 1090;">
-    <button class="btn btn-warning btn-lg rounded-pill shadow-lg font-weight-bold px-4 py-3 d-flex align-items-center gap-2 border border-dark hover-lift" onclick="toggleLiveChat()">
-        <i class="fa-solid fa-comments text-dark fa-lg"></i>
-        <span class="text-dark">💬 Chat with Us</span>
-        <span class="badge bg-danger rounded-circle p-1">AI</span>
-    </button>
-</div>
-
-<!-- Live Chat Modal / Drawer Simulation -->
-<div id="liveChatDrawer" class="position-fixed bottom-0 end-0 m-3 m-md-4 glass-card p-4 rounded-4 shadow-lg border-warning border-opacity-50 d-none" style="z-index: 1095; width: 340px; max-width: 90vw;">
-    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary">
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-success rounded-circle p-1" style="width:10px; height:10px;"></span>
-            <h6 class="text-white font-weight-bold mb-0">RaahSathi AI Assistant</h6>
-        </div>
-        <button type="button" class="btn-close btn-close-white" onclick="toggleLiveChat()"></button>
-    </div>
-    <div class="chat-messages mb-3 p-2 bg-dark rounded border border-secondary" style="height: 180px; overflow-y: auto; font-size: 0.85rem;">
-        <div class="p-2 bg-secondary bg-opacity-30 text-light rounded mb-2">
-            👋 Hello! Need emergency roadside help or have a question? Ask me anything!
-        </div>
-    </div>
-    <div class="input-group">
-        <input type="text" id="chatInput" class="form-control glass-input text-white" placeholder="Type message..." onkeypress="if(event.key==='Enter') sendChatMessage()">
-        <button class="btn btn-warning" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane text-dark"></i></button>
-    </div>
-</div>
-
 @section Scripts {
 <script>
     function handleContactSubmit(e) {
@@ -262,24 +233,6 @@
         }).fail(function() {
             $('#formSuccessAlert').text('✖ Failed to send message. Please try again or call +91 9536838103 directly.').removeClass('d-none alert-success').addClass('alert-danger');
         });
-    }
-
-    function toggleLiveChat() {
-        $('#liveChatDrawer').toggleClass('d-none');
-    }
-
-    function sendChatMessage() {
-        var msg = $('#chatInput').val().trim();
-        if (msg) {
-            $('.chat-messages').append('<div class="p-2 bg-warning text-dark rounded mb-2 text-end font-weight-semibold">' + msg + '</div>');
-            $('#chatInput').val('');
-            $('.chat-messages').scrollTop($('.chat-messages')[0].scrollHeight);
-            
-            setTimeout(function() {
-                $('.chat-messages').append('<div class="p-2 bg-secondary bg-opacity-30 text-light rounded mb-2">🤖 Our 24x7 support desk has received your request. You can also call us directly at <strong>+91 9536838103</strong> for instant dispatch!</div>');
-                $('.chat-messages').scrollTop($('.chat-messages')[0].scrollHeight);
-            }, 800);
-        }
     }
 </script>
 }
