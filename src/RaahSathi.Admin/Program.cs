@@ -783,6 +783,46 @@ using (var scope = app.Services.CreateScope())
                     END CATCH
                 END;
             ");
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                IF OBJECT_ID(N'[dbo].[rs_mechanicprofiles_update_bank_details]', N'P') IS NOT NULL
+                    DROP PROCEDURE [dbo].[rs_mechanicprofiles_update_bank_details];
+            ");
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                CREATE PROCEDURE dbo.rs_mechanicprofiles_update_bank_details
+                    @MechanicUserId INT,
+                    @PreferredPayoutMethod NVARCHAR(50),
+                    @UpiId NVARCHAR(100) = NULL,
+                    @AccountHolderName NVARCHAR(200) = NULL,
+                    @BankName NVARCHAR(200) = NULL,
+                    @BankAccountNumber NVARCHAR(100) = NULL,
+                    @IfscCode NVARCHAR(50) = NULL
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+                    BEGIN TRANSACTION;
+                    BEGIN TRY
+                        IF EXISTS (SELECT 1 FROM dbo.MechanicProfiles WITH (UPDLOCK) WHERE UserId = @MechanicUserId)
+                        BEGIN
+                            UPDATE dbo.MechanicProfiles
+                            SET PreferredPayoutMethod = @PreferredPayoutMethod,
+                                UpiId = @UpiId,
+                                AccountHolderName = @AccountHolderName,
+                                BankName = @BankName,
+                                BankAccountNumber = @BankAccountNumber,
+                                IfscCode = @IfscCode
+                            WHERE UserId = @MechanicUserId;
+                        END
+
+                        COMMIT TRANSACTION;
+                    END TRY
+                    BEGIN CATCH
+                        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+                        THROW;
+                    END CATCH
+                END;
+            ");
         }
         catch (Exception exSchema)
         {

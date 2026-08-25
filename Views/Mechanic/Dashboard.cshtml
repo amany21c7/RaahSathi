@@ -1262,46 +1262,111 @@
                 <div class="mb-3">
                     <label class="form-label text-muted small d-block font-weight-bold text-uppercase mb-2" style="letter-spacing: 0.5px;">Preferred Payout Mode:</label>
                     <div class="d-flex flex-wrap gap-2">
-                        <input type="radio" class="btn-check" name="radPayoutMethodMobile" id="radMethodUPIMobile" value="UPI" @(profile.PreferredPayoutMethod == "UPI" || string.IsNullOrEmpty(profile.PreferredPayoutMethod) ? "checked" : "") onchange="syncPayoutRadio('UPI')">
-                        <label class="btn btn-outline-success rounded-pill px-3 py-1.5 font-weight-medium flex-fill" for="radMethodUPIMobile"><i class="fa-solid fa-mobile-screen me-1"></i> UPI Direct</label>
+                        <input type="radio" class="btn-check" name="radPayoutMethodMobile" id="radMethodUPIMobile" value="UPI" @(profile.PreferredPayoutMethod == "UPI" || string.IsNullOrEmpty(profile.PreferredPayoutMethod) ? "checked" : "") onchange="handlePayoutMethodChange('UPI')">
+                        <label class="btn btn-outline-success rounded-pill px-3 py-1.5 font-weight-medium flex-fill d-flex align-items-center justify-content-center gap-2" for="radMethodUPIMobile"><i class="fa-solid fa-mobile-screen"></i> UPI Direct</label>
 
-                        <input type="radio" class="btn-check" name="radPayoutMethodMobile" id="radMethodBankMobile" value="Bank" @(profile.PreferredPayoutMethod == "Bank" ? "checked" : "") onchange="syncPayoutRadio('Bank')">
-                        <label class="btn btn-outline-info rounded-pill px-3 py-1.5 font-weight-medium flex-fill" for="radMethodBankMobile"><i class="fa-solid fa-building-columns me-1"></i> Bank Account</label>
+                        <input type="radio" class="btn-check" name="radPayoutMethodMobile" id="radMethodBankMobile" value="Bank" @(profile.PreferredPayoutMethod == "Bank" ? "checked" : "") onchange="handlePayoutMethodChange('Bank')">
+                        <label class="btn btn-outline-info rounded-pill px-3 py-1.5 font-weight-medium flex-fill d-flex align-items-center justify-content-center gap-2" for="radMethodBankMobile"><i class="fa-solid fa-building-columns"></i> Bank Account</label>
                     </div>
                 </div>
 
-                <!-- UPI Input -->
-                <div class="mb-3">
-                    <label class="form-label text-muted small font-weight-bold mb-1">UPI ID (Google Pay, PhonePe, Paytm)</label>
+                <!-- 🌟 Saved Details Display Panel (Directly Below Payment Mode Buttons) -->
+                <div id="pnlSavedDetailsMobile" class="mb-3">
+                    @if (profile.PreferredPayoutMethod == "UPI" && !string.IsNullOrWhiteSpace(profile.UpiId))
+                    {
+                        <div class="p-3 rounded-3 border border-success border-opacity-40" style="background: rgba(16, 185, 129, 0.1);">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-1 font-weight-bold" style="font-size: 0.72rem;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> ACTIVE PAYOUT: UPI DIRECT
+                                </span>
+                                <span class="extra-small text-muted font-weight-medium"><i class="fa-solid fa-bolt text-warning me-1"></i> Instant Payouts</span>
+                            </div>
+                            <div class="mt-2 d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-success bg-opacity-20 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
+                                    <i class="fa-solid fa-qrcode text-success"></i>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <span class="text-muted extra-small d-block font-weight-bold">LINKED UPI ID</span>
+                                    <span class="text-white font-weight-bold font-monospace text-truncate d-block" id="lblSavedUpiMobile">@profile.UpiId</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (profile.PreferredPayoutMethod == "Bank" && !string.IsNullOrWhiteSpace(profile.BankAccountNumber))
+                    {
+                        <div class="p-3 rounded-3 border border-info border-opacity-40" style="background: rgba(14, 165, 233, 0.1);">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50 px-2 py-1 font-weight-bold" style="font-size: 0.72rem;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> ACTIVE PAYOUT: BANK ACCOUNT
+                                </span>
+                                <span class="extra-small text-muted font-weight-medium"><i class="fa-solid fa-shield-halved text-info me-1"></i> Verified</span>
+                            </div>
+                            <div class="row g-2 text-start">
+                                <div class="col-6">
+                                    <span class="text-muted extra-small d-block font-weight-bold">HOLDER</span>
+                                    <span class="text-white small font-weight-bold text-truncate d-block" id="lblSavedHolderMobile">@profile.AccountHolderName</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted extra-small d-block font-weight-bold">BANK</span>
+                                    <span class="text-white small font-weight-bold text-truncate d-block" id="lblSavedBankMobile">@profile.BankName</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted extra-small d-block font-weight-bold">ACCOUNT NUMBER</span>
+                                    <span class="text-white small font-weight-bold font-monospace" id="lblSavedAccMobile">@profile.BankAccountNumber</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted extra-small d-block font-weight-bold">IFSC CODE</span>
+                                    <span class="text-white small font-weight-bold font-monospace text-uppercase" id="lblSavedIfscMobile">@profile.IfscCode</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-2.5 rounded-3 border border-secondary border-opacity-30 text-center text-muted small" style="background: rgba(255, 255, 255, 0.03); font-size: 0.8rem;">
+                            <i class="fa-solid fa-circle-info text-warning me-1"></i> No payout account saved yet. Please configure below.
+                        </div>
+                    }
+                </div>
+
+                <!-- UPI Input Section -->
+                <div id="secUpiFieldsMobile" class="mb-3 @(profile.PreferredPayoutMethod == "Bank" ? "d-none" : "")">
+                    <label class="form-label text-muted small font-weight-bold mb-1">
+                        UPI ID (Google Pay, PhonePe, Paytm) <span class="text-danger font-weight-bold">* Required</span>
+                    </label>
                     <div class="input-group">
                         <span class="input-group-text bg-dark border-secondary text-success"><i class="fa-solid fa-qrcode"></i></span>
                         <input type="text" id="txtMobileUpi" class="form-control glass-input text-success font-weight-bold" value="@profile.UpiId" placeholder="e.g. 9876543210@paytm / name@upi" oninput="$('#txtProfileUpi').val(this.value)">
                     </div>
+                    <span class="extra-small text-muted mt-1 d-block">Payouts will be sent directly to this Virtual Payment Address (VPA).</span>
                 </div>
 
-                <!-- Bank Account Fields -->
-                <div class="border-top border-secondary border-opacity-30 pt-3">
-                    <span class="text-muted small d-block mb-3 font-weight-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fa-solid fa-landmark text-warning me-1"></i> Direct Bank Account Details:</span>
+                <!-- Bank Account Fields Section -->
+                <div id="secBankFieldsMobile" class="border-top border-secondary border-opacity-30 pt-3 @(profile.PreferredPayoutMethod == "Bank" ? "" : "d-none")">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted small font-weight-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fa-solid fa-landmark text-warning me-1"></i> Direct Bank Account Details:</span>
+                        <span class="text-danger extra-small font-weight-bold">* All Fields Required</span>
+                    </div>
                     <div class="row g-3">
                         <div class="col-12 col-sm-6">
-                            <label class="form-label text-muted small font-weight-bold mb-1">Account Holder Name</label>
+                            <label class="form-label text-muted small font-weight-bold mb-1">Account Holder Name <span class="text-danger">*</span></label>
                             <input type="text" id="txtMobileHolderName" class="form-control glass-input text-white" value="@profile.AccountHolderName" placeholder="As per bank passbook" oninput="$('#txtProfileHolderName').val(this.value)">
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label text-muted small font-weight-bold mb-1">Bank Name</label>
+                            <label class="form-label text-muted small font-weight-bold mb-1">Bank Name <span class="text-danger">*</span></label>
                             <input type="text" id="txtMobileBankName" class="form-control glass-input text-white" value="@profile.BankName" placeholder="e.g. SBI, HDFC, ICICI" oninput="$('#txtBankName').val(this.value)">
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label text-muted small font-weight-bold mb-1">Bank Account Number</label>
+                            <label class="form-label text-muted small font-weight-bold mb-1">Bank Account Number <span class="text-danger">*</span></label>
                             <input type="text" id="txtMobileAccountNo" class="form-control glass-input text-white font-monospace" value="@profile.BankAccountNumber" placeholder="Enter bank account number" oninput="$('#txtAccountNo').val(this.value); validateBankAccMatch();">
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label text-muted small font-weight-bold mb-1">Confirm Bank Account Number</label>
+                            <label class="form-label text-muted small font-weight-bold mb-1">Confirm Bank Account Number <span class="text-danger">*</span></label>
                             <input type="text" id="txtMobileConfirmAccountNo" class="form-control glass-input text-white font-monospace" value="@profile.BankAccountNumber" placeholder="Re-enter bank account number" oninput="$('#txtConfirmAccountNo').val(this.value); validateBankAccMatch();">
                             <div id="msgAccMismatchMobile" class="text-danger small mt-1 d-none"><i class="fa-solid fa-circle-exclamation me-1"></i> Account numbers do not match</div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label text-muted small font-weight-bold mb-1">IFSC Code</label>
+                            <label class="form-label text-muted small font-weight-bold mb-1">IFSC Code <span class="text-danger">*</span></label>
                             <input type="text" id="txtMobileIfscCode" class="form-control glass-input text-white text-uppercase" value="@profile.IfscCode" placeholder="e.g. SBIN0001234" oninput="$('#txtIfscCode').val(this.value)">
                         </div>
                     </div>
@@ -1366,168 +1431,100 @@
         </div>
     </div>
 
-    <!-- ==================== TAB 6: PROFILE & SKILLS ==================== -->
+    <!-- ==================== TAB 6: PROFILE DETAILS ==================== -->
     <div id="tab-profile" class="mech-tab-content" style="display:none;">
-        <div class="glass-card mb-4 border-warning border-opacity-30">
+        <div class="glass-card mb-4 p-3 p-md-4">
+            <!-- Top Back Bar for Sub-tab -->
             <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-30">
                 <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold d-inline-flex align-items-center gap-2 shadow-sm" onclick="switchMechTab('tab-home')">
                     <i class="fa-solid fa-arrow-left"></i> <span>Back</span>
                 </button>
-                <span class="badge bg-dark border border-secondary text-warning small font-weight-bold"><i class="fa-solid fa-user-gear me-1"></i> Mechanic Profile</span>
+                <span class="badge bg-dark border border-secondary text-warning small font-weight-bold px-2.5 py-1.5">Profile Settings</span>
             </div>
-            <h4 class="text-white font-weight-bold mb-4"><i class="fa-solid fa-user-gear text-warning me-2"></i> Mechanic Profile &amp; Settings</h4>
 
-            <!-- 👤 1. PERSONAL DETAILS & WORKSHOP INFORMATION (EDITABLE) -->
-            <div class="glass-card mb-4 p-3 p-md-4 border-warning border-opacity-40" style="background: rgba(15, 23, 42, 0.75);">
-                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-30 pb-2">
-                    <h5 class="text-warning font-weight-bold mb-0">
-                        <i class="fa-solid fa-id-badge me-2"></i> Personal &amp; Workshop Details
-                    </h5>
-                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40 rounded-pill px-3 py-1 small">
-                        <i class="fa-solid fa-pen-to-square me-1"></i> Editable Details
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 border-bottom border-secondary border-opacity-40 pb-3">
+                <div>
+                    <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-user-gear text-warning me-2"></i> Mechanic Profile & Settings</h4>
+                    <p class="text-muted small mb-0">Update your verified professional details, skills, working area, and payment preferences.</p>
+                </div>
+            </div>
+
+            <!-- Profile Photo & Identity Header -->
+            <div class="d-flex flex-column flex-sm-row align-items-center gap-3 p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary border-opacity-30 mb-4">
+                <div class="position-relative">
+                    <img src="@(profile.ProfilePhotoUrl ?? "/images/default-avatar.png")" id="imgProfilePreview" class="rounded-circle border border-2 border-warning shadow" style="width: 80px; height: 80px; object-fit: cover;" alt="Avatar" onerror="this.src='/images/default-avatar.png';">
+                    <label for="fileProfilePhotoInput" class="btn btn-warning btn-sm position-absolute bottom-0 end-0 rounded-circle p-1 px-1.5 shadow" title="Upload New Photo" style="cursor: pointer;">
+                        <i class="fa-solid fa-camera fa-xs text-dark"></i>
+                    </label>
+                    <input type="file" id="fileProfilePhotoInput" class="d-none" accept="image/*" onchange="previewProfilePhoto(this)">
+                </div>
+                <div class="text-center text-sm-start">
+                    <h5 class="text-white font-weight-bold mb-0">@user.Name</h5>
+                    <span class="text-muted small d-block">ID: <strong class="text-warning">RS@(user.Id.ToString("D2"))M</strong> • Mechanic Partner</span>
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-30 mt-1">
+                        <i class="fa-solid fa-certificate me-1"></i> Verified Mechanic
                     </span>
                 </div>
-
-                <div class="row g-3">
-                    <!-- Profile Photo Avatar with Edit/Change Trigger -->
-                    <div class="col-12 col-md-auto d-flex flex-column align-items-center justify-content-center text-center pe-md-4 border-md-end border-secondary border-opacity-30">
-                        <div class="position-relative mb-2">
-                            <img id="imgProfilePreview" src="@(string.IsNullOrEmpty(profile.ProfilePhotoUrl) ? "/images/default_avatar.png" : profile.ProfilePhotoUrl)" class="rounded-circle border border-warning shadow-lg" style="width: 96px; height: 96px; object-fit: cover;" />
-                            <label for="fileProfilePhotoInput" class="position-absolute bottom-0 end-0 bg-warning text-dark rounded-circle p-1.5 shadow cursor-pointer d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; cursor: pointer;" title="Change Profile Photo">
-                                <i class="fa-solid fa-camera" style="font-size: 0.9rem;"></i>
-                            </label>
-                            <input type="file" id="fileProfilePhotoInput" class="d-none" accept="image/*" onchange="previewProfilePhoto(this)" />
-                        </div>
-                        <span class="text-muted extra-small" style="font-size: 0.75rem;">Tap camera icon to change</span>
-                    </div>
-
-                    <!-- Personal Information Fields Grid -->
-                    <div class="col-12 col-md">
-                        <div class="row g-2 g-md-3">
-                            <!-- Full Name -->
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label text-muted small font-weight-bold mb-1">
-                                    <i class="fa-solid fa-user text-warning me-1"></i> Full Name <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" id="txtProfileName" class="form-control glass-input text-white font-weight-bold" value="@user.Name" placeholder="Enter Full Name" required>
-                            </div>
-
-                            <!-- Mobile Number -->
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label text-muted small font-weight-bold mb-1">
-                                    <i class="fa-solid fa-phone text-warning me-1"></i> Mobile Number <span class="text-danger">*</span>
-                                </label>
-                                <input type="tel" id="txtProfilePhone" class="form-control glass-input text-white font-weight-bold" value="@user.PhoneNumber" placeholder="Enter 10-digit mobile" required>
-                            </div>
-
-                            <!-- Email Address -->
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label text-muted small font-weight-bold mb-1">
-                                    <i class="fa-solid fa-envelope text-warning me-1"></i> Email Address
-                                </label>
-                                <input type="email" id="txtProfileEmail" class="form-control glass-input text-light" value="@(string.IsNullOrEmpty(profile.Email) ? "" : profile.Email)" placeholder="name@example.com">
-                            </div>
-
-                            <!-- Workshop / Shop Name -->
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label text-muted small font-weight-bold mb-1">
-                                    <i class="fa-solid fa-warehouse text-warning me-1"></i> Workshop / Garage Name
-                                </label>
-                                <input type="text" id="txtProfileShopName" class="form-control glass-input text-light" value="@(string.IsNullOrEmpty(profile.ShopName) ? profile.GarageName : profile.ShopName)" placeholder="e.g. Sharma Auto Care / Express Garage">
-                            </div>
-
-                            <!-- Experience in Years -->
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label text-muted small font-weight-bold mb-1">
-                                    <i class="fa-solid fa-briefcase text-warning me-1"></i> Experience (Years)
-                                </label>
-                                <input type="number" id="txtProfileExperience" class="form-control glass-input text-warning font-weight-bold" value="@profile.ExperienceYears" min="0" max="60" placeholder="e.g. 5">
-                            </div>
-
-                            <!-- Operating City -->
-                            <div class="col-12 col-sm-6">
-                                <label class="form-label text-muted small font-weight-bold mb-1">
-                                    <i class="fa-solid fa-city text-warning me-1"></i> Operating City
-                                </label>
-                                <input type="text" id="txtProfileCity" class="form-control glass-input text-white" value="@profile.City" placeholder="e.g. Noida, Greater Noida, Delhi">
-                            </div>
-
-                            <!-- Workshop / Shop Full Address -->
-                            <div class="col-12">
-                                <label class="form-label text-muted small font-weight-bold mb-1">
-                                    <i class="fa-solid fa-location-dot text-warning me-1"></i> Workshop / Service Address
-                                </label>
-                                <input type="text" id="txtProfileShopAddress" class="form-control glass-input text-light" value="@profile.ShopAddress" placeholder="e.g. Shop #4, Sector 62, Near Metro Station">
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            <!-- Trust Badges Bar -->
+            <!-- 1. Personal & Shop Details -->
             <div class="mb-4">
-                <label class="form-label text-muted small font-weight-bold d-block mb-2">Verified Partner Badges &amp; Specializations:</label>
-                <div class="d-flex flex-wrap gap-2">
-                    @foreach (var badge in profile.GetBadges())
-                    {
-                        <span class="badge @badge.CssClass px-3 py-2 fs-6 font-weight-bold shadow-sm d-inline-flex align-items-center gap-1.5">
-                            @if (!string.IsNullOrEmpty(badge.Icon))
-                            {
-                                <i class="@badge.Icon"></i>
-                            }
-                            <span>@badge.Name</span>
-                        </span>
-                    }
-                    <span class="badge bg-success bg-opacity-25 text-success border border-success px-3 py-2 fs-6 shadow-sm d-inline-flex align-items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> <span>Verified Partner</span></span>
-                </div>
-            </div>
-
-            <!-- Performance Metrics Grid -->
-            <div class="p-3 bg-dark bg-opacity-60 rounded-3 border border-secondary mb-4">
-                <h6 class="text-warning font-weight-bold mb-3">Verified Performance Metrics</h6>
-                <div class="row g-3 text-center">
-                    <div class="col-md-2.4 col-6">
-                        <span class="text-muted small d-block">Jobs Completed</span>
-                        <h4 class="text-white font-weight-extrabold mb-0">@(profile.TotalJobs > 0 ? profile.TotalJobs.ToString() : "1,284")</h4>
+                <label class="form-label text-white font-weight-bold mb-2"><i class="fa-solid fa-id-card text-warning me-1"></i> Basic Identity & Contact Info</label>
+                <div class="row g-3 p-3 bg-dark bg-opacity-40 rounded-3 border border-secondary">
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" id="txtProfileName" class="form-control glass-input text-white" value="@user.Name" placeholder="Your Full Name">
                     </div>
-                    <div class="col-md-2.4 col-6">
-                        <span class="text-muted small d-block">Rating</span>
-                        <h4 class="text-warning font-weight-extrabold mb-0">⭐ @profile.Rating.ToString("F1")</h4>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Mobile Phone Number <span class="text-danger">*</span></label>
+                        <input type="text" id="txtProfilePhone" class="form-control glass-input text-white" value="@user.PhoneNumber" placeholder="10 Digit Phone Number">
                     </div>
-                    <div class="col-md-2.4 col-6">
-                        <span class="text-muted small d-block">Acceptance</span>
-                        <h4 class="text-success font-weight-extrabold mb-0">97%</h4>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Email Address</label>
+                        <input type="email" id="txtProfileEmail" class="form-control glass-input text-white" value="@profile.Email" placeholder="e.g. mechanic@email.com">
                     </div>
-                    <div class="col-md-2.4 col-6">
-                        <span class="text-muted small d-block">Cancellation</span>
-                        <h4 class="text-danger font-weight-extrabold mb-0">1%</h4>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Garage / Shop Name</label>
+                        <input type="text" id="txtShopName" class="form-control glass-input text-white" value="@profile.ShopName" placeholder="e.g. Sharma Auto Care">
                     </div>
-                    <div class="col-md-2.4 col-6">
-                        <span class="text-muted small d-block">Repeat Customers</span>
-                        <h4 class="text-info font-weight-extrabold mb-0">14</h4>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Experience (Years)</label>
+                        <input type="number" id="txtExperienceYears" class="form-control glass-input text-white" value="@profile.ExperienceYears" min="0" max="50">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Operational City / Hub</label>
+                        <input type="text" id="txtCity" class="form-control glass-input text-white" value="@profile.City" placeholder="e.g. Jaipur, Rajasthan">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted small mb-1">Shop / Base Station Address</label>
+                        <input type="text" id="txtShopAddress" class="form-control glass-input text-white" value="@profile.ShopAddress" placeholder="Full physical garage or residential base address">
                     </div>
                 </div>
             </div>
 
-            <!-- Skills Checkboxes Selector -->
+            <!-- 2. Vehicle Skills & Specialization -->
             <div class="mb-4">
-                <label class="form-label text-white font-weight-bold mb-2"><i class="fa-solid fa-screwdriver-wrench text-warning me-1"></i> Mechanic Skills &amp; Specializations</label>
-                <div class="d-flex flex-wrap gap-2 p-3 bg-dark bg-opacity-40 rounded-3 border border-secondary">
-                    @foreach (var sk in new[] { "Battery", "Tyre", "Engine", "Electrical", "AC", "Clutch", "Brake", "E-Rickshaw EV", "Auto-Rickshaw", "CNG System", "BLDC Motor", "Controller", "Lithium Battery", "Diesel", "Petrol", "Truck", "JCB", "Crane" })
-                    {
-                        bool isChecked = (profile.Specialization ?? "").Contains(sk) 
-                                      || (profile.VehicleExpertise ?? "").Contains(sk) 
-                                      || (profile.ErickshawSkills ?? "").Contains(sk) 
-                                      || (profile.AutoSkills ?? "").Contains(sk) 
-                                      || sk == "Battery" || sk == "Engine";
-                        var idSafe = sk.Replace(" ", "-").Replace("&", "and");
-                        <input type="checkbox" class="btn-check" name="chkSkills" id="chkSkill-@idSafe" value="@sk" @(isChecked ? "checked" : "") autocomplete="off">
-                        <label class="btn btn-outline-warning rounded-pill px-3 py-1 font-weight-medium" for="chkSkill-@idSafe">@sk</label>
-                    }
+                <label class="form-label text-white font-weight-bold mb-2"><i class="fa-solid fa-screwdriver-wrench text-warning me-1"></i> Skills & Vehicle Expertise</label>
+                <div class="p-3 bg-dark bg-opacity-40 rounded-3 border border-secondary">
+                    <span class="text-muted small d-block mb-3">Select the vehicle categories and repair specializations you can service on-site:</span>
+                    <div class="row g-2">
+                        @foreach (var cat in new[] { "Cars / 4-Wheelers", "Bikes / 2-Wheelers", "SUVs / Vans", "Commercial / Trucks", "Battery & Jump-Start", "Puncture & Tyres", "Engine Diagnostics", "Towing Assist" })
+                        {
+                            bool isChecked = (profile.VehicleExpertise != null && profile.VehicleExpertise.Contains(cat)) || (profile.Specialization != null && profile.Specialization.Contains(cat));
+                            <div class="col-6 col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="chkSkills" value="@cat" id="chkSkill-@cat.Replace(" ", "").Replace("/", "")" @(isChecked ? "checked" : "")>
+                                    <label class="form-check-label text-light small" for="chkSkill-@cat.Replace(" ", "").Replace("/", "")">
+                                        @cat
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
 
-            <!-- Service Area Radius Selector -->
+            <!-- 3. Service Area Radius Selector -->
             <div class="mb-4">
                 <label class="form-label text-white font-weight-bold mb-2"><i class="fa-solid fa-map-location-dot text-warning me-1"></i> Service Area Radius Coverage</label>
                 <div class="d-flex flex-wrap gap-3 p-3 bg-dark bg-opacity-40 rounded-3 border border-secondary">
@@ -1540,10 +1537,10 @@
                 </div>
             </div>
 
-            <!-- Payment & Settlement Preferences (Laptop & PC only) -->
+            <!-- 4. Payment & Settlement Preferences (Laptop & PC only) -->
             <div class="mb-4 d-none d-lg-block">
                 <label class="form-label text-white font-weight-bold mb-2">
-                    <i class="fa-solid fa-wallet text-success me-1"></i> Payment &amp; Payout Preferences <span class="badge bg-secondary font-weight-normal ms-2">All Optional</span>
+                    <i class="fa-solid fa-wallet text-success me-1"></i> Payment &amp; Payout Preferences
                 </label>
                 <div class="p-3 bg-dark bg-opacity-40 rounded-3 border border-secondary">
                     
@@ -1551,54 +1548,81 @@
                     <div class="mb-3">
                         <label class="form-label text-muted small d-block font-weight-medium">Preferred Payout Mode:</label>
                         <div class="d-flex flex-wrap gap-2">
-                            <input type="radio" class="btn-check" name="radPayoutMethod" id="radMethodUPI" value="UPI" @(profile.PreferredPayoutMethod == "UPI" || string.IsNullOrEmpty(profile.PreferredPayoutMethod) ? "checked" : "") autocomplete="off" onchange="syncPayoutRadio('UPI')">
-                            <label class="btn btn-outline-success rounded-pill px-3 py-1 font-weight-medium" for="radMethodUPI"><i class="fa-solid fa-mobile-screen me-1"></i> UPI Direct</label>
+                            <input type="radio" class="btn-check" name="radPayoutMethod" id="radMethodUPI" value="UPI" @(profile.PreferredPayoutMethod == "UPI" || string.IsNullOrEmpty(profile.PreferredPayoutMethod) ? "checked" : "") autocomplete="off" onchange="handlePayoutMethodChange('UPI')">
+                            <label class="btn btn-outline-success rounded-pill px-3 py-1.5 font-weight-medium" for="radMethodUPI"><i class="fa-solid fa-mobile-screen me-1"></i> UPI Direct</label>
 
-                            <input type="radio" class="btn-check" name="radPayoutMethod" id="radMethodBank" value="Bank" @(profile.PreferredPayoutMethod == "Bank" ? "checked" : "") autocomplete="off" onchange="syncPayoutRadio('Bank')">
-                            <label class="btn btn-outline-info rounded-pill px-3 py-1 font-weight-medium" for="radMethodBank"><i class="fa-solid fa-building-columns me-1"></i> Bank Account</label>
+                            <input type="radio" class="btn-check" name="radPayoutMethod" id="radMethodBank" value="Bank" @(profile.PreferredPayoutMethod == "Bank" ? "checked" : "") autocomplete="off" onchange="handlePayoutMethodChange('Bank')">
+                            <label class="btn btn-outline-info rounded-pill px-3 py-1.5 font-weight-medium" for="radMethodBank"><i class="fa-solid fa-building-columns me-1"></i> Bank Account</label>
                         </div>
                     </div>
 
-                    <div class="row g-3">
-                        <!-- UPI ID Input -->
-                        <div class="col-12">
-                            <label class="form-label text-muted small mb-1 font-weight-bold">UPI ID (Optional)</label>
-                            <input type="text" id="txtProfileUpi" class="form-control glass-input text-success font-weight-bold" value="@profile.UpiId" placeholder="e.g. 9876543210@paytm / name@upi">
-                        </div>
-
-                        <!-- Bank Details (Optional) -->
-                        <div class="col-12 border-top border-secondary border-opacity-30 pt-3">
-                            <span class="text-muted small d-block mb-2 font-weight-bold"><i class="fa-solid fa-landmark me-1"></i> Bank Account Details (Optional):</span>
-                            <div class="row g-2">
-                                <div class="col-md-3">
-                                    <label class="form-label text-muted extra-small mb-1">Account Holder Name</label>
-                                    <input type="text" id="txtProfileHolderName" class="form-control glass-input text-white" value="@profile.AccountHolderName" placeholder="Account Holder Name">
+                    <!-- 🌟 Saved Details Display Panel Desktop -->
+                    <div id="pnlSavedDetailsDesktop" class="mb-3">
+                        @if (profile.PreferredPayoutMethod == "UPI" && !string.IsNullOrWhiteSpace(profile.UpiId))
+                        {
+                            <div class="p-3 rounded-3 border border-success border-opacity-40" style="background: rgba(16, 185, 129, 0.1);">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-1 font-weight-bold">
+                                        <i class="fa-solid fa-circle-check me-1"></i> ACTIVE PAYOUT: UPI DIRECT
+                                    </span>
+                                    <span class="extra-small text-muted font-weight-medium"><i class="fa-solid fa-bolt text-warning me-1"></i> Instant Payouts</span>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label text-muted extra-small mb-1">Bank Name</label>
-                                    <input type="text" id="txtBankName" class="form-control glass-input text-white" value="@profile.BankName" placeholder="Bank Name (e.g. SBI, HDFC)">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label text-muted extra-small mb-1">Account Number</label>
-                                    <input type="text" id="txtAccountNo" class="form-control glass-input text-white font-monospace" value="@profile.BankAccountNumber" placeholder="Account Number" oninput="validateBankAccMatch()">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label text-muted extra-small mb-1">Confirm Account Number</label>
-                                    <input type="text" id="txtConfirmAccountNo" class="form-control glass-input text-white font-monospace" value="@profile.BankAccountNumber" placeholder="Confirm Account No" oninput="validateBankAccMatch()">
-                                </div>
-                                <div class="col-md-3 mt-2">
-                                    <label class="form-label text-muted extra-small mb-1">IFSC Code</label>
-                                    <input type="text" id="txtIfscCode" class="form-control glass-input text-white text-uppercase" value="@profile.IfscCode" placeholder="IFSC Code">
-                                </div>
-                                <div class="col-12">
-                                    <div id="msgAccMismatchDesktop" class="text-danger small mt-1 d-none"><i class="fa-solid fa-circle-exclamation me-1"></i> Bank Account Number and Confirm Account Number do not match!</div>
+                                <div class="mt-2 d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-success bg-opacity-20 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="fa-solid fa-qrcode text-success"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted extra-small d-block font-weight-bold">LINKED UPI ID</span>
+                                        <span class="text-white font-weight-bold font-monospace" id="lblSavedUpiDesktop">@profile.UpiId</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        }
+                        else if (profile.PreferredPayoutMethod == "Bank" && !string.IsNullOrWhiteSpace(profile.BankAccountNumber))
+                        {
+                            <div class="p-3 rounded-3 border border-info border-opacity-40" style="background: rgba(14, 165, 233, 0.1);">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50 px-2 py-1 font-weight-bold">
+                                        <i class="fa-solid fa-circle-check me-1"></i> ACTIVE PAYOUT: BANK ACCOUNT
+                                    </span>
+                                    <span class="extra-small text-muted font-weight-medium"><i class="fa-solid fa-shield-halved text-info me-1"></i> Verified</span>
+                                </div>
+                                <div class="row g-2 text-start">
+                                    <div class="col-md-3">
+                                        <span class="text-muted extra-small d-block font-weight-bold">HOLDER</span>
+                                        <span class="text-white small font-weight-bold text-truncate d-block" id="lblSavedHolderDesktop">@profile.AccountHolderName</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="text-muted extra-small d-block font-weight-bold">BANK</span>
+                                        <span class="text-white small font-weight-bold text-truncate d-block" id="lblSavedBankDesktop">@profile.BankName</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="text-muted extra-small d-block font-weight-bold">ACCOUNT NUMBER</span>
+                                        <span class="text-white small font-weight-bold font-monospace" id="lblSavedAccDesktop">@profile.BankAccountNumber</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="text-muted extra-small d-block font-weight-bold">IFSC CODE</span>
+                                        <span class="text-white small font-weight-bold font-monospace text-uppercase" id="lblSavedIfscDesktop">@profile.IfscCode</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="p-2.5 rounded-3 border border-secondary border-opacity-30 text-center text-muted small" style="background: rgba(255, 255, 255, 0.03);">
+                                <i class="fa-solid fa-circle-info text-warning me-1"></i> No payout account saved yet. Please configure below.
+                            </div>
+                        }
                     </div>
-                </div>
-            </div>
 
+                    <!-- UPI ID Input Section -->
+                    <div id="secUpiFieldsDesktop" class="row g-3 mb-3 @(profile.PreferredPayoutMethod == "Bank" ? "d-none" : "")">
+                        <div class="col-12">
+                            <label class="form-label text-muted small mb-1 font-weight-bold">
+                                UPI ID <span class="text-danger font-weight-bold">* Required</span>
+                            </label>
+                            <input type="text" id="txtProfileUpi" class="form-control glass-input text-success font-weight-bold" value="@profile.UpiId" placeholder="e.g. 9876543210@paytm / name@upi">
+                        </div>
             <div class="d-flex justify-content-center justify-content-md-start">
                 <button class="btn btn-premium-primary font-weight-bold px-5 py-3 shadow-lg rounded-pill" id="btnSaveProfileSettings" onclick="saveProfileSettings()">
                     <i class="fa-solid fa-floppy-disk me-2"></i> Save Profile Details &amp; Settings
@@ -2064,6 +2088,62 @@
         }
     }
 
+    function handlePayoutMethodChange(method) {
+        syncPayoutRadio(method);
+        if (method === 'UPI') {
+            $('#secUpiFieldsMobile, #secUpiFieldsDesktop').removeClass('d-none');
+            $('#secBankFieldsMobile, #secBankFieldsDesktop').addClass('d-none');
+        } else {
+            $('#secUpiFieldsMobile, #secUpiFieldsDesktop').addClass('d-none');
+            $('#secBankFieldsMobile, #secBankFieldsDesktop').removeClass('d-none');
+        }
+    }
+
+    function renderSavedDetailsPanel(data) {
+        var html = '';
+        var method = data.preferredPayoutMethod || 'UPI';
+        if (method === 'UPI' && data.upiId) {
+            html = '<div class="p-3 rounded-3 border border-success border-opacity-40 animate-fade-in" style="background: rgba(16, 185, 129, 0.1);">' +
+                   '  <div class="d-flex align-items-center justify-content-between mb-1">' +
+                   '    <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-1 font-weight-bold" style="font-size: 0.72rem;">' +
+                   '      <i class="fa-solid fa-circle-check me-1"></i> ACTIVE PAYOUT: UPI DIRECT' +
+                   '    </span>' +
+                   '    <span class="extra-small text-muted font-weight-medium"><i class="fa-solid fa-bolt text-warning me-1"></i> Instant Payouts</span>' +
+                   '  </div>' +
+                   '  <div class="mt-2 d-flex align-items-center gap-2">' +
+                   '    <div class="rounded-circle bg-success bg-opacity-20 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">' +
+                   '      <i class="fa-solid fa-qrcode text-success"></i>' +
+                   '    </div>' +
+                   '    <div class="overflow-hidden">' +
+                   '      <span class="text-muted extra-small d-block font-weight-bold">LINKED UPI ID</span>' +
+                   '      <span class="text-white font-weight-bold font-monospace text-truncate d-block">' + (data.upiId || '') + '</span>' +
+                   '    </div>' +
+                   '  </div>' +
+                   '</div>';
+        } else if (method === 'Bank' && data.accountNumber) {
+            html = '<div class="p-3 rounded-3 border border-info border-opacity-40 animate-fade-in" style="background: rgba(14, 165, 233, 0.1);">' +
+                   '  <div class="d-flex align-items-center justify-content-between mb-2">' +
+                   '    <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50 px-2 py-1 font-weight-bold" style="font-size: 0.72rem;">' +
+                   '      <i class="fa-solid fa-circle-check me-1"></i> ACTIVE PAYOUT: BANK ACCOUNT' +
+                   '    </span>' +
+                   '    <span class="extra-small text-muted font-weight-medium"><i class="fa-solid fa-shield-halved text-info me-1"></i> Verified</span>' +
+                   '  </div>' +
+                   '  <div class="row g-2 text-start">' +
+                   '    <div class="col-6 col-md-3"><span class="text-muted extra-small d-block font-weight-bold">HOLDER</span><span class="text-white small font-weight-bold text-truncate d-block">' + (data.accountHolderName || '') + '</span></div>' +
+                   '    <div class="col-6 col-md-3"><span class="text-muted extra-small d-block font-weight-bold">BANK</span><span class="text-white small font-weight-bold text-truncate d-block">' + (data.bankName || '') + '</span></div>' +
+                   '    <div class="col-6 col-md-3"><span class="text-muted extra-small d-block font-weight-bold">ACCOUNT NUMBER</span><span class="text-white small font-weight-bold font-monospace">' + (data.accountNumber || '') + '</span></div>' +
+                   '    <div class="col-6 col-md-3"><span class="text-muted extra-small d-block font-weight-bold">IFSC CODE</span><span class="text-white small font-weight-bold font-monospace text-uppercase">' + (data.ifscCode || '') + '</span></div>' +
+                   '  </div>' +
+                   '</div>';
+        } else {
+            html = '<div class="p-2.5 rounded-3 border border-secondary border-opacity-30 text-center text-muted small" style="background: rgba(255, 255, 255, 0.03); font-size: 0.8rem;">' +
+                   '  <i class="fa-solid fa-circle-info text-warning me-1"></i> No payout account saved yet. Please configure below.' +
+                   '</div>';
+        }
+
+        $('#pnlSavedDetailsMobile, #pnlSavedDetailsDesktop').html(html);
+    }
+
     function syncPayoutRadio(val) {
         $('input[name="radPayoutMethod"][value="' + val + '"]').prop('checked', true);
         $('input[name="radPayoutMethodMobile"][value="' + val + '"]').prop('checked', true);
@@ -2073,33 +2153,67 @@
         var $btn = btnElement ? $(btnElement) : $('#btnSaveBankDetailsMobile');
         var originalBtnHtml = $btn.html();
         
+        var payoutMethod = $('input[name="radPayoutMethodMobile"]:checked').val() || $('input[name="radPayoutMethod"]:checked').val() || 'UPI';
         var upi = ($('#txtMobileUpi').val() || $('#txtProfileUpi').val() || '').trim();
         var bankName = ($('#txtMobileBankName').val() || $('#txtBankName').val() || '').trim();
         var accNo = ($('#txtMobileAccountNo').val() || $('#txtAccountNo').val() || '').trim();
         var confirmAccNo = ($('#txtMobileConfirmAccountNo').val() || $('#txtConfirmAccountNo').val() || '').trim();
         var ifsc = ($('#txtMobileIfscCode').val() || $('#txtIfscCode').val() || '').trim();
         var holderName = ($('#txtMobileHolderName').val() || $('#txtProfileHolderName').val() || '').trim();
-        var payoutMethod = $('input[name="radPayoutMethodMobile"]:checked').val() || $('input[name="radPayoutMethod"]:checked').val() || 'UPI';
 
-        if (accNo !== '' && confirmAccNo !== '' && accNo !== confirmAccNo) {
-            alert('⚠️ Bank Account Number and Confirm Account Number do not match! Please check and enter the same account number.');
-            validateBankAccMatch();
-            $('#txtMobileConfirmAccountNo, #txtConfirmAccountNo').focus();
-            return;
+        // 1. Strict Validation Based on Selected Payout Method
+        if (payoutMethod === 'UPI') {
+            if (!upi || upi.indexOf('@@') === -1) {
+                alert('⚠️ UPI ID is required when UPI Direct is selected! Please enter a valid UPI ID (e.g. 9876543210@@paytm or yourname@@okhdfcbank).');
+                $('#txtMobileUpi, #txtProfileUpi').focus();
+                return;
+            }
+        } else if (payoutMethod === 'Bank') {
+            if (!holderName) {
+                alert('⚠️ Account Holder Name is required! Please enter the name as per bank passbook.');
+                $('#txtMobileHolderName, #txtProfileHolderName').focus();
+                return;
+            }
+            if (!bankName) {
+                alert('⚠️ Bank Name is required! Please enter your bank name (e.g. SBI, HDFC, ICICI).');
+                $('#txtMobileBankName, #txtBankName').focus();
+                return;
+            }
+            if (!accNo) {
+                alert('⚠️ Bank Account Number is required! Please enter your bank account number.');
+                $('#txtMobileAccountNo, #txtAccountNo').focus();
+                return;
+            }
+            if (!confirmAccNo) {
+                alert('⚠️ Please confirm your Bank Account Number in the confirm account field.');
+                $('#txtMobileConfirmAccountNo, #txtConfirmAccountNo').focus();
+                return;
+            }
+            if (accNo !== confirmAccNo) {
+                alert('❌ Bank Account Number and Confirm Account Number do not match! Please check and enter the identical account number.');
+                validateBankAccMatch();
+                $('#txtMobileConfirmAccountNo, #txtConfirmAccountNo').focus();
+                return;
+            }
+            if (!ifsc || ifsc.length < 5) {
+                alert('⚠️ Valid IFSC Code is required! Please enter your bank IFSC (e.g. SBIN0001234).');
+                $('#txtMobileIfscCode, #txtIfscCode').focus();
+                return;
+            }
         }
 
         var formData = new FormData();
+        formData.append('preferredPayoutMethod', payoutMethod);
         formData.append('upiId', upi);
         formData.append('bankName', bankName);
         formData.append('accountNumber', accNo);
         formData.append('ifscCode', ifsc);
         formData.append('accountHolderName', holderName);
-        formData.append('preferredPayoutMethod', payoutMethod);
 
         $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving Bank Details...');
 
         $.ajax({
-            url: '/Mechanic/UpdateProfileSettings',
+            url: '/Mechanic/UpdateBankDetails',
             type: 'POST',
             data: formData,
             processData: false,
@@ -2107,17 +2221,19 @@
             success: function(res) {
                 $btn.prop('disabled', false).html(originalBtnHtml);
                 if (res.success) {
-                    alert('✅ Bank and payout details saved successfully!');
-                    // Sync inputs
-                    $('#txtProfileUpi, #txtMobileUpi').val(upi);
-                    $('#txtBankName, #txtMobileBankName').val(bankName);
-                    $('#txtAccountNo, #txtMobileAccountNo').val(accNo);
-                    $('#txtConfirmAccountNo, #txtMobileConfirmAccountNo').val(accNo);
-                    $('#txtIfscCode, #txtMobileIfscCode').val(ifsc);
-                    $('#txtProfileHolderName, #txtMobileHolderName').val(holderName);
-                    $('input[name="radPayoutMethod"][value="' + payoutMethod + '"]').prop('checked', true);
-                    $('input[name="radPayoutMethodMobile"][value="' + payoutMethod + '"]').prop('checked', true);
+                    alert('✅ ' + (res.message || 'Bank and payout details updated successfully!'));
+                    // Sync inputs across tabs
+                    $('#txtProfileUpi, #txtMobileUpi').val(res.upiId || upi);
+                    $('#txtBankName, #txtMobileBankName').val(res.bankName || bankName);
+                    $('#txtAccountNo, #txtMobileAccountNo').val(res.accountNumber || accNo);
+                    $('#txtConfirmAccountNo, #txtMobileConfirmAccountNo').val(res.accountNumber || accNo);
+                    $('#txtIfscCode, #txtMobileIfscCode').val(res.ifscCode || ifsc);
+                    $('#txtProfileHolderName, #txtMobileHolderName').val(res.accountHolderName || holderName);
+                    syncPayoutRadio(res.preferredPayoutMethod || payoutMethod);
                     $('#msgAccMismatchDesktop, #msgAccMismatchMobile').addClass('d-none');
+
+                    // Update live saved payout display panel
+                    renderSavedDetailsPanel(res);
                 } else {
                     alert('❌ ' + (res.message || 'Error saving bank details.'));
                 }

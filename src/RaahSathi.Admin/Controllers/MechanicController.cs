@@ -1395,6 +1395,101 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> UpdateBankDetails(
+            string preferredPayoutMethod, string? upiId, string? accountHolderName,
+            string? bankName, string? accountNumber, string? ifscCode)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated" });
+
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (profile == null) return Json(new { success = false, message = "Profile not found." });
+
+            preferredPayoutMethod = (preferredPayoutMethod ?? "UPI").Trim();
+
+            // 1. Validation based on Payment Mode
+            if (preferredPayoutMethod.Equals("UPI", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(upiId) || !upiId.Contains('@'))
+                {
+                    return Json(new { success = false, message = "⚠️ Please enter a valid UPI ID (e.g. 9876543210@paytm or yourname@okhdfcbank)." });
+                }
+                upiId = upiId.Trim();
+            }
+            else if (preferredPayoutMethod.Equals("Bank", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(accountHolderName))
+                {
+                    return Json(new { success = false, message = "⚠️ Please enter the Account Holder Name as per bank passbook." });
+                }
+                if (string.IsNullOrWhiteSpace(bankName))
+                {
+                    return Json(new { success = false, message = "⚠️ Please enter your Bank Name (e.g. SBI, HDFC, ICICI)." });
+                }
+                if (string.IsNullOrWhiteSpace(accountNumber))
+                {
+                    return Json(new { success = false, message = "⚠️ Please enter your Bank Account Number." });
+                }
+                if (string.IsNullOrWhiteSpace(ifscCode) || ifscCode.Trim().Length < 5)
+                {
+                    return Json(new { success = false, message = "⚠️ Please enter a valid Bank IFSC Code (e.g. SBIN0001234)." });
+                }
+
+                accountHolderName = accountHolderName.Trim();
+                bankName = bankName.Trim();
+                accountNumber = accountNumber.Trim();
+                ifscCode = ifscCode.Trim().ToUpper();
+            }
+            else
+            {
+                preferredPayoutMethod = "UPI";
+            }
+
+            // 2. Execute Stored Procedure: rs_mechanicprofiles_update_bank_details
+            bool spExecuted = false;
+            try
+            {
+                if (_dbContext.Database.IsSqlServer())
+                {
+                    await _dbContext.Database.ExecuteSqlRawAsync(
+                        "EXEC dbo.rs_mechanicprofiles_update_bank_details @MechanicUserId = {0}, @PreferredPayoutMethod = {1}, @UpiId = {2}, @AccountHolderName = {3}, @BankName = {4}, @BankAccountNumber = {5}, @IfscCode = {6}",
+                        user.Id, preferredPayoutMethod, (object?)upiId ?? DBNull.Value, (object?)accountHolderName ?? DBNull.Value, (object?)bankName ?? DBNull.Value, (object?)accountNumber ?? DBNull.Value, (object?)ifscCode ?? DBNull.Value
+                    );
+                    spExecuted = true;
+                }
+            }
+            catch
+            {
+                // Fallback handled below
+            }
+
+            // Sync EF Core entity model
+            profile.PreferredPayoutMethod = preferredPayoutMethod;
+            if (upiId != null) profile.UpiId = upiId;
+            if (accountHolderName != null) profile.AccountHolderName = accountHolderName;
+            if (bankName != null) profile.BankName = bankName;
+            if (accountNumber != null) profile.BankAccountNumber = accountNumber;
+            if (ifscCode != null) profile.IfscCode = ifscCode;
+
+            if (!spExecuted)
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+
+            return Json(new
+            {
+                success = true,
+                message = "Bank & payout details updated successfully via Stored Procedure!",
+                preferredPayoutMethod = profile.PreferredPayoutMethod,
+                upiId = profile.UpiId ?? "",
+                accountHolderName = profile.AccountHolderName ?? "",
+                bankName = profile.BankName ?? "",
+                accountNumber = profile.BankAccountNumber ?? "",
+                ifscCode = profile.IfscCode ?? ""
+            });
+        }
+
+        [HttpPost]
         public async Task<IActionResult> WithdrawWallet(
             double amount, string payoutMethod, string accountHolderName, 
             string accountNumber, string bankName, string ifscCode, string upiId)

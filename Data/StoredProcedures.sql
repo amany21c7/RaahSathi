@@ -255,3 +255,45 @@ BEGIN
     END CATCH
 END;
 GO
+
+-- 5. Atomic Mechanic Bank & Payout Details Update
+CREATE OR ALTER PROCEDURE dbo.sp_UpdateMechanicBankDetails
+    @MechanicId INT,
+    @PreferredPayoutMethod NVARCHAR(50),
+    @UpiId NVARCHAR(100) = NULL,
+    @AccountHolderName NVARCHAR(200) = NULL,
+    @BankName NVARCHAR(200) = NULL,
+    @BankAccountNumber NVARCHAR(100) = NULL,
+    @IfscCode NVARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF EXISTS (SELECT 1 FROM dbo.MechanicProfiles WITH (UPDLOCK) WHERE UserId = @MechanicId)
+        BEGIN
+            UPDATE dbo.MechanicProfiles WITH (ROWLOCK)
+            SET PreferredPayoutMethod = @PreferredPayoutMethod,
+                UpiId = @UpiId,
+                AccountHolderName = @AccountHolderName,
+                BankName = @BankName,
+                BankAccountNumber = @BankAccountNumber,
+                IfscCode = @IfscCode
+            WHERE UserId = @MechanicId;
+        END
+
+        COMMIT TRANSACTION;
+        SELECT 1 AS Success, 'Bank details updated successfully.' AS Message;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        SELECT 0 AS Success, @ErrorMessage AS Message;
+    END CATCH
+END;
+GO
