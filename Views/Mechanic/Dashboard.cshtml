@@ -1003,6 +1003,14 @@
                         </div>
                     }
                 </div>
+
+                <!-- Load More / Pagination Action -->
+                <div id="historyLoadMoreContainer" class="mt-3 text-center @(pastJobs.Count <= 10 ? "d-none" : "")">
+                    <button type="button" id="btnLoadMoreHistory" class="btn btn-outline-warning btn-sm w-100 py-2.5 rounded-pill font-weight-bold d-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="loadMoreHistoryJobs()" style="min-height: 44px; font-size: 0.88rem; border-color: rgba(255, 107, 0, 0.6); background: rgba(255, 107, 0, 0.08);">
+                        <i class="fa-solid fa-angles-down"></i> <span id="lblLoadMoreText">Load More Completed Jobs</span>
+                    </button>
+                    <div id="lblHistoryLoadedSummary" class="text-muted small mt-2" style="font-size: 0.76rem;"></div>
+                </div>
             }
         </div>
     </div>
@@ -2582,6 +2590,64 @@
         window.print();
     }
 
+    var historyPageSize = 10;
+    var historyVisibleLimit = 10;
+    var historyMatchedItems = [];
+
+    function renderHistoryPagination() {
+        var totalMatched = historyMatchedItems.length;
+        
+        // Hide all table rows and cards first
+        $('table.history-table tbody tr.history-job-row').addClass('d-none');
+        $('.d-md-none .history-job-row.history-mobile-card').addClass('d-none');
+
+        // Show items up to visible limit
+        var currentlyShown = Math.min(historyVisibleLimit, totalMatched);
+        for (var i = 0; i < currentlyShown; i++) {
+            if (historyMatchedItems[i].tableRow) {
+                $(historyMatchedItems[i].tableRow).removeClass('d-none');
+            }
+            if (historyMatchedItems[i].card) {
+                $(historyMatchedItems[i].card).removeClass('d-none');
+            }
+        }
+
+        if (totalMatched === 0) {
+            $('#historyLoadMoreContainer').addClass('d-none');
+            if ($('#historyNoJobsRow').length === 0) {
+                $('table.history-table tbody').append('<tr id="historyNoJobsRow"><td colspan="7" class="text-center text-muted py-4">No completed jobs found for the selected date range.</td></tr>');
+            } else {
+                $('#historyNoJobsRow').removeClass('d-none');
+            }
+            $('#historyNoJobsCard').removeClass('d-none');
+        } else {
+            $('#historyNoJobsRow').addClass('d-none');
+            $('#historyNoJobsCard').addClass('d-none');
+
+            var $btnLoadMore = $('#btnLoadMoreHistory');
+            if (currentlyShown < totalMatched) {
+                $('#historyLoadMoreContainer').removeClass('d-none');
+                $btnLoadMore.removeClass('disabled').prop('disabled', false)
+                    .html('<i class="fa-solid fa-angles-down me-1"></i> Load More Jobs (' + (totalMatched - currentlyShown) + ' remaining)');
+                $('#lblHistoryLoadedSummary').text('Showing ' + currentlyShown + ' of ' + totalMatched + ' completed jobs');
+            } else {
+                if (totalMatched > historyPageSize) {
+                    $('#historyLoadMoreContainer').removeClass('d-none');
+                    $btnLoadMore.addClass('disabled').prop('disabled', true)
+                        .html('<i class="fa-solid fa-check-circle text-success me-1"></i> All ' + totalMatched + ' jobs loaded');
+                    $('#lblHistoryLoadedSummary').text('Showing all ' + totalMatched + ' completed jobs');
+                } else {
+                    $('#historyLoadMoreContainer').addClass('d-none');
+                }
+            }
+        }
+    }
+
+    function loadMoreHistoryJobs() {
+        historyVisibleLimit += historyPageSize;
+        renderHistoryPagination();
+    }
+
     function applyHistoryDateFilter() {
         var startVal = $('#historyStartDate').val();
         var endVal = $('#historyEndDate').val();
@@ -2607,8 +2673,13 @@
             endDate.setHours(23, 59, 59, 999);
         }
 
-        var visibleCount = 0;
-        $('.history-job-row').each(function() {
+        historyMatchedItems = [];
+        historyVisibleLimit = historyPageSize;
+
+        var $tableRows = $('table.history-table tbody tr.history-job-row');
+        var $cards = $('.d-md-none .history-job-row.history-mobile-card');
+
+        $tableRows.each(function(idx) {
             var rowDateStr = $(this).data('date');
             if (!rowDateStr) {
                 rowDateStr = new Date().toISOString().split('T')[0];
@@ -2617,25 +2688,14 @@
             rowDate.setHours(0, 0, 0, 0);
             
             if (rowDate >= startDate && rowDate <= endDate) {
-                $(this).removeClass('d-none');
-                visibleCount++;
-            } else {
-                $(this).addClass('d-none');
+                historyMatchedItems.push({
+                    tableRow: this,
+                    card: $cards.get(idx)
+                });
             }
         });
 
-        // Toggle placeholder row & mobile card
-        if (visibleCount === 0) {
-            if ($('#historyNoJobsRow').length === 0) {
-                $('table.history-table tbody').append('<tr id="historyNoJobsRow"><td colspan="7" class="text-center text-muted py-4">No completed jobs found for the selected date range.</td></tr>');
-            } else {
-                $('#historyNoJobsRow').removeClass('d-none');
-            }
-            $('#historyNoJobsCard').removeClass('d-none');
-        } else {
-            $('#historyNoJobsRow').addClass('d-none');
-            $('#historyNoJobsCard').addClass('d-none');
-        }
+        renderHistoryPagination();
     }
 
     function resetHistoryDateFilter() {
@@ -2651,8 +2711,13 @@
         var now = new Date();
         now.setHours(23, 59, 59, 999);
 
-        var visibleCount = 0;
-        $('.history-job-row').each(function() {
+        historyMatchedItems = [];
+        historyVisibleLimit = historyPageSize;
+
+        var $tableRows = $('table.history-table tbody tr.history-job-row');
+        var $cards = $('.d-md-none .history-job-row.history-mobile-card');
+
+        $tableRows.each(function(idx) {
             var rowDateStr = $(this).data('date');
             if (!rowDateStr) {
                 rowDateStr = new Date().toISOString().split('T')[0];
@@ -2661,24 +2726,14 @@
             rowDate.setHours(0, 0, 0, 0);
 
             if (rowDate >= oneMonthAgo && rowDate <= now) {
-                $(this).removeClass('d-none');
-                visibleCount++;
-            } else {
-                $(this).addClass('d-none');
+                historyMatchedItems.push({
+                    tableRow: this,
+                    card: $cards.get(idx)
+                });
             }
         });
 
-        if (visibleCount === 0) {
-            if ($('#historyNoJobsRow').length === 0) {
-                $('table.history-table tbody').append('<tr id="historyNoJobsRow"><td colspan="7" class="text-center text-muted py-4">No completed jobs found in the last 1 month.</td></tr>');
-            } else {
-                $('#historyNoJobsRow').removeClass('d-none');
-            }
-            $('#historyNoJobsCard').removeClass('d-none');
-        } else {
-            $('#historyNoJobsRow').addClass('d-none');
-            $('#historyNoJobsCard').addClass('d-none');
-        }
+        renderHistoryPagination();
     }
 
     $(document).ready(function() {
