@@ -1782,6 +1782,26 @@ namespace RaahSathi.Controllers
                 });
             }
 
+            // 6. Recent Mechanic Profile Updates (Last 7 Days)
+            var cutoffDate = DateTime.UtcNow.AddDays(-7);
+            var profileUpdates = await _dbContext.AuditLogs
+                .Where(a => a.ActionType == "MECHANIC_PROFILE_UPDATE" && a.TimeStamp >= cutoffDate)
+                .OrderByDescending(a => a.Id)
+                .Take(10)
+                .ToListAsync();
+            foreach (var a in profileUpdates)
+            {
+                list.Add(new AdminNotificationDto
+                {
+                    Title = $"Profile Updated: {a.AdminName}",
+                    Message = a.Details,
+                    Url = "/Admin/Mechanics",
+                    Icon = "fa-solid fa-user-pen text-info",
+                    CreatedAt = a.TimeStamp.ToLocalTime().ToString("MMM dd, hh:mm tt"),
+                    RawDate = a.TimeStamp
+                });
+            }
+
             var sortedList = list.OrderByDescending(x => x.RawDate).Take(15).ToList();
             return Json(new { success = true, notifications = sortedList });
         }

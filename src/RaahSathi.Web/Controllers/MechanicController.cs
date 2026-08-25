@@ -1235,41 +1235,163 @@ namespace RaahSathi.Controllers
 
         [HttpPost]
         public async Task<IActionResult> UpdateProfileSettings(
-            string[] vehicleExpertise, string[] specialization, int serviceRadiusKm, 
-            string languages, string workingHours, string bankName, string accountNumber, string ifscCode, string upiId,
-            string accountHolderName, string city, string preferredPayoutMethod, bool acceptsCash = true)
+            string? name, string? phoneNumber, string? email, string? shopName, string? shopAddress, int? experienceYears,
+            IFormFile? profilePhoto, string[]? vehicleExpertise, string[]? specialization, int serviceRadiusKm = 10, 
+            string? languages = null, string? workingHours = null, string? bankName = null, string? accountNumber = null, 
+            string? ifscCode = null, string? upiId = null, string? accountHolderName = null, string? city = null, 
+            string? preferredPayoutMethod = null, bool acceptsCash = true)
         {
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated" });
 
             var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
-            if (profile != null)
+            if (profile == null) return Json(new { success = false, message = "Profile not found." });
+
+            var changedFields = new List<string>();
+
+            // 1. Name
+            if (!string.IsNullOrWhiteSpace(name) && name.Trim() != user.Name)
             {
-                if (vehicleExpertise != null && vehicleExpertise.Length > 0)
-                    profile.VehicleExpertise = string.Join(", ", vehicleExpertise);
-
-                if (specialization != null && specialization.Length > 0)
-                    profile.Specialization = string.Join(", ", specialization);
-
-                if (serviceRadiusKm > 0) profile.ServiceRadiusKm = serviceRadiusKm;
-                profile.Languages = string.IsNullOrEmpty(languages) ? "Hindi, English" : languages;
-                profile.WorkingHours = string.IsNullOrEmpty(workingHours) ? "9:00 AM - 9:00 PM" : workingHours;
-
-                // All payment fields are completely optional (Bank, UPI, or Cash)
-                profile.BankName = bankName ?? string.Empty;
-                profile.BankAccountNumber = accountNumber ?? string.Empty;
-                profile.IfscCode = ifscCode ?? string.Empty;
-                profile.UpiId = upiId ?? string.Empty;
-                profile.AccountHolderName = accountHolderName ?? string.Empty;
-                profile.City = string.IsNullOrEmpty(city) ? "Noida" : city.Trim();
-                profile.PreferredPayoutMethod = string.IsNullOrEmpty(preferredPayoutMethod) ? "UPI" : preferredPayoutMethod;
-                profile.AcceptsCash = acceptsCash;
-
-                await _dbContext.SaveChangesAsync();
-                return Json(new { success = true, message = "Profile & payment preferences saved successfully!" });
+                changedFields.Add($"Name ('{user.Name}' ➔ '{name.Trim()}')");
+                user.Name = name.Trim();
             }
 
-            return Json(new { success = false, message = "Profile not found." });
+            // 2. Phone Number
+            if (!string.IsNullOrWhiteSpace(phoneNumber) && phoneNumber.Trim() != user.PhoneNumber)
+            {
+                changedFields.Add($"Phone ('{user.PhoneNumber}' ➔ '{phoneNumber.Trim()}')");
+                user.PhoneNumber = phoneNumber.Trim();
+            }
+
+            // 3. Email
+            if (!string.IsNullOrWhiteSpace(email) && email.Trim() != profile.Email)
+            {
+                changedFields.Add($"Email ('{profile.Email}' ➔ '{email.Trim()}')");
+                profile.Email = email.Trim();
+            }
+
+            // 4. Shop / Workshop Name
+            if (!string.IsNullOrWhiteSpace(shopName) && shopName.Trim() != profile.ShopName)
+            {
+                changedFields.Add($"Workshop Name ('{profile.ShopName}' ➔ '{shopName.Trim()}')");
+                profile.ShopName = shopName.Trim();
+                profile.GarageName = shopName.Trim();
+            }
+
+            // 5. Shop / Workshop Address
+            if (!string.IsNullOrWhiteSpace(shopAddress) && shopAddress.Trim() != profile.ShopAddress)
+            {
+                changedFields.Add($"Address ('{profile.ShopAddress}' ➔ '{shopAddress.Trim()}')");
+                profile.ShopAddress = shopAddress.Trim();
+            }
+
+            // 6. Experience in Years
+            if (experienceYears.HasValue && experienceYears.Value != profile.ExperienceYears)
+            {
+                changedFields.Add($"Experience ({profile.ExperienceYears} yrs ➔ {experienceYears.Value} yrs)");
+                profile.ExperienceYears = experienceYears.Value;
+            }
+
+            // 7. Profile Photo
+            if (profilePhoto != null && profilePhoto.Length > 0)
+            {
+                string ext = Path.GetExtension(profilePhoto.FileName).ToLowerInvariant();
+                var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                if (allowedExts.Contains(ext))
+                {
+                    var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
+                    Directory.CreateDirectory(uploadsFolder);
+                    var uniqueFileName = $"mech_avatar_{user.Id}_{Guid.NewGuid():N}{ext}";
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await profilePhoto.CopyToAsync(stream);
+                    }
+                    profile.ProfilePhotoUrl = "/uploads/" + uniqueFileName;
+                    changedFields.Add("Profile Photo");
+                }
+            }
+
+            // 8. Expertise & Skills
+            if (vehicleExpertise != null && vehicleExpertise.Length > 0)
+            {
+                var newExp = string.Join(", ", vehicleExpertise);
+                if (newExp != profile.VehicleExpertise)
+                {
+                    changedFields.Add("Vehicle Expertise");
+                    profile.VehicleExpertise = newExp;
+                }
+            }
+
+            if (specialization != null && specialization.Length > 0)
+            {
+                var newSpec = string.Join(", ", specialization);
+                if (newSpec != profile.Specialization)
+                {
+                    changedFields.Add("Specialization Skills");
+                    profile.Specialization = newSpec;
+                }
+            }
+
+            // 9. Service Radius
+            if (serviceRadiusKm > 0 && serviceRadiusKm != profile.ServiceRadiusKm)
+            {
+                changedFields.Add($"Service Radius ({profile.ServiceRadiusKm}KM ➔ {serviceRadiusKm}KM)");
+                profile.ServiceRadiusKm = serviceRadiusKm;
+            }
+
+            // 10. City & Operating details
+            if (!string.IsNullOrWhiteSpace(city) && city.Trim() != profile.City)
+            {
+                changedFields.Add($"Operating City ('{profile.City}' ➔ '{city.Trim()}')");
+                profile.City = city.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(languages) && languages != profile.Languages)
+            {
+                profile.Languages = languages;
+            }
+
+            if (!string.IsNullOrWhiteSpace(workingHours) && workingHours != profile.WorkingHours)
+            {
+                profile.WorkingHours = workingHours;
+            }
+
+            // 11. Payment details
+            if (bankName != null) profile.BankName = bankName;
+            if (accountNumber != null) profile.BankAccountNumber = accountNumber;
+            if (ifscCode != null) profile.IfscCode = ifscCode;
+            if (upiId != null) profile.UpiId = upiId;
+            if (accountHolderName != null) profile.AccountHolderName = accountHolderName;
+            if (!string.IsNullOrWhiteSpace(preferredPayoutMethod)) profile.PreferredPayoutMethod = preferredPayoutMethod;
+            profile.AcceptsCash = acceptsCash;
+
+            await _dbContext.SaveChangesAsync();
+
+            // 12. Create Audit Log for Admin Notification if any changes were made
+            if (changedFields.Count > 0)
+            {
+                var auditLog = new AuditLog
+                {
+                    AdminName = user.Name,
+                    UserRole = "Mechanic",
+                    ActionType = "MECHANIC_PROFILE_UPDATE",
+                    Details = $"Mechanic {user.Name} (ID: RS{user.Id:D2}M, Phone: {user.PhoneNumber}) updated: {string.Join(", ", changedFields)}",
+                    TimeStamp = DateTime.UtcNow,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    UserAgent = Request.Headers["User-Agent"].ToString() ?? "Mobile/Web App"
+                };
+                _dbContext.AuditLogs.Add(auditLog);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            return Json(new { 
+                success = true, 
+                message = "Profile details updated successfully!", 
+                profilePhotoUrl = profile.ProfilePhotoUrl,
+                name = user.Name,
+                phone = user.PhoneNumber
+            });
         }
 
         [HttpPost]

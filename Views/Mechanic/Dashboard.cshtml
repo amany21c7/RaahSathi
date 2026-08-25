@@ -1154,6 +1154,93 @@
             </div>
             <h4 class="text-white font-weight-bold mb-4"><i class="fa-solid fa-user-gear text-warning me-2"></i> Mechanic Profile &amp; Settings</h4>
 
+            <!-- 👤 1. PERSONAL DETAILS & WORKSHOP INFORMATION (EDITABLE) -->
+            <div class="glass-card mb-4 p-3 p-md-4 border-warning border-opacity-40" style="background: rgba(15, 23, 42, 0.75);">
+                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-30 pb-2">
+                    <h5 class="text-warning font-weight-bold mb-0">
+                        <i class="fa-solid fa-id-badge me-2"></i> Personal &amp; Workshop Details
+                    </h5>
+                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40 rounded-pill px-3 py-1 small">
+                        <i class="fa-solid fa-pen-to-square me-1"></i> Editable Details
+                    </span>
+                </div>
+
+                <div class="row g-3">
+                    <!-- Profile Photo Avatar with Edit/Change Trigger -->
+                    <div class="col-12 col-md-auto d-flex flex-column align-items-center justify-content-center text-center pe-md-4 border-md-end border-secondary border-opacity-30">
+                        <div class="position-relative mb-2">
+                            <img id="imgProfilePreview" src="@(string.IsNullOrEmpty(profile.ProfilePhotoUrl) ? "/images/default_avatar.png" : profile.ProfilePhotoUrl)" class="rounded-circle border border-warning shadow-lg" style="width: 96px; height: 96px; object-fit: cover;" />
+                            <label for="fileProfilePhotoInput" class="position-absolute bottom-0 end-0 bg-warning text-dark rounded-circle p-1.5 shadow cursor-pointer d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; cursor: pointer;" title="Change Profile Photo">
+                                <i class="fa-solid fa-camera" style="font-size: 0.9rem;"></i>
+                            </label>
+                            <input type="file" id="fileProfilePhotoInput" class="d-none" accept="image/*" onchange="previewProfilePhoto(this)" />
+                        </div>
+                        <span class="text-muted extra-small" style="font-size: 0.75rem;">Tap camera icon to change</span>
+                    </div>
+
+                    <!-- Personal Information Fields Grid -->
+                    <div class="col-12 col-md">
+                        <div class="row g-2 g-md-3">
+                            <!-- Full Name -->
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label text-muted small font-weight-bold mb-1">
+                                    <i class="fa-solid fa-user text-warning me-1"></i> Full Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="txtProfileName" class="form-control glass-input text-white font-weight-bold" value="@user.Name" placeholder="Enter Full Name" required>
+                            </div>
+
+                            <!-- Mobile Number -->
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label text-muted small font-weight-bold mb-1">
+                                    <i class="fa-solid fa-phone text-warning me-1"></i> Mobile Number <span class="text-danger">*</span>
+                                </label>
+                                <input type="tel" id="txtProfilePhone" class="form-control glass-input text-white font-weight-bold" value="@user.PhoneNumber" placeholder="Enter 10-digit mobile" required>
+                            </div>
+
+                            <!-- Email Address -->
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label text-muted small font-weight-bold mb-1">
+                                    <i class="fa-solid fa-envelope text-warning me-1"></i> Email Address
+                                </label>
+                                <input type="email" id="txtProfileEmail" class="form-control glass-input text-light" value="@(string.IsNullOrEmpty(profile.Email) ? "" : profile.Email)" placeholder="name@example.com">
+                            </div>
+
+                            <!-- Workshop / Shop Name -->
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label text-muted small font-weight-bold mb-1">
+                                    <i class="fa-solid fa-warehouse text-warning me-1"></i> Workshop / Garage Name
+                                </label>
+                                <input type="text" id="txtProfileShopName" class="form-control glass-input text-light" value="@(string.IsNullOrEmpty(profile.ShopName) ? profile.GarageName : profile.ShopName)" placeholder="e.g. Sharma Auto Care / Express Garage">
+                            </div>
+
+                            <!-- Experience in Years -->
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label text-muted small font-weight-bold mb-1">
+                                    <i class="fa-solid fa-briefcase text-warning me-1"></i> Experience (Years)
+                                </label>
+                                <input type="number" id="txtProfileExperience" class="form-control glass-input text-warning font-weight-bold" value="@profile.ExperienceYears" min="0" max="60" placeholder="e.g. 5">
+                            </div>
+
+                            <!-- Operating City -->
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label text-muted small font-weight-bold mb-1">
+                                    <i class="fa-solid fa-city text-warning me-1"></i> Operating City
+                                </label>
+                                <input type="text" id="txtProfileCity" class="form-control glass-input text-white" value="@profile.City" placeholder="e.g. Noida, Greater Noida, Delhi">
+                            </div>
+
+                            <!-- Workshop / Shop Full Address -->
+                            <div class="col-12">
+                                <label class="form-label text-muted small font-weight-bold mb-1">
+                                    <i class="fa-solid fa-location-dot text-warning me-1"></i> Workshop / Service Address
+                                </label>
+                                <input type="text" id="txtProfileShopAddress" class="form-control glass-input text-light" value="@profile.ShopAddress" placeholder="e.g. Shop #4, Sector 62, Near Metro Station">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Trust Badges Bar -->
             <div class="mb-4">
                 <label class="form-label text-muted small font-weight-bold d-block mb-2">Verified Partner Badges &amp; Specializations:</label>
@@ -1253,12 +1340,6 @@
                     </div>
 
                     <div class="row g-3">
-                        <!-- Operating City -->
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small mb-1">Operating City</label>
-                            <input type="text" id="txtProfileCity" class="form-control glass-input text-white font-weight-bold" value="@profile.City" placeholder="e.g. Noida, Delhi">
-                        </div>
-
                         <!-- UPI ID Input -->
                         <div class="col-md-6">
                             <label class="form-label text-muted small mb-1">UPI ID (Optional)</label>
@@ -1297,9 +1378,11 @@
                 </div>
             </div>
 
-            <button class="btn btn-premium-primary font-weight-bold px-5 py-3 shadow-lg" onclick="saveProfileSettings()">
-                <i class="fa-solid fa-floppy-disk me-1"></i> Save Profile Settings
-            </button>
+            <div class="d-flex justify-content-center justify-content-md-start">
+                <button class="btn btn-premium-primary font-weight-bold px-5 py-3 shadow-lg rounded-pill" id="btnSaveProfileSettings" onclick="saveProfileSettings()">
+                    <i class="fa-solid fa-floppy-disk me-2"></i> Save Profile Details &amp; Settings
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1635,36 +1718,108 @@
         }
     }
 
-    // Save Profile & Service Radius Settings
-    function saveProfileSettings() {
-        var skills = [];
-        $('input[name="chkSkills"]:checked').each(function() { skills.push($(this).val()); });
-        var radius = $('input[name="radServiceRadius"]:checked').val() || 15;
+    // Preview Selected Profile Photo
+    function previewProfilePhoto(input) {
+        if (input.files && input.files[0]) {
+            var file = input.files[0];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                $('#imgProfilePreview').attr('src', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
 
+    // Save Profile & Personal & Workshop Details Settings
+    function saveProfileSettings() {
+        var name = $('#txtProfileName').val();
+        var phone = $('#txtProfilePhone').val();
+        var email = $('#txtProfileEmail').val();
+        var shopName = $('#txtProfileShopName').val();
+        var shopAddress = $('#txtProfileShopAddress').val();
+        var expYears = parseInt($('#txtProfileExperience').val()) || 1;
+        var city = $('#txtProfileCity').val();
+
+        if (!name || name.trim() === '') {
+            alert('⚠️ Please enter your Full Name.');
+            $('#txtProfileName').focus();
+            return;
+        }
+
+        if (!phone || phone.trim() === '') {
+            alert('⚠️ Please enter your Mobile Number.');
+            $('#txtProfilePhone').focus();
+            return;
+        }
+
+        var skills = [];
+        $('input[name="chkSkills"]:checked').each(function() { 
+            skills.push($(this).val()); 
+        });
+
+        var radius = $('input[name="radServiceRadius"]:checked').val() || 15;
         var upi = $('#txtProfileUpi').val();
         var bankName = $('#txtBankName').val();
         var accNo = $('#txtAccountNo').val();
         var ifsc = $('#txtIfscCode').val();
         var holderName = $('#txtProfileHolderName').val();
-        var city = $('#txtProfileCity').val();
         var payoutMethod = $('input[name="radPayoutMethod"]:checked').val() || 'UPI';
         var acceptsCash = $('#chkAcceptsCash').is(':checked');
 
-        $.post('/Mechanic/UpdateProfileSettings', {
-            vehicleExpertise: skills,
-            specialization: skills,
-            serviceRadiusKm: radius,
-            upiId: upi,
-            bankName: bankName,
-            accountNumber: accNo,
-            ifscCode: ifsc,
-            accountHolderName: holderName,
-            city: city,
-            preferredPayoutMethod: payoutMethod,
-            acceptsCash: acceptsCash
-        }, function(res) {
-            if (res.success) {
-                alert('✅ Profile & payment preferences saved successfully!');
+        var formData = new FormData();
+        formData.append('name', name);
+        formData.append('phoneNumber', phone);
+        formData.append('email', email);
+        formData.append('shopName', shopName);
+        formData.append('shopAddress', shopAddress);
+        formData.append('experienceYears', expYears);
+        formData.append('city', city);
+        formData.append('serviceRadiusKm', radius);
+        formData.append('upiId', upi);
+        formData.append('bankName', bankName);
+        formData.append('accountNumber', accNo);
+        formData.append('ifscCode', ifsc);
+        formData.append('accountHolderName', holderName);
+        formData.append('preferredPayoutMethod', payoutMethod);
+        formData.append('acceptsCash', acceptsCash);
+
+        for (var i = 0; i < skills.length; i++) {
+            formData.append('vehicleExpertise', skills[i]);
+            formData.append('specialization', skills[i]);
+        }
+
+        var photoInput = document.getElementById('fileProfilePhotoInput');
+        if (photoInput && photoInput.files && photoInput.files[0]) {
+            formData.append('profilePhoto', photoInput.files[0]);
+        }
+
+        var saveBtn = $('#btnSaveProfileSettings');
+        var originalBtnHtml = saveBtn.html();
+        saveBtn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving Profile...');
+
+        $.ajax({
+            url: '/Mechanic/UpdateProfileSettings',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                saveBtn.prop('disabled', false).html(originalBtnHtml);
+                if (res.success) {
+                    alert('✅ ' + (res.message || 'Profile & details saved successfully!'));
+                    if (res.profilePhotoUrl) {
+                        $('#imgProfilePreview, .glass-card img.rounded-circle').attr('src', res.profilePhotoUrl);
+                    }
+                    if (res.name) {
+                        $('h4:contains("@user.Name"), .text-white:contains("@user.Name")').first().text(res.name);
+                    }
+                } else {
+                    alert('❌ ' + (res.message || 'Error updating profile.'));
+                }
+            },
+            error: function(err) {
+                saveBtn.prop('disabled', false).html(originalBtnHtml);
+                alert('❌ Server error updating profile. Please try again.');
             }
         });
     }
