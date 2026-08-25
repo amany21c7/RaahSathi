@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.Mail;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -216,6 +218,12 @@ namespace RaahSathi.Controllers
             _dbContext.ContactMessages.Add(contactMsg);
             await _dbContext.SaveChangesAsync();
 
+            // 📧 Send email notification to support.raahsathi@gmail.com
+            _ = Task.Run(async () =>
+            {
+                await SendContactNotificationEmailAsync(contactMsg.FullName, contactMsg.Phone, contactMsg.Email, contactMsg.Subject, contactMsg.Message, "Contact Us Form");
+            });
+
             return Json(new { success = true, message = "Your message has been received! Our support desk will reach out within 15 minutes." });
         }
 
@@ -268,7 +276,88 @@ namespace RaahSathi.Controllers
             _dbContext.ContactMessages.Add(contactMsg);
             await _dbContext.SaveChangesAsync();
 
+            // 📧 Send email notification to support.raahsathi@gmail.com
+            _ = Task.Run(async () =>
+            {
+                await SendContactNotificationEmailAsync(contactMsg.FullName, contactMsg.Phone, contactMsg.Email, contactMsg.Subject, contactMsg.Message, "Support Ticket Portal");
+            });
+
             return Json(new { success = true, message = "Support ticket submitted successfully! Admin support team will contact you shortly." });
+        }
+
+        private async Task SendContactNotificationEmailAsync(string fullName, string phone, string email, string subject, string message, string source = "Contact Us Page")
+        {
+            try
+            {
+                using var mail = new MailMessage();
+                mail.From = new MailAddress("support.raahsathi@gmail.com", "RaahSathi Desk");
+                mail.To.Add("support.raahsathi@gmail.com");
+
+                if (!string.IsNullOrWhiteSpace(email) && email.Contains("@"))
+                {
+                    try { mail.ReplyToList.Add(new MailAddress(email, fullName)); } catch { }
+                }
+
+                mail.Subject = $"[RaahSathi Contact] {subject} - From {fullName}";
+                mail.IsBodyHtml = true;
+                mail.Body = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;'>
+                        <div style='background: linear-gradient(135deg, #ff6b00 0%, #d97706 100%); padding: 18px; border-radius: 6px; text-align: center; color: #ffffff;'>
+                            <h2 style='margin: 0; font-size: 22px; letter-spacing: 0.5px;'>🚗 RaahSathi - New Contact Inquiry</h2>
+                            <p style='margin: 6px 0 0 0; font-size: 14px; opacity: 0.95;'>Source: {source}</p>
+                        </div>
+                        <div style='padding: 20px 0;'>
+                            <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
+                                <tr style='border-bottom: 1px solid #f1f5f9;'>
+                                    <td style='padding: 10px 0; font-weight: bold; width: 35%; color: #64748b;'>Sender Name:</td>
+                                    <td style='padding: 10px 0; color: #0f172a; font-weight: 600;'>{fullName}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #f1f5f9;'>
+                                    <td style='padding: 10px 0; font-weight: bold; color: #64748b;'>Mobile Number:</td>
+                                    <td style='padding: 10px 0; color: #0f172a;'><a href='tel:{phone}' style='color: #ff6b00; text-decoration: none; font-weight: bold;'>{phone}</a></td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #f1f5f9;'>
+                                    <td style='padding: 10px 0; font-weight: bold; color: #64748b;'>Email Address:</td>
+                                    <td style='padding: 10px 0; color: #0f172a;'><a href='mailto:{email}' style='color: #0284c7; text-decoration: none;'>{(string.IsNullOrWhiteSpace(email) ? "Not Provided" : email)}</a></td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #f1f5f9;'>
+                                    <td style='padding: 10px 0; font-weight: bold; color: #64748b;'>Inquiry Subject:</td>
+                                    <td style='padding: 10px 0; color: #0f172a; font-weight: bold;'>{subject}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #f1f5f9;'>
+                                    <td style='padding: 10px 0; font-weight: bold; color: #64748b;'>Submission Time:</td>
+                                    <td style='padding: 10px 0; color: #64748b;'>{DateTime.UtcNow.AddHours(5.5):dd MMM yyyy, hh:mm tt} (IST)</td>
+                                </tr>
+                            </table>
+                            <div style='margin-top: 20px; padding: 15px; background-color: #f8fafc; border-left: 4px solid #ff6b00; border-radius: 4px;'>
+                                <p style='margin: 0 0 8px 0; font-weight: bold; color: #334155; font-size: 13px; text-transform: uppercase;'>Message Content:</p>
+                                <p style='margin: 0; color: #1e293b; white-space: pre-wrap; line-height: 1.6; font-size: 14px;'>{message}</p>
+                            </div>
+                        </div>
+                        <div style='border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center; color: #94a3b8; font-size: 12px;'>
+                            <p style='margin: 0;'>This inquiry is also logged in real-time in the <strong>RaahSathi Admin Dashboard &gt; Messages</strong> portal.</p>
+                        </div>
+                    </div>";
+
+                using var client = new SmtpClient("smtp.gmail.com", 587);
+                client.EnableSsl = true;
+                client.UseDefaultCredentials = false;
+                
+                // If SMTP password or credentials are configured, use them
+                var smtpPass = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? _configuration?["Smtp:Password"];
+                var smtpUser = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? _configuration?["Smtp:Username"] ?? "support.raahsathi@gmail.com";
+                if (!string.IsNullOrWhiteSpace(smtpPass))
+                {
+                    client.Credentials = new NetworkCredential(smtpUser, smtpPass);
+                }
+
+                await client.SendMailAsync(mail);
+            }
+            catch (Exception ex)
+            {
+                // Non-blocking log so contact message is safely stored in database even if SMTP is offline
+                Console.WriteLine($"[Contact Email Notification] Note: {ex.Message}");
+            }
         }
 
         [HttpGet]
