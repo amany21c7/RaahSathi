@@ -36,7 +36,7 @@ Welcome to the **RaahSathi Roadside Assistance Network** comprehensive testing m
 - **Brand Overview**: 24×7 Highway emergency description.
 - **Emergency Support Highlight**: Prominent hotline banner (`1800-102-7224`) and red **SOS** trigger button.
 - **Quick Links**: Navigation & Legal links (Privacy Policy, FAQs & Knowledgebase, Escrow Protection Rules, KYC Policy).
-- **Network Status Card**: Live Dispatch System Status (`ONLINE`), Average Arrival ETA (`Under 25 Mins`), and direct WhatsApp button.
+- **Network Status Card**: Live Dispatch System Status (`ONLINE`), Average Arrival ETA (`Under 14 Mins`), and direct WhatsApp button.
 - **Copyright & Tricolor Badge**: `© 2026 RaahSathi Roadside Assistance Network. All rights reserved.` paired with **Make In India** (Kesariya `#FF9933`, Safed `#FFFFFF`, Hara `#00E676`).
 
 ---
