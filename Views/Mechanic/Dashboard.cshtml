@@ -315,7 +315,7 @@
 
                 <!-- Centered Refer & Earn Button (Clean, Smaller, without duplicate balance badge) -->
                 <div class="d-flex justify-content-center w-100">
-                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 font-weight-bold text-dark shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5" onclick="openMechanicReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); font-size: 0.78rem;">
+                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 font-weight-bold text-dark shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5" data-bs-toggle="modal" data-bs-target="#mechanicReferralModal" onclick="openMechanicReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); font-size: 0.78rem;">
                         <i class="fa-solid fa-gift animate-bounce" style="font-size: 0.75rem;"></i>
                         <span>Refer &amp; Earn ₹100</span>
                     </button>
@@ -342,7 +342,7 @@
                 <button class="btn btn-premium-secondary btn-sm rounded-pill px-3" onclick="switchMechTab('tab-wallet')">
                     <i class="fa-solid fa-wallet me-1"></i> Earnings
                 </button>
-                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 font-weight-bold text-dark shadow-sm" onclick="openMechanicReferralModal()">
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 font-weight-bold text-dark shadow-sm" data-bs-toggle="modal" data-bs-target="#mechanicReferralModal" onclick="openMechanicReferralModal()">
                     <i class="fa-solid fa-gift me-1"></i> Refer &amp; Earn <span class="badge bg-dark text-warning ms-1">₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0")</span>
                 </button>
                 <button class="btn btn-outline-info btn-sm rounded-pill px-3 position-relative" onclick="switchMechTab('tab-support')">
@@ -3517,9 +3517,17 @@
 </div>
 
 <script>
-    function openMechanicReferralModal() {
-        new bootstrap.Modal(document.getElementById('mechanicReferralModal')).show();
-    }
+    window.openMechanicReferralModal = function() {
+        var modalEl = document.getElementById('mechanicReferralModal');
+        if (modalEl) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                instance.show();
+            } else if (typeof $ !== 'undefined' && $.fn && $.fn.modal) {
+                $('#mechanicReferralModal').modal('show');
+            }
+        }
+    };
 
     function toggleMechPayoutFields() {
         var method = document.getElementById('mechPayoutMethodSelect').value;

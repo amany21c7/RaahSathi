@@ -345,7 +345,7 @@
             </div>
 
             <div class="d-grid gap-2">
-                <button type="button" class="btn btn-warning font-weight-bold text-dark shadow d-flex align-items-center justify-content-center gap-2 py-2.5" onclick="openCustomerReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
+                <button type="button" class="btn btn-warning font-weight-bold text-dark shadow d-flex align-items-center justify-content-center gap-2 py-2.5" data-bs-toggle="modal" data-bs-target="#customerReferralModal" onclick="openCustomerReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
                     <i class="fa-solid fa-gift fs-5 animate-bounce"></i> 
                     <div class="text-start">
                         <div class="fw-bold" style="font-size: 0.9rem; line-height: 1.1;">Refer &amp; Earn ₹100</div>
@@ -1085,9 +1085,17 @@
 </div>
 
 <script>
-    function openCustomerReferralModal() {
-        new bootstrap.Modal(document.getElementById('customerReferralModal')).show();
-    }
+    window.openCustomerReferralModal = function() {
+        var modalEl = document.getElementById('customerReferralModal');
+        if (modalEl) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                instance.show();
+            } else if (typeof $ !== 'undefined' && $.fn && $.fn.modal) {
+                $('#customerReferralModal').modal('show');
+            }
+        }
+    };
 
     function toggleCustPayoutFields() {
         var method = document.getElementById('custPayoutMethodSelect').value;
