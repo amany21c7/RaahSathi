@@ -2054,6 +2054,11 @@
             }
         }
     };
+    window.openPaymentQrModal = function(jobId, btnElement) {
+        if (typeof openPaymentQrModalImpl === 'function') {
+            openPaymentQrModalImpl(jobId, btnElement);
+        }
+    };
 
     var isOnline = @(profile.IsOnline ? "true" : "false");
     var hasActiveJob = @(activeJob != null ? "true" : "false");
@@ -2981,7 +2986,7 @@
     var currentQrJobId = 0;
     var isOnlinePaymentConfirmed = false;
 
-    function openPaymentQrModal(jobId, btnElement) {
+    function openPaymentQrModalImpl(jobId, btnElement) {
         currentQrJobId = jobId;
         isOnlinePaymentConfirmed = false;
         
