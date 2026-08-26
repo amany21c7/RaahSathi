@@ -2011,7 +2011,11 @@
     // Dynamic Tab Navigation
     function switchMechTab(tabId) {
         $('.mech-tab-content').hide();
-        $('#' + tabId).show();
+        var target = document.getElementById(tabId);
+        if (target) {
+            target.style.display = 'block';
+            $(target).show();
+        }
 
         // On mobile screens (< 992px), hide overview card for sub-tabs to give clean native app-like screen
         if ($(window).width() < 992) {

@@ -2700,20 +2700,24 @@
                 }
                 window.snoozePing = snoozePing;
 
-                // Web Worker for background intervals (rapid 2.0s response for immediate dispatch & siren alert)
-                try {
-                    var blob = new Blob([
-                        "setInterval(function() { postMessage('tick'); }, 2000);"
-                    ], { type: "text/javascript" });
-                    var worker = new Worker(URL.createObjectURL(blob));
-                    worker.onmessage = function(e) {
-                        window.pollIncomingDispatchRequests();
-                    };
-                    window.pollIncomingDispatchRequests();
-                } catch (err) {
-                    setInterval(window.pollIncomingDispatchRequests, 2000);
-                    window.pollIncomingDispatchRequests();
-                }
+                // Web Worker for background intervals (starts after window load to guarantee instant tab loading termination)
+                window.addEventListener('load', function() {
+                    setTimeout(function() {
+                        try {
+                            var blob = new Blob([
+                                "setInterval(function() { postMessage('tick'); }, 2000);"
+                            ], { type: "text/javascript" });
+                            var worker = new Worker(URL.createObjectURL(blob));
+                            worker.onmessage = function(e) {
+                                window.pollIncomingDispatchRequests();
+                            };
+                            window.pollIncomingDispatchRequests();
+                        } catch (err) {
+                            setInterval(window.pollIncomingDispatchRequests, 2000);
+                            window.pollIncomingDispatchRequests();
+                        }
+                    }, 500);
+                });
             });
         </script>
     }
