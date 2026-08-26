@@ -2043,6 +2043,9 @@
         if (e && e.preventDefault) e.preventDefault();
         var modalEl = document.getElementById('mechanicReferralModal');
         if (modalEl) {
+            if (modalEl.parentNode !== document.body) {
+                document.body.appendChild(modalEl);
+            }
             if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                 var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                 instance.show();
@@ -3466,8 +3469,8 @@
 <!-- ======================================================== -->
 <!-- 🎁 MECHANIC REFERRAL HUB & WALLET WITHDRAWAL MODAL -->
 <!-- ======================================================== -->
-<div class="modal fade" id="mechanicReferralModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<div class="modal fade" id="mechanicReferralModal" tabindex="-1" aria-hidden="true" style="z-index: 1060 !important;">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="z-index: 1070 !important;">
         <div class="modal-content bg-dark text-white border border-warning border-opacity-40 shadow-2xl" style="border-radius: 18px; overflow: hidden;">
             <div class="modal-header border-secondary p-3 px-4" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(15, 23, 42, 0.95));">
                 <div class="d-flex align-items-center gap-2">
@@ -3758,6 +3761,9 @@
         if (e && e.preventDefault) e.preventDefault();
         var modalEl = document.getElementById('mechanicReferralModal');
         if (modalEl) {
+            if (modalEl.parentNode !== document.body) {
+                document.body.appendChild(modalEl);
+            }
             if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                 var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                 instance.show();
