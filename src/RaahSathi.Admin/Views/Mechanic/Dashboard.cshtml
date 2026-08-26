@@ -2107,24 +2107,26 @@
     }
 
     $(document).ready(function() {
-        // Location update without hardware hanging
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                var lat = position.coords.latitude;
-                var lng = position.coords.longitude;
-                $.post('/Mechanic/UpdateLocation', { lat: lat, lng: lng });
-            }, function(err) {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
-            
-            setInterval(function() {
-                if (isOnline && !document.hidden) {
-                    navigator.geolocation.getCurrentPosition(function(position) {
-                        var lat = position.coords.latitude;
-                        var lng = position.coords.longitude;
-                        $.post('/Mechanic/UpdateLocation', { lat: lat, lng: lng });
-                    }, function(err) {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
-                }
-            }, 45000);
-        }
+        // Location update without hardware hanging (deferred 1s to guarantee instant tab load finish)
+        setTimeout(function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    $.post('/Mechanic/UpdateLocation', { lat: lat, lng: lng });
+                }, function(err) {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+                
+                setInterval(function() {
+                    if (isOnline && !document.hidden) {
+                        navigator.geolocation.getCurrentPosition(function(position) {
+                            var lat = position.coords.latitude;
+                            var lng = position.coords.longitude;
+                            $.post('/Mechanic/UpdateLocation', { lat: lat, lng: lng });
+                        }, function(err) {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+                    }
+                }, 45000);
+            }
+        }, 1000);
         
         // Initialize Completed Repair History to show last 7 days (weekly) by default
         resetHistoryDateFilter();
