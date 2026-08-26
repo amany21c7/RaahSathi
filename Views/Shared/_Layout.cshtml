@@ -290,7 +290,7 @@
     </script>
 
     <!-- Google Translate Engine Pre-Loader -->
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
 
     <title>@(ViewData["Title"] ?? "RaahSathi | Roadside Assistance")</title>
 
@@ -2289,7 +2289,7 @@
         </div>
 
         <!-- 🚨 Unstoppable HTML5 Siren Audio Element -->
-        <audio id="rsSirenAudioElement" preload="auto" loop style="display:none;"></audio>
+        <audio id="rsSirenAudioElement" preload="none" loop style="display:none;"></audio>
 
         <script type="text/javascript">
             $(document).ready(function() {
@@ -2363,13 +2363,13 @@
                     }
                 }
 
-                // 🔓 Proactive Audio Unlocker
+                // 🔓 Proactive Audio Unlocker (Unlocks audio context on first click without prompting permissions)
                 window.unlockSirenAudio = function() {
                     try {
                         if (!window.sirenAudioCtx) {
                             window.sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
                         }
-                        if (window.sirenAudioCtx.state === 'suspended') {
+                        if (window.sirenAudioCtx && window.sirenAudioCtx.state === 'suspended') {
                             window.sirenAudioCtx.resume();
                         }
                         var audioEl = document.getElementById('rsSirenAudioElement');
@@ -2384,15 +2384,11 @@
                                 }).catch(function() {});
                             }
                         }
-                        // Request notification permissions if supported
-                        if ('Notification' in window && Notification.permission === 'default') {
-                            Notification.requestPermission();
-                        }
                     } catch(e) {}
                 };
 
-                // Unlock on any user gesture anywhere on the screen
-                $(document).on('click touchstart mousedown keydown', function() {
+                // Unlock once on first user interaction cleanly
+                $(document).one('click touchstart', function() {
                     window.unlockSirenAudio();
                 });
 

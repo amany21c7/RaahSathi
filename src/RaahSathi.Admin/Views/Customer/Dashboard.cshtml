@@ -5,6 +5,8 @@
     var activeJobs = ViewBag.ActiveJobs as List<RaahSathi.Models.Job> ?? new List<RaahSathi.Models.Job>();
     var pastJobs = ViewBag.PastJobs as List<RaahSathi.Models.Job> ?? new List<RaahSathi.Models.Job>();
 
+    var refSummary = ViewBag.ReferralSummary as RaahSathi.Services.ReferralDashboardSummaryDto;
+    var refSettings = ViewBag.ReferralSettings as RaahSathi.Models.ReferralProgramSetting ?? refSummary?.Settings ?? new RaahSathi.Models.ReferralProgramSetting();
     var now = DateTime.UtcNow;
     var customerBanners = _dbContext.CmsBanners
         .Where(b => b.IsActive 
@@ -343,10 +345,17 @@
             </div>
 
             <div class="d-grid gap-2">
-                <a href="/Customer/Book" class="btn btn-warning font-weight-bold text-dark shadow" style="background:#f59e0b;">
+                <button type="button" class="btn btn-warning font-weight-bold text-dark shadow d-flex align-items-center justify-content-center gap-2 py-2.5" data-bs-toggle="modal" data-bs-target="#customerReferralModal" onclick="openCustomerReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
+                    <i class="fa-solid fa-gift fs-5 animate-bounce"></i> 
+                    <div class="text-start">
+                        <div class="fw-bold" style="font-size: 0.9rem; line-height: 1.1;">Refer &amp; Earn ₹100</div>
+                        <small class="text-dark opacity-75" style="font-size: 0.72rem;">Wallet: ₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0") | @(refSummary?.PendingReferralCount ?? 0) Pending</small>
+                    </div>
+                </button>
+                <a href="/Customer/Book" class="btn btn-outline-warning font-weight-bold shadow-sm">
                     <i class="fa-solid fa-location-crosshairs me-1"></i> Emergency Assistance
                 </a>
-                <a href="/Customer/Dashboard?action=addVehicle" class="btn btn-outline-warning btn-sm font-weight-bold">
+                <a href="/Customer/Dashboard?action=addVehicle" class="btn btn-outline-secondary btn-sm font-weight-bold text-light">
                     <i class="fa-solid fa-car-plus me-1"></i> Add / Manage Vehicles
                 </a>
                 <button type="button" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openComplaintModal()">
@@ -810,3 +819,317 @@
         </div>
     </div>
 </div>
+
+<!-- ======================================================== -->
+<!-- 🎁 CUSTOMER REFERRAL HUB & WALLET WITHDRAWAL MODAL -->
+<!-- ======================================================== -->
+<div class="modal fade" id="customerReferralModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-white border border-warning border-opacity-40 shadow-2xl" style="border-radius: 18px; overflow: hidden;">
+            <div class="modal-header border-secondary p-3 px-4" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(15, 23, 42, 0.95));">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-warning p-2 text-dark font-weight-bold">
+                        <i class="fa-solid fa-gift fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title font-weight-bold mb-0 text-white" style="font-family: 'Outfit';">RaahSathi Referral Hub &amp; Wallet</h5>
+                        <span class="text-muted small">Invite vehicle owners &amp; mechanics, earn instant wallet cashback on first booking.</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <!-- Top Referral Stats Row -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary text-center">
+                            <span class="text-muted small text-uppercase font-weight-bold">Available Balance</span>
+                            <h3 class="text-success font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@(refSummary?.ReferralWalletBalance.ToString("N2") ?? "0.00")</h3>
+                            <span class="text-muted small">Withdrawable rewards</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary text-center">
+                            <span class="text-muted small text-uppercase font-weight-bold">Pending Rewards</span>
+                            <h3 class="text-warning font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@(refSummary?.PendingRewardAmount.ToString("N2") ?? "0.00")</h3>
+                            <span class="text-muted small">@(refSummary?.PendingReferralCount ?? 0) friends awaiting 1st service</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary text-center">
+                            <span class="text-muted small text-uppercase font-weight-bold">Lifetime Earned</span>
+                            <h3 class="text-info font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@(refSummary?.LifetimeEarnings.ToString("N2") ?? "0.00")</h3>
+                            <span class="text-muted small">@(refSummary?.SuccessfulReferralCount ?? 0) completed referrals</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unique Referral Code & 1-Click Share Widget -->
+                <div class="p-3.5 rounded-3 border border-warning border-opacity-30 bg-black bg-opacity-50 mb-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                        <div>
+                            <span class="badge bg-warning text-dark font-weight-bold mb-1">YOUR EXCLUSIVE REFERRAL CODE</span>
+                            <h4 class="text-warning font-monospace font-weight-extrabold mb-0" id="custRefCodeText">@(refSummary?.ReferralCode ?? "RAAH-CUST")</h4>
+                            <span class="text-muted small">Friends get ₹@refSettings.C2C_RefereeReward.ToString("N0") joining discount; you get ₹@refSettings.C2C_ReferrerReward.ToString("N0") cash per referral.</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <button type="button" class="btn btn-outline-warning btn-sm font-weight-bold px-3 py-2" onclick="copyCustomerReferralCode()">
+                                <i class="fa-solid fa-copy me-1"></i> <span id="btnCopyCustText">Copy Code</span>
+                            </button>
+                            <button type="button" class="btn btn-success btn-sm font-weight-bold px-3 py-2" onclick="shareCustomerWhatsApp(@refSettings.C2C_RefereeReward)">
+                                <i class="fa-brands fa-whatsapp me-1 fs-6"></i> WhatsApp Share
+                            </button>
+                            <button type="button" class="btn btn-info btn-sm font-weight-bold text-white px-3 py-2" onclick="shareCustomerSms()">
+                                <i class="fa-solid fa-comment-sms me-1"></i> SMS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs: Referred Friends List VS Withdrawal Request Form -->
+                <ul class="nav nav-pills nav-fill mb-3 bg-dark bg-opacity-60 p-1 rounded-3 border border-secondary" id="refModalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active font-weight-bold text-white py-2" id="refFriendsTab" data-bs-toggle="pill" data-bs-target="#refFriendsContent" type="button">
+                            <i class="fa-solid fa-users me-1.5 text-warning"></i> Referred Friends (@(refSummary?.ReferredFriends.Count ?? 0))
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link font-weight-bold text-white py-2" id="refWithdrawTab" data-bs-toggle="pill" data-bs-target="#refWithdrawContent" type="button">
+                            <i class="fa-solid fa-money-bill-wave me-1.5 text-success"></i> Request Withdrawal
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link font-weight-bold text-white py-2" id="refHistoryTab" data-bs-toggle="pill" data-bs-target="#refHistoryContent" type="button">
+                            <i class="fa-solid fa-clock-rotate-left me-1.5 text-info"></i> Payout History
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="refModalTabsContent">
+                    <!-- Tab 1: Referred Friends Tracker -->
+                    <div class="tab-pane fade show active" id="refFriendsContent" role="tabpanel">
+                        @if (refSummary == null || refSummary.ReferredFriends.Count == 0)
+                        {
+                            <div class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-user-plus fa-2x mb-2 text-warning opacity-60"></i>
+                                <p class="mb-1">You haven't referred any friends yet.</p>
+                                <span class="small text-muted">Share your code via WhatsApp to start earning wallet rewards!</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+                                <table class="table table-dark table-sm table-hover mb-0 align-middle">
+                                    <thead class="text-muted small text-uppercase">
+                                        <tr>
+                                            <th>Friend</th>
+                                            <th>Role / Type</th>
+                                            <th>Reward Amount</th>
+                                            <th>Status</th>
+                                            <th>Invited On</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var f in refSummary.ReferredFriends)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="font-weight-bold text-white">@f.FriendName</div>
+                                                    <div class="text-muted small">@f.FriendPhone</div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge @(f.StageType == "C2M" ? "bg-danger" : "bg-success")">@f.StageType</span>
+                                                </td>
+                                                <td class="text-warning font-weight-bold">+₹@f.ExpectedReward.ToString("N0")</td>
+                                                <td>
+                                                    @if (f.Status == "Completed")
+                                                    {
+                                                        <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Reward Credited</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Awaiting 1st Booking</span>
+                                                    }
+                                                </td>
+                                                <td class="text-muted small">@f.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Tab 2: Withdrawal Request Form -->
+                    <div class="tab-pane fade" id="refWithdrawContent" role="tabpanel">
+                        <form action="/Customer/SubmitReferralWithdrawal" method="POST">
+                            <div class="p-3 bg-black bg-opacity-40 rounded-3 border border-secondary mb-3">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small font-weight-bold">Withdrawal Amount (₹) <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-dark border-secondary text-success">₹</span>
+                                            <input type="number" step="1" min="@refSettings.MinWithdrawalAmount" max="@(refSummary?.ReferralWalletBalance ?? 0)" name="amount" class="form-control glass-input text-white font-weight-bold" placeholder="Min ₹@refSettings.MinWithdrawalAmount.ToString("N0")" required />
+                                        </div>
+                                        <span class="text-muted" style="font-size: 0.72rem;">Available: ₹@(refSummary?.ReferralWalletBalance.ToString("N2") ?? "0.00")</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted small font-weight-bold">Payout Method <span class="text-danger">*</span></label>
+                                        <select name="payoutMethod" id="custPayoutMethodSelect" class="form-select glass-input text-white bg-dark border-secondary" onchange="toggleCustPayoutFields()" required>
+                                            <option value="UPI">UPI (Google Pay, PhonePe, Paytm)</option>
+                                            <option value="Bank">Direct Bank Transfer (NEFT/IMPS)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- UPI Details Section -->
+                            <div id="custUpiSection" class="mb-3">
+                                <label class="form-label text-muted small font-weight-bold">UPI ID (VPA) <span class="text-danger">*</span></label>
+                                <input type="text" name="upiId" class="form-control glass-input text-white" placeholder="e.g. yourname@okhdfcbank / 9876543210@paytm" />
+                            </div>
+
+                            <!-- Bank Details Section -->
+                            <div id="custBankSection" class="row g-2 mb-3" style="display: none;">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small font-weight-bold">Account Holder Name</label>
+                                    <input type="text" name="accountHolder" class="form-control glass-input text-white" placeholder="As per passbook" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small font-weight-bold">Bank Name</label>
+                                    <input type="text" name="bankName" class="form-control glass-input text-white" placeholder="e.g. HDFC / SBI / ICICI" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small font-weight-bold">Account Number</label>
+                                    <input type="text" name="bankAccount" class="form-control glass-input text-white font-monospace" placeholder="Enter bank account number" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small font-weight-bold">IFSC Code</label>
+                                    <input type="text" name="ifsc" class="form-control glass-input text-white text-uppercase" placeholder="e.g. HDFC0001234" />
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100 font-weight-bold py-2.5 shadow" @((refSummary?.ReferralWalletBalance ?? 0) < refSettings.MinWithdrawalAmount ? "disabled" : "")>
+                                <i class="fa-solid fa-paper-plane me-1"></i> Submit Payout Request
+                            </button>
+                            @if ((refSummary?.ReferralWalletBalance ?? 0) < refSettings.MinWithdrawalAmount)
+                            {
+                                <div class="text-center text-muted small mt-2">
+                                    <i class="fa-solid fa-circle-info text-warning me-1"></i> Minimum withdrawal balance is ₹@refSettings.MinWithdrawalAmount.ToString("N0"). Refer more friends to unlock payout!
+                                </div>
+                            }
+                        </form>
+                    </div>
+
+                    <!-- Tab 3: Payout History -->
+                    <div class="tab-pane fade" id="refHistoryContent" role="tabpanel">
+                        @if (refSummary == null || refSummary.WithdrawalHistory.Count == 0)
+                        {
+                            <div class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-receipt fa-2x mb-2 text-secondary opacity-60"></i>
+                                <p class="mb-0">No past withdrawal requests found.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+                                <table class="table table-dark table-sm table-hover mb-0 align-middle">
+                                    <thead class="text-muted small text-uppercase">
+                                        <tr>
+                                            <th>Req ID</th>
+                                            <th>Amount</th>
+                                            <th>Method</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                            <th>Reference / Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var w in refSummary.WithdrawalHistory)
+                                        {
+                                            <tr>
+                                                <td class="font-monospace text-warning font-weight-bold">#REF-W@w.Id.ToString("D4")</td>
+                                                <td class="text-white font-weight-bold">₹@w.Amount.ToString("N2")</td>
+                                                <td><span class="badge bg-secondary">@w.PayoutMethod</span></td>
+                                                <td>
+                                                    @if (w.Status == "Approved")
+                                                    {
+                                                        <span class="badge bg-success">Paid</span>
+                                                    }
+                                                    else if (w.Status == "Pending")
+                                                    {
+                                                        <span class="badge bg-warning text-dark">Pending</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-danger">Rejected</span>
+                                                    }
+                                                </td>
+                                                <td class="text-muted small">@w.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                                <td class="text-muted small">
+                                                    @(string.IsNullOrEmpty(w.TransactionReference) ? w.AdminRemarks : $"{w.TransactionReference} - {w.AdminRemarks}")
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.openCustomerReferralModal = function() {
+        var modalEl = document.getElementById('customerReferralModal');
+        if (modalEl) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                instance.show();
+            } else if (typeof $ !== 'undefined' && $.fn && $.fn.modal) {
+                $('#customerReferralModal').modal('show');
+            }
+        }
+    };
+
+    function toggleCustPayoutFields() {
+        var method = document.getElementById('custPayoutMethodSelect').value;
+        if (method === 'UPI') {
+            document.getElementById('custUpiSection').style.display = 'block';
+            document.getElementById('custBankSection').style.display = 'none';
+        } else {
+            document.getElementById('custUpiSection').style.display = 'none';
+            document.getElementById('custBankSection').style.display = 'flex';
+        }
+    }
+
+    function copyCustomerReferralCode() {
+        var code = document.getElementById('custRefCodeText').textContent.trim();
+        navigator.clipboard.writeText(code).then(function() {
+            var btnText = document.getElementById('btnCopyCustText');
+            btnText.textContent = 'Copied!';
+            setTimeout(function() { btnText.textContent = 'Copy Code'; }, 2000);
+        });
+    }
+
+    function shareCustomerWhatsApp(refereeReward) {
+        var code = document.getElementById('custRefCodeText').textContent.trim();
+        var shareLink = window.location.origin + '/Auth/Login?ref=' + encodeURIComponent(code);
+        var discountAmt = refereeReward || 50;
+        var msg = "Hey! 🚗 Need 24/7 Roadside Assistance or verified Mechanics? Use my RaahSathi Referral Code: *" + code + "* to get instant ₹" + discountAmt + " discount! Sign up here: " + shareLink;
+        window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg), '_blank');
+    }
+
+    function shareCustomerSms() {
+        var code = document.getElementById('custRefCodeText').textContent.trim();
+        var shareLink = window.location.origin + '/Auth/Login?ref=' + encodeURIComponent(code);
+        var msg = "Book verified mechanics 24/7 on RaahSathi! Use my referral code: " + code + " for instant discount. Join: " + shareLink;
+        window.location.href = 'sms:?body=' + encodeURIComponent(msg);
+    }
+</script>
+

@@ -290,7 +290,7 @@
     </script>
 
     <!-- Google Translate Engine Pre-Loader -->
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
 
     <title>@(ViewData["Title"] ?? "RaahSathi | Roadside Assistance")</title>
 
@@ -2033,15 +2033,31 @@
             // Start polling if user is NOT an admin
             $(document).ready(function() {
                 var isAdminLoggedIn = @(isAdminLoggedIn.ToString().ToLower());
+                var isPushPollingInFlight = false;
+                var origPushPoll = window.pollPushNotifications;
+                
+                window.pollPushNotifications = function() {
+                    if (isPushPollingInFlight || document.hidden) return;
+                    isPushPollingInFlight = true;
+                    if (typeof origPushPoll === 'function') {
+                        try { origPushPoll(); } catch(e) {}
+                    }
+                    setTimeout(function() { isPushPollingInFlight = false; }, 3000);
+                };
+
                 if (!isAdminLoggedIn) {
                     window.pollPushNotifications();
-                    // Check for new broadcasts every 30 seconds
-                    setInterval(window.pollPushNotifications, 30000);
+                    // Check for new broadcasts every 45 seconds (lightweight & visibility-aware)
+                    setInterval(window.pollPushNotifications, 45000);
                 }
             });
 
             // Real-Time Admin Operations Notification fetcher
+            var isAdminPollingInFlight = false;
             window.pollAdminNotifications = function() {
+                if (isAdminPollingInFlight || document.hidden) return;
+                isAdminPollingInFlight = true;
+
                 $.get('/Admin/GetAdminNotifications', { _t: Date.now() }, function(res) {
                     if (res && res.success && res.notifications) {
                         var notifications = res.notifications;
@@ -2079,14 +2095,16 @@
                             $('#adminNotifBadge').addClass('d-none');
                         }
                     }
+                }).always(function() {
+                    isAdminPollingInFlight = false;
                 });
             };
 
             // Start polling if Admin bell icon exists and user is Admin
             if ($('#adminNotifBellBtn').length && isAdminLoggedIn) {
                 window.pollAdminNotifications();
-                // Check for new pending items every 20 seconds
-                setInterval(window.pollAdminNotifications, 20000);
+                // Check for new pending items every 35 seconds
+                setInterval(window.pollAdminNotifications, 35000);
             }
         });
     </script>
@@ -2271,7 +2289,7 @@
         </div>
 
         <!-- 🚨 Unstoppable HTML5 Siren Audio Element -->
-        <audio id="rsSirenAudioElement" preload="auto" loop style="display:none;"></audio>
+        <audio id="rsSirenAudioElement" preload="none" loop style="display:none;"></audio>
 
         <script type="text/javascript">
             $(document).ready(function() {
@@ -2345,13 +2363,13 @@
                     }
                 }
 
-                // 🔓 Proactive Audio Unlocker
+                // 🔓 Proactive Audio Unlocker (Unlocks audio context on first click without prompting permissions)
                 window.unlockSirenAudio = function() {
                     try {
                         if (!window.sirenAudioCtx) {
                             window.sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
                         }
-                        if (window.sirenAudioCtx.state === 'suspended') {
+                        if (window.sirenAudioCtx && window.sirenAudioCtx.state === 'suspended') {
                             window.sirenAudioCtx.resume();
                         }
                         var audioEl = document.getElementById('rsSirenAudioElement');
@@ -2366,15 +2384,11 @@
                                 }).catch(function() {});
                             }
                         }
-                        // Request notification permissions if supported
-                        if ('Notification' in window && Notification.permission === 'default') {
-                            Notification.requestPermission();
-                        }
                     } catch(e) {}
                 };
 
-                // Unlock on any user gesture anywhere on the screen
-                $(document).on('click touchstart mousedown keydown', function() {
+                // Unlock once on first user interaction cleanly
+                $(document).one('click touchstart', function() {
                     window.unlockSirenAudio();
                 });
 
@@ -2499,11 +2513,15 @@
                 };
 
                 // Real-Time Dispatch Checker
+                var isDispatchPollingInFlight = false;
                 window.pollIncomingDispatchRequests = function() {
                     // If an active job is open on mechanic dashboard, skip standby polling to ensure instant button response
                     if (typeof currentActiveJobId !== 'undefined' && currentActiveJobId && currentActiveJobId !== "0" && currentActiveJobId !== 0) {
                         return;
                     }
+
+                    if (isDispatchPollingInFlight) return;
+                    isDispatchPollingInFlight = true;
 
                     $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: window.currentDispatchJobId, _t: Date.now() }, function(res) {
                         if (res && res.success) {
@@ -2536,6 +2554,8 @@
                                 }
                             }
                         }
+                    }).always(function() {
+                        isDispatchPollingInFlight = false;
                     });
                 };
 
@@ -2558,19 +2578,6 @@
                         }
                     } catch(e) {}
 
-                    $('#lblDispVehicle').text(data.vehicleModel + ' (' + data.vehicleType + ')');  var modalEl = document.getElementById('incomingDispatchModal');
-                                if (modalEl) {
-                                    var instance = bootstrap.Modal.getInstance(modalEl);
-                                    if (instance) instance.hide();
-                                }
-                            }
-                        }
-                    });
-                };
-
-                function openDispatchModal(data) {
-                    window.playSirenAlert();
-                    
                     $('#lblDispVehicle').text(data.vehicleModel + ' (' + data.vehicleType + ')');
                     $('#lblDispReg').text(data.vehicleReg);
                     $('#lblDispCustomer').text(data.customerName);
@@ -2678,10 +2685,10 @@
                 }
                 window.snoozePing = snoozePing;
 
-                // Web Worker for background intervals (optimized 2.5s for fast response without server starvation)
+                // Web Worker for background intervals (optimized 3.5s for fast response without server starvation)
                 try {
                     var blob = new Blob([
-                        "setInterval(function() { postMessage('tick'); }, 2500);"
+                        "setInterval(function() { postMessage('tick'); }, 3500);"
                     ], { type: "text/javascript" });
                     var worker = new Worker(URL.createObjectURL(blob));
                     worker.onmessage = function(e) {
@@ -2689,7 +2696,7 @@
                     };
                     window.pollIncomingDispatchRequests();
                 } catch (err) {
-                    setInterval(window.pollIncomingDispatchRequests, 2500);
+                    setInterval(window.pollIncomingDispatchRequests, 3500);
                     window.pollIncomingDispatchRequests();
                 }
             });
