@@ -195,8 +195,9 @@
                         @for (int i = 0; i < mechanicBanners.Count; i++)
                         {
                             var b = mechanicBanners[i];
+                            var safeImgUrl = (!string.IsNullOrEmpty(b.ImageUrl) && (b.ImageUrl.StartsWith("/") || b.ImageUrl.StartsWith("http"))) ? b.ImageUrl : "/images/hero-bg.jpg";
                             <div class="carousel-item @(i == 0 ? "active" : "")" style="height: 180px; position: relative; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#mechanicReferralModal" onclick="openMechanicReferralModal(event)">
-                                <img src="@b.ImageUrl" class="d-block w-100 h-100" style="object-fit: cover; filter: brightness(0.45) contrast(1.1);" alt="@b.Title" onerror="this.src='/images/hero-bg.jpg'; this.onerror=null;">
+                                <img src="@safeImgUrl" class="d-block w-100 h-100" style="object-fit: cover; filter: brightness(0.45) contrast(1.1);" alt="@b.Title" onerror="this.src='/images/hero-bg.jpg'; this.onerror=null;">
                                 <div class="carousel-caption d-flex flex-column align-items-start justify-content-center text-start h-100" style="left: 6%; right: 6%; bottom: 0; padding-top: 0; padding-bottom: 0;">
                                     <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">PARTNER UPDATE / ANNOUNCEMENT</span>
                                     <h3 class="text-white font-weight-bold mb-1" style="font-family: 'Outfit'; font-size: 1.62rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">@b.Title</h3>

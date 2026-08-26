@@ -286,6 +286,8 @@
                 observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
                 setTimeout(revealPage, 120);
             }
+        })();
+
         // Lazy Load Google Translate Engine to guarantee zero pending connections and instant tab load completion
         (function() {
             function loadGT() {
