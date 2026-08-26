@@ -53,12 +53,15 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
         options.Cookie.SameSite = SameSiteMode.Lax;
     });
 
-// Add services to the container.
-var mvcBuilder = builder.Services.AddControllersWithViews();
-if (builder.Environment.IsDevelopment())
+// Add Controllers & Views
+builder.Services.AddControllersWithViews();
+
+// Add Response Compression & In-Memory Cache for ultra-fast page rendering & payload reduction
+builder.Services.AddResponseCompression(options =>
 {
-    mvcBuilder.AddRazorRuntimeCompilation();
-}
+    options.EnableForHttps = true;
+});
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
@@ -1233,8 +1236,16 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseForwardedHeaders();
+app.UseResponseCompression();
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // 7 days browser cache for static files (css, js, images, icons)
+        ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=604800");
+    }
+});
 app.UseRouting();
 
 app.UseAuthentication();

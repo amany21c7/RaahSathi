@@ -18,7 +18,7 @@ namespace RaahSathi.Repositories
 
         public async Task<List<ProblemTypePricing>> GetAllProblemTypePricingsAsync(string? cityName = null)
         {
-            var query = _dbContext.ProblemTypePricings.Where(p => p.IsActive);
+            var query = _dbContext.ProblemTypePricings.AsNoTracking().Where(p => p.IsActive);
 
             if (!string.IsNullOrWhiteSpace(cityName) && !cityName.Equals("All Cities", System.StringComparison.OrdinalIgnoreCase))
             {
@@ -71,7 +71,7 @@ namespace RaahSathi.Repositories
 
         public async Task<List<PricingRule>> GetAllPricingRulesAsync()
         {
-            return await _dbContext.PricingRules.ToListAsync();
+            return await _dbContext.PricingRules.AsNoTracking().ToListAsync();
         }
 
         public async Task<bool> UpdateBasePricingRuleAsync(int ruleId, string cityName, double baseFee, double perKmRate, double baseTowingFee, double perKmTowingRate)

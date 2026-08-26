@@ -1015,12 +1015,28 @@
             $('#isRecommendedInput').val(val);
         });
 
-        // Begin polling status every 3 seconds
+        // Begin polling status every 3.5 seconds
         pollJobStatus();
-        setInterval(pollJobStatus, 3000);
+        setInterval(function() {
+            if (!document.hidden) pollJobStatus();
+        }, 3500);
+
+        // Instant refresh on mobile screen unlock or tab focus
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                pollJobStatus();
+            }
+        });
+        window.addEventListener('focus', function() {
+            pollJobStatus();
+        });
     });
 
+    var isTrackerPolling = false;
     function pollJobStatus() {
+        if (isTrackerPolling || document.hidden) return;
+        isTrackerPolling = true;
+
         $.get('/Customer/GetJobStatus?id=@job.Id&_t=' + Date.now(), function(res) {
             // Update unread chat message badge
             if (res.unreadChatCount > 0 && !$('#liveChatModal').hasClass('show')) {
@@ -1058,12 +1074,12 @@
                     if (!mechanicMarker) {
                         // Create mechanic marker
                         var mechIcon = L.icon({
-                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
-                            iconSize: [25, 41],
-                            iconAnchor: [12, 41]
+                            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png',
+                            iconSize: [40, 40],
+                            iconAnchor: [20, 20]
                         });
                         mechanicMarker = L.marker([mechanicLat, mechanicLng], {icon: mechIcon}).addTo(map);
-                        mechanicMarker.bindPopup("<span class='text-dark'>Roadside Mechanic travelling...</span>");
+                        mechanicMarker.bindPopup('<b>Mechanic En Route</b>').openPopup();
                     } else {
                         // Move marker smoothly
                         mechanicMarker.setLatLng([mechanicLat, mechanicLng]);
@@ -1168,6 +1184,8 @@
             } else {
                 $('#paymentCheckoutCard').addClass('d-none');
             }
+        }).always(function() {
+            isTrackerPolling = false;
         });
     }
 

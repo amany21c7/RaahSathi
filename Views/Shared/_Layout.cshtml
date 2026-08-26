@@ -2033,15 +2033,31 @@
             // Start polling if user is NOT an admin
             $(document).ready(function() {
                 var isAdminLoggedIn = @(isAdminLoggedIn.ToString().ToLower());
+                var isPushPollingInFlight = false;
+                var origPushPoll = window.pollPushNotifications;
+                
+                window.pollPushNotifications = function() {
+                    if (isPushPollingInFlight || document.hidden) return;
+                    isPushPollingInFlight = true;
+                    if (typeof origPushPoll === 'function') {
+                        try { origPushPoll(); } catch(e) {}
+                    }
+                    setTimeout(function() { isPushPollingInFlight = false; }, 3000);
+                };
+
                 if (!isAdminLoggedIn) {
                     window.pollPushNotifications();
-                    // Check for new broadcasts every 30 seconds
-                    setInterval(window.pollPushNotifications, 30000);
+                    // Check for new broadcasts every 45 seconds (lightweight & visibility-aware)
+                    setInterval(window.pollPushNotifications, 45000);
                 }
             });
 
             // Real-Time Admin Operations Notification fetcher
+            var isAdminPollingInFlight = false;
             window.pollAdminNotifications = function() {
+                if (isAdminPollingInFlight || document.hidden) return;
+                isAdminPollingInFlight = true;
+
                 $.get('/Admin/GetAdminNotifications', { _t: Date.now() }, function(res) {
                     if (res && res.success && res.notifications) {
                         var notifications = res.notifications;
@@ -2079,14 +2095,16 @@
                             $('#adminNotifBadge').addClass('d-none');
                         }
                     }
+                }).always(function() {
+                    isAdminPollingInFlight = false;
                 });
             };
 
             // Start polling if Admin bell icon exists and user is Admin
             if ($('#adminNotifBellBtn').length && isAdminLoggedIn) {
                 window.pollAdminNotifications();
-                // Check for new pending items every 20 seconds
-                setInterval(window.pollAdminNotifications, 20000);
+                // Check for new pending items every 35 seconds
+                setInterval(window.pollAdminNotifications, 35000);
             }
         });
     </script>
@@ -2499,11 +2517,15 @@
                 };
 
                 // Real-Time Dispatch Checker
+                var isDispatchPollingInFlight = false;
                 window.pollIncomingDispatchRequests = function() {
                     // If an active job is open on mechanic dashboard, skip standby polling to ensure instant button response
                     if (typeof currentActiveJobId !== 'undefined' && currentActiveJobId && currentActiveJobId !== "0" && currentActiveJobId !== 0) {
                         return;
                     }
+
+                    if (isDispatchPollingInFlight) return;
+                    isDispatchPollingInFlight = true;
 
                     $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: window.currentDispatchJobId, _t: Date.now() }, function(res) {
                         if (res && res.success) {
@@ -2536,6 +2558,8 @@
                                 }
                             }
                         }
+                    }).always(function() {
+                        isDispatchPollingInFlight = false;
                     });
                 };
 
@@ -2665,10 +2689,10 @@
                 }
                 window.snoozePing = snoozePing;
 
-                // Web Worker for background intervals (optimized 2.5s for fast response without server starvation)
+                // Web Worker for background intervals (optimized 3.5s for fast response without server starvation)
                 try {
                     var blob = new Blob([
-                        "setInterval(function() { postMessage('tick'); }, 2500);"
+                        "setInterval(function() { postMessage('tick'); }, 3500);"
                     ], { type: "text/javascript" });
                     var worker = new Worker(URL.createObjectURL(blob));
                     worker.onmessage = function(e) {
@@ -2676,7 +2700,7 @@
                     };
                     window.pollIncomingDispatchRequests();
                 } catch (err) {
-                    setInterval(window.pollIncomingDispatchRequests, 2500);
+                    setInterval(window.pollIncomingDispatchRequests, 3500);
                     window.pollIncomingDispatchRequests();
                 }
             });
