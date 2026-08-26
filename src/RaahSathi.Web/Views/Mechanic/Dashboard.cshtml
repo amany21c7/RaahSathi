@@ -715,7 +715,7 @@
 
                         <div class="d-flex flex-column gap-2">
                             <div class="d-flex align-items-center gap-2 w-100">
-                                <button type="button" class="btn btn-warning text-dark btn-lg flex-grow-1 py-3 font-weight-bold shadow" onclick="openPaymentQrModal(@activeJob.Id, this)">
+                                <button type="button" class="btn btn-warning text-dark btn-lg flex-grow-1 py-3 font-weight-bold shadow" data-bs-toggle="modal" data-bs-target="#paymentQrModal" onclick="openPaymentQrModal(@activeJob.Id, this)">
                                     <i class="fa-solid fa-qrcode me-2"></i> Collect Payment (UPI QR)
                                 </button>
                                 @if (activeJob.Status != "Completed")
@@ -3000,6 +3000,9 @@
         
         // Instantly pop open the modal in 0ms!
         var modalEl = document.getElementById('paymentQrModal');
+        if (modalEl && modalEl.parentNode !== document.body) {
+            document.body.appendChild(modalEl);
+        }
         var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
 
@@ -3134,7 +3137,11 @@
                 $('#mechInvCommAmount').text('₹' + res.adminCommission.toFixed(2));
                 $('#mechInvNetCredit').text('₹' + res.mechanicNetEarning.toFixed(2));
 
-                var invModal = new bootstrap.Modal(document.getElementById('jobInvoiceModal'));
+                var invModalEl = document.getElementById('jobInvoiceModal');
+                if (invModalEl && invModalEl.parentNode !== document.body) {
+                    document.body.appendChild(invModalEl);
+                }
+                var invModal = bootstrap.Modal.getOrCreateInstance(invModalEl);
                 invModal.show();
             } else {
                 alert('Could not fetch receipt details.');
@@ -3318,8 +3325,8 @@
 }
 
 <!-- DYNAMIC WALLET PAYMENT QR CODE MODAL FOR MECHANIC -->
-<div class="modal fade" id="paymentQrModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="paymentQrModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" style="z-index: 1060 !important;">
+    <div class="modal-dialog modal-dialog-centered" style="z-index: 1070 !important;">
         <div class="modal-content bg-dark text-light border border-warning shadow-lg">
             <div class="modal-header border-secondary">
                 <h5 class="modal-title text-warning font-weight-bold">
@@ -3374,8 +3381,8 @@
 </div>
 
 <!-- DYNAMIC ITEMISED INVOICE MODAL FOR MECHANIC -->
-<div class="modal fade" id="jobInvoiceModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<div class="modal fade" id="jobInvoiceModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" style="z-index: 1060 !important;">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="z-index: 1070 !important;">
         <div class="modal-content bg-dark text-light border border-success shadow-lg">
             <div class="modal-header border-secondary">
                 <h5 class="modal-title text-success font-weight-bold">

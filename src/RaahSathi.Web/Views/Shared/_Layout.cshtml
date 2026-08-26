@@ -148,7 +148,7 @@
         </script>
     }
     
-    <!-- Instant Zero-Flash Translation Guard -->
+    <!-- Instant Zero-Flash Translation Guard & Global Modal Stacking -->
     <style id="fouc-guard-style">
         html.lang-loading body {
             visibility: hidden !important;
@@ -158,6 +158,15 @@
             visibility: visible !important;
             opacity: 1 !important;
             transition: opacity 0.1s ease-in;
+        }
+        .modal {
+            z-index: 1060 !important;
+        }
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+        .modal-dialog {
+            z-index: 1070 !important;
         }
     </style>
     <script>
