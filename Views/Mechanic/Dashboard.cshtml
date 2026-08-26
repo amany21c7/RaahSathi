@@ -286,7 +286,7 @@
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item text-warning py-2 px-3 small d-flex align-items-center justify-content-between" href="javascript:void(0)" onclick="switchMechTab('tab-referral')">
+                            <a class="dropdown-item text-warning py-2 px-3 small d-flex align-items-center justify-content-between" href="javascript:void(0)" onclick="openMechanicReferralModal()">
                                 <span class="d-flex align-items-center gap-2">
                                     <i class="fa-solid fa-gift text-warning" style="width: 20px;"></i> Refer &amp; Earn
                                 </span>
@@ -323,7 +323,7 @@
 
                 <!-- Centered Refer & Earn Button (Clean, Smaller, without duplicate balance badge) -->
                 <div class="d-flex justify-content-center w-100">
-                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 font-weight-bold text-dark shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5" onclick="switchMechTab('tab-referral')" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); font-size: 0.78rem;">
+                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 font-weight-bold text-dark shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5" onclick="openMechanicReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); font-size: 0.78rem;">
                         <i class="fa-solid fa-gift animate-bounce" style="font-size: 0.75rem;"></i>
                         <span>Refer &amp; Earn ₹100</span>
                     </button>
@@ -350,7 +350,7 @@
                 <button class="btn btn-premium-secondary btn-sm rounded-pill px-3" onclick="switchMechTab('tab-wallet')">
                     <i class="fa-solid fa-wallet me-1"></i> Earnings
                 </button>
-                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 font-weight-bold text-dark shadow-sm" onclick="switchMechTab('tab-referral')">
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 font-weight-bold text-dark shadow-sm" onclick="openMechanicReferralModal()">
                     <i class="fa-solid fa-gift me-1"></i> Refer &amp; Earn <span class="badge bg-dark text-warning ms-1">₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0")</span>
                 </button>
                 <button class="btn btn-outline-info btn-sm rounded-pill px-3 position-relative" onclick="switchMechTab('tab-support')">
@@ -2040,7 +2040,15 @@
     window.switchMechTab = switchMechTab;
     window.openMechanicReferralModal = function(e) {
         if (e && e.preventDefault) e.preventDefault();
-        switchMechTab('tab-referral');
+        var modalEl = document.getElementById('mechanicReferralModal');
+        if (modalEl) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                instance.show();
+            } else if (typeof $ !== 'undefined' && $.fn && $.fn.modal) {
+                $('#mechanicReferralModal').modal('show');
+            }
+        }
     };
 
     var isOnline = @(profile.IsOnline ? "true" : "false");
@@ -3466,8 +3474,8 @@
                         <i class="fa-solid fa-gift fs-5"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title font-weight-bold mb-0 text-white" style="font-family: 'Outfit';">Mechanic Partner Referral Program</h5>
-                        <span class="text-muted small">Refer fellow mechanics or onboard customers and earn extra wallet bonuses.</span>
+                        <h5 class="modal-title font-weight-bold mb-0 text-white" style="font-family: 'Outfit';">RaahSathi Referral Hub &amp; Wallet</h5>
+                        <span class="text-muted small">Invite partner mechanics &amp; vehicle owners, earn instant wallet cashback on first booking.</span>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -3745,10 +3753,8 @@
 </div>
 
 <script>
-    window.openMechanicReferralModal = function() {
-        if (typeof switchMechTab === 'function') {
-            switchMechTab('tab-referral');
-        }
+    window.openMechanicReferralModal = function(e) {
+        if (e && e.preventDefault) e.preventDefault();
         var modalEl = document.getElementById('mechanicReferralModal');
         if (modalEl) {
             if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
