@@ -196,6 +196,19 @@
             return false;
         }
 
+        function loadGT(callback) {
+            if (!window.gtScriptLoaded) {
+                window.gtScriptLoaded = true;
+                var s = document.createElement('script');
+                s.type = 'text/javascript';
+                s.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+                s.onload = function() { if (callback) callback(); };
+                document.body.appendChild(s);
+            } else if (callback) {
+                callback();
+            }
+        }
+
         function changeLanguage(lang) {
             const isAdmin = @(isAdminPage.ToString().ToLower());
             const key = isAdmin ? 'admin_lang' : 'public_lang';
@@ -207,13 +220,19 @@
 
             window.currentSelectedLang = lang;
 
-            // Instant Real-Time translation without full reload
-            if (!applyTranslationToCombo(lang)) {
+            if (lang === 'en') {
                 window.location.reload();
-            } else {
-                revealPage();
-                updateLanguageLabel(lang);
+                return;
             }
+
+            loadGT(function() {
+                if (!applyTranslationToCombo(lang)) {
+                    window.location.reload();
+                } else {
+                    revealPage();
+                    updateLanguageLabel(lang);
+                }
+            });
         }
 
         function revealPage() {
@@ -288,25 +307,10 @@
             }
         })();
 
-        // Lazy Load Google Translate Engine to guarantee zero pending connections and instant tab load completion
-        (function() {
-            function loadGT() {
-                if (!window.gtScriptLoaded) {
-                    window.gtScriptLoaded = true;
-                    var s = document.createElement('script');
-                    s.type = 'text/javascript';
-                    s.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-                    document.body.appendChild(s);
-                }
-            }
-            if (window.currentSelectedLang && window.currentSelectedLang !== 'en') {
-                loadGT();
-            } else {
-                window.addEventListener('load', function() {
-                    setTimeout(loadGT, 1500);
-                });
-            }
-        })();
+        // Only load Google Translate if non-English language is active
+        if (window.currentSelectedLang && window.currentSelectedLang !== 'en') {
+            loadGT();
+        }
     </script>
 
     <title>@(ViewData["Title"] ?? "RaahSathi | Roadside Assistance")</title>
@@ -2702,24 +2706,22 @@
                 }
                 window.snoozePing = snoozePing;
 
-                // Web Worker for background intervals (starts after window load to guarantee instant tab loading termination)
-                window.addEventListener('load', function() {
-                    setTimeout(function() {
-                        try {
-                            var blob = new Blob([
-                                "setInterval(function() { postMessage('tick'); }, 2000);"
-                            ], { type: "text/javascript" });
-                            var worker = new Worker(URL.createObjectURL(blob));
-                            worker.onmessage = function(e) {
-                                window.pollIncomingDispatchRequests();
-                            };
+                // Start background worker polling immediately on page readiness
+                setTimeout(function() {
+                    try {
+                        var blob = new Blob([
+                            "setInterval(function() { postMessage('tick'); }, 2000);"
+                        ], { type: "text/javascript" });
+                        var worker = new Worker(URL.createObjectURL(blob));
+                        worker.onmessage = function(e) {
                             window.pollIncomingDispatchRequests();
-                        } catch (err) {
-                            setInterval(window.pollIncomingDispatchRequests, 2000);
-                            window.pollIncomingDispatchRequests();
-                        }
-                    }, 500);
-                });
+                        };
+                        window.pollIncomingDispatchRequests();
+                    } catch (err) {
+                        setInterval(window.pollIncomingDispatchRequests, 2000);
+                        window.pollIncomingDispatchRequests();
+                    }
+                }, 100);
             });
         </script>
     }

@@ -65,15 +65,19 @@ namespace RaahSathi.Controllers
 
         private bool OtherMechanicAvailable(Job job, double maxRadiusKm, int currentMechanicId)
         {
-            var onlineProfiles = _dbContext.MechanicProfiles
+            var busyMechanicIds = _dbContext.Jobs.AsNoTracking()
+                .Where(j => j.MechanicId != null && j.Status != "Completed" && j.Status != "Cancelled")
+                .Select(j => j.MechanicId!.Value)
+                .ToHashSet();
+
+            var onlineProfiles = _dbContext.MechanicProfiles.AsNoTracking()
                 .Where(p => p.UserId != currentMechanicId && p.IsOnline && p.KycStatus == "Approved")
                 .ToList();
 
             foreach (var profile in onlineProfiles)
             {
-                // Check active job
-                bool hasActive = _dbContext.Jobs.Any(j => j.MechanicId == profile.UserId && j.Status != "Completed" && j.Status != "Cancelled");
-                if (hasActive)
+                // Check active job in memory from pre-fetched set
+                if (busyMechanicIds.Contains(profile.UserId))
                     continue;
 
                 // Check distance
@@ -124,7 +128,7 @@ namespace RaahSathi.Controllers
                         continue;
                 }
 
-                return true;
+                return true; // Found another viable mechanic
             }
 
             return false;
@@ -666,12 +670,13 @@ namespace RaahSathi.Controllers
                 }
             }
 
-            // Search for unassigned "Requested" jobs within 15 km radius
+            // Search for unassigned "Requested" jobs (take latest 10 and verify age in C# to eliminate timezone discrepancies)
             var requestedJobs = await _dbContext.Jobs.AsNoTracking()
                 .Include(j => j.Customer)
                 .Include(j => j.Vehicle)
                 .Where(j => j.Status == "Requested" && j.MechanicId == null)
                 .OrderByDescending(j => j.CreatedAt)
+                .Take(10)
                 .ToListAsync();
 
             string userStrId = user.Id.ToString();
@@ -679,14 +684,7 @@ namespace RaahSathi.Controllers
             foreach (var job in requestedJobs)
             {
                 double jobAgeSeconds = (DateTime.UtcNow - job.CreatedAt).TotalSeconds;
-
-                // Auto-timeout jobs older than 300 seconds
-                if (jobAgeSeconds >= 300)
-                {
-                    job.Status = "TimedOut";
-                    await _dbContext.SaveChangesAsync();
-                    continue;
-                }
+                if (jobAgeSeconds >= 300) continue;
 
                 // Dynamic radius expansion based on job age (0-20s: 15km, 20-30s: 30km, 30s+: 50km)
                 double maxRadiusKm = jobAgeSeconds < 20 ? 15.0 : (jobAgeSeconds < 30 ? 30.0 : 50.0);

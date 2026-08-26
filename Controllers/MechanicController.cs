@@ -670,13 +670,13 @@ namespace RaahSathi.Controllers
                 }
             }
 
-            // Search for unassigned "Requested" jobs within active 300s window
-            var cutoffTime = DateTime.UtcNow.AddSeconds(-300);
+            // Search for unassigned "Requested" jobs (take latest 10 and verify age in C# to eliminate timezone discrepancies)
             var requestedJobs = await _dbContext.Jobs.AsNoTracking()
                 .Include(j => j.Customer)
                 .Include(j => j.Vehicle)
-                .Where(j => j.Status == "Requested" && j.MechanicId == null && j.CreatedAt >= cutoffTime)
+                .Where(j => j.Status == "Requested" && j.MechanicId == null)
                 .OrderByDescending(j => j.CreatedAt)
+                .Take(10)
                 .ToListAsync();
 
             string userStrId = user.Id.ToString();
