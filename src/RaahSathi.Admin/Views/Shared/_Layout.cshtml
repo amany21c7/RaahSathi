@@ -2685,10 +2685,10 @@
                 }
                 window.snoozePing = snoozePing;
 
-                // Web Worker for background intervals (optimized 3.5s for fast response without server starvation)
+                // Web Worker for background intervals (rapid 2.0s response for immediate dispatch & siren alert)
                 try {
                     var blob = new Blob([
-                        "setInterval(function() { postMessage('tick'); }, 3500);"
+                        "setInterval(function() { postMessage('tick'); }, 2000);"
                     ], { type: "text/javascript" });
                     var worker = new Worker(URL.createObjectURL(blob));
                     worker.onmessage = function(e) {
@@ -2696,7 +2696,7 @@
                     };
                     window.pollIncomingDispatchRequests();
                 } catch (err) {
-                    setInterval(window.pollIncomingDispatchRequests, 3500);
+                    setInterval(window.pollIncomingDispatchRequests, 2000);
                     window.pollIncomingDispatchRequests();
                 }
             });
