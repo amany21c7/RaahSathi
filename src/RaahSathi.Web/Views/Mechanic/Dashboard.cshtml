@@ -285,6 +285,14 @@
                                 <i class="fa-solid fa-building-columns text-warning" style="width: 20px;"></i> Bank Details
                             </a>
                         </li>
+                        <li>
+                            <a class="dropdown-item text-warning py-2 px-3 small d-flex align-items-center justify-content-between" href="javascript:void(0)" onclick="switchMechTab('tab-referral')">
+                                <span class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-gift text-warning" style="width: 20px;"></i> Refer &amp; Earn
+                                </span>
+                                <span class="badge bg-warning text-dark">₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0")</span>
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider border-secondary opacity-25"></li>
                         <li>
                             <a class="dropdown-item text-info py-2 px-3 small d-flex align-items-center justify-content-between" href="javascript:void(0)" onclick="switchMechTab('tab-support')">
@@ -315,7 +323,7 @@
 
                 <!-- Centered Refer & Earn Button (Clean, Smaller, without duplicate balance badge) -->
                 <div class="d-flex justify-content-center w-100">
-                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 font-weight-bold text-dark shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5" data-bs-toggle="modal" data-bs-target="#mechanicReferralModal" onclick="openMechanicReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); font-size: 0.78rem;">
+                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1 font-weight-bold text-dark shadow-sm d-inline-flex align-items-center justify-content-center gap-1.5" onclick="switchMechTab('tab-referral')" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); font-size: 0.78rem;">
                         <i class="fa-solid fa-gift animate-bounce" style="font-size: 0.75rem;"></i>
                         <span>Refer &amp; Earn ₹100</span>
                     </button>
@@ -342,7 +350,7 @@
                 <button class="btn btn-premium-secondary btn-sm rounded-pill px-3" onclick="switchMechTab('tab-wallet')">
                     <i class="fa-solid fa-wallet me-1"></i> Earnings
                 </button>
-                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 font-weight-bold text-dark shadow-sm" data-bs-toggle="modal" data-bs-target="#mechanicReferralModal" onclick="openMechanicReferralModal()">
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 font-weight-bold text-dark shadow-sm" onclick="switchMechTab('tab-referral')">
                     <i class="fa-solid fa-gift me-1"></i> Refer &amp; Earn <span class="badge bg-dark text-warning ms-1">₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0")</span>
                 </button>
                 <button class="btn btn-outline-info btn-sm rounded-pill px-3 position-relative" onclick="switchMechTab('tab-support')">
@@ -1766,6 +1774,210 @@
                     </button>
                 </div>
             </form>
+    <!-- ==================== TAB 7: REFER & EARN HUB ==================== -->
+    <div id="tab-referral" class="mech-tab-content" style="display:none;">
+        <div class="glass-card mb-4 p-3 p-md-4 border-warning border-opacity-40">
+            <!-- Top Back Bar for Sub-tab -->
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-30">
+                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold d-inline-flex align-items-center gap-2 shadow-sm" onclick="switchMechTab('tab-home')">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Back to Home</span>
+                </button>
+                <span class="badge bg-dark border border-warning text-warning small font-weight-bold px-3 py-1.5"><i class="fa-solid fa-gift me-1"></i> Partner Referral Hub</span>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 border-bottom border-secondary border-opacity-40 pb-3">
+                <div>
+                    <h4 class="text-white font-weight-bold mb-1" style="font-family: 'Outfit';"><i class="fa-solid fa-gift text-warning me-2"></i> Mechanic Partner Referral Program</h4>
+                    <p class="text-muted small mb-0">Refer fellow mechanics or onboard customers and earn extra wallet bonuses directly withdrawable to your UPI/Bank.</p>
+                </div>
+            </div>
+
+            <!-- Top Earnings Stats -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary text-center">
+                        <span class="text-muted small text-uppercase font-weight-bold">Referral Balance</span>
+                        <h3 class="text-success font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@(refSummary?.ReferralWalletBalance.ToString("N2") ?? "0.00")</h3>
+                        <span class="text-muted small">Withdrawable bonus</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary text-center">
+                        <span class="text-muted small text-uppercase font-weight-bold">Pending Bonuses</span>
+                        <h3 class="text-warning font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@(refSummary?.PendingRewardAmount.ToString("N2") ?? "0.00")</h3>
+                        <span class="text-muted small">@(refSummary?.PendingReferralCount ?? 0) partners/users pending 1st job</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary text-center">
+                        <span class="text-muted small text-uppercase font-weight-bold">Total Disbursed</span>
+                        <h3 class="text-info font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@(refSummary?.LifetimeEarnings.ToString("N2") ?? "0.00")</h3>
+                        <span class="text-muted small">@(refSummary?.SuccessfulReferralCount ?? 0) completed referrals</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dual Share Cards: M2M & M2C -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 border border-warning border-opacity-30 bg-black bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-warning text-dark font-weight-bold">REFER MECHANIC (M2M)</span>
+                                <span class="text-warning font-weight-bold small">Earn ₹@refSettings.M2M_ReferrerReward.ToString("N0")</span>
+                            </div>
+                            <p class="text-muted small mb-2">Invite partner mechanics to join RaahSathi. Earn ₹@refSettings.M2M_ReferrerReward.ToString("N0") when they get verified and complete 1st job (New mechanic gets ₹@refSettings.M2M_RefereeReward.ToString("N0")).</p>
+                        </div>
+                        <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark w-100 py-2 shadow-sm" onclick="shareMechanicM2MWhatsApp(@refSettings.M2M_RefereeReward)">
+                            <i class="fa-brands fa-whatsapp me-1 fs-6"></i> Share with Mechanics on WhatsApp
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 border border-info border-opacity-30 bg-black bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-info text-dark font-weight-bold">REFER CUSTOMER (M2C)</span>
+                                <span class="text-info font-weight-bold small">Earn ₹@refSettings.M2C_ReferrerReward.ToString("N0")</span>
+                            </div>
+                            <p class="text-muted small mb-2">Give your code to vehicle owners at your garage. Earn ₹@refSettings.M2C_ReferrerReward.ToString("N0") commission on their 1st breakdown booking (Customer gets ₹@refSettings.M2C_RefereeReward.ToString("N0") discount).</p>
+                        </div>
+                        <button type="button" class="btn btn-info btn-sm font-weight-bold text-white w-100 py-2 shadow-sm" onclick="shareMechanicM2CWhatsApp(@refSettings.M2C_RefereeReward)">
+                            <i class="fa-brands fa-whatsapp me-1 fs-6"></i> Share with Customers on WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unique Referral Code Copy Bar -->
+            <div class="p-3 rounded-3 border border-secondary bg-dark mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <span class="text-muted small font-weight-bold">YOUR UNIQUE PARTNER CODE:</span>
+                    <span class="text-warning font-monospace font-weight-extrabold fs-4 ms-2" id="mechRefCodeTextScreen">@(refSummary?.ReferralCode ?? "RSM-PARTNER")</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-warning btn-sm font-weight-bold px-3 py-1.5" onclick="copyMechanicReferralCode()">
+                        <i class="fa-solid fa-copy me-1"></i> <span id="btnCopyMechTextScreen">Copy Code</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm font-weight-bold px-3 py-1.5" onclick="shareMechanicSms()">
+                        <i class="fa-solid fa-comment-sms me-1"></i> SMS
+                    </button>
+                </div>
+            </div>
+
+            <!-- Request Bonus Withdrawal & Referral Ledger Row -->
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="p-3 bg-black bg-opacity-50 rounded-3 border border-secondary h-100">
+                        <h5 class="text-white font-weight-bold mb-2"><i class="fa-solid fa-money-bill-wave text-success me-2"></i> Request Bonus Payout</h5>
+                        <p class="text-muted small mb-3">Withdraw your referral reward balance instantly to your registered UPI or Bank account.</p>
+                        @if ((refSummary?.ReferralWalletBalance ?? 0) < refSettings.MinWithdrawalAmount)
+                        {
+                            <div class="alert alert-dark border-secondary text-muted small p-2 mb-3">
+                                <i class="fa-solid fa-circle-info text-warning me-1"></i> Minimum withdrawal limit is <b>₹@refSettings.MinWithdrawalAmount.ToString("N0")</b>. Keep referring to reach payout threshold!
+                            </div>
+                        }
+                        else
+                        {
+                            <form action="/Mechanic/SubmitReferralWithdrawal" method="POST">
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted font-weight-bold">Payout Method</label>
+                                    <select class="form-select glass-input text-white" name="payoutMethod" id="mechTabPayoutSelect" onchange="toggleMechTabPayoutFields()">
+                                        <option value="UPI" selected>UPI (GPay / PhonePe / Paytm)</option>
+                                        <option value="Bank">Bank Transfer (NEFT/IMPS)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3" id="mechTabUpiSection">
+                                    <label class="form-label small text-muted font-weight-bold">UPI ID</label>
+                                    <input type="text" name="upiId" class="form-control glass-input text-white" placeholder="e.g. yourname@oksbi" value="@profile.UpiId">
+                                </div>
+                                <div class="row g-2 mb-3" id="mechTabBankSection" style="display:none;">
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted font-weight-bold">Account Holder</label>
+                                        <input type="text" name="accountHolder" class="form-control glass-input text-white" value="@(string.IsNullOrEmpty(profile.AccountHolderName) ? user.Name : profile.AccountHolderName)" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted font-weight-bold">Bank Name</label>
+                                        <input type="text" name="bankName" class="form-control glass-input text-white" value="@profile.BankName" placeholder="e.g. SBI" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted font-weight-bold">Account Number</label>
+                                        <input type="text" name="bankAccount" class="form-control glass-input text-white font-monospace" value="@profile.BankAccountNumber" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted font-weight-bold">IFSC Code</label>
+                                        <input type="text" name="ifscCode" class="form-control glass-input text-white" value="@profile.IfscCode" placeholder="e.g. SBIN0001234" />
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted font-weight-bold">Withdrawal Amount (₹)</label>
+                                    <input type="number" name="amount" class="form-control glass-input text-white font-weight-bold" min="@refSettings.MinWithdrawalAmount" max="@(refSummary?.ReferralWalletBalance ?? 0)" step="1" value="@(refSummary?.ReferralWalletBalance ?? 0)">
+                                </div>
+                                <button type="submit" class="btn btn-success font-weight-bold w-100 py-2.5">
+                                    <i class="fa-solid fa-paper-plane me-1"></i> Submit Bonus Withdrawal
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="p-3 bg-black bg-opacity-50 rounded-3 border border-secondary h-100">
+                        <h5 class="text-white font-weight-bold mb-2"><i class="fa-solid fa-network-wired text-warning me-2"></i> Referral Network Tracker</h5>
+                        <p class="text-muted small mb-3">Track all mechanics and users who signed up with your referral code.</p>
+                        @if (refSummary == null || refSummary.ReferredFriends.Count == 0)
+                        {
+                            <div class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-users-gear fa-2x mb-2 text-warning opacity-60"></i>
+                                <p class="mb-1">No referrals recorded under your code yet.</p>
+                                <span class="small text-muted">Share your code with fellow mechanics and customers to start earning bonuses!</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                                <table class="table table-dark table-sm table-hover mb-0 align-middle">
+                                    <thead class="text-muted small text-uppercase">
+                                        <tr>
+                                            <th>Invited Name</th>
+                                            <th>Role</th>
+                                            <th>Reward</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var f in refSummary.ReferredFriends)
+                                        {
+                                            <tr>
+                                                <td class="font-weight-bold text-white">
+                                                    <div>@f.FriendName</div>
+                                                    <small class="text-muted">@f.FriendPhone</small>
+                                                </td>
+                                                <td><span class="badge @(f.StageType == "M2M" ? "bg-warning text-dark" : "bg-info text-dark")">@f.StageType</span></td>
+                                                <td class="text-success font-weight-bold">₹@f.ExpectedReward.ToString("N0")</td>
+                                                <td>
+                                                    @if (f.Status == "Completed")
+                                                    {
+                                                        <span class="badge bg-success">Paid</span>
+                                                    }
+                                                    else if (f.Status == "Pending")
+                                                    {
+                                                        <span class="badge bg-warning text-dark">Awaiting 1st Job</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-danger">Cancelled</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -1818,6 +2030,11 @@
             loadSupportMessages();
         }
     }
+    window.switchMechTab = switchMechTab;
+    window.openMechanicReferralModal = function(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        switchMechTab('tab-referral');
+    };
 
     var isOnline = @(profile.IsOnline ? "true" : "false");
     var hasActiveJob = @(activeJob != null ? "true" : "false");
@@ -1871,19 +2088,23 @@
     }
 
     $(document).ready(function() {
-        // Start watching geolocation to update mechanic location in database
+        // Location update without hardware hanging
         if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(function(position) {
+            navigator.geolocation.getCurrentPosition(function(position) {
                 var lat = position.coords.latitude;
                 var lng = position.coords.longitude;
                 $.post('/Mechanic/UpdateLocation', { lat: lat, lng: lng });
-            }, function(err) {
-                console.warn("Geolocation watch error:", err);
-            }, {
-                enableHighAccuracy: true,
-                maximumAge: 10000,
-                timeout: 5000
-            });
+            }, function(err) {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+            
+            setInterval(function() {
+                if (isOnline && !document.hidden) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        var lat = position.coords.latitude;
+                        var lng = position.coords.longitude;
+                        $.post('/Mechanic/UpdateLocation', { lat: lat, lng: lng });
+                    }, function(err) {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 });
+                }
+            }, 45000);
         }
         
         // Initialize Completed Repair History to show last 7 days (weekly) by default
@@ -3518,6 +3739,9 @@
 
 <script>
     window.openMechanicReferralModal = function() {
+        if (typeof switchMechTab === 'function') {
+            switchMechTab('tab-referral');
+        }
         var modalEl = document.getElementById('mechanicReferralModal');
         if (modalEl) {
             if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
@@ -3530,27 +3754,47 @@
     };
 
     function toggleMechPayoutFields() {
-        var method = document.getElementById('mechPayoutMethodSelect').value;
+        var el = document.getElementById('mechPayoutMethodSelect');
+        var method = el ? el.value : 'UPI';
         if (method === 'UPI') {
-            document.getElementById('mechUpiSection').style.display = 'block';
-            document.getElementById('mechBankSection').style.display = 'none';
+            if (document.getElementById('mechUpiSection')) document.getElementById('mechUpiSection').style.display = 'block';
+            if (document.getElementById('mechBankSection')) document.getElementById('mechBankSection').style.display = 'none';
         } else {
-            document.getElementById('mechUpiSection').style.display = 'none';
-            document.getElementById('mechBankSection').style.display = 'flex';
+            if (document.getElementById('mechUpiSection')) document.getElementById('mechUpiSection').style.display = 'none';
+            if (document.getElementById('mechBankSection')) document.getElementById('mechBankSection').style.display = 'flex';
+        }
+    }
+
+    function toggleMechTabPayoutFields() {
+        var el = document.getElementById('mechTabPayoutSelect');
+        var method = el ? el.value : 'UPI';
+        if (method === 'UPI') {
+            if (document.getElementById('mechTabUpiSection')) document.getElementById('mechTabUpiSection').style.display = 'block';
+            if (document.getElementById('mechTabBankSection')) document.getElementById('mechTabBankSection').style.display = 'none';
+        } else {
+            if (document.getElementById('mechTabUpiSection')) document.getElementById('mechTabUpiSection').style.display = 'none';
+            if (document.getElementById('mechTabBankSection')) document.getElementById('mechTabBankSection').style.display = 'flex';
         }
     }
 
     function copyMechanicReferralCode() {
-        var code = document.getElementById('mechRefCodeText').textContent.trim();
+        var el = document.getElementById('mechRefCodeTextScreen') || document.getElementById('mechRefCodeText');
+        var code = el ? el.textContent.trim() : "@(refSummary?.ReferralCode ?? "RSM-PARTNER")";
         navigator.clipboard.writeText(code).then(function() {
-            var btnText = document.getElementById('btnCopyMechText');
-            btnText.textContent = 'Copied!';
-            setTimeout(function() { btnText.textContent = 'Copy Code'; }, 2000);
+            var btn1 = document.getElementById('btnCopyMechTextScreen');
+            var btn2 = document.getElementById('btnCopyMechText');
+            if (btn1) btn1.textContent = 'Copied!';
+            if (btn2) btn2.textContent = 'Copied!';
+            setTimeout(function() {
+                if (btn1) btn1.textContent = 'Copy Code';
+                if (btn2) btn2.textContent = 'Copy Code';
+            }, 2000);
         });
     }
 
     function shareMechanicM2MWhatsApp(refereeReward) {
-        var code = document.getElementById('mechRefCodeText').textContent.trim();
+        var el = document.getElementById('mechRefCodeTextScreen') || document.getElementById('mechRefCodeText');
+        var code = el ? el.textContent.trim() : "@(refSummary?.ReferralCode ?? "RSM-PARTNER")";
         var shareLink = window.location.origin + '/Auth/Login?ref=' + encodeURIComponent(code) + '&role=Mechanic';
         var rewardAmt = refereeReward || 150;
         var msg = "Bhai! 🧰 RaahSathi mechanic partner network join karo aur daily breakdown jobs pao. Mera Referral Code: *" + code + "* use karo to ₹" + rewardAmt + " welcome bonus milega. Register now: " + shareLink;
@@ -3558,7 +3802,8 @@
     }
 
     function shareMechanicM2CWhatsApp(refereeReward) {
-        var code = document.getElementById('mechRefCodeText').textContent.trim();
+        var el = document.getElementById('mechRefCodeTextScreen') || document.getElementById('mechRefCodeText');
+        var code = el ? el.textContent.trim() : "@(refSummary?.ReferralCode ?? "RSM-PARTNER")";
         var shareLink = window.location.origin + '/Auth/Login?ref=' + encodeURIComponent(code);
         var rewardAmt = refereeReward || 100;
         var msg = "Namaste! 🚗 Kabhi bhi raste me car ya bike breakdown ho, to RaahSathi se instant mechanic book karein. Mera coupon code *" + code + "* lagakar pehli service par ₹" + rewardAmt + " discount paayein: " + shareLink;
@@ -3566,7 +3811,8 @@
     }
 
     function shareMechanicSms() {
-        var code = document.getElementById('mechRefCodeText').textContent.trim();
+        var el = document.getElementById('mechRefCodeTextScreen') || document.getElementById('mechRefCodeText');
+        var code = el ? el.textContent.trim() : "@(refSummary?.ReferralCode ?? "RSM-PARTNER")";
         var shareLink = window.location.origin + '/Auth/Login?ref=' + encodeURIComponent(code);
         var msg = "Join RaahSathi roadside network! Use referral code: " + code + ". Link: " + shareLink;
         window.location.href = 'sms:?body=' + encodeURIComponent(msg);
