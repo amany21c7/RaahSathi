@@ -77,54 +77,54 @@
     </div>
 }
 
-<!-- Telemetry Summary Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-xl-3 col-sm-6">
-        <div class="glass-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted small text-uppercase font-weight-bold">Total Referrals</span>
-                <h3 class="text-white font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">@totalReferrals</h3>
-                <span class="text-success small"><i class="fa-solid fa-check me-1"></i> @completedReferrals Successful</span>
+<!-- Telemetry Summary Cards (2x2 on Mobile, 4-col on Desktop) -->
+<div class="row g-2 g-sm-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="kpi-stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="kpi-stat-title">Total Referrals</span>
+                <div class="kpi-stat-icon bg-warning bg-opacity-15 text-warning">
+                    <i class="fa-solid fa-people-arrows"></i>
+                </div>
             </div>
-            <div class="rounded-circle bg-warning bg-opacity-10 p-3 text-warning">
-                <i class="fa-solid fa-people-arrows fa-2x"></i>
-            </div>
+            <h3 class="kpi-stat-value text-white">@totalReferrals</h3>
+            <small class="kpi-stat-subtitle text-success"><i class="fa-solid fa-check me-1"></i> @completedReferrals Success</small>
         </div>
     </div>
-    <div class="col-xl-3 col-sm-6">
-        <div class="glass-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted small text-uppercase font-weight-bold">Pending Jobs</span>
-                <h3 class="text-warning font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">@pendingReferrals</h3>
-                <span class="text-muted small">Awaiting 1st booking</span>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="kpi-stat-title">Pending Jobs</span>
+                <div class="kpi-stat-icon bg-warning bg-opacity-15 text-warning">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
             </div>
-            <div class="rounded-circle bg-warning bg-opacity-10 p-3 text-warning">
-                <i class="fa-solid fa-clock-rotate-left fa-2x"></i>
-            </div>
+            <h3 class="kpi-stat-value text-warning">@pendingReferrals</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-hourglass-half me-1 text-warning"></i> Awaiting 1st</small>
         </div>
     </div>
-    <div class="col-xl-3 col-sm-6">
-        <div class="glass-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted small text-uppercase font-weight-bold">Total Disbursed</span>
-                <h3 class="text-info font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@totalDisbursed.ToString("N0")</h3>
-                <span class="text-muted small">Rewards credited</span>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="kpi-stat-title">Disbursed</span>
+                <div class="kpi-stat-icon bg-info bg-opacity-15 text-info">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
             </div>
-            <div class="rounded-circle bg-info bg-opacity-10 p-3 text-info">
-                <i class="fa-solid fa-coins fa-2x"></i>
-            </div>
+            <h3 class="kpi-stat-value text-info">₹@totalDisbursed.ToString("N0")</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-wallet me-1 text-info"></i> Rewards Paid</small>
         </div>
     </div>
-    <div class="col-xl-3 col-sm-6">
-        <div class="glass-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted small text-uppercase font-weight-bold">Pending Payouts</span>
-                <h3 class="text-danger font-weight-extrabold mb-0 mt-1" style="font-family: 'Outfit';">₹@pendingPayouts.ToString("N0")</h3>
-                <span class="text-muted small">@pendingWithdrawals.Count requests waiting</span>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="kpi-stat-title">Pending Payouts</span>
+                <div class="kpi-stat-icon bg-danger bg-opacity-15 text-danger">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                </div>
             </div>
-            <div class="rounded-circle bg-danger bg-opacity-10 p-3 text-danger">
-                <i class="fa-solid fa-hand-holding-dollar fa-2x"></i>
-            </div>
+            <h3 class="kpi-stat-value text-danger">₹@pendingPayouts.ToString("N0")</h3>
+            <small class="kpi-stat-subtitle text-danger"><i class="fa-solid fa-clock me-1"></i> @pendingWithdrawals.Count Requests</small>
         </div>
     </div>
 </div>

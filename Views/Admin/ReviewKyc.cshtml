@@ -221,26 +221,26 @@
         </div>
 
         <!-- 🚀 Action Bar: Approve KYC, Reject KYC, Close -->
-        <div class="p-3 rounded-3 bg-black bg-opacity-60 border border-secondary border-opacity-50 mt-4 d-flex flex-wrap justify-content-between align-items-center gap-2 shadow-lg">
+        <div class="p-3 rounded-3 bg-black bg-opacity-60 border border-secondary border-opacity-50 mt-4 d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-3 shadow-lg">
             <div class="d-flex align-items-center gap-2">
                 <span class="text-muted small"><i class="fa-solid fa-gavel text-warning me-1"></i> Admin Decision:</span>
             </div>
             
-            <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-2 flex-column flex-sm-row w-100 w-sm-auto">
                 <!-- Approve Button -->
-                <form action="/Admin/ApproveKyc" method="post" class="d-inline kyc-action-form">
+                <form action="/Admin/ApproveKyc" method="post" class="d-inline kyc-action-form w-100 w-sm-auto">
                     <input type="hidden" name="userId" value="@Model.UserId" />
                     <input type="hidden" name="status" value="Approved" />
-                    <button type="submit" class="btn btn-success font-weight-bold px-4 shadow-sm" onclick="return confirm('Confirm Approve: Verify and activate KYC for mechanic @(Model.User?.Name)?');">
+                    <button type="submit" class="btn btn-success font-weight-bold px-4 py-2 w-100 shadow-sm" onclick="return confirm('Confirm Approve: Verify and activate KYC for mechanic @(Model.User?.Name)?');">
                         <i class="fa-solid fa-circle-check me-1"></i> Approve KYC
                     </button>
                 </form>
 
                 <!-- Reject Button -->
-                <form action="/Admin/ApproveKyc" method="post" class="d-inline kyc-action-form">
+                <form action="/Admin/ApproveKyc" method="post" class="d-inline kyc-action-form w-100 w-sm-auto">
                     <input type="hidden" name="userId" value="@Model.UserId" />
                     <input type="hidden" name="status" value="Rejected" />
-                    <button type="submit" class="btn btn-danger font-weight-bold px-4 shadow-sm" onclick="return confirm('Confirm Reject: Reject KYC application for mechanic @(Model.User?.Name)?');">
+                    <button type="submit" class="btn btn-danger font-weight-bold px-4 py-2 w-100 shadow-sm" onclick="return confirm('Confirm Reject: Reject KYC application for mechanic @(Model.User?.Name)?');">
                         <i class="fa-solid fa-circle-xmark me-1"></i> Reject KYC
                     </button>
                 </form>
@@ -248,13 +248,13 @@
                 <!-- Close / Back Button -->
                 @if (isPartial)
                 {
-                    <button type="button" class="btn btn-outline-secondary font-weight-bold px-4" data-bs-dismiss="modal" onclick="var m = bootstrap.Modal.getOrCreateInstance(document.getElementById('kycReviewModal')); if(m) m.hide();">
+                    <button type="button" class="btn btn-outline-secondary font-weight-bold px-4 py-2 w-100 w-sm-auto" data-bs-dismiss="modal" onclick="var m = bootstrap.Modal.getOrCreateInstance(document.getElementById('kycReviewModal')); if(m) m.hide();">
                         <i class="fa-solid fa-xmark me-1"></i> Close
                     </button>
                 }
                 else
                 {
-                    <a href="/Admin/ManageUsers" class="btn btn-outline-secondary font-weight-bold px-4">
+                    <a href="/Admin/ManageUsers" class="btn btn-outline-secondary font-weight-bold px-4 py-2 w-100 w-sm-auto text-center">
                         <i class="fa-solid fa-arrow-left me-1"></i> Back to Users
                     </a>
                 }

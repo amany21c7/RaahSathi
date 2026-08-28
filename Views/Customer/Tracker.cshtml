@@ -66,11 +66,13 @@
         align-items: center;
         z-index: 2;
         position: relative;
-        width: 75px;
+        flex: 1 1 0;
+        min-width: 48px;
+        max-width: 85px;
     }
     .timeline-step {
-        width: 34px;
-        height: 34px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         background: #1e293b;
         border: 2px solid rgba(255, 255, 255, 0.2);
@@ -78,7 +80,7 @@
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         transition: all 0.3s ease;
         color: #94a3b8;
     }
@@ -96,15 +98,17 @@
         box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
     }
     .timeline-label {
-        margin-top: 8px;
-        font-size: 0.75rem;
+        margin-top: 6px;
+        font-size: 0.7rem;
         font-weight: 500;
         text-align: center;
         color: #94a3b8;
         transition: color 0.3s ease;
         position: static !important;
         transform: none !important;
-        width: auto !important;
+        width: 100% !important;
+        word-break: break-word;
+        line-height: 1.2;
     }
     .timeline-step.active ~ .timeline-label,
     .timeline-step.completed ~ .timeline-label {

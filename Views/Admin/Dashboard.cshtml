@@ -10,90 +10,90 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 border-bottom border-secondary border-opacity-30 pb-3">
     <div>
         <h3 class="text-white font-weight-bold mb-1" style="font-family: 'Outfit', sans-serif;">
-            <i class="fa-solid fa-tower-cell text-warning me-2"></i> All-India Command & Control Center
+            <i class="fa-solid fa-tower-cell text-warning me-2"></i> All-India Command &amp; Control Center
         </h3>
-        <p class="text-muted small mb-0">Real-time National Operations Telemetry, Emergency Surge Monitoring & Dispatch Management</p>
+        <p class="text-muted small mb-0">Real-time National Operations Telemetry, Emergency Surge Monitoring &amp; Dispatch Management</p>
     </div>
-    <div class="d-flex align-items-center gap-2">
-        <a href="/Admin/Messages" class="btn btn-dark border-secondary text-warning btn-sm font-weight-bold"><i class="fa-solid fa-headset me-1"></i> Support Inquiries</a>
-        <a href="/Admin/Mechanics" class="btn btn-warning text-dark btn-sm font-weight-bold"><i class="fa-solid fa-user-check me-1"></i> KYC Approvals</a>
+    <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-md-auto">
+        <a href="/Admin/Messages" class="btn btn-dark border-secondary text-warning btn-sm font-weight-bold flex-grow-1 flex-md-grow-0"><i class="fa-solid fa-headset me-1"></i> Support Inquiries</a>
+        <a href="/Admin/Mechanics" class="btn btn-warning text-dark btn-sm font-weight-bold flex-grow-1 flex-md-grow-0"><i class="fa-solid fa-user-check me-1"></i> KYC Approvals</a>
     </div>
 </div>
 
 <!-- 🟢 Live Telemetry Status Row (Clickable Categories with Live Filter Grid) -->
-<div class="row g-3 mb-4">
+<div class="row g-2 g-sm-3 mb-4">
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('onlineMechanics', 'Online Mechanics Network')">
-            <span class="text-muted small d-block mb-1"><i class="fa-solid fa-circle text-success me-1" style="font-size:0.6rem;"></i> Online Mechanics</span>
-            <h3 class="text-success font-weight-extrabold mb-0" id="lblOnlineMechanics">@(ViewBag.OnlineMechanics ?? 0)</h3>
-            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
+        <div class="p-2.5 p-sm-3 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-40 text-center shadow-sm h-100" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('onlineMechanics', 'Online Mechanics Network')">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;"><i class="fa-solid fa-circle text-success me-1" style="font-size:0.55rem;"></i> Online Fleet</span>
+            <h3 class="text-success font-weight-extrabold mb-0" id="lblOnlineMechanics" style="font-size: 1.5rem;">@(ViewBag.OnlineMechanics ?? 0)</h3>
+            <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;">Tap for grid <i class="fa-solid fa-arrow-right ms-0.5"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-info border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('liveRequests', 'Live Assistance Requests')">
-            <span class="text-muted small d-block mb-1"><i class="fa-solid fa-tower-broadcast text-info me-1"></i> Live Requests</span>
-            <h3 class="text-info font-weight-extrabold mb-0" id="lblLiveRequests">@(ViewBag.LiveRequests ?? 0)</h3>
-            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
+        <div class="p-2.5 p-sm-3 rounded-3 bg-dark bg-opacity-70 border border-info border-opacity-40 text-center shadow-sm h-100" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('liveRequests', 'Live Assistance Requests')">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;"><i class="fa-solid fa-tower-broadcast text-info me-1"></i> Live Requests</span>
+            <h3 class="text-info font-weight-extrabold mb-0" id="lblLiveRequests" style="font-size: 1.5rem;">@(ViewBag.LiveRequests ?? 0)</h3>
+            <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;">Tap for grid <i class="fa-solid fa-arrow-right ms-0.5"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-warning border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('activeJobs', 'Active Jobs in Progress')">
-            <span class="text-muted small d-block mb-1"><i class="fa-solid fa-bolt text-warning me-1"></i> Active Jobs</span>
-            <h3 class="text-warning font-weight-extrabold mb-0" id="lblActiveJobs">@(ViewBag.ActiveRequests ?? 0)</h3>
-            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
+        <div class="p-2.5 p-sm-3 rounded-3 bg-dark bg-opacity-70 border border-warning border-opacity-40 text-center shadow-sm h-100" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('activeJobs', 'Active Jobs in Progress')">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;"><i class="fa-solid fa-bolt text-warning me-1"></i> Active Jobs</span>
+            <h3 class="text-warning font-weight-extrabold mb-0" id="lblActiveJobs" style="font-size: 1.5rem;">@(ViewBag.ActiveRequests ?? 0)</h3>
+            <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;">Tap for grid <i class="fa-solid fa-arrow-right ms-0.5"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-secondary border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('pendingRequests', 'Unassigned Pending Requests')">
-            <span class="text-muted small d-block mb-1"><i class="fa-solid fa-hourglass-half text-light me-1"></i> Pending Requests</span>
-            <h3 class="text-light font-weight-extrabold mb-0" id="lblPendingRequests">@(ViewBag.PendingRequests ?? 0)</h3>
-            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
+        <div class="p-2.5 p-sm-3 rounded-3 bg-dark bg-opacity-70 border border-secondary border-opacity-40 text-center shadow-sm h-100" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('pendingRequests', 'Unassigned Pending Requests')">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;"><i class="fa-solid fa-hourglass-half text-light me-1"></i> Pending Req</span>
+            <h3 class="text-light font-weight-extrabold mb-0" id="lblPendingRequests" style="font-size: 1.5rem;">@(ViewBag.PendingRequests ?? 0)</h3>
+            <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;">Tap for grid <i class="fa-solid fa-arrow-right ms-0.5"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('completedToday', 'Jobs Completed Today')">
-            <span class="text-muted small d-block mb-1"><i class="fa-solid fa-circle-check text-success me-1"></i> Completed Today</span>
-            <h3 class="text-success font-weight-extrabold mb-0" id="lblCompletedToday">@(ViewBag.CompletedToday ?? 0)</h3>
-            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
+        <div class="p-2.5 p-sm-3 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-40 text-center shadow-sm h-100" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('completedToday', 'Jobs Completed Today')">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-check text-success me-1"></i> Completed</span>
+            <h3 class="text-success font-weight-extrabold mb-0" id="lblCompletedToday" style="font-size: 1.5rem;">@(ViewBag.CompletedToday ?? 0)</h3>
+            <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;">Tap for grid <i class="fa-solid fa-arrow-right ms-0.5"></i></span>
         </div>
     </div>
     <div class="col-lg-2 col-md-4 col-6">
-        <div class="p-3 rounded-3 bg-dark bg-opacity-70 border border-danger border-opacity-40 text-center shadow-sm" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('cancelledToday', 'Jobs Cancelled Today')">
-            <span class="text-muted small d-block mb-1"><i class="fa-solid fa-circle-xmark text-danger me-1"></i> Cancelled Today</span>
-            <h3 class="text-danger font-weight-extrabold mb-0" id="lblCancelledToday">@(ViewBag.CancelledToday ?? 0)</h3>
-            <span class="text-muted" style="font-size: 0.65rem;">Tap to view grid <i class="fa-solid fa-arrow-right ms-1"></i></span>
+        <div class="p-2.5 p-sm-3 rounded-3 bg-dark bg-opacity-70 border border-danger border-opacity-40 text-center shadow-sm h-100" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';" onclick="openTelemetryModal('cancelledToday', 'Jobs Cancelled Today')">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-xmark text-danger me-1"></i> Cancelled</span>
+            <h3 class="text-danger font-weight-extrabold mb-0" id="lblCancelledToday" style="font-size: 1.5rem;">@(ViewBag.CancelledToday ?? 0)</h3>
+            <span class="text-muted d-block text-truncate" style="font-size: 0.65rem;">Tap for grid <i class="fa-solid fa-arrow-right ms-0.5"></i></span>
         </div>
     </div>
 </div>
 
-<!-- Today's Financial Telemetry & Commission Vault -->
-<div class="row g-3 mb-4">
-    <div class="col-lg-3 col-md-6">
-        <div class="p-3.5 rounded-3 bg-dark bg-opacity-70 border border-primary border-opacity-40 shadow-sm h-100">
-            <span class="text-muted small d-block mb-1">Today's Total Revenue</span>
-            <h2 class="text-primary font-weight-extrabold mb-1" style="font-family: 'Outfit';" id="lblTodayRevenue">₹@(((double)(ViewBag.TodayRevenue ?? 0.0)).ToString("N0"))</h2>
-            <span class="badge bg-primary text-white" style="font-size: 0.65rem;">Process Escrow Ledger</span>
+<!-- Today's Financial Telemetry & Commission Vault (2x2 on Mobile, 4-col on Desktop) -->
+<div class="row g-2 g-sm-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="p-2.5 p-sm-3.5 rounded-3 bg-dark bg-opacity-70 border border-primary border-opacity-40 shadow-sm h-100">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;">Today's Revenue</span>
+            <h2 class="text-primary font-weight-extrabold mb-1" style="font-family: 'Outfit'; font-size: 1.45rem;" id="lblTodayRevenue">₹@(((double)(ViewBag.TodayRevenue ?? 0.0)).ToString("N0"))</h2>
+            <span class="badge bg-primary text-white text-truncate d-inline-block" style="font-size: 0.62rem; max-width: 100%;">Escrow Ledger</span>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="p-3.5 rounded-3 bg-dark bg-opacity-70 border border-warning border-opacity-40 shadow-sm h-100">
-            <span class="text-muted small d-block mb-1">Today's Admin Commission</span>
-            <h2 class="text-warning font-weight-extrabold mb-1" style="font-family: 'Outfit';" id="lblTodayCommission">₹@(((double)(ViewBag.TodayCommission ?? 0.0)).ToString("N0"))</h2>
-            <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">Tiered Tier Commission</span>
+    <div class="col-6 col-lg-3">
+        <div class="p-2.5 p-sm-3.5 rounded-3 bg-dark bg-opacity-70 border border-warning border-opacity-40 shadow-sm h-100">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;">Commission</span>
+            <h2 class="text-warning font-weight-extrabold mb-1" style="font-family: 'Outfit'; font-size: 1.45rem;" id="lblTodayCommission">₹@(((double)(ViewBag.TodayCommission ?? 0.0)).ToString("N0"))</h2>
+            <span class="badge bg-warning text-dark text-truncate d-inline-block" style="font-size: 0.62rem; max-width: 100%;">Commission Vault</span>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="p-3.5 rounded-3 bg-dark bg-opacity-70 border border-info border-opacity-40 shadow-sm h-100">
-            <span class="text-muted small d-block mb-1">Average Response Time</span>
-            <h2 class="text-info font-weight-extrabold mb-1" style="font-family: 'Outfit';" id="lblAvgResponseTime">8 min</h2>
-            <span class="badge bg-info text-dark" style="font-size: 0.65rem;"><i class="fa-solid fa-clock me-1"></i> SLA Guaranteed</span>
+    <div class="col-6 col-lg-3">
+        <div class="p-2.5 p-sm-3.5 rounded-3 bg-dark bg-opacity-70 border border-info border-opacity-40 shadow-sm h-100">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;">Avg Response</span>
+            <h2 class="text-info font-weight-extrabold mb-1" style="font-family: 'Outfit'; font-size: 1.45rem;" id="lblAvgResponseTime">8 min</h2>
+            <span class="badge bg-info text-dark text-truncate d-inline-block" style="font-size: 0.62rem; max-width: 100%;"><i class="fa-solid fa-clock me-1"></i> SLA Guaranteed</span>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="p-3.5 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-40 shadow-sm h-100">
-            <span class="text-muted small d-block mb-1">Customer Rating</span>
-            <h2 class="text-success font-weight-extrabold mb-1" style="font-family: 'Outfit';" id="lblAvgCustomerRating">4.8 ★</h2>
-            <span class="badge bg-success text-white" style="font-size: 0.65rem;">98.4% Satisfaction</span>
+    <div class="col-6 col-lg-3">
+        <div class="p-2.5 p-sm-3.5 rounded-3 bg-dark bg-opacity-70 border border-success border-opacity-40 shadow-sm h-100">
+            <span class="text-muted small d-block mb-1 text-truncate" style="font-size: 0.72rem;">Customer Rating</span>
+            <h2 class="text-success font-weight-extrabold mb-1" style="font-family: 'Outfit'; font-size: 1.45rem;" id="lblAvgCustomerRating">4.8 ★</h2>
+            <span class="badge bg-success text-white text-truncate d-inline-block" style="font-size: 0.62rem; max-width: 100%;">98.4% Satisfaction</span>
         </div>
     </div>
 </div>
@@ -110,25 +110,25 @@
             <div class="row g-2 mb-3" id="regionalCitiesContainer">
                 @if (cityAreas.Count == 0)
                 {
-                    <div class="col-6">
+                    <div class="col-12 col-sm-6">
                         <div class="p-2.5 rounded bg-black bg-opacity-50 border border-info border-opacity-30 d-flex align-items-center justify-content-between">
                             <span class="text-light font-weight-bold"><i class="fa-solid fa-circle text-info me-1" style="font-size:0.6rem;"></i> Delhi NCR</span>
                             <span class="badge bg-info text-dark font-weight-bold">142 Mechanics</span>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-12 col-sm-6">
                         <div class="p-2.5 rounded bg-black bg-opacity-50 border border-success border-opacity-30 d-flex align-items-center justify-content-between">
                             <span class="text-light font-weight-bold"><i class="fa-solid fa-circle text-success me-1" style="font-size:0.6rem;"></i> Lucknow</span>
                             <span class="badge bg-success text-white font-weight-bold">🟢 Online (88)</span>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-12 col-sm-6">
                         <div class="p-2.5 rounded bg-black bg-opacity-50 border border-warning border-opacity-30 d-flex align-items-center justify-content-between">
                             <span class="text-light font-weight-bold"><i class="fa-solid fa-circle text-warning me-1" style="font-size:0.6rem;"></i> Jaipur</span>
                             <span class="badge bg-warning text-dark font-weight-bold">🟡 Busy (74)</span>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-12 col-sm-6">
                         <div class="p-2.5 rounded bg-black bg-opacity-50 border border-danger border-opacity-30 d-flex align-items-center justify-content-between">
                             <span class="text-light font-weight-bold"><span class="pulse-red-dot me-1"></span> Mumbai</span>
                             <span class="badge bg-danger text-white font-weight-bold">🔴 Surge (+12%)</span>
@@ -141,7 +141,7 @@
                     @foreach (var c in cityAreas)
                     {
                         bool isSurgeActive = c.IsEmergencyMode || isGlobalSurge;
-                        <div class="col-6">
+                        <div class="col-12 col-sm-6">
                             <div class="p-2.5 rounded bg-black bg-opacity-50 border @(isSurgeActive ? "border-danger bg-danger bg-opacity-10 shadow-sm" : "border-warning border-opacity-40") d-flex align-items-center justify-content-between">
                                 <div>
                                     <span class="text-light font-weight-bold d-flex align-items-center gap-1">

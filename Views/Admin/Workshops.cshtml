@@ -25,53 +25,57 @@
         </div>
     </div>
 
-    <!-- Stats Summary Row (Icon on LEFT, Zero Text Overflow) -->
-    <div class="row g-3 mb-3">
-        <div class="col-12 col-sm-6 col-lg-3">
-            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-30 d-flex align-items-center gap-3 shadow-sm">
-                <div class="p-2.5 rounded-3 bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
-                    <i class="fa-solid fa-shop fs-5"></i>
+    <!-- Stats Summary Row (2x2 on Mobile, 4-col on Desktop) -->
+    <div class="row g-2 g-sm-3 mb-3">
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="kpi-stat-title">Workshops</span>
+                    <div class="kpi-stat-icon bg-warning bg-opacity-15 text-warning">
+                        <i class="fa-solid fa-shop"></i>
+                    </div>
                 </div>
-                <div class="overflow-hidden">
-                    <span class="text-muted extra-small font-weight-bold text-uppercase text-truncate d-block mb-0.5" style="letter-spacing: 0.5px;">Total Workshops</span>
-                    <h4 class="text-white font-weight-bold mb-0">@totalCount</h4>
-                </div>
+                <h3 class="kpi-stat-value text-white">@totalCount</h3>
+                <small class="kpi-stat-subtitle"><i class="fa-solid fa-database me-1 text-warning"></i> Total Fleet</small>
             </div>
         </div>
         
-        <div class="col-12 col-sm-6 col-lg-3">
-            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-30 d-flex align-items-center gap-3 shadow-sm">
-                <div class="p-2.5 rounded-3 bg-success bg-opacity-15 text-success d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
-                    <i class="fa-solid fa-circle-check fs-5"></i>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="kpi-stat-title">Verified</span>
+                    <div class="kpi-stat-icon bg-success bg-opacity-15 text-success">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
                 </div>
-                <div class="overflow-hidden">
-                    <span class="text-muted extra-small font-weight-bold text-uppercase text-truncate d-block mb-0.5" style="letter-spacing: 0.5px;">Verified Partners</span>
-                    <h4 class="text-success font-weight-bold mb-0">@verifiedCount</h4>
-                </div>
+                <h3 class="kpi-stat-value text-success">@verifiedCount</h3>
+                <small class="kpi-stat-subtitle"><i class="fa-solid fa-bolt me-1 text-success"></i> Active</small>
             </div>
         </div>
         
-        <div class="col-12 col-sm-6 col-lg-3">
-            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-30 d-flex align-items-center gap-3 shadow-sm">
-                <div class="p-2.5 rounded-3 bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
-                    <i class="fa-solid fa-clock fs-5"></i>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="kpi-stat-title">Pending KYC</span>
+                    <div class="kpi-stat-icon bg-warning bg-opacity-15 text-warning">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
                 </div>
-                <div class="overflow-hidden">
-                    <span class="text-muted extra-small font-weight-bold text-uppercase text-truncate d-block mb-0.5" style="letter-spacing: 0.5px;">Pending KYC</span>
-                    <h4 class="text-warning font-weight-bold mb-0">@pendingCount</h4>
-                </div>
+                <h3 class="kpi-stat-value text-warning">@pendingCount</h3>
+                <small class="kpi-stat-subtitle"><i class="fa-solid fa-clock me-1 text-warning"></i> Needs Review</small>
             </div>
         </div>
         
-        <div class="col-12 col-sm-6 col-lg-3">
-            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-30 d-flex align-items-center gap-3 shadow-sm">
-                <div class="p-2.5 rounded-3 bg-info bg-opacity-15 text-info d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
-                    <i class="fa-solid fa-city fs-5"></i>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="kpi-stat-title">Cities</span>
+                    <div class="kpi-stat-icon bg-info bg-opacity-15 text-info">
+                        <i class="fa-solid fa-city"></i>
+                    </div>
                 </div>
-                <div class="overflow-hidden">
-                    <span class="text-muted extra-small font-weight-bold text-uppercase text-truncate d-block mb-0.5" style="letter-spacing: 0.5px;">Cities Covered</span>
-                    <h4 class="text-info font-weight-bold mb-0">@cityCount</h4>
-                </div>
+                <h3 class="kpi-stat-value text-info">@cityCount</h3>
+                <small class="kpi-stat-subtitle"><i class="fa-solid fa-map me-1 text-info"></i> Covered</small>
             </div>
         </div>
     </div>

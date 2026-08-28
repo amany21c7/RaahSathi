@@ -57,23 +57,25 @@
     </div>
 </div>
 
-<ul class="nav nav-tabs border-secondary mb-3" id="auditTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active text-warning font-weight-bold bg-transparent border-0 border-bottom border-warning border-3 px-4 py-2.5" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin-logs" type="button" role="tab" aria-controls="admin-logs" aria-selected="true" style="border-radius: 0;">
-            <i class="fa-solid fa-user-shield me-2"></i> Admin & System Logs (@adminLogs.Count)
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link text-info font-weight-bold bg-transparent border-0 px-4 py-2.5" id="mechanic-tab" data-bs-toggle="tab" data-bs-target="#mechanic-logs" type="button" role="tab" aria-controls="mechanic-logs" aria-selected="false" style="border-radius: 0;">
-            <i class="fa-solid fa-screwdriver-wrench me-2"></i> Mechanic Logs (@mechanicLogs.Count)
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link text-success font-weight-bold bg-transparent border-0 px-4 py-2.5" id="customer-tab" data-bs-toggle="tab" data-bs-target="#customer-logs" type="button" role="tab" aria-controls="customer-logs" aria-selected="false" style="border-radius: 0;">
-            <i class="fa-solid fa-user me-2"></i> Customer Logs (@customerLogs.Count)
-        </button>
-    </li>
-</ul>
+<div class="overflow-auto pb-1 mb-3">
+    <ul class="nav nav-tabs border-secondary flex-nowrap text-nowrap" id="auditTabs" role="tablist" style="min-width: 480px;">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active text-warning font-weight-bold bg-transparent border-0 border-bottom border-warning border-3 px-3 px-sm-4 py-2" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin-logs" type="button" role="tab" aria-controls="admin-logs" aria-selected="true" style="border-radius: 0; font-size: 0.85rem;">
+                <i class="fa-solid fa-user-shield me-1.5"></i> Admin &amp; System (@adminLogs.Count)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-info font-weight-bold bg-transparent border-0 px-3 px-sm-4 py-2" id="mechanic-tab" data-bs-toggle="tab" data-bs-target="#mechanic-logs" type="button" role="tab" aria-controls="mechanic-logs" aria-selected="false" style="border-radius: 0; font-size: 0.85rem;">
+                <i class="fa-solid fa-screwdriver-wrench me-1.5"></i> Mechanic Logs (@mechanicLogs.Count)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-success font-weight-bold bg-transparent border-0 px-3 px-sm-4 py-2" id="customer-tab" data-bs-toggle="tab" data-bs-target="#customer-logs" type="button" role="tab" aria-controls="customer-logs" aria-selected="false" style="border-radius: 0; font-size: 0.85rem;">
+                <i class="fa-solid fa-user me-1.5"></i> Customer Logs (@customerLogs.Count)
+            </button>
+        </li>
+    </ul>
+</div>
 
 <div class="tab-content" id="auditTabsContent">
     <!-- Admin Logs Pane -->

@@ -59,24 +59,24 @@
                     </h5>
                     <p class="text-muted small mb-0">Select your registered vehicle to send an instant roadside assistance request.</p>
                 </div>
-                <div>
+                <div class="w-100 w-md-auto">
                     @if (vehicles.Count > 0)
                     {
-                        <div class="d-flex align-items-center gap-2">
-                            <select class="form-select glass-input text-white font-weight-bold" id="dashboardVehicleSelect" style="min-width: 210px;">
+                        <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                            <select class="form-select glass-input text-white font-weight-bold flex-grow-1" id="dashboardVehicleSelect" style="min-width: 180px;">
                                 @foreach (var v in vehicles)
                                 {
                                     <option value="@v.Id">@v.Model (@v.RegistrationNumber)</option>
                                 }
                             </select>
-                            <button class="btn btn-warning font-weight-bold text-dark text-nowrap shadow" onclick="submitQuickVehicleRequest()">
+                            <button class="btn btn-warning font-weight-bold text-dark text-nowrap shadow py-2 px-3" onclick="submitQuickVehicleRequest()">
                                 <i class="fa-solid fa-paper-plane me-1"></i> Send Request
                             </button>
                         </div>
                     }
                     else
                     {
-                        <a href="/Customer/Book" class="btn btn-warning font-weight-bold text-dark text-nowrap shadow">
+                        <a href="/Customer/Book" class="btn btn-warning font-weight-bold text-dark text-nowrap shadow w-100 w-sm-auto text-center py-2 px-3">
                             <i class="fa-solid fa-location-crosshairs me-1"></i> Request Emergency Assistance
                         </a>
                     }

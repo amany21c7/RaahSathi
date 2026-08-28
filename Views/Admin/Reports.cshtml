@@ -10,49 +10,52 @@
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="p-3.5 rounded bg-dark border border-secondary shadow-sm">
-            <span class="text-muted small d-block mb-1">Total System Revenue</span>
-            <h3 class="text-primary font-weight-extrabold mb-0">₹@(((double)(ViewBag.TotalRevenue ?? 0.0)).ToString("N0"))</h3>
+<div class="row g-2 g-sm-3 mb-4">
+    <div class="col-12 col-sm-4">
+        <div class="kpi-stat-card">
+            <span class="kpi-stat-title">Total System Revenue</span>
+            <h3 class="kpi-stat-value text-primary">₹@(((double)(ViewBag.TotalRevenue ?? 0.0)).ToString("N0"))</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-coins me-1 text-primary"></i> Gross Network</small>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="p-3.5 rounded bg-dark border border-secondary shadow-sm">
-            <span class="text-muted small d-block mb-1">Total Resolved Jobs</span>
-            <h3 class="text-success font-weight-extrabold mb-0">@(ViewBag.CompletedJobsCount ?? 0)</h3>
+    <div class="col-12 col-sm-4">
+        <div class="kpi-stat-card">
+            <span class="kpi-stat-title">Resolved Jobs</span>
+            <h3 class="kpi-stat-value text-success">@(ViewBag.CompletedJobsCount ?? 0)</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-circle-check me-1 text-success"></i> SLA Resolved</small>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="p-3.5 rounded bg-dark border border-secondary shadow-sm">
-            <span class="text-muted small d-block mb-1">Avg SLA Response Time</span>
-            <h3 class="text-info font-weight-extrabold mb-0">8 Minutes</h3>
+    <div class="col-12 col-sm-4">
+        <div class="kpi-stat-card">
+            <span class="kpi-stat-title">Avg SLA Response</span>
+            <h3 class="kpi-stat-value text-info">8 Min</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-bolt me-1 text-info"></i> Rapid Dispatch</small>
         </div>
     </div>
 </div>
 
 <div class="card bg-dark border-secondary shadow-sm">
-    <div class="card-header border-secondary bg-transparent">
-        <h5 class="text-white mb-0"><i class="fa-solid fa-brain text-warning me-2"></i> AI Network Intelligence & Telemetry</h5>
+    <div class="card-header border-secondary bg-transparent py-2.5">
+        <h5 class="text-white mb-0 fs-6"><i class="fa-solid fa-brain text-warning me-2"></i> AI Network Intelligence &amp; Telemetry</h5>
     </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="p-3 rounded bg-black bg-opacity-40 border border-secondary">
-                    <span class="text-muted small d-block">Most Busy City</span>
-                    <h5 class="text-warning font-weight-bold mt-1">Delhi NCR (142 Active)</h5>
+    <div class="card-body p-2.5 p-sm-3">
+        <div class="row g-2 g-sm-3">
+            <div class="col-12 col-md-4">
+                <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary h-100">
+                    <span class="text-muted small d-block mb-1" style="font-size:0.75rem;">Most Busy City</span>
+                    <h6 class="text-warning font-weight-bold mb-0">Delhi NCR (142 Active)</h6>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="p-3 rounded bg-black bg-opacity-40 border border-secondary">
-                    <span class="text-muted small d-block">Most Requested Service</span>
-                    <h5 class="text-info font-weight-bold mt-1">Battery Jumpstart & Towing</h5>
+            <div class="col-12 col-md-4">
+                <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary h-100">
+                    <span class="text-muted small d-block mb-1" style="font-size:0.75rem;">Most Requested Service</span>
+                    <h6 class="text-info font-weight-bold mb-0">Battery Jumpstart &amp; Towing</h6>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="p-3 rounded bg-black bg-opacity-40 border border-secondary">
-                    <span class="text-muted small d-block">Peak Emergency Hours</span>
-                    <h5 class="text-success font-weight-bold mt-1">8:00 AM - 11:30 AM & 6:00 PM - 9:30 PM</h5>
+            <div class="col-12 col-md-4">
+                <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary h-100">
+                    <span class="text-muted small d-block mb-1" style="font-size:0.75rem;">Peak Emergency Hours</span>
+                    <h6 class="text-success font-weight-bold mb-0">8:00 AM - 11:30 AM &amp; 6:00 PM - 9:30 PM</h6>
                 </div>
             </div>
         </div>
