@@ -2754,11 +2754,6 @@
                     
                     <h4 class="text-white font-weight-bold mb-2" id="broadcastModalTitle" style="font-family: 'Outfit';">Live Announcement</h4>
                     <p class="text-muted small mb-4" id="broadcastModalMessage" style="font-size: 0.88rem; line-height: 1.5; color: #cbd5e1 !important;">Notification details...</p>
-                    
-                    <div class="d-flex align-items-center justify-content-between p-2.5 rounded bg-black bg-opacity-30 border border-secondary border-opacity-20 mb-4">
-                        <span class="small text-muted"><i class="fa-regular fa-clock me-1"></i> Broadcast Date:</span>
-                        <span class="small text-warning font-weight-bold" id="broadcastModalTime">N/A</span>
-                    </div>
 
                     <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnDismissBroadcastModal" data-bs-dismiss="modal" style="font-size: 0.92rem;">
                         <i class="fa-solid fa-check"></i> <span>Got It, Don't Show Again</span>
@@ -2960,6 +2955,116 @@
             </div>
         </div>
     </div>
+
+    @if (activeRole == "Guest")
+    {
+        <!-- 🌐 Compact First-Time / Guest Language Selection Modal -->
+        <div class="modal fade" id="firstTimeLanguageModal" tabindex="-1" aria-labelledby="firstTimeLanguageModalLabel" aria-hidden="true" data-bs-backdrop="static" style="z-index: 1080;">
+            <div class="modal-dialog modal-dialog-centered" style="max-width: 390px; width: 92%;">
+                <div class="modal-content bg-dark text-white border-warning shadow-lg" style="border-radius: 18px; box-shadow: 0 16px 45px rgba(0,0,0,0.9); border: 1.5px solid rgba(255, 107, 0, 0.5); background: linear-gradient(145deg, #18191c, #0e0f13);">
+                    <div class="modal-header border-secondary border-opacity-25 py-2.5 px-3.5">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="p-1.5 rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="fa-solid fa-language fa-sm"></i>
+                            </div>
+                            <div>
+                                <h6 class="modal-title text-white font-weight-bold mb-0" id="firstTimeLanguageModalLabel" style="font-size: 0.95rem;">
+                                    Select Language / भाषा चुनें
+                                </h6>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" onclick="dismissFirstTimeLanguageModal()" aria-label="Close" style="font-size: 0.75rem;"></button>
+                    </div>
+                    <div class="modal-body p-3.5">
+                        <p class="text-muted extra-small mb-2.5">Choose your preferred language for instant roadside assistance:</p>
+                        
+                        <!-- Language Selection Dropdown -->
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <span class="input-group-text bg-secondary bg-opacity-25 border-secondary text-warning">
+                                    <i class="fa-solid fa-globe"></i>
+                                </span>
+                                <select id="firstTimeLangSelect" class="form-select bg-dark text-white border-secondary font-weight-bold" style="font-size: 0.92rem; border-radius: 0 8px 8px 0; cursor: pointer;">
+                                    <option value="en" selected>🇬🇧 English (Default)</option>
+                                    <option value="hi">🇮🇳 Hindi (हिंदी)</option>
+                                    <option value="mr">🇮🇳 Marathi (मराठी)</option>
+                                    <option value="gu">🇮🇳 Gujarati (ગુજરાતી)</option>
+                                    <option value="pa">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</option>
+                                    <option value="bn">🇮🇳 Bengali (বাংলা)</option>
+                                    <option value="ta">🇮🇳 Tamil (தமிழ்)</option>
+                                    <option value="te">🇮🇳 Telugu (తెలుగు)</option>
+                                    <option value="kn">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+                                    <option value="ml">🇮🇳 Malayalam (മലയാളം)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Button -->
+                        <button type="button" class="btn btn-warning w-100 font-weight-bold text-dark py-2 shadow-sm d-flex align-items-center justify-content-center gap-1.5" onclick="submitFirstTimeLanguage()" style="border-radius: 10px; font-size: 0.9rem; background: #ff6b00; border: none;">
+                            <span>Continue / आगे बढ़ें</span>
+                            <i class="fa-solid fa-arrow-right-long"></i>
+                        </button>
+                    </div>
+                    <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 justify-content-center">
+                        <span class="text-muted extra-small" style="font-size: 0.73rem;">You can change language anytime from top navbar</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guest / Non-Logged In Language Popup Script -->
+        <script>
+            (function() {
+                function checkFirstTimeLanguagePrompt() {
+                    var path = (window.location.pathname || '').toLowerCase();
+                    var isHomePage = path === '/' || path === '' || path === '/home' || path === '/home/' || path === '/home/index' || path === '/index';
+                    
+                    if (!isHomePage) return;
+
+                    var hasChosenInSession = sessionStorage.getItem('raahsathi_guest_lang_chosen');
+                    if (!hasChosenInSession) {
+                        var modalEl = document.getElementById('firstTimeLanguageModal');
+                        if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                            var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+                            modal.show();
+                        }
+                    }
+                }
+
+                window.submitFirstTimeLanguage = function() {
+                    var selectEl = document.getElementById('firstTimeLangSelect');
+                    var langCode = selectEl ? selectEl.value : 'en';
+                    
+                    sessionStorage.setItem('raahsathi_guest_lang_chosen', 'true');
+                    var modalEl = document.getElementById('firstTimeLanguageModal');
+                    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                        var m = bootstrap.Modal.getInstance(modalEl);
+                        if (m) m.hide();
+                    }
+                    if (typeof changeLanguage === 'function') {
+                        changeLanguage(langCode);
+                    }
+                };
+
+                window.dismissFirstTimeLanguageModal = function() {
+                    sessionStorage.setItem('raahsathi_guest_lang_chosen', 'true');
+                    var modalEl = document.getElementById('firstTimeLanguageModal');
+                    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                        var m = bootstrap.Modal.getInstance(modalEl);
+                        if (m) m.hide();
+                    }
+                };
+
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                    setTimeout(checkFirstTimeLanguagePrompt, 400);
+                } else {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        setTimeout(checkFirstTimeLanguagePrompt, 400);
+                    });
+                }
+            })();
+        </script>
+    }
 
     <!-- PWA Installation Engine & Service Worker Registration -->
     <script>

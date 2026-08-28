@@ -1399,5 +1399,19 @@ html, body {
         padding: 0.75rem 1rem !important;
     }
 }
-
+/* 🌐 Language Selector Modal Cards */
+.lang-select-card {
+    transition: all 0.25s ease-in-out !important;
+    cursor: pointer;
+}
+.lang-select-card:hover {
+    border-color: #ff6b00 !important;
+    background: rgba(255, 107, 0, 0.12) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 0, 0.25) !important;
+}
+.lang-select-card:hover i {
+    color: #ff6b00 !important;
+    transform: translateX(3px);
+}
 
