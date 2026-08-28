@@ -322,7 +322,9 @@
         }
     </script>
 
-    <title>@(ViewData["Title"] ?? "RaahSathi | Roadside Assistance")</title>
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} | RaahSathi" : "RaahSathi — Every Vehicle. Every Problem. Everywhere. | 24/7 Roadside Assistance")</title>
+    <meta name="description" content="RaahSathi — India's 24/7 On-Demand Roadside Assistance & Emergency Mechanic Dispatch. Every Vehicle, Every Problem, Everywhere. Fast 15-min arrival for bikes, cars, EVs & commercial vehicles." />
+    <meta name="keywords" content="roadside assistance, car breakdown, bike mechanic near me, 24/7 towing service, flat tyre puncture repair, battery jumpstart, EV charging emergency, highway mechanic India, RaahSathi" />
 
     <!-- 📲 Progressive Web App (PWA) & Mobile Meta Tags -->
     <meta name="theme-color" content="#ff6b00" />
@@ -1125,7 +1127,7 @@
                                 <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi Logo" style="height: 42px; border-radius: 10px; object-fit: contain; border: 1.5px solid #ff6b00;" class="me-2 shadow" />
                                 <span class="font-weight-extrabold" style="font-family:'Outfit', sans-serif; font-size:1.4rem; letter-spacing:0.5px;"><span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span></span>
                             </div>
-                            <p class="text-muted small mb-3" style="line-height: 1.4;">India's connected roadside assistance network. Instant breakdown dispatch for 2-wheelers, cars, commercial, and heavy vehicles across cities and highways.</p>
+                            <p class="text-muted small mb-3" style="line-height: 1.4;"><strong class="text-warning d-block mb-1">Every Vehicle. Every Problem. Everywhere.</strong>India's connected roadside assistance network. Instant breakdown dispatch for 2-wheelers, cars, commercial, and heavy vehicles across cities and highways.</p>
                             
                             <!-- Emergency Support Highlight Box -->
                             <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-40 rounded-3 d-flex align-items-center justify-content-between mb-3">
