@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <DebugType>portable</DebugType>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <UseAppHost>false</UseAppHost>
+    <UseAppHost>true</UseAppHost>
     <DefaultItemExcludes>src\**;$(DefaultItemExcludes)</DefaultItemExcludes>
   </PropertyGroup>
 
