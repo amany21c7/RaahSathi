@@ -2268,10 +2268,27 @@ namespace RaahSathi.Controllers
             return RedirectToAction("Admins");
         }
 
-        public async Task<IActionResult> Logs()
+        public async Task<IActionResult> Logs(DateTime? fromDate = null, DateTime? toDate = null)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
-            var logs = await _dbContext.AuditLogs.OrderByDescending(l => l.Id).Take(200).ToListAsync();
+            
+            var query = _dbContext.AuditLogs.AsQueryable();
+
+            if (fromDate.HasValue)
+            {
+                var fromUtc = fromDate.Value.Date;
+                query = query.Where(l => l.TimeStamp >= fromUtc);
+            }
+
+            if (toDate.HasValue)
+            {
+                var toUtc = toDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(l => l.TimeStamp <= toUtc);
+            }
+
+            var logs = await query.OrderByDescending(l => l.TimeStamp).Take(5000).ToListAsync();
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
             return View(logs);
         }
 
