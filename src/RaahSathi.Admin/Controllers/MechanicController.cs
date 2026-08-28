@@ -165,6 +165,12 @@ namespace RaahSathi.Controllers
                 .Include(j => j.Vehicle)
                 .FirstOrDefaultAsync(j => j.MechanicId == user.Id && j.Status != "Completed" && j.Status != "Cancelled");
 
+            if (activeJob != null && activeJob.Status == "Arrived")
+            {
+                activeJob.Status = "Inspecting";
+                await _dbContext.SaveChangesAsync();
+            }
+
             // Check if there is an unassigned "Requested" job nearby that fits this mechanic's skills
             // To simulate incoming dispatch pings in the UI
             Job? pingJob = null;

@@ -366,7 +366,7 @@
         </div>
 
         <!-- Tracker Map Card -->
-        <div class="glass-card p-0 mb-4 overflow-hidden" style="min-height: 400px; display:flex; flex-direction:column;">
+        <div class="glass-card p-0 mb-3 overflow-hidden" style="display:flex; flex-direction:column;">
             <div class="p-3 bg-dark border-bottom border-secondary d-flex align-items-center justify-content-between">
                 <div>
                     <h5 class="mb-0 text-white"><i class="fa-solid fa-route text-warning me-2"></i> Live Mechanic Tracking</h5>
@@ -378,12 +378,12 @@
                 </div>
             </div>
             
-            <div id="map-container" style="flex-grow:1; min-height: 350px;"></div>
+            <div id="map-container" style="height: 290px; width: 100%;"></div>
         </div>
 
         <!-- Job Progress Checklist (Visual State Machine) -->
-        <div class="glass-card mb-4">
-            <h5 class="text-white mb-4"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Roadmap Status</h5>
+        <div class="glass-card p-3 mb-3">
+            <h5 class="text-white mb-3"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Roadmap Status</h5>
             <div class="timeline-progress-wrapper">
                 <div class="timeline-item-col">
                     <div class="timeline-step" id="step-Accepted">1</div>
@@ -394,19 +394,15 @@
                     <div class="timeline-label">Driving</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Arrived">3</div>
-                    <div class="timeline-label">Arrived</div>
+                    <div class="timeline-step" id="step-Inspecting">3</div>
+                    <div class="timeline-label">Reached Spot & Inspection</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Inspecting">4</div>
-                    <div class="timeline-label">Inspecting</div>
-                </div>
-                <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Repairing">5</div>
+                    <div class="timeline-step" id="step-Repairing">4</div>
                     <div class="timeline-label">Repairing</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Completed">6</div>
+                    <div class="timeline-step" id="step-Completed">5</div>
                     <div class="timeline-label">Finished</div>
                 </div>
             </div>
@@ -1194,10 +1190,8 @@
                     }
                 }
                 $('#etaText').html("<i class='fa-solid fa-route text-warning me-1'></i> Mechanic travelling. ETA " + etaDisplay);
-            } else if (res.status === "Arrived") {
-                $('#etaText').html("<span class='text-success font-weight-bold'><i class='fa-solid fa-check-circle me-1'></i> Mechanic has arrived on scene.</span>");
-            } else if (res.status === "Inspecting") {
-                $('#etaText').html("<span class='text-warning font-weight-bold'><i class='fa-solid fa-magnifying-glass fa-spin me-1'></i> Running full vehicle diagnostics...</span>");
+            } else if (res.status === "Inspecting" || res.status === "Arrived") {
+                $('#etaText').html("<span class='text-warning font-weight-bold'><i class='fa-solid fa-stethoscope fa-spin me-1'></i> Mechanic reached breakdown spot & inspecting vehicle...</span>");
             } else if (res.status === "EstimatePending") {
                 $('#etaText').text("Awaiting your parts estimate approval.");
             } else if (res.status === "Repairing") {
@@ -1233,7 +1227,7 @@
 
             // Handle Escrow settlement panel showing
             // Show checkout either when completed or when mechanic marked inspection done (or towing approved)
-            if ((res.status === "Completed" && res.partsApproved !== null) || (res.status === "Repairing" && res.partsApproved !== null && res.towingApproved === null) || (res.status === "Arrived" && res.partsApproved === false)) {
+            if ((res.status === "Completed" && res.partsApproved !== null) || (res.status === "Repairing" && res.partsApproved !== null && res.towingApproved === null) || ((res.status === "Inspecting" || res.status === "Arrived") && res.partsApproved === false)) {
                 // If it is already completed in database, go straight to rating/review panel
                 if (res.status === "Completed") {
                     $('#paymentCheckoutCard').addClass('d-none');
@@ -1265,25 +1259,18 @@
         } else if (status === "Driving") {
             $('#step-Accepted').addClass('completed');
             $('#step-Driving').addClass('active');
-        } else if (status === "Arrived") {
+        } else if (status === "Inspecting" || status === "EstimatePending" || status === "Arrived") {
             $('#step-Accepted').addClass('completed');
             $('#step-Driving').addClass('completed');
-            $('#step-Arrived').addClass('active');
-        } else if (status === "Inspecting" || status === "EstimatePending") {
-            $('#step-Accepted').addClass('completed');
-            $('#step-Driving').addClass('completed');
-            $('#step-Arrived').addClass('completed');
             $('#step-Inspecting').addClass('active');
         } else if (status === "Repairing") {
             $('#step-Accepted').addClass('completed');
             $('#step-Driving').addClass('completed');
-            $('#step-Arrived').addClass('completed');
             $('#step-Inspecting').addClass('completed');
             $('#step-Repairing').addClass('active');
         } else if (status === "Completed") {
             $('#step-Accepted').addClass('completed');
             $('#step-Driving').addClass('completed');
-            $('#step-Arrived').addClass('completed');
             $('#step-Inspecting').addClass('completed');
             $('#step-Repairing').addClass('completed');
             $('#step-Completed').addClass('completed');

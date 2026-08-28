@@ -449,10 +449,13 @@
                     <span class="text-muted small d-block mb-2 font-weight-bold">Live Breakdown Repair Progress:</span>
                     <div class="d-flex flex-wrap gap-1">
                         @{
-                            var stages = new[] { "Accepted", "Driving", "Arrived", "Inspecting", "Repairing", "Completed" };
-                            var stageLabels = new[] { "1. Accepted", "2. Driving", "3. Arrived", "4. Inspection", "5. Repairing", "6. Completed" };
+                            var stages = new[] { "Accepted", "Driving", "Inspecting", "Repairing", "Completed" };
+                            var stageLabels = new[] { "1. Accepted", "2. Driving", "3. Reached Spot & Start Inspection", "4. Repairing", "5. Completed" };
                             int currentIndex = Array.IndexOf(stages, activeJob.Status);
-                            if (currentIndex < 0) currentIndex = 0;
+                            if (currentIndex < 0)
+                            {
+                                currentIndex = (activeJob.Status == "Arrived" || activeJob.Status == "EstimatePending") ? 2 : (activeJob.Status == "Driving" ? 1 : 0);
+                            }
                         }
                         @for (int idx = 0; idx < stages.Length; idx++)
                         {
@@ -528,10 +531,10 @@
                     else if (activeJob.Status == "Driving")
                     {
                         <div class="alert alert-info bg-dark border-info text-info small mb-3">
-                            <i class="fa-solid fa-location-dot me-2"></i> Click when you reach the customer breakdown spot.
+                            <i class="fa-solid fa-location-dot me-2"></i> Reached the customer breakdown spot? Click below to start vehicle inspection.
                         </div>
-                        <button class="btn btn-premium-primary w-100 py-3 font-weight-bold" onclick="advanceStatus('Arrived', this)">
-                            <i class="fa-solid fa-location-dot me-2"></i> I Have Arrived at Location
+                        <button class="btn btn-premium-primary w-100 py-3 font-weight-bold" onclick="advanceStatus('Inspecting', this)">
+                            <i class="fa-solid fa-stethoscope me-2"></i> Reached Spot & Start Inspection
                         </button>
 
                         <div class="glass-card p-3 border-secondary mb-3 mt-3">
@@ -562,16 +565,7 @@
                             </div>
                         </div>
                     }
-                    else if (activeJob.Status == "Arrived")
-                    {
-                        <div class="alert alert-warning bg-dark border-warning text-warning small mb-3">
-                            <i class="fa-solid fa-magnifying-glass me-2"></i> Perform on-spot inspection to diagnose the vehicle issue.
-                        </div>
-                        <button class="btn btn-warning text-dark w-100 py-3 font-weight-bold" onclick="advanceStatus('Inspecting', this)">
-                            <i class="fa-solid fa-stethoscope me-2"></i> Begin On-Spot Inspection
-                        </button>
-                    }
-                    else if (activeJob.Status == "Inspecting")
+                    else if (activeJob.Status == "Inspecting" || activeJob.Status == "Arrived")
                     {
                         <!-- Custom Estimate Input Section -->
                         <div class="glass-card p-3 border-info border-opacity-30 mb-3">

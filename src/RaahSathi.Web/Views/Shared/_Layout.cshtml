@@ -2357,11 +2357,11 @@
                 window.sirenRepeatInterval = null;
                 window.sirenAudioUnlocked = false;
 
-                // 🔊 Generate In-Memory Hard Dual-Tune Alert (Ting-Ting -> pause -> TING-TING-TING)
+                // 🔊 Generate In-Memory Heavy Dual-Tune Alert (Ti-Ti -> pause -> TING-TING-TING)
                 function generateSirenWavBlob() {
                     try {
                         var sampleRate = 22050;
-                        var duration = 1.45; // 1.45 seconds loop
+                        var duration = 1.35; // 1.35 seconds loop
                         var numSamples = Math.floor(sampleRate * duration);
                         var buffer = new ArrayBuffer(44 + numSamples * 2);
                         var view = new DataView(buffer);
@@ -2385,15 +2385,15 @@
                         writeString(36, 'data');
                         view.setUint32(40, numSamples * 2, true);
 
-                        // 🔔 Hard Dual-Tune Rhythmic Hits: Ti-Ti ... pause ... Tii-Ti-Ti
+                        // 🔔 Heavy Dual-Tune Rhythmic Hits: Ti-Ti ... pause ... TING-TING-TING
                         var hits = [
                             // Part 1: Ti-Ti
-                            { start: 0.00, f1: 920, f2: 1280, dur: 0.11, gain: 0.90 },
-                            { start: 0.15, f1: 920, f2: 1280, dur: 0.11, gain: 0.92 },
-                            // Part 2: Tii-Ti-Ti (Ascending Heavy Power Dual Strikes)
-                            { start: 0.46, f1: 1280, f2: 1720, dur: 0.12, gain: 0.95 },
-                            { start: 0.62, f1: 1280, f2: 1720, dur: 0.12, gain: 0.97 },
-                            { start: 0.78, f1: 1440, f2: 1960, dur: 0.38, gain: 1.00 }
+                            { start: 0.00, f1: 880, f2: 1320, fsub: 220, dur: 0.09, gain: 0.95 },
+                            { start: 0.14, f1: 880, f2: 1320, fsub: 220, dur: 0.09, gain: 0.98 },
+                            // Part 2: pause (0.23 -> 0.40), then TING-TING-TING
+                            { start: 0.40, f1: 1180, f2: 1770, fsub: 295, dur: 0.13, gain: 1.00 },
+                            { start: 0.58, f1: 1320, f2: 1980, fsub: 330, dur: 0.13, gain: 1.00 },
+                            { start: 0.76, f1: 1560, f2: 2340, fsub: 390, dur: 0.38, gain: 1.00 }
                         ];
 
                         for (var i = 0; i < numSamples; i++) {
@@ -2404,14 +2404,16 @@
                                 var h = hits[n];
                                 if (t >= h.start && t < (h.start + h.dur)) {
                                     var dt = t - h.start;
-                                    var env = Math.exp(-dt * 9.5);
-                                    if (dt < 0.003) {
-                                        env *= (dt / 0.003); // 3ms ultra-punchy attack
+                                    var decay = h.dur > 0.2 ? 6.5 : 12.0;
+                                    var env = Math.exp(-dt * decay);
+                                    if (dt < 0.002) {
+                                        env *= (dt / 0.002); // 2ms instant attack punch
                                     }
                                     var tone1 = Math.sin(2 * Math.PI * h.f1 * dt);
                                     var tone2 = Math.sin(2 * Math.PI * h.f2 * dt);
-                                    var toneHarm = Math.sin(2 * Math.PI * (h.f2 * 1.5) * dt) * 0.22;
-                                    sample += (tone1 * 0.50 + tone2 * 0.45 + toneHarm) * env * h.gain;
+                                    var toneSub = Math.sin(2 * Math.PI * h.fsub * dt) * 0.40;
+                                    var toneHarm = Math.sin(2 * Math.PI * (h.f2 * 1.5) * dt) * 0.25;
+                                    sample += (tone1 * 0.45 + tone2 * 0.40 + toneSub + toneHarm) * env * h.gain;
                                 }
                             }
 
@@ -2521,11 +2523,11 @@
                         try {
                             let now = window.sirenAudioCtx.currentTime;
                             let hits = [
-                                { start: 0.00, f1: 920, f2: 1280, dur: 0.11, gain: 0.75 },
-                                { start: 0.15, f1: 920, f2: 1280, dur: 0.11, gain: 0.78 },
-                                { start: 0.46, f1: 1280, f2: 1720, dur: 0.12, gain: 0.82 },
-                                { start: 0.62, f1: 1280, f2: 1720, dur: 0.12, gain: 0.85 },
-                                { start: 0.78, f1: 1440, f2: 1960, dur: 0.38, gain: 0.90 }
+                                { start: 0.00, f1: 880, f2: 1320, fsub: 220, dur: 0.09, gain: 0.85 },
+                                { start: 0.14, f1: 880, f2: 1320, fsub: 220, dur: 0.09, gain: 0.90 },
+                                { start: 0.40, f1: 1180, f2: 1770, fsub: 295, dur: 0.13, gain: 0.95 },
+                                { start: 0.58, f1: 1320, f2: 1980, fsub: 330, dur: 0.13, gain: 0.98 },
+                                { start: 0.76, f1: 1560, f2: 2340, fsub: 390, dur: 0.38, gain: 1.00 }
                             ];
 
                             hits.forEach(function(h) {
@@ -2542,42 +2544,42 @@
                                 osc2.type = 'sine';
                                 osc2.frequency.setValueAtTime(h.f2, hitStart);
 
-                                let osc3 = window.sirenAudioCtx.createOscillator();
-                                let gain3 = window.sirenAudioCtx.createGain();
-                                osc3.type = 'sine';
-                                osc3.frequency.setValueAtTime(h.f2 * 1.5, hitStart);
+                                let oscSub = window.sirenAudioCtx.createOscillator();
+                                let gainSub = window.sirenAudioCtx.createGain();
+                                oscSub.type = 'triangle';
+                                oscSub.frequency.setValueAtTime(h.fsub, hitStart);
 
                                 gain1.gain.setValueAtTime(0.001, hitStart);
-                                gain1.gain.linearRampToValueAtTime(h.gain * 0.55, hitStart + 0.003);
+                                gain1.gain.linearRampToValueAtTime(h.gain * 0.50, hitStart + 0.002);
                                 gain1.gain.exponentialRampToValueAtTime(0.001, hitEnd);
 
                                 gain2.gain.setValueAtTime(0.001, hitStart);
-                                gain2.gain.linearRampToValueAtTime(h.gain * 0.45, hitStart + 0.003);
+                                gain2.gain.linearRampToValueAtTime(h.gain * 0.40, hitStart + 0.002);
                                 gain2.gain.exponentialRampToValueAtTime(0.001, hitEnd);
 
-                                gain3.gain.setValueAtTime(0.001, hitStart);
-                                gain3.gain.linearRampToValueAtTime(h.gain * 0.20, hitStart + 0.003);
-                                gain3.gain.exponentialRampToValueAtTime(0.001, hitEnd);
+                                gainSub.gain.setValueAtTime(0.001, hitStart);
+                                gainSub.gain.linearRampToValueAtTime(h.gain * 0.35, hitStart + 0.002);
+                                gainSub.gain.exponentialRampToValueAtTime(0.001, hitEnd);
 
                                 osc1.connect(gain1);
                                 gain1.connect(window.sirenAudioCtx.destination);
                                 osc2.connect(gain2);
                                 gain2.connect(window.sirenAudioCtx.destination);
-                                osc3.connect(gain3);
-                                gain3.connect(window.sirenAudioCtx.destination);
+                                oscSub.connect(gainSub);
+                                gainSub.connect(window.sirenAudioCtx.destination);
 
                                 osc1.start(hitStart);
                                 osc1.stop(hitEnd);
                                 osc2.start(hitStart);
                                 osc2.stop(hitEnd);
-                                osc3.start(hitStart);
-                                osc3.stop(hitEnd);
+                                oscSub.start(hitStart);
+                                oscSub.stop(hitEnd);
                             });
                         } catch(e) {}
                     }
 
                     triggerSirenBurst();
-                    window.sirenRepeatInterval = setInterval(triggerSirenBurst, 1450);
+                    window.sirenRepeatInterval = setInterval(triggerSirenBurst, 1350);
 
                     // 3. Heavy Physical Vibration Alert on Mobile Devices
                     if (navigator.vibrate) {
