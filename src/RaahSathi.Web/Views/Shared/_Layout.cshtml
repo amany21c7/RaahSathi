@@ -2966,7 +2966,12 @@
         (function() {
             var deferredPrompt = null;
             var isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+            function isAppInstalled() {
+                var isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                var isStorageInstalled = localStorage.getItem('raah_pwa_installed') === 'true';
+                return isStandaloneMode || isStorageInstalled;
+            }
 
             // 1. Register Service Worker
             if ('serviceWorker' in navigator) {
@@ -2986,67 +2991,95 @@
                 e.preventDefault();
                 deferredPrompt = e;
                 window.pwaDeferredPrompt = e;
-                
-                // Check if dismissed recently (within 5 days)
-                var dismissedAt = localStorage.getItem('raah_pwa_dismissed');
-                var fiveDays = 5 * 24 * 60 * 60 * 1000;
-                if (!dismissedAt || (Date.now() - parseInt(dismissedAt)) > fiveDays) {
-                    showPwaBanner();
-                }
+                checkAndShowBanner();
             });
 
             function showPwaBanner() {
-                if (isStandalone) return;
+                if (isAppInstalled()) return;
                 var banner = document.getElementById('pwaInstallBanner');
                 if (banner) {
                     banner.style.display = 'block';
                 }
             }
 
+            function checkAndShowBanner() {
+                // If user has already installed the app, do NOT show the banner
+                if (isAppInstalled()) {
+                    var banner = document.getElementById('pwaInstallBanner');
+                    if (banner) banner.style.display = 'none';
+                    var heroBtn = document.getElementById('heroPwaInstallBtn');
+                    if (heroBtn) heroBtn.style.display = 'none';
+                    return;
+                }
+
+                // If user clicked close/dismiss, hide for 4 to 5 hours (4 hours = 4 * 60 * 60 * 1000 ms)
+                var dismissedAt = localStorage.getItem('raah_pwa_dismissed');
+                var fourHours = 4 * 60 * 60 * 1000;
+                if (!dismissedAt || (Date.now() - parseInt(dismissedAt, 10)) > fourHours) {
+                    showPwaBanner();
+                }
+            }
+
+            // Auto-display banner check on page load
+            window.addEventListener('load', function() {
+                setTimeout(checkAndShowBanner, 1200);
+            });
+
             window.dismissPwaBanner = function() {
                 var banner = document.getElementById('pwaInstallBanner');
                 if (banner) {
                     banner.style.display = 'none';
                 }
+                // Hide for 4-5 hours
                 localStorage.setItem('raah_pwa_dismissed', Date.now().toString());
             };
 
+            window.markAppAsInstalled = function() {
+                localStorage.setItem('raah_pwa_installed', 'true');
+                var banner = document.getElementById('pwaInstallBanner');
+                if (banner) {
+                    banner.style.display = 'none';
+                }
+                var heroBtn = document.getElementById('heroPwaInstallBtn');
+                if (heroBtn) {
+                    heroBtn.style.display = 'none';
+                }
+            };
+
             window.triggerPwaInstall = function() {
+                if (isAppInstalled()) {
+                    alert('✅ RaahSathi App is already installed on your device!');
+                    return;
+                }
+
                 var promptEvent = deferredPrompt || window.pwaDeferredPrompt;
                 if (promptEvent) {
                     promptEvent.prompt();
                     promptEvent.userChoice.then(function (choiceResult) {
                         if (choiceResult.outcome === 'accepted') {
                             console.log('User accepted RaahSathi PWA installation');
-                            window.dismissPwaBanner();
+                            window.markAppAsInstalled();
                         } else {
                             console.log('User dismissed RaahSathi PWA installation');
                         }
                         deferredPrompt = null;
                         window.pwaDeferredPrompt = null;
                     });
-                } else if (isIos && !isStandalone) {
+                } else if (isIos) {
                     var modalEl = document.getElementById('iosPwaInstallModal');
                     if (modalEl && window.bootstrap) {
                         var modal = new bootstrap.Modal(modalEl);
                         modal.show();
                     }
                 } else {
-                    if (isStandalone) {
-                        alert('✅ RaahSathi is already installed and running as an app!');
-                    } else {
-                        alert('📲 To install RaahSathi App on your device:\n\n1. Tap your browser menu (⋮ or Share)\n2. Select "Install App" or "Add to Home screen"');
-                    }
+                    alert('📲 To install RaahSathi App on your device:\n\n1. Tap your browser menu (⋮ or Share)\n2. Select "Install App" or "Add to Home screen"');
                 }
             };
 
-            // 3. Track App Installed
+            // 3. Track App Installed Event
             window.addEventListener('appinstalled', function () {
                 console.log('🎉 RaahSathi PWA was successfully installed on device!');
-                window.dismissPwaBanner();
-                if (window.alert) {
-                    window.alert('🎉 RaahSathi App has been installed on your device!');
-                }
+                window.markAppAsInstalled();
             });
         })();
     </script>
