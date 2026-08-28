@@ -1987,27 +1987,22 @@
                                     }
                                 }
                                 
-                                // Auto popup logic strictly based on Admin's Target Audience setting:
+                                // Auto popup logic:
+                                // 1. Logged-in users: Do NOT popup modal (user sees count & details in notification bell).
+                                // 2. Guest / Homepage visitors: Show announcement modal popup! On homepage refresh, show it again!
                                 var shouldPopup = false;
                                 var audience = (n.targetAudience || '').toLowerCase();
-                                var isHomepageOnly = (audience.indexOf('homepage') !== -1);
+                                var isHomepageOnly = (audience.indexOf('homepage') !== -1 || audience.indexOf('visitors') !== -1);
 
                                 if (!isUserAuthenticated) {
-                                    if (isHomepageOnly) {
-                                        // Admin chose Homepage Visitors -> Show popup ONLY on Homepage
-                                        if (onHome && !sessionDismissedBroadcastIds.includes(nid)) {
-                                            shouldPopup = true;
-                                        }
-                                    } else {
-                                        // Admin chose All Users -> Show popup on any public page (unless dismissed in session)
-                                        if (!sessionDismissedBroadcastIds.includes(nid)) {
-                                            shouldPopup = true;
-                                        }
-                                    }
-                                } else if (isUserAuthenticated) {
-                                    if (!dismissedNotifs.includes(nid) && !sessionDismissedBroadcastIds.includes(nid)) {
+                                    if (onHome) {
+                                        shouldPopup = true;
+                                    } else if (!isHomepageOnly && !sessionDismissedBroadcastIds.includes(nid)) {
                                         shouldPopup = true;
                                     }
+                                } else {
+                                    // Logged-in user: No popup modal, only bell icon
+                                    shouldPopup = false;
                                 }
                                 
                                 if (shouldPopup) {
@@ -2059,6 +2054,18 @@
                 
                 var modalEl = document.getElementById('raahSathiBroadcastModal');
                 if (!modalEl) return;
+
+                // If language modal is currently visible, queue broadcast modal to show as soon as language modal closes
+                var langModalEl = document.getElementById('firstTimeLanguageModal');
+                if (langModalEl && langModalEl.classList.contains('show')) {
+                    $(langModalEl).off('hidden.bs.modal.broadcast').one('hidden.bs.modal.broadcast', function() {
+                        setTimeout(function() {
+                            var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                            instance.show();
+                        }, 400);
+                    });
+                    return;
+                }
 
                 // Whenever modal is hidden by any action (backdrop click, close button, Got It button, Esc key)
                 $(modalEl).off('hidden.bs.modal').on('hidden.bs.modal', function() {
@@ -3096,6 +3103,10 @@
                             var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
                             modal.show();
                         }
+                    } else {
+                        if (typeof window.pollPushNotifications === 'function') {
+                            window.pollPushNotifications();
+                        }
                     }
                 }
 
@@ -3112,6 +3123,11 @@
                     if (typeof changeLanguage === 'function') {
                         changeLanguage(langCode);
                     }
+                    setTimeout(function() {
+                        if (typeof window.pollPushNotifications === 'function') {
+                            window.pollPushNotifications();
+                        }
+                    }, 400);
                 };
 
                 window.dismissFirstTimeLanguageModal = function() {
@@ -3121,6 +3137,11 @@
                         var m = bootstrap.Modal.getInstance(modalEl);
                         if (m) m.hide();
                     }
+                    setTimeout(function() {
+                        if (typeof window.pollPushNotifications === 'function') {
+                            window.pollPushNotifications();
+                        }
+                    }, 400);
                 };
 
                 if (document.readyState === 'complete' || document.readyState === 'interactive') {

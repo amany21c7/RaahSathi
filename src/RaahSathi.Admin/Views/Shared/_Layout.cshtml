@@ -1987,27 +1987,22 @@
                                     }
                                 }
                                 
-                                // Auto popup logic strictly based on Admin's Target Audience setting:
+                                // Auto popup logic:
+                                // 1. Logged-in users: Do NOT popup modal (user sees count & details in notification bell).
+                                // 2. Guest / Homepage visitors: Show announcement modal popup! On homepage refresh, show it again!
                                 var shouldPopup = false;
                                 var audience = (n.targetAudience || '').toLowerCase();
-                                var isHomepageOnly = (audience.indexOf('homepage') !== -1);
+                                var isHomepageOnly = (audience.indexOf('homepage') !== -1 || audience.indexOf('visitors') !== -1);
 
                                 if (!isUserAuthenticated) {
-                                    if (isHomepageOnly) {
-                                        // Admin chose Homepage Visitors -> Show popup ONLY on Homepage
-                                        if (onHome && !sessionDismissedBroadcastIds.includes(nid)) {
-                                            shouldPopup = true;
-                                        }
-                                    } else {
-                                        // Admin chose All Users -> Show popup on any public page (unless dismissed in session)
-                                        if (!sessionDismissedBroadcastIds.includes(nid)) {
-                                            shouldPopup = true;
-                                        }
-                                    }
-                                } else if (isUserAuthenticated) {
-                                    if (!dismissedNotifs.includes(nid) && !sessionDismissedBroadcastIds.includes(nid)) {
+                                    if (onHome) {
+                                        shouldPopup = true;
+                                    } else if (!isHomepageOnly && !sessionDismissedBroadcastIds.includes(nid)) {
                                         shouldPopup = true;
                                     }
+                                } else {
+                                    // Logged-in user: No popup modal, only bell icon
+                                    shouldPopup = false;
                                 }
                                 
                                 if (shouldPopup) {
@@ -2059,6 +2054,18 @@
                 
                 var modalEl = document.getElementById('raahSathiBroadcastModal');
                 if (!modalEl) return;
+
+                // If language modal is currently visible, queue broadcast modal to show as soon as language modal closes
+                var langModalEl = document.getElementById('firstTimeLanguageModal');
+                if (langModalEl && langModalEl.classList.contains('show')) {
+                    $(langModalEl).off('hidden.bs.modal.broadcast').one('hidden.bs.modal.broadcast', function() {
+                        setTimeout(function() {
+                            var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                            instance.show();
+                        }, 400);
+                    });
+                    return;
+                }
 
                 // Whenever modal is hidden by any action (backdrop click, close button, Got It button, Esc key)
                 $(modalEl).off('hidden.bs.modal').on('hidden.bs.modal', function() {
@@ -2962,26 +2969,58 @@
         }
     </style>
 
-    <!-- iOS Safari "Add to Home Screen" Instructions Modal -->
+    <!-- 📲 Universal App Install Guide Modal (Android, Chrome, PC, Mac) -->
+    <div class="modal fade" id="pwaUniversalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-dark text-white border-warning" style="border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.8);">
+                <div class="modal-header border-secondary border-opacity-30 pb-2">
+                    <h6 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-mobile-screen-button me-2"></i> Install RaahSathi App</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-3">
+                    <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi" class="rounded-3 shadow mb-2" style="width: 56px; height: 56px; border: 2px solid #ff6b00;" />
+                    <h6 class="text-white font-weight-bold mb-1">Get RaahSathi on your Phone</h6>
+                    <p class="text-muted extra-small mb-3">Install our light &amp; fast app for instant 14-min emergency roadside assistance:</p>
+                    
+                    <div class="text-start bg-secondary bg-opacity-10 p-2.5 rounded-3 border border-secondary border-opacity-20 small mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1 font-weight-bold">1</span>
+                            <span>Tap your browser menu (<i class="fa-solid fa-ellipsis-vertical text-warning mx-1"></i> or <strong>Share</strong>)</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1 font-weight-bold">2</span>
+                            <span>Select <strong>"Install app"</strong> or <strong>"Add to Home Screen"</strong></span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-warning w-100 font-weight-extrabold text-dark py-2.5 shadow" onclick="triggerPwaPromptDirect()" style="border-radius: 12px; background: #f59e0b; border: none;">
+                        <i class="fa-solid fa-download me-1.5"></i> Tap to Install Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🍎 iOS Safari "Add to Home Screen" Instructions Modal -->
     <div class="modal fade" id="iosPwaInstallModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content bg-dark text-white border-warning" style="border-radius: 16px;">
+            <div class="modal-content bg-dark text-white border-warning" style="border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.8);">
                 <div class="modal-header border-secondary border-opacity-30 pb-2">
                     <h6 class="modal-title text-warning font-weight-bold"><i class="fa-brands fa-apple me-2"></i> Install on iPhone / iPad</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center p-3">
                     <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi" class="rounded-3 shadow mb-2" style="width: 56px; height: 56px; border: 2px solid #ff6b00;" />
-                    <h6 class="text-white font-weight-bold mb-1">Install RaahSathi</h6>
+                    <h6 class="text-white font-weight-bold mb-1">Install RaahSathi on iOS</h6>
                     <p class="text-muted extra-small mb-3">Add to your home screen for instant 1-tap emergency assistance:</p>
                     <div class="text-start bg-secondary bg-opacity-10 p-2.5 rounded-3 border border-secondary border-opacity-20 small">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1">1</span>
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1 font-weight-bold">1</span>
                             <span>Tap the <strong>Share</strong> button <i class="fa-solid fa-arrow-up-from-bracket text-warning ms-1"></i> in Safari toolbar</span>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1">2</span>
-                            <span>Scroll down & tap <strong>"Add to Home Screen"</strong> <i class="fa-regular fa-square-plus text-warning ms-1"></i></span>
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1 font-weight-bold">2</span>
+                            <span>Scroll down &amp; tap <strong>"Add to Home Screen"</strong> <i class="fa-regular fa-square-plus text-warning ms-1"></i></span>
                         </div>
                     </div>
                 </div>
@@ -3064,6 +3103,10 @@
                             var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
                             modal.show();
                         }
+                    } else {
+                        if (typeof window.pollPushNotifications === 'function') {
+                            window.pollPushNotifications();
+                        }
                     }
                 }
 
@@ -3080,6 +3123,11 @@
                     if (typeof changeLanguage === 'function') {
                         changeLanguage(langCode);
                     }
+                    setTimeout(function() {
+                        if (typeof window.pollPushNotifications === 'function') {
+                            window.pollPushNotifications();
+                        }
+                    }, 400);
                 };
 
                 window.dismissFirstTimeLanguageModal = function() {
@@ -3089,6 +3137,11 @@
                         var m = bootstrap.Modal.getInstance(modalEl);
                         if (m) m.hide();
                     }
+                    setTimeout(function() {
+                        if (typeof window.pollPushNotifications === 'function') {
+                            window.pollPushNotifications();
+                        }
+                    }, 400);
                 };
 
                 if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -3187,6 +3240,27 @@
                 }
             };
 
+            window.triggerPwaPromptDirect = function() {
+                var promptEvent = deferredPrompt || window.pwaDeferredPrompt;
+                if (promptEvent) {
+                    promptEvent.prompt();
+                    promptEvent.userChoice.then(function (choiceResult) {
+                        if (choiceResult.outcome === 'accepted') {
+                            window.markAppAsInstalled();
+                        }
+                        deferredPrompt = null;
+                        window.pwaDeferredPrompt = null;
+                    });
+                } else {
+                    var uModal = document.getElementById('pwaUniversalModal');
+                    if (uModal && window.bootstrap) {
+                        var m = bootstrap.Modal.getInstance(uModal);
+                        if (m) m.hide();
+                    }
+                    alert('📲 To install:\n1. Tap your browser menu (⋮)\n2. Select "Install App" or "Add to Home screen"');
+                }
+            };
+
             window.triggerPwaInstall = function() {
                 if (isAppInstalled()) {
                     alert('✅ RaahSathi App is already installed on your device!');
@@ -3213,7 +3287,13 @@
                         modal.show();
                     }
                 } else {
-                    alert('📲 To install RaahSathi App on your device:\n\n1. Tap your browser menu (⋮ or Share)\n2. Select "Install App" or "Add to Home screen"');
+                    var universalModalEl = document.getElementById('pwaUniversalModal');
+                    if (universalModalEl && window.bootstrap) {
+                        var uModal = new bootstrap.Modal(universalModalEl);
+                        uModal.show();
+                    } else {
+                        alert('📲 To install RaahSathi App on your device:\n\n1. Tap your browser menu (⋮ or Share)\n2. Select "Install App" or "Add to Home screen"');
+                    }
                 }
             };
 
