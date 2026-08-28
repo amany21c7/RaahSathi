@@ -948,9 +948,32 @@
             });
         </script>
     }
-    else
-    {
         <header>
+            <!-- 📲 Top PWA App Install Banner (Placed above Main Header) -->
+            <div id="pwaInstallBanner" class="pwa-top-install-banner" style="display: none;">
+                <div class="container py-1.5 px-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2.5 flex-grow-1 overflow-hidden me-2" onclick="triggerPwaInstall()" style="cursor: pointer;">
+                        <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi App" class="rounded-3 shadow-sm flex-shrink-0 pulse-ring" style="width: 36px; height: 36px; object-fit: cover; border: 1.5px solid #ff6b00;" />
+                        <div class="overflow-hidden text-start">
+                            <div class="d-flex align-items-center gap-1.5 flex-nowrap">
+                                <strong class="text-white font-weight-bold text-truncate" style="font-size: 0.88rem;">RaahSathi App</strong>
+                                <span class="badge bg-warning text-dark font-weight-extrabold py-0.5 px-1.5" style="font-size: 0.62rem; border-radius: 4px;">FAST</span>
+                                <span class="text-muted text-truncate d-none d-md-inline small ms-1" style="font-size: 0.74rem;">• ⚡ 14-Min Roadside Help • 24×7 SOS</span>
+                            </div>
+                            <span class="text-muted text-truncate d-block d-md-none small" style="font-size: 0.72rem;">⚡ 14-Min Help • 24×7 SOS</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <button type="button" class="btn btn-warning btn-sm font-weight-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1.5 text-dark" id="btnPwaInstall" onclick="triggerPwaInstall()" style="border-radius: 20px; font-size: 0.8rem; background: #ff6b00; border: none;">
+                            <i class="fa-solid fa-download"></i> <span>Install</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm text-muted rounded-circle p-1 border-0" onclick="dismissPwaBanner()" title="Close" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-xmark" style="font-size: 0.85rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <nav class="navbar navbar-expand-lg navbar-dark portal-switcher-navbar py-2 mb-4 sticky-top">
                 <div class="container">
                     <a class="navbar-brand portal-nav-brand d-flex align-items-center gap-2 notranslate me-lg-3" translate="no" asp-controller="Home" asp-action="Index">
@@ -2871,61 +2894,30 @@
          📲 PWA NATIVE MOBILE APP INSTALLATION BANNER & PROMPT
          ========================================================================= -->
     <style>
-        .pwa-install-banner {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 24px);
-            max-width: 460px;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1.5px solid rgba(255, 107, 0, 0.5);
-            border-radius: 16px;
-            z-index: 105000;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 107, 0, 0.25);
-            animation: pwaSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .pwa-top-install-banner {
+            width: 100%;
+            background: linear-gradient(135deg, #111827 0%, #1c1917 50%, #0f172a 100%);
+            border-bottom: 1.5px solid rgba(255, 107, 0, 0.45);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 1035;
+            animation: pwaSlideDown 0.35s ease-out forwards;
         }
 
-        @@keyframes pwaSlideUp {
-            from { opacity: 0; transform: translate(-50%, 40px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
+        @@keyframes pwaSlideDown {
+            from { opacity: 0; transform: translateY(-100%); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .pwa-install-banner .pulse-ring {
+        .pwa-top-install-banner .pulse-ring {
             box-shadow: 0 0 0 0 rgba(255, 107, 0, 0.7);
             animation: pwaPulseRing 2s infinite cubic-bezier(0.66, 0, 0, 1);
         }
 
         @@keyframes pwaPulseRing {
-            to { box-shadow: 0 0 0 10px rgba(255, 107, 0, 0); }
+            to { box-shadow: 0 0 0 8px rgba(255, 107, 0, 0); }
         }
     </style>
-
-    <!-- 📲 Floating PWA Mobile Install Banner -->
-    <div id="pwaInstallBanner" class="pwa-install-banner" style="display: none;">
-        <div class="d-flex align-items-center justify-content-between p-2.5 p-sm-3">
-            <div class="d-flex align-items-center gap-2.5 flex-grow-1 overflow-hidden me-2" onclick="triggerPwaInstall()" style="cursor: pointer;">
-                <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi App" class="rounded-3 shadow-sm flex-shrink-0 pulse-ring" style="width: 44px; height: 44px; object-fit: cover; border: 1.5px solid #ff6b00;" />
-                <div class="overflow-hidden text-start">
-                    <div class="d-flex align-items-center gap-1.5">
-                        <strong class="text-white font-weight-bold text-truncate" style="font-size: 0.92rem;">RaahSathi App</strong>
-                        <span class="badge bg-warning text-dark font-weight-extrabold py-0.5 px-1.5" style="font-size: 0.65rem; border-radius: 4px;">FAST</span>
-                    </div>
-                    <span class="text-muted text-truncate d-block small" style="font-size: 0.76rem;">⚡ 14-Min Roadside Help • 24×7 SOS</span>
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
-                <button type="button" class="btn btn-warning btn-sm font-weight-bold px-3 py-1.5 shadow d-inline-flex align-items-center gap-1.5 text-dark" id="btnPwaInstall" onclick="triggerPwaInstall()" style="border-radius: 20px; font-size: 0.82rem; background: #f59e0b; border: none;">
-                    <i class="fa-solid fa-download"></i> <span>Install</span>
-                </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm text-muted rounded-circle p-1 border-0" onclick="dismissPwaBanner()" title="Close" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-xmark" style="font-size: 0.85rem;"></i>
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- 📲 Universal App Install Guide Modal (Android, Chrome, PC, Mac) -->
     <div class="modal fade" id="pwaUniversalModal" tabindex="-1" aria-hidden="true">
