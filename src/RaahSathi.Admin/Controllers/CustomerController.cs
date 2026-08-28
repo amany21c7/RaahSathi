@@ -533,8 +533,18 @@ namespace RaahSathi.Controllers
             MechanicProfile? mechProfile = null;
             if (job.MechanicId.HasValue)
             {
-                await JobSimulationHelper.SimulateMovementAsync(_dbContext, job);
                 mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == job.MechanicId.Value);
+                if (mechProfile != null && (job.Status == "Accepted" || job.Status == "Driving"))
+                {
+                    // If mechanic coordinates are uninitialized or exactly on top of customer, set to realistic driving start location (~1.6km away)
+                    if (mechProfile.Latitude == 0.0 || (Math.Abs(mechProfile.Latitude - job.CustomerLat) < 0.0005 && Math.Abs(mechProfile.Longitude - job.CustomerLng) < 0.0005))
+                    {
+                        mechProfile.Latitude = job.CustomerLat + 0.014;
+                        mechProfile.Longitude = job.CustomerLng + 0.012;
+                        await _dbContext.SaveChangesAsync();
+                    }
+                }
+                await JobSimulationHelper.SimulateMovementAsync(_dbContext, job);
             }
 
             double inactiveSeconds = 0;

@@ -488,7 +488,13 @@
                                 <i class="fa-solid fa-comments me-1"></i> Live Chat with Customer
                                 <span id="mech-chat-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
                             </button>
-                            <a href="https://maps.google.com/?q=@activeJob.CustomerLat,@activeJob.CustomerLng" target="_blank" class="btn btn-outline-warning font-weight-bold px-3 py-2">
+                            @{
+                                var navDestination = (activeJob.CustomerLat > 0 && activeJob.CustomerLng > 0)
+                                    ? $"{activeJob.CustomerLat},{activeJob.CustomerLng}"
+                                    : (!string.IsNullOrWhiteSpace(activeJob.Address) ? Uri.EscapeDataString(activeJob.Address) : "28.6250,77.3750");
+                                var googleMapsNavUrl = $"https://www.google.com/maps/dir/?api=1&destination={navDestination}&travelmode=driving";
+                            }
+                            <a href="@googleMapsNavUrl" target="_blank" rel="noopener noreferrer" class="btn btn-outline-warning font-weight-bold px-3 py-2" title="Open Google Maps Driving Navigation">
                                 <i class="fa-solid fa-diamond-turn-right me-1"></i> Navigate GPS
                             </a>
                         </div>

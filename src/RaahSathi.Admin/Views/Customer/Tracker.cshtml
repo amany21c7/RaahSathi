@@ -913,6 +913,83 @@
     var mechanicLat = 0;
     var mechanicLng = 0;
 
+    var lastRouteFetchCoords = { mechLat: 0, mechLng: 0, custLat: 0, custLng: 0 };
+    var isFetchingRoute = false;
+
+    function updateRoadRoute(mLat, mLng, cLat, cLng) {
+        if (!map || !mLat || !mLng || !cLat || !cLng) return;
+
+        var dLat = Math.abs(lastRouteFetchCoords.mechLat - mLat);
+        var dLng = Math.abs(lastRouteFetchCoords.mechLng - mLng);
+        if (dLat < 0.00015 && dLng < 0.00015 && linePath) {
+            return; // Cache route if position shift is negligible
+        }
+
+        if (isFetchingRoute) return;
+        isFetchingRoute = true;
+
+        var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' + 
+                      mLng + ',' + mLat + ';' + cLng + ',' + cLat + 
+                      '?overview=full&geometries=geojson';
+
+        fetch(osrmUrl)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                isFetchingRoute = false;
+                if (data && data.routes && data.routes.length > 0 && data.routes[0].geometry) {
+                    var routeCoords = data.routes[0].geometry.coordinates.map(function(coord) {
+                        return [coord[1], coord[0]]; // Leaflet expects [lat, lng]
+                    });
+
+                    if (linePath) {
+                        map.removeLayer(linePath);
+                    }
+
+                    // 🛣️ Glowing Turn-by-Turn Road Route Polyline (Uber / Zomato style)
+                    linePath = L.polyline(routeCoords, {
+                        color: '#ff6b00',
+                        weight: 5,
+                        opacity: 0.92,
+                        lineJoin: 'round',
+                        lineCap: 'round'
+                    }).addTo(map);
+
+                    lastRouteFetchCoords = { mechLat: mLat, mechLng: mLng, custLat: cLat, custLng: cLng };
+
+                    // Auto-fit map bounds
+                    var bounds = L.latLngBounds(routeCoords);
+                    map.fitBounds(bounds, { padding: [50, 50] });
+
+                    if (data.routes[0].distance && data.routes[0].duration) {
+                        window.currentRoadDistanceKm = (data.routes[0].distance / 1000).toFixed(1);
+                        window.currentRoadEtaMins = Math.max(2, Math.round(data.routes[0].duration / 60));
+                    }
+                } else {
+                    drawFallbackStraightLine(mLat, mLng, cLat, cLng);
+                }
+            })
+            .catch(function(err) {
+                isFetchingRoute = false;
+                drawFallbackStraightLine(mLat, mLng, cLat, cLng);
+            });
+    }
+
+    function drawFallbackStraightLine(mLat, mLng, cLat, cLng) {
+        if (linePath) {
+            map.removeLayer(linePath);
+        }
+        linePath = L.polyline([
+            [mLat, mLng],
+            [cLat, cLng]
+        ], { color: '#ff6b00', weight: 4, dashArray: '6, 8', opacity: 0.85 }).addTo(map);
+
+        var bounds = L.latLngBounds([
+            [mLat, mLng],
+            [cLat, cLng]
+        ]);
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
+
     function calculateDistance(lat1, lon1, lat2, lon2) {
         var R = 6371; // Radius of the earth in km
         var dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1085,21 +1162,8 @@
                         mechanicMarker.setLatLng([mechanicLat, mechanicLng]);
                     }
 
-                    // Redraw path line
-                    if (linePath) {
-                        map.removeLayer(linePath);
-                    }
-                    linePath = L.polyline([
-                        [customerLat, customerLng],
-                        [mechanicLat, mechanicLng]
-                    ], {color: '#f59e0b', weight: 4, dashArray: '5, 10'}).addTo(map);
-
-                    // Re-center map to fit both
-                    var bounds = L.latLngBounds([
-                        [customerLat, customerLng],
-                        [mechanicLat, mechanicLng]
-                    ]);
-                    map.fitBounds(bounds, {padding: [50, 50]});
+                    // Draw and update real turn-by-turn road route
+                    updateRoadRoute(mechanicLat, mechanicLng, customerLat, customerLng);
                 }
             }
 
@@ -1116,16 +1180,20 @@
                 $('#dispatch-timeout-alert').addClass('d-none');
             }
 
-            // Estimate ETA description
+            // Estimate ETA description with accurate road-routing distance & time
             if (res.status === "Accepted" || res.status === "Driving") {
                 var etaDisplay = "<b>~8 mins</b>";
                 if (res.mechanicLat && res.mechanicLng) {
-                    var dist = calculateDistance(customerLat, customerLng, res.mechanicLat, res.mechanicLng);
-                    var mins = Math.round(dist * 3.2 + 2);
-                    if (mins < 2) mins = 2; // minimum 2 minutes
-                    etaDisplay = "<b>~" + mins + " mins</b> (" + dist.toFixed(1) + " km away)";
+                    if (window.currentRoadEtaMins && window.currentRoadDistanceKm) {
+                        etaDisplay = "<b>~" + window.currentRoadEtaMins + " mins</b> (" + window.currentRoadDistanceKm + " km by road)";
+                    } else {
+                        var dist = calculateDistance(customerLat, customerLng, res.mechanicLat, res.mechanicLng);
+                        var mins = Math.round(dist * 3.2 + 2);
+                        if (mins < 2) mins = 2;
+                        etaDisplay = "<b>~" + mins + " mins</b> (" + dist.toFixed(1) + " km away)";
+                    }
                 }
-                $('#etaText').html("<i class='fa-solid fa-spinner fa-spin text-warning me-1'></i> Mechanic travelling. ETA " + etaDisplay);
+                $('#etaText').html("<i class='fa-solid fa-route text-warning me-1'></i> Mechanic travelling. ETA " + etaDisplay);
             } else if (res.status === "Arrived") {
                 $('#etaText').html("<span class='text-success font-weight-bold'><i class='fa-solid fa-check-circle me-1'></i> Mechanic has arrived on scene.</span>");
             } else if (res.status === "Inspecting") {

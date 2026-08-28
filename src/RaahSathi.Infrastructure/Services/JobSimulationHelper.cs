@@ -33,24 +33,24 @@ namespace RaahSathi.Services
                 job.LastLocationUpdateTime = now;
             }
 
-            // Update movement only once every 2 seconds to make updates structured
+            // Update movement smoothly every 2.5 seconds
             var elapsedSeconds = (now - job.LastLocationUpdateTime.Value).TotalSeconds;
-            if (elapsedSeconds >= 2.0)
+            if (elapsedSeconds >= 2.5)
             {
                 double diffLat = job.CustomerLat - mechProfile.Latitude;
                 double diffLng = job.CustomerLng - mechProfile.Longitude;
 
-                // Check if already reached
-                if (Math.Abs(diffLat) < 0.00015 && Math.Abs(diffLng) < 0.00015)
+                // Check if reached destination (within 20 meters)
+                if (Math.Abs(diffLat) < 0.0002 && Math.Abs(diffLng) < 0.0002)
                 {
                     mechProfile.Latitude = job.CustomerLat;
                     mechProfile.Longitude = job.CustomerLng;
                 }
                 else
                 {
-                    // Move 12% closer per check
-                    mechProfile.Latitude += diffLat * 0.12;
-                    mechProfile.Longitude += diffLng * 0.12;
+                    // Move smoothly 4% closer per 2.5 seconds (gives ~60-90 seconds of realistic live street navigation)
+                    mechProfile.Latitude += diffLat * 0.04;
+                    mechProfile.Longitude += diffLng * 0.04;
                 }
 
                 // Update tracking timestamps since movement happened
