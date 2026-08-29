@@ -499,7 +499,7 @@
             .noc-sidebar a.noc-nav-item.active i, .noc-settings-menu-drawer a.noc-middle-item.active i { color: #F59E0B !important; }
             .noc-sidebar a.noc-nav-item:hover:not(.active), .noc-settings-menu-drawer a.noc-middle-item:hover:not(.active) { background-color: rgba(56, 189, 248, 0.12) !important; color: #60A5FA !important; }
             .noc-main { margin-left: 260px; flex-grow: 1; min-height: 100vh; display: flex; flex-direction: column; background-color: #0F172A; }
-            .noc-topbar { height: 65px; background-color: #111827; border-bottom: 1px solid #1E293B; display: flex; align-items: center; justify-content: space-between; padding: 0 1.75rem; position: sticky; top: 0; z-index: 1030; }
+            .noc-topbar { min-height: 65px; height: auto; background-color: #111827; border-bottom: 1px solid #1E293B; display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.75rem; position: sticky; top: 0; z-index: 1030; flex-wrap: wrap; gap: 0.5rem; }
             .noc-sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); z-index: 1040; }
             
             /* 📱 Mobile & Tablet Responsive Media Queries */
@@ -507,14 +507,14 @@
                 .noc-sidebar { transform: translateX(-100%); transition: transform 0.3s ease-in-out; box-shadow: 0 0 25px rgba(0,0,0,0.8); }
                 .noc-sidebar.show { transform: translateX(0); }
                 .noc-main { margin-left: 0 !important; }
-                .noc-topbar { padding: 0 1rem; }
+                .noc-topbar { padding: 0.5rem 0.75rem; }
                 .noc-topbar-search { width: 160px !important; }
                 .noc-sidebar-overlay.show { display: block !important; }
             }
             @@media (max-width: 575.98px) {
                 .noc-topbar-search { display: none !important; }
                 .noc-topbar-clock { display: none !important; }
-                .noc-topbar { padding: 0 0.75rem; }
+                .noc-topbar { padding: 0.5rem 0.5rem; }
             }
             @@keyframes pulse-red {
                 0% { transform: scale(0.95); opacity: 0.8; }
@@ -733,7 +733,7 @@
                     </div>
                 </aside>
 
-                <main class="p-4 flex-grow-1">
+                <main class="p-2.5 p-sm-3 p-md-4 flex-grow-1">
                     @RenderBody()
                 </main>
 
@@ -950,6 +950,8 @@
             });
         </script>
     }
+    else
+    {
         <header>
             <!-- 📲 Top PWA App Install Banner (Placed above Main Header) -->
             <div id="pwaInstallBanner" class="pwa-top-install-banner" style="display: none;">
