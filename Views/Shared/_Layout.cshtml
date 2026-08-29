@@ -1929,24 +1929,22 @@
                 var numId = parseInt(id);
                 if (isNaN(numId)) return;
                 
-                // Track in-session dismissal so 30s background poll doesn't reopen it in same view
+                // Track in-session dismissal so background poll doesn't reopen it
                 if (!sessionDismissedBroadcastIds.includes(numId)) {
                     sessionDismissedBroadcastIds.push(numId);
                 }
 
-                // If user is logged in, save permanently in localStorage so it never shows again
-                if (isUserAuthenticated) {
-                    try {
-                        var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
-                        if (!Array.isArray(dismissedNotifs)) dismissedNotifs = [];
-                        dismissedNotifs = dismissedNotifs.map(Number);
-                        if (!dismissedNotifs.includes(numId)) {
-                            dismissedNotifs.push(numId);
-                            localStorage.setItem('raahsathi_dismissed_notifs', JSON.stringify(dismissedNotifs));
-                        }
-                    } catch(e) {
-                        console.error('Error saving dismissed notif:', e);
+                // Save permanently in localStorage so it NEVER shows again for ANY user (guest or logged-in)
+                try {
+                    var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
+                    if (!Array.isArray(dismissedNotifs)) dismissedNotifs = [];
+                    dismissedNotifs = dismissedNotifs.map(Number);
+                    if (!dismissedNotifs.includes(numId)) {
+                        dismissedNotifs.push(numId);
+                        localStorage.setItem('raahsathi_dismissed_notifs', JSON.stringify(dismissedNotifs));
                     }
+                } catch(e) {
+                    console.error('Error saving dismissed notif:', e);
                 }
             }
 
@@ -1990,21 +1988,24 @@
                                 }
                                 
                                 // Auto popup logic:
-                                // 1. Logged-in users: Do NOT popup modal (user sees count & details in notification bell).
-                                // 2. Guest / Homepage visitors: Show announcement modal popup! On homepage refresh, show it again!
+                                // If the notification was already dismissed (in localStorage OR in current session), do NOT popup again!
+                                var isDismissed = dismissedNotifs.includes(nid) || sessionDismissedBroadcastIds.includes(nid);
                                 var shouldPopup = false;
-                                var audience = (n.targetAudience || '').toLowerCase();
-                                var isHomepageOnly = (audience.indexOf('homepage') !== -1 || audience.indexOf('visitors') !== -1);
+                                
+                                if (!isDismissed) {
+                                    var audience = (n.targetAudience || '').toLowerCase();
+                                    var isHomepageOnly = (audience.indexOf('homepage') !== -1 || audience.indexOf('visitors') !== -1);
 
-                                if (!isUserAuthenticated) {
-                                    if (onHome) {
-                                        shouldPopup = true;
-                                    } else if (!isHomepageOnly && !sessionDismissedBroadcastIds.includes(nid)) {
-                                        shouldPopup = true;
+                                    if (!isUserAuthenticated) {
+                                        if (onHome || !isHomepageOnly) {
+                                            shouldPopup = true;
+                                        }
+                                    } else {
+                                        // For authenticated users: show once until dismissed
+                                        if (audience.indexOf('all') !== -1 || audience.indexOf('customer') !== -1 || audience.indexOf('mechanic') !== -1) {
+                                            shouldPopup = true;
+                                        }
                                     }
-                                } else {
-                                    // Logged-in user: No popup modal, only bell icon
-                                    shouldPopup = false;
                                 }
                                 
                                 if (shouldPopup) {
