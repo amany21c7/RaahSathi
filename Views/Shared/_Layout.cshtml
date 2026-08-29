@@ -499,7 +499,8 @@
             .noc-sidebar a.noc-nav-item.active i, .noc-settings-menu-drawer a.noc-middle-item.active i { color: #F59E0B !important; }
             .noc-sidebar a.noc-nav-item:hover:not(.active), .noc-settings-menu-drawer a.noc-middle-item:hover:not(.active) { background-color: rgba(56, 189, 248, 0.12) !important; color: #60A5FA !important; }
             .noc-main { margin-left: 260px; flex-grow: 1; min-height: 100vh; display: flex; flex-direction: column; background-color: #0F172A; }
-            .noc-topbar { min-height: 65px; height: auto; background-color: #111827; border-bottom: 1px solid #1E293B; display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1.75rem; position: sticky; top: 0; z-index: 1030; flex-wrap: wrap; gap: 0.5rem; }
+            .noc-topbar { height: 65px; background-color: #111827; border-bottom: 1px solid #1E293B; display: flex; align-items: center; justify-content: space-between; padding: 0 1.75rem; position: sticky; top: 0; z-index: 1030; }
+            .noc-mobile-header { height: 62px; background: linear-gradient(180deg, #111827 0%, #0c1427 100%); border-bottom: 1px solid rgba(245, 158, 11, 0.35); position: sticky; top: 0; z-index: 1030; display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
             .noc-sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); z-index: 1040; }
             
             /* 📱 Mobile & Tablet Responsive Media Queries */
@@ -507,14 +508,7 @@
                 .noc-sidebar { transform: translateX(-100%); transition: transform 0.3s ease-in-out; box-shadow: 0 0 25px rgba(0,0,0,0.8); }
                 .noc-sidebar.show { transform: translateX(0); }
                 .noc-main { margin-left: 0 !important; }
-                .noc-topbar { padding: 0.5rem 0.75rem; }
-                .noc-topbar-search { width: 160px !important; }
                 .noc-sidebar-overlay.show { display: block !important; }
-            }
-            @@media (max-width: 575.98px) {
-                .noc-topbar-search { display: none !important; }
-                .noc-topbar-clock { display: none !important; }
-                .noc-topbar { padding: 0.5rem 0.5rem; }
             }
             @@keyframes pulse-red {
                 0% { transform: scale(0.95); opacity: 0.8; }
@@ -549,6 +543,27 @@
                         </div>
                     </div>
                     <button type="button" class="btn-close btn-close-white d-lg-none" onclick="toggleAdminSidebar()"></button>
+                </div>
+
+                <!-- Mobile Admin User Info Header inside Drawer -->
+                <div class="p-3 d-lg-none border-bottom border-secondary border-opacity-30 bg-black bg-opacity-30">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-warning text-dark font-weight-extrabold d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px; font-size: 0.88rem;">
+                                @activeUserInitials
+                            </div>
+                            <div>
+                                <strong class="text-white small d-block" style="font-size: 0.85rem;">@(Context.User.Identity?.Name ?? "Admin")</strong>
+                                <span class="badge bg-warning bg-opacity-20 text-warning font-weight-bold" style="font-size: 0.62rem;">@adminSubRole</span>
+                            </div>
+                        </div>
+                        <a href="/Auth/Logout" class="btn btn-outline-danger btn-xs py-1 px-2 font-weight-bold" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-power-off me-1"></i> Logout
+                        </a>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 font-weight-bold py-1.5 mt-1 d-flex align-items-center justify-content-center gap-1.5" onclick="openEmergencySurgeModal(); toggleAdminSidebar();" style="font-size: 0.78rem;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Emergency Weather Surge (+12%)
+                    </button>
                 </div>
 
                 <!-- Mobile Only Search Bar inside Sidebar -->
@@ -615,12 +630,65 @@
 
             <!-- Main Content Container -->
             <div class="noc-main">
-                <header class="noc-topbar">
+                <!-- 📱 Mobile Admin Header Navbar (< 992px) -->
+                <header class="noc-mobile-header d-lg-none">
+                    <a href="/Admin/Dashboard" class="d-flex align-items-center gap-2 notranslate text-decoration-none" translate="no">
+                        <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi Logo" style="height: 38px; border-radius: 8px; object-fit: contain; border: 1.5px solid #ff6b00;" class="shadow me-1" />
+                        <span class="font-weight-extrabold" style="font-family:'Outfit', sans-serif; font-size:1.4rem; letter-spacing:0.5px;">
+                            <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span>
+                        </span>
+                    </a>
+
                     <div class="d-flex align-items-center gap-2">
-                        <!-- Mobile Sidebar Hamburger Toggle Button -->
-                        <button type="button" class="btn btn-outline-warning btn-sm d-lg-none px-2 py-1 me-1" onclick="toggleAdminSidebar()">
-                            <i class="fa-solid fa-bars fs-6"></i>
+                        <!-- Language Selector Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-warning btn-sm dropdown-toggle font-weight-bold px-2 py-1 text-warning d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" style="font-size: 0.8rem; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); border-radius: 8px;">
+                                <i class="fa-solid fa-globe text-warning"></i> <span class="selectedLangName">En</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg py-2" style="max-height: 300px; overflow-y: auto;">
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('en')">🇬🇧 English</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('hi')">🇮🇳 Hindi (हिंदी)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('mr')">🇮🇳 Marathi (मराठी)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('gu')">🇮🇳 Gujarati (ગુજરાતી)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('pa')">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('bn')">🇮🇳 Bengali (বাংলা)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('ta')">🇮🇳 Tamil (தமிழ்)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('te')">🇮🇳 Telugu (తెలుగు)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('kn')">🇮🇳 Kannada (ಕನ್ನಡ)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('ml')">🇮🇳 Malayalam (മലയാളം)</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Admin Notifications Bell -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-warning btn-sm position-relative px-2 py-1 text-warning d-flex align-items-center justify-content-center" type="button" id="adminNotifBellBtnMob" data-bs-toggle="dropdown" style="font-size: 0.9rem; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); width: 34px; height: 34px; border-radius: 50%;">
+                                <i class="fa-solid fa-bell"></i>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light d-none" id="adminNotifBadgeMob" style="font-size: 0.62rem; padding: 0.2em 0.35em;">0</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg p-0" id="adminNotifDropdownMenuMob" style="width: 310px; max-width: 90vw; max-height: 420px; overflow-y: auto; z-index: 1050; border-radius: 12px;">
+                                <div class="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
+                                    <h6 class="text-white font-weight-bold mb-0" style="font-family:'Outfit';"><i class="fa-solid fa-bell text-warning me-1.5"></i> Pending Operations</h6>
+                                    <span class="badge bg-danger text-white small" id="adminNotifCountBadgeMob">0 Pending</span>
+                                </div>
+                                <div class="p-1" id="adminNotifItemsListMob">
+                                    <div class="text-center py-4 text-muted small">
+                                        <i class="fa-solid fa-circle-check fa-2x mb-2 text-success opacity-80"></i>
+                                        <p class="mb-0">All operations up to date.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Hamburger Button with Border (Matching Screenshot 2 exactly!) -->
+                        <button class="navbar-toggler border-secondary p-2 d-flex align-items-center justify-content-center" type="button" onclick="toggleAdminSidebar()" style="border: 1.5px solid rgba(255,255,255,0.25) !important; border-radius: 10px; background: rgba(255,255,255,0.05); width: 44px; height: 38px; cursor: pointer;">
+                            <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
                         </button>
+                    </div>
+                </header>
+
+                <!-- 💻 Desktop Command Topbar (>= 992px) -->
+                <header class="noc-topbar d-none d-lg-flex">
+                    <div class="d-flex align-items-center gap-2">
                         <div class="input-group input-group-sm noc-topbar-search" style="width: 260px; position: relative;">
                             <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
                             <input type="text" id="globalSearchInput" class="form-control bg-dark border-secondary text-white small" placeholder="Search mechanics, jobs..." autocomplete="off">
@@ -628,10 +696,10 @@
                         </div>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2 gap-sm-3">
+                    <div class="d-flex align-items-center gap-3">
                         <!-- Emergency Mode Toggle Button -->
-                        <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold px-2.5 px-sm-3 py-1.5" id="btnNocEmergencyToggle" onclick="openEmergencySurgeModal()" style="font-size: 0.8rem;">
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span class="d-none d-sm-inline">Emergency Mode: </span><span id="txtEmergencyModeState">OFF</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold px-3 py-1.5" id="btnNocEmergencyToggle" onclick="openEmergencySurgeModal()" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span>Emergency Mode: </span><span id="txtEmergencyModeState">OFF</span>
                         </button>
 
                         <!-- Language Selector Dropdown -->
@@ -2151,13 +2219,13 @@
                             });
                         }
                         
-                        $('#adminNotifItemsList').html(listHtml);
-                        $('#adminNotifCountBadge').text(count + ' Pending');
+                        $('#adminNotifItemsList, #adminNotifItemsListMob').html(listHtml);
+                        $('#adminNotifCountBadge, #adminNotifCountBadgeMob').text(count + ' Pending');
                         
                         if (count > 0) {
-                            $('#adminNotifBadge').text(count).removeClass('d-none');
+                            $('#adminNotifBadge, #adminNotifBadgeMob').text(count).removeClass('d-none');
                         } else {
-                            $('#adminNotifBadge').addClass('d-none');
+                            $('#adminNotifBadge, #adminNotifBadgeMob').addClass('d-none');
                         }
                     }
                 }).always(function() {
