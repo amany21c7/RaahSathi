@@ -1628,19 +1628,58 @@
                     <div id="secUpiFieldsDesktop" class="row g-3 mb-3 @(profile.PreferredPayoutMethod == "Bank" ? "d-none" : "")">
                         <div class="col-12">
                             <label class="form-label text-muted small mb-1 font-weight-bold">
-                                UPI ID <span class="text-danger font-weight-bold">* Required</span>
+                                UPI ID <span class="text-danger font-weight-bold">*</span>
                             </label>
                             <input type="text" id="txtProfileUpi" class="form-control glass-input text-success font-weight-bold" value="@profile.UpiId" placeholder="e.g. 9876543210@paytm / name@upi">
+                            <span class="text-muted extra-small">Instant direct UPI payouts will be sent to this ID.</span>
                         </div>
-            <div class="d-flex justify-content-center justify-content-md-start">
-                <button class="btn btn-premium-primary font-weight-bold px-5 py-3 shadow-lg rounded-pill" id="btnSaveProfileSettings" onclick="saveProfileSettings()">
-                    <i class="fa-solid fa-floppy-disk me-2"></i> Save Profile Details &amp; Settings
+                    </div>
+
+                    <!-- Bank Account Input Section -->
+                    <div id="secBankFieldsDesktop" class="row g-3 mb-3 @(profile.PreferredPayoutMethod == "Bank" ? "" : "d-none")">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1 font-weight-bold">
+                                Account Holder Name <span class="text-danger font-weight-bold">*</span>
+                            </label>
+                            <input type="text" id="txtProfileHolderName" class="form-control glass-input text-white" value="@profile.AccountHolderName" placeholder="Full name as in passbook">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1 font-weight-bold">
+                                Bank Name <span class="text-danger font-weight-bold">*</span>
+                            </label>
+                            <input type="text" id="txtBankName" class="form-control glass-input text-white" value="@profile.BankName" placeholder="e.g. State Bank of India, HDFC, PNB">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1 font-weight-bold">
+                                Bank Account Number <span class="text-danger font-weight-bold">*</span>
+                            </label>
+                            <input type="password" id="txtAccountNo" class="form-control glass-input text-white font-monospace" value="@profile.BankAccountNumber" placeholder="Enter bank account number" oninput="validateBankAccMatch()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1 font-weight-bold">
+                                Re-enter / Confirm Account Number <span class="text-danger font-weight-bold">*</span>
+                            </label>
+                            <input type="text" id="txtConfirmAccountNo" class="form-control glass-input text-white font-monospace" value="@profile.BankAccountNumber" placeholder="Re-enter to confirm" oninput="validateBankAccMatch()">
+                            <span id="msgAccMismatchDesktop" class="text-danger extra-small d-none mt-1"><i class="fa-solid fa-triangle-exclamation"></i> Account numbers do not match!</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small mb-1 font-weight-bold">
+                                IFSC Code <span class="text-danger font-weight-bold">*</span>
+                            </label>
+                            <input type="text" id="txtIfscCode" class="form-control glass-input text-white font-monospace text-uppercase" value="@profile.IfscCode" placeholder="11-character IFSC (e.g. SBIN0001234)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="mt-4 mb-2 d-flex justify-content-center justify-content-sm-start">
+                <button class="btn btn-warning font-weight-bold text-dark px-5 py-2.5 shadow-lg rounded-pill d-inline-flex align-items-center justify-content-center gap-2" id="btnSaveProfileSettings" onclick="saveProfileSettings()" style="min-width: 180px; font-size: 1rem;">
+                    <i class="fa-solid fa-floppy-disk"></i> <span>Save</span>
                 </button>
             </div>
         </div>
     </div>
-
-</div>
 
 <!-- WITHDRAWAL PAYOUT MODAL -->
 <div class="modal fade" id="withdrawModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
@@ -2235,21 +2274,21 @@
 
     // Save Profile & Personal & Workshop Details Settings
     function saveProfileSettings() {
-        var name = $('#txtProfileName').val();
-        var phone = $('#txtProfilePhone').val();
-        var email = $('#txtProfileEmail').val();
-        var shopName = $('#txtProfileShopName').val();
-        var shopAddress = $('#txtProfileShopAddress').val();
-        var expYears = parseInt($('#txtProfileExperience').val()) || 1;
-        var city = $('#txtProfileCity').val();
+        var name = ($('#txtProfileName').val() || '').trim();
+        var phone = ($('#txtProfilePhone').val() || '').trim();
+        var email = ($('#txtProfileEmail').val() || '').trim();
+        var shopName = ($('#txtShopName').val() || $('#txtProfileShopName').val() || '').trim();
+        var shopAddress = ($('#txtShopAddress').val() || $('#txtProfileShopAddress').val() || '').trim();
+        var expYears = parseInt($('#txtExperienceYears').val() || $('#txtProfileExperience').val()) || 0;
+        var city = ($('#txtCity').val() || $('#txtProfileCity').val() || '').trim();
 
-        if (!name || name.trim() === '') {
+        if (!name || name === '') {
             alert('⚠️ Please enter your Full Name.');
             $('#txtProfileName').focus();
             return;
         }
 
-        if (!phone || phone.trim() === '') {
+        if (!phone || phone === '') {
             alert('⚠️ Please enter your Mobile Number.');
             $('#txtProfilePhone').focus();
             return;
@@ -2261,19 +2300,21 @@
         });
 
         var radius = $('input[name="radServiceRadius"]:checked').val() || 15;
-        var upi = $('#txtProfileUpi').val();
-        var bankName = $('#txtBankName').val();
+        var upi = ($('#txtProfileUpi').val() || '').trim();
+        var bankName = ($('#txtBankName').val() || '').trim();
         var accNo = ($('#txtAccountNo').val() || '').trim();
         var confirmAccNo = ($('#txtConfirmAccountNo').val() || '').trim();
-        var ifsc = $('#txtIfscCode').val();
-        var holderName = $('#txtProfileHolderName').val();
+        var ifsc = ($('#txtIfscCode').val() || '').trim();
+        var holderName = ($('#txtProfileHolderName').val() || '').trim();
         var payoutMethod = $('input[name="radPayoutMethod"]:checked').val() || 'UPI';
 
-        if (accNo !== '' && confirmAccNo !== '' && accNo !== confirmAccNo) {
-            alert('⚠️ Bank Account Number and Confirm Account Number do not match! Please check and enter the same account number.');
-            validateBankAccMatch();
-            $('#txtConfirmAccountNo').focus();
-            return;
+        if (payoutMethod === 'Bank') {
+            if (accNo !== '' && confirmAccNo !== '' && accNo !== confirmAccNo) {
+                alert('⚠️ Bank Account Number and Confirm Account Number do not match! Please check and enter the same account number.');
+                validateBankAccMatch();
+                $('#txtConfirmAccountNo').focus();
+                return;
+            }
         }
 
         var formData = new FormData();
@@ -2316,12 +2357,23 @@
                 saveBtn.prop('disabled', false).html(originalBtnHtml);
                 if (res.success) {
                     alert('✅ ' + (res.message || 'Profile & details saved successfully!'));
+
                     if (res.profilePhotoUrl) {
                         $('#imgProfilePreview, .glass-card img.rounded-circle').attr('src', res.profilePhotoUrl);
                     }
                     if (res.name) {
-                        $('h4:contains("@user.Name"), .text-white:contains("@user.Name")').first().text(res.name);
+                        $('h4:contains("@user.Name"), .text-white:contains("@user.Name"), h5:contains("@user.Name")').first().text(res.name);
                     }
+
+                    // Reload Saved Details Card
+                    renderSavedDetailsPanel({
+                        preferredPayoutMethod: payoutMethod,
+                        upiId: upi,
+                        accountHolderName: holderName,
+                        bankName: bankName,
+                        bankAccountNumber: accNo,
+                        ifscCode: ifsc
+                    });
                 } else {
                     alert('❌ ' + (res.message || 'Error updating profile.'));
                 }
@@ -2334,26 +2386,25 @@
     }
 
     function validateBankAccMatch() {
-        var acc = ($('#txtAccountNo').val() || $('#txtMobileAccountNo').val() || '').trim();
-        var confirmAcc = ($('#txtConfirmAccountNo').val() || $('#txtMobileConfirmAccountNo').val() || '').trim();
+        var acc = ($('#txtAccountNo').val() || '').trim();
+        var confirmAcc = ($('#txtConfirmAccountNo').val() || '').trim();
         
         if (acc && confirmAcc && acc !== confirmAcc) {
-            $('#msgAccMismatchDesktop, #msgAccMismatchMobile').removeClass('d-none');
+            $('#msgAccMismatchDesktop').removeClass('d-none');
             return false;
         } else {
-            $('#msgAccMismatchDesktop, #msgAccMismatchMobile').addClass('d-none');
+            $('#msgAccMismatchDesktop').addClass('d-none');
             return true;
         }
     }
 
     function handlePayoutMethodChange(method) {
-        syncPayoutRadio(method);
         if (method === 'UPI') {
-            $('#secUpiFieldsMobile, #secUpiFieldsDesktop').removeClass('d-none');
-            $('#secBankFieldsMobile, #secBankFieldsDesktop').addClass('d-none');
+            $('#secUpiFieldsDesktop').removeClass('d-none');
+            $('#secBankFieldsDesktop').addClass('d-none');
         } else {
-            $('#secUpiFieldsMobile, #secUpiFieldsDesktop').addClass('d-none');
-            $('#secBankFieldsMobile, #secBankFieldsDesktop').removeClass('d-none');
+            $('#secUpiFieldsDesktop').addClass('d-none');
+            $('#secBankFieldsDesktop').removeClass('d-none');
         }
     }
 

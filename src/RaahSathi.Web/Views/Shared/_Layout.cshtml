@@ -1,5 +1,8 @@
 @{
     bool isAdminPage = Context.Request.Path.Value?.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase) == true;
+    bool isMechanicPage = Context.Request.Path.Value?.StartsWith("/Mechanic", StringComparison.OrdinalIgnoreCase) == true;
+    bool isMechanicUser = User.Identity?.IsAuthenticated == true && (User.IsInRole("Mechanic") || User.Claims.Any(c => c.Type == System.Security.Claims.ClaimTypes.Role && c.Value == "Mechanic"));
+    bool hideCustomerHelpBar = isAdminPage || isMechanicPage || isMechanicUser;
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -1353,7 +1356,7 @@
             </div>
         </footer>
 
-        @if (!isAdminPage)
+        @if (!hideCustomerHelpBar)
         {
             <!-- 📱 Sticky Mobile Bottom Emergency Action Bar (< 992px) -->
             <div class="mob-sticky-bottom-bar d-lg-none">
@@ -1526,16 +1529,18 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
-    <!-- Global Translatable HTML Alert Modal -->
+    <!-- Global Translatable HTML Alert Modal (Compact & Sleek) -->
     <div class="modal fade" id="globalAlertModal" tabindex="-1" aria-hidden="true" style="z-index: 10600;">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content bg-dark border-warning text-white shadow-lg" style="border-radius:14px; border:1.5px solid #f59e0b;">
-                <div class="modal-body p-4 text-center">
-                    <div class="mb-3">
-                        <i class="fa-solid fa-circle-info text-warning fa-3x animate-pulse"></i>
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 270px; margin: 1.5rem auto;">
+            <div class="modal-content bg-dark text-white shadow-lg border-0" style="border-radius:14px; background: #182232 !important; border: 1px solid rgba(255, 193, 7, 0.4) !important;">
+                <div class="modal-body p-3 text-center">
+                    <div class="mb-2 mt-1" id="globalAlertModalIcon">
+                        <i class="fa-solid fa-circle-info text-warning fs-3"></i>
                     </div>
-                    <div class="font-weight-bold text-white mb-3" id="globalAlertModalMessage" style="font-size:0.95rem; line-height:1.5; white-space:pre-line;"></div>
-                    <button type="button" class="btn btn-warning w-100 font-weight-bold text-dark py-2" data-bs-dismiss="modal">OK</button>
+                    <div class="text-white mb-3 font-weight-medium" id="globalAlertModalMessage" style="font-size:0.86rem; line-height:1.4; white-space:pre-line; word-break: break-word;"></div>
+                    <div class="d-flex justify-content-center">
+                        <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark px-4 py-1.5 rounded-pill shadow-sm" data-bs-dismiss="modal" style="min-width: 90px; font-size: 0.82rem;">OK</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1559,8 +1564,26 @@
                 if (!msg) return;
                 var modalEl = document.getElementById('globalAlertModal');
                 var msgEl = document.getElementById('globalAlertModalMessage');
+                var iconContainer = document.getElementById('globalAlertModalIcon');
                 if (modalEl && msgEl) {
-                    msgEl.innerText = msg;
+                    var isSuccess = msg.includes('✅') || msg.toLowerCase().includes('success') || msg.toLowerCase().includes('saved') || msg.toLowerCase().includes('updated');
+                    var isError = msg.includes('❌') || msg.toLowerCase().includes('error') || msg.toLowerCase().includes('fail');
+                    var isWarning = msg.includes('⚠️') || msg.toLowerCase().includes('warning');
+
+                    if (iconContainer) {
+                        if (isSuccess) {
+                            iconContainer.innerHTML = '<i class="fa-solid fa-circle-check text-success fs-3"></i>';
+                        } else if (isError) {
+                            iconContainer.innerHTML = '<i class="fa-solid fa-circle-xmark text-danger fs-3"></i>';
+                        } else if (isWarning) {
+                            iconContainer.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-warning fs-3"></i>';
+                        } else {
+                            iconContainer.innerHTML = '<i class="fa-solid fa-circle-info text-warning fs-3"></i>';
+                        }
+                    }
+
+                    var cleanMsg = msg.replace(/^[✅❌⚠️]\s*/, '');
+                    msgEl.innerText = cleanMsg;
                     var bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                     bsModal.show();
                 } else {

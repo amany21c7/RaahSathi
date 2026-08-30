@@ -1361,18 +1361,48 @@ namespace RaahSathi.Controllers
                 profile.WorkingHours = workingHours;
             }
 
-            // 11. Payment details
-            if (bankName != null) profile.BankName = bankName;
-            if (accountNumber != null) profile.BankAccountNumber = accountNumber;
-            if (ifscCode != null) profile.IfscCode = ifscCode;
-            if (upiId != null) profile.UpiId = upiId;
-            if (accountHolderName != null) profile.AccountHolderName = accountHolderName;
-            if (!string.IsNullOrWhiteSpace(preferredPayoutMethod)) profile.PreferredPayoutMethod = preferredPayoutMethod;
+            // 11. Payment details & Payout preferences
+            if (!string.IsNullOrWhiteSpace(preferredPayoutMethod) && preferredPayoutMethod != profile.PreferredPayoutMethod)
+            {
+                changedFields.Add($"Payout Mode ('{profile.PreferredPayoutMethod}' ➔ '{preferredPayoutMethod}')");
+                profile.PreferredPayoutMethod = preferredPayoutMethod;
+            }
+
+            if (upiId != null && upiId.Trim() != (profile.UpiId ?? ""))
+            {
+                changedFields.Add($"UPI ID ('{profile.UpiId}' ➔ '{upiId.Trim()}')");
+                profile.UpiId = upiId.Trim();
+            }
+
+            if (bankName != null && bankName.Trim() != (profile.BankName ?? ""))
+            {
+                changedFields.Add($"Bank Name ('{profile.BankName}' ➔ '{bankName.Trim()}')");
+                profile.BankName = bankName.Trim();
+            }
+
+            if (accountNumber != null && accountNumber.Trim() != (profile.BankAccountNumber ?? ""))
+            {
+                changedFields.Add($"Account No ('{profile.BankAccountNumber}' ➔ '{accountNumber.Trim()}')");
+                profile.BankAccountNumber = accountNumber.Trim();
+            }
+
+            if (ifscCode != null && ifscCode.Trim().ToUpper() != (profile.IfscCode ?? "").ToUpper())
+            {
+                changedFields.Add($"IFSC ('{profile.IfscCode}' ➔ '{ifscCode.Trim().ToUpper()}')");
+                profile.IfscCode = ifscCode.Trim().ToUpper();
+            }
+
+            if (accountHolderName != null && accountHolderName.Trim() != (profile.AccountHolderName ?? ""))
+            {
+                changedFields.Add($"Account Holder ('{profile.AccountHolderName}' ➔ '{accountHolderName.Trim()}')");
+                profile.AccountHolderName = accountHolderName.Trim();
+            }
+
             profile.AcceptsCash = acceptsCash;
 
             await _dbContext.SaveChangesAsync();
 
-            // 12. Create Audit Log for Admin Notification if any changes were made
+            // 12. Create Audit Log for Admin Notification & Mechanic History if any changes were made
             if (changedFields.Count > 0)
             {
                 var auditLog = new AuditLog
@@ -1380,7 +1410,7 @@ namespace RaahSathi.Controllers
                     AdminName = user.Name,
                     UserRole = "Mechanic",
                     ActionType = "MECHANIC_PROFILE_UPDATE",
-                    Details = $"Mechanic {user.Name} (ID: RS{user.Id:D2}M, Phone: {user.PhoneNumber}) updated: {string.Join(", ", changedFields)}",
+                    Details = $"Mechanic {user.Name} (ID: RS{user.Id:D2}M, Phone: {user.PhoneNumber}) updated: {string.Join(" • ", changedFields)}",
                     TimeStamp = DateTime.UtcNow,
                     IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
                     UserAgent = Request.Headers["User-Agent"].ToString() ?? "Mobile/Web App"
@@ -1394,8 +1424,37 @@ namespace RaahSathi.Controllers
                 message = "Profile details updated successfully!", 
                 profilePhotoUrl = profile.ProfilePhotoUrl,
                 name = user.Name,
-                phone = user.PhoneNumber
+                phone = user.PhoneNumber,
+                changedCount = changedFields.Count,
+                changedSummary = string.Join(" • ", changedFields)
             });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetProfileAuditLogs()
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Unauthorized();
+
+            var mechIdStr = $"RS{user.Id:D2}M";
+            var logs = await _dbContext.AuditLogs
+                .Where(l => (l.ActionType == "MECHANIC_PROFILE_UPDATE" || l.ActionType == "UPDATE") &&
+                            (l.Details.Contains(mechIdStr) || l.AdminName == user.Name))
+                .OrderByDescending(l => l.TimeStamp)
+                .Take(25)
+                .Select(l => new {
+                    id = l.Id,
+                    actionType = l.ActionType,
+                    details = l.Details,
+                    timeStamp = l.TimeStamp.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt"),
+                    timeAgo = (DateTime.UtcNow - l.TimeStamp).TotalMinutes < 1 ? "Just now" :
+                              (DateTime.UtcNow - l.TimeStamp).TotalHours < 1 ? $"{(int)(DateTime.UtcNow - l.TimeStamp).TotalMinutes} mins ago" :
+                              (DateTime.UtcNow - l.TimeStamp).TotalDays < 1 ? $"{(int)(DateTime.UtcNow - l.TimeStamp).TotalHours} hours ago" :
+                              l.TimeStamp.ToLocalTime().ToString("dd MMM yyyy")
+                })
+                .ToListAsync();
+
+            return Json(new { success = true, logs });
         }
 
         [HttpPost]
