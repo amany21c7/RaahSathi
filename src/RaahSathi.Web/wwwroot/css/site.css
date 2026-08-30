@@ -504,6 +504,84 @@ select.glass-input option {
     outline: none !important;
 }
 
+/* 📱 Mobile Sticky Action Bar for Forms (KYC, Bookings, Modals) */
+.mob-sticky-action-bar {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(11, 17, 30, 0.95);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.85rem 1rem;
+    z-index: 1030;
+    margin-top: 1.5rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    margin-bottom: -1rem;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.kyc-step {
+    padding-bottom: 2rem;
+    min-height: 380px;
+}
+
+input[type="file"].glass-input {
+    padding: 7px 12px !important;
+    color: #cbd5e1 !important;
+    display: flex;
+    align-items: center;
+}
+
+input[type="file"].glass-input::file-selector-button {
+    background: #1e293b;
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 6px;
+    padding: 5px 14px;
+    margin-right: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+input[type="file"].glass-input::file-selector-button:hover {
+    background: #f59e0b;
+    color: #0b111e;
+}
+
+@media (max-width: 576px) {
+    .mob-sticky-action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0;
+        border-radius: 0;
+        border-top: 1px solid rgba(245, 158, 11, 0.4);
+        padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+        z-index: 1045;
+        background: #090e18;
+    }
+    
+    .kyc-step {
+        padding-bottom: 6rem;
+    }
+    
+    #kycForm {
+        padding-bottom: 4rem;
+    }
+}
+
 /* Status Timeline */
 .timeline-progress {
     display: flex;

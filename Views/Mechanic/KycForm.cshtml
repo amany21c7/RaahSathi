@@ -103,28 +103,28 @@
                         
                         <div class="col-12 col-md-4">
                             <label class="form-label text-light small font-weight-bold">Email Address <span class="text-muted">(Optional)</span></label>
-                            <input type="email" name="Email" class="form-control glass-input" placeholder="e.g. mechanic@example.com">
+                            <input type="email" name="Email" class="form-control glass-input" value="@(profile?.Email)" placeholder="e.g. mechanic@example.com">
                         </div>
                         <div class="col-6 col-md-4">
-                            <label class="form-label text-light small font-weight-bold">Date of Birth</label>
-                            <input type="date" name="DateOfBirth" class="form-control glass-input" required>
+                            <label class="form-label text-light small font-weight-bold">Date of Birth <span class="text-danger">*</span></label>
+                            <input type="date" name="DateOfBirth" class="form-control glass-input" value="@(profile?.DateOfBirth != null ? profile.DateOfBirth.Value.ToString("yyyy-MM-dd") : "")" required>
                         </div>
                         <div class="col-6 col-md-4">
-                            <label class="form-label text-light small font-weight-bold">Gender</label>
+                            <label class="form-label text-light small font-weight-bold">Gender <span class="text-danger">*</span></label>
                             <select name="Gender" class="form-select glass-input" required>
                                 <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
+                                <option value="Male" selected="@(profile?.Gender == "Male")">Male</option>
+                                <option value="Female" selected="@(profile?.Gender == "Female")">Female</option>
+                                <option value="Other" selected="@(profile?.Gender == "Other")">Other</option>
                             </select>
                         </div>
                         
-                        <div class="col-12">
-                            <label class="form-label text-light small font-weight-bold">Profile Photo (Portrait / Face Closeup)</label>
-                            <input type="file" name="ProfilePhoto" class="form-control glass-input previewable-upload" data-preview="#previewProfilePhoto" accept="image/*" required>
-                            <span class="text-muted" style="font-size:0.75rem;">Upload a clear photo of your face.</span>
-                            <div id="previewProfilePhoto" class="mt-2 d-none">
-                                <img src="" class="doc-preview-thumb" style="max-width: 140px; height: 110px; object-fit: cover;" alt="Profile Preview" />
+                        <div class="col-12 mb-3">
+                            <label class="form-label text-light small font-weight-bold">Profile Photo (Portrait / Face Closeup) <span class="text-danger">*</span></label>
+                            <input type="file" name="ProfilePhoto" class="form-control glass-input previewable-upload" data-preview="#previewProfilePhoto" accept="image/*" @(hasPhoto ? "" : "required")>
+                            <span class="text-muted d-block mt-1" style="font-size:0.75rem;">Upload a clear photo of your face.</span>
+                            <div id="previewProfilePhoto" class="mt-2 @(hasPhoto ? "" : "d-none")">
+                                <img src="@(hasPhoto && profile != null ? profile.ProfilePhotoUrl : "")" class="doc-preview-thumb" style="max-width: 140px; height: 110px; object-fit: cover;" alt="Profile Preview" />
                             </div>
                         </div>
                     </div>
@@ -138,44 +138,44 @@
                     
                     <div class="row g-3 g-md-4">
                         <div class="col-12">
-                            <label class="form-label text-light small font-weight-bold">Aadhaar Number (12 Digit)</label>
-                            <input type="text" name="AadhaarNumber" class="form-control glass-input" placeholder="e.g. 123456789012" maxlength="12" pattern="\d{12}" inputmode="numeric" required>
+                            <label class="form-label text-light small font-weight-bold">Aadhaar Number (12 Digit) <span class="text-danger">*</span></label>
+                            <input type="text" name="AadhaarNumber" class="form-control glass-input" value="@(profile?.AadhaarNumber)" placeholder="e.g. 123456789012" maxlength="12" pattern="\d{12}" inputmode="numeric" required>
                             <span class="text-muted" style="font-size:0.75rem;">Your unique 12-digit identification number</span>
                         </div>
                         
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-light small font-weight-bold">Aadhaar Card Front Photo</label>
-                            <input type="file" name="AadhaarFrontPhoto" class="form-control glass-input previewable-upload" data-preview="#previewAadhaarFront" accept="image/*" required>
-                            <div id="previewAadhaarFront" class="mt-2 d-none">
-                                <img src="" class="doc-preview-thumb" alt="Aadhaar Front Preview" />
+                            <label class="form-label text-light small font-weight-bold">Aadhaar Card Front Photo <span class="text-danger">*</span></label>
+                            <input type="file" name="AadhaarFrontPhoto" class="form-control glass-input previewable-upload" data-preview="#previewAadhaarFront" accept="image/*" @(hasAadhaar ? "" : "required")>
+                            <div id="previewAadhaarFront" class="mt-2 @(hasAadhaar ? "" : "d-none")">
+                                <img src="@(hasAadhaar && profile != null ? profile.AadhaarFrontUrl : "")" class="doc-preview-thumb" alt="Aadhaar Front Preview" />
                             </div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-light small font-weight-bold">Aadhaar Card Back Photo</label>
-                            <input type="file" name="AadhaarBackPhoto" class="form-control glass-input previewable-upload" data-preview="#previewAadhaarBack" accept="image/*" required>
-                            <div id="previewAadhaarBack" class="mt-2 d-none">
-                                <img src="" class="doc-preview-thumb" alt="Aadhaar Back Preview" />
+                            <label class="form-label text-light small font-weight-bold">Aadhaar Card Back Photo <span class="text-danger">*</span></label>
+                            <input type="file" name="AadhaarBackPhoto" class="form-control glass-input previewable-upload" data-preview="#previewAadhaarBack" accept="image/*" @(profile != null && !string.IsNullOrEmpty(profile.AadhaarBackUrl) ? "" : "required")>
+                            <div id="previewAadhaarBack" class="mt-2 @(profile != null && !string.IsNullOrEmpty(profile.AadhaarBackUrl) ? "" : "d-none")">
+                                <img src="@(profile?.AadhaarBackUrl ?? "")" class="doc-preview-thumb" alt="Aadhaar Back Preview" />
                             </div>
                         </div>
                         
                         <div class="col-12 col-md-6">
                             <label class="form-label text-light small font-weight-bold">Driving Licence Photo <span class="text-muted">(Optional)</span></label>
                             <input type="file" name="DrivingLicencePhoto" class="form-control glass-input previewable-upload" data-preview="#previewDrivingLicence" accept="image/*">
-                            <div id="previewDrivingLicence" class="mt-2 d-none">
-                                <img src="" class="doc-preview-thumb" alt="Driving Licence Preview" />
+                            <div id="previewDrivingLicence" class="mt-2 @(profile != null && !string.IsNullOrEmpty(profile.DrivingLicenceUrl) ? "" : "d-none")">
+                                <img src="@(profile?.DrivingLicenceUrl ?? "")" class="doc-preview-thumb" alt="Driving Licence Preview" />
                             </div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-light small font-weight-bold">Selfie Verification Photo</label>
+                            <label class="form-label text-light small font-weight-bold">Selfie Verification Photo <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="file" name="SelfiePhoto" id="selfieFileInput" class="form-control glass-input previewable-upload" data-preview="#previewSelfiePhoto" accept="image/*" required>
+                                <input type="file" name="SelfiePhoto" id="selfieFileInput" class="form-control glass-input previewable-upload" data-preview="#previewSelfiePhoto" accept="image/*" @(profile != null && !string.IsNullOrEmpty(profile.SelfieUrl) ? "" : "required")>
                                 <button type="button" class="btn btn-warning text-dark font-weight-bold px-3" id="btnOpenSelfieCamera">
                                     <i class="fa-solid fa-camera"></i> Camera
                                 </button>
                             </div>
                             <span class="text-muted d-block mt-1" id="selfieHelpText" style="font-size:0.75rem;">Take a selfie holding your Aadhaar card close to your face.</span>
-                            <div id="previewSelfiePhoto" class="mt-2 d-none">
-                                <img src="" class="doc-preview-thumb" style="max-width: 140px; height: 110px; object-fit: cover;" alt="Selfie Preview" />
+                            <div id="previewSelfiePhoto" class="mt-2 @(profile != null && !string.IsNullOrEmpty(profile.SelfieUrl) ? "" : "d-none")">
+                                <img src="@(profile?.SelfieUrl ?? "")" class="doc-preview-thumb" style="max-width: 140px; height: 110px; object-fit: cover;" alt="Selfie Preview" />
                             </div>
                         </div>
                     </div>
@@ -189,53 +189,53 @@
                     
                     <div class="row g-3 g-md-4">
                         <div class="col-12 col-md-8">
-                            <label class="form-label text-light small font-weight-bold">Shop / Garage Name</label>
-                            <input type="text" name="ShopName" class="form-control glass-input" placeholder="e.g. Verma Auto Garage" required>
+                            <label class="form-label text-light small font-weight-bold">Shop / Garage Name <span class="text-danger">*</span></label>
+                            <input type="text" name="ShopName" class="form-control glass-input" value="@(profile?.ShopName)" placeholder="e.g. Verma Auto Garage" required>
                         </div>
                         <div class="col-12 col-md-4">
-                            <label class="form-label text-light small font-weight-bold">Shop Timings</label>
+                            <label class="form-label text-light small font-weight-bold">Shop Timings <span class="text-danger">*</span></label>
                             <select name="ShopTiming" class="form-select glass-input" required>
                                 <option value="">Select Timing</option>
-                                <option value="9:00 AM - 8:00 PM">9:00 AM - 8:00 PM</option>
-                                <option value="8:00 AM - 8:00 PM">8:00 AM - 8:00 PM</option>
-                                <option value="9:00 AM - 9:00 PM">9:00 AM - 9:00 PM</option>
-                                <option value="10:00 AM - 9:00 PM">10:00 AM - 9:00 PM</option>
-                                <option value="24 Hours Open">24 Hours Open</option>
-                                <option value="Flexible / Custom">Flexible / Custom</option>
+                                <option value="9:00 AM - 8:00 PM" selected="@(profile?.ShopTiming == "9:00 AM - 8:00 PM")">9:00 AM - 8:00 PM</option>
+                                <option value="8:00 AM - 8:00 PM" selected="@(profile?.ShopTiming == "8:00 AM - 8:00 PM")">8:00 AM - 8:00 PM</option>
+                                <option value="9:00 AM - 9:00 PM" selected="@(profile?.ShopTiming == "9:00 AM - 9:00 PM")">9:00 AM - 9:00 PM</option>
+                                <option value="10:00 AM - 9:00 PM" selected="@(profile?.ShopTiming == "10:00 AM - 9:00 PM")">10:00 AM - 9:00 PM</option>
+                                <option value="24 Hours Open" selected="@(profile?.ShopTiming == "24 Hours Open")">24 Hours Open</option>
+                                <option value="Flexible / Custom" selected="@(profile?.ShopTiming == "Flexible / Custom")">Flexible / Custom</option>
                             </select>
                         </div>
                         
                         <div class="col-12 col-md-8">
-                            <label class="form-label text-light small font-weight-bold">Shop Address</label>
-                            <input type="text" name="ShopAddress" class="form-control glass-input" placeholder="Complete address of your shop" required>
+                            <label class="form-label text-light small font-weight-bold">Shop Address <span class="text-danger">*</span></label>
+                            <input type="text" name="ShopAddress" class="form-control glass-input" value="@(profile?.ShopAddress)" placeholder="Complete address of your shop" required>
                         </div>
                         <div class="col-12 col-md-4">
-                            <label class="form-label text-light small font-weight-bold">Pincode</label>
-                            <input type="text" name="Pincode" class="form-control glass-input" placeholder="6-digit PIN" maxlength="6" pattern="\d{6}" inputmode="numeric" required>
+                            <label class="form-label text-light small font-weight-bold">Pincode <span class="text-danger">*</span></label>
+                            <input type="text" name="Pincode" class="form-control glass-input" value="@(profile?.Pincode)" placeholder="6-digit PIN" maxlength="6" pattern="\d{6}" inputmode="numeric" required>
                         </div>
                         
                         <div class="col-6 col-md-4">
-                            <label class="form-label text-light small font-weight-bold">Years of Experience</label>
-                            <input type="number" name="ExperienceYears" class="form-control glass-input" min="0" max="50" placeholder="e.g. 5" required>
+                            <label class="form-label text-light small font-weight-bold">Years of Experience <span class="text-danger">*</span></label>
+                            <input type="number" name="ExperienceYears" class="form-control glass-input" value="@(profile?.ExperienceYears)" min="0" max="50" placeholder="e.g. 5" required>
                         </div>
                         <div class="col-6 col-md-4">
-                            <label class="form-label text-light small font-weight-bold">Certified Mechanic?</label>
+                            <label class="form-label text-light small font-weight-bold">Certified Mechanic? <span class="text-danger">*</span></label>
                             <select name="IsCertified" class="form-select glass-input" required>
-                                <option value="false">No (Experienced)</option>
-                                <option value="true">Yes (Certified)</option>
+                                <option value="false" selected="@(profile?.IsCertified == false)">No (Experienced)</option>
+                                <option value="true" selected="@(profile?.IsCertified == true)">Yes (Certified)</option>
                             </select>
                         </div>
                         <div class="col-12 col-md-4">
                             <label class="form-label text-light small font-weight-bold">Previous Garage Name <span class="text-muted">(Optional)</span></label>
-                            <input type="text" name="GarageName" class="form-control glass-input" placeholder="Where did you work before?">
+                            <input type="text" name="GarageName" class="form-control glass-input" value="@(profile?.GarageName)" placeholder="Where did you work before?">
                         </div>
                         
                         <div class="col-12">
-                            <label class="form-label text-light small font-weight-bold">Shop / Garage Front Photo</label>
-                            <input type="file" name="ShopPhoto" class="form-control glass-input previewable-upload" data-preview="#previewShopPhoto" accept="image/*" required>
+                            <label class="form-label text-light small font-weight-bold">Shop / Garage Front Photo <span class="text-danger">*</span></label>
+                            <input type="file" name="ShopPhoto" class="form-control glass-input previewable-upload" data-preview="#previewShopPhoto" accept="image/*" @(hasShop ? "" : "required")>
                             <span class="text-muted" style="font-size:0.75rem;">Upload a photo showing the front signboard of your shop/garage.</span>
-                            <div id="previewShopPhoto" class="mt-2 d-none">
-                                <img src="" class="doc-preview-thumb" alt="Shop Photo Preview" />
+                            <div id="previewShopPhoto" class="mt-2 @(hasShop ? "" : "d-none")">
+                                <img src="@(hasShop && profile != null ? profile.ShopPhotoUrl : "")" class="doc-preview-thumb" alt="Shop Photo Preview" />
                             </div>
                         </div>
                     </div>
@@ -386,6 +386,9 @@
 
 @section Scripts {
 <script>
+    let currentStep = 1;
+    const totalSteps = 4;
+
     const stepTitles = [
         "1 of 4: Personal Details",
         "2 of 4: ID Verification",
@@ -473,33 +476,83 @@
         }
     });
 
-    $('#btnNext').click(function() {
-        // Run standard HTML5 validity validation on inputs of the active step container
-        const stepInputs = $('#step-' + currentStep).find('input[required], select[required], textarea[required]');
-        let isValid = true;
-        stepInputs.each(function() {
-            if (!this.checkValidity()) {
-                this.reportValidity();
-                isValid = false;
-                return false; // break loop
+    $('#btnNext').click(function(e) {
+        e.preventDefault();
+        
+        // Remove previous error highlights and alert
+        $('#step-' + currentStep).find('.is-invalid, .border-danger').removeClass('is-invalid border-danger');
+        $('#stepErrorAlert').remove();
+
+        var missingFields = [];
+        var firstInvalid = null;
+
+        // Validate required inputs in current step
+        $('#step-' + currentStep).find('input[required], select[required], textarea[required]').each(function() {
+            var input = $(this);
+            var isFile = input.attr('type') === 'file';
+            var val = input.val();
+            var fieldLabel = input.closest('div').find('label').first().text().replace(/\(Optional\)/gi, '').replace(/\*/g, '').trim() || 'Field';
+
+            var isMissing = false;
+            if (isFile) {
+                var previewTarget = input.data('preview');
+                var hasExistingImg = previewTarget && $(previewTarget).find('img').attr('src');
+                if (this.required && (!this.files || this.files.length === 0) && !hasExistingImg) {
+                    isMissing = true;
+                }
+            } else {
+                if (!val || val.trim() === '' || !this.checkValidity()) {
+                    isMissing = true;
+                }
+            }
+
+            if (isMissing) {
+                input.addClass('border-danger is-invalid');
+                missingFields.push(fieldLabel);
+                if (!firstInvalid) {
+                    firstInvalid = this;
+                }
             }
         });
 
-        if(isValid && currentStep < totalSteps) {
+        if (firstInvalid) {
+            var alertHtml = '<div id="stepErrorAlert" class="alert alert-danger bg-dark border-danger text-light p-3 mb-3 d-flex align-items-center gap-2">' +
+                '<i class="fa-solid fa-circle-exclamation text-danger fa-lg"></i>' +
+                '<div><strong>Kripya zaroori fields bharein:</strong> ' + missingFields.join(', ') + '</div>' +
+                '</div>';
+            
+            $('#step-' + currentStep).prepend(alertHtml);
+            firstInvalid.focus();
+            $('html, body').animate({
+                scrollTop: $(firstInvalid).offset().top - 120
+            }, 250);
+            return;
+        }
+
+        if (currentStep < totalSteps) {
             currentStep++;
             updateUI();
-            // Scroll back up to the wizard top
             $('html, body').animate({
                 scrollTop: $(".glass-card").offset().top - 20
             }, 200);
         }
     });
 
-    $('#btnPrev').click(function() {
+    // Clear red error highlight on user interaction
+    $(document).on('input change', '.kyc-step input, .kyc-step select, .kyc-step textarea', function() {
+        if ($(this).val()) {
+            $(this).removeClass('border-danger is-invalid');
+            if ($('#step-' + currentStep).find('.border-danger').length === 0) {
+                $('#stepErrorAlert').slideUp(150, function() { $(this).remove(); });
+            }
+        }
+    });
+
+    $('#btnPrev').click(function(e) {
+        e.preventDefault();
         if(currentStep > 1) {
             currentStep--;
             updateUI();
-            // Scroll back up to the wizard top
             $('html, body').animate({
                 scrollTop: $(".glass-card").offset().top - 20
             }, 200);
@@ -613,6 +666,7 @@
     }
 
     $(document).ready(function() {
+        updateUI();
         onVehicleExpertiseChange();
     });
 
