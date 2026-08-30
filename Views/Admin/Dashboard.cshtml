@@ -292,10 +292,18 @@
     <!-- Partner Onboarding Queue -->
     <div class="col-lg-6 col-12" id="cardPartnerOnboardingQueue">
         <div class="glass-card h-100 border-info border-opacity-30">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="text-white mb-0"><i class="fa-solid fa-address-card text-info me-2"></i> Partner Onboarding Queue</h4>
-                <span class="badge bg-warning text-dark font-weight-bold" id="badgePendingKycCount" style="@(pendingMechanics.Count > 0 ? "" : "display:none;")">@pendingMechanics.Count Pending</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark font-weight-bold" id="badgePendingKycCount" style="@(pendingMechanics.Count > 0 ? "" : "display:none;")">@pendingMechanics.Count Pending</span>
+                    <a href="/Admin/Mechanics" class="text-warning text-decoration-none small font-weight-bold d-inline-flex align-items-center gap-1">
+                        <i class="fa-solid fa-wrench"></i> Go to Mechanics <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </a>
+                </div>
             </div>
+            
+            <!-- Inline KYC Decision Notification Alert (Under Heading) -->
+            <div id="kycInlineSuccessAlert" style="display:none;" class="mb-3"></div>
             
             <div id="pnlNoPendingKyc" style="@(pendingMechanics.Count == 0 ? "" : "display:none;")">
                 <div class="text-center py-5">
@@ -440,33 +448,6 @@
         </div>
     </div>
 </div>
-
-<!-- KYC Decision Result Modal (with Direct Link to Mechanics Tab) -->
-<div class="modal fade" id="kycDecisionResultModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
-        <div class="modal-content text-white shadow-lg border-0" style="border-radius: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.98) 100%); border: 1px solid rgba(16, 185, 129, 0.4) !important;">
-            <div class="modal-body p-4 text-center">
-                <div class="mb-3">
-                    <div class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-20 border border-success border-opacity-40 shadow-sm" id="kycModalResultIcon">
-                        <i class="fa-solid fa-circle-check text-success fa-3x"></i>
-                    </div>
-                </div>
-                <h4 class="text-white font-weight-bold mb-2" id="kycModalResultTitle">KYC Approved Successfully!</h4>
-                <p class="text-light mb-4" id="kycModalResultMessage" style="font-size: 0.95rem; line-height: 1.5;">
-                    Partner KYC has been verified and approved. Their profile is now activated and live on the network.
-                </p>
-                <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-                    <a href="/Admin/Mechanics" class="btn btn-warning font-weight-bold text-dark px-4 py-2.5 rounded-pill shadow-sm d-inline-flex align-items-center justify-content-center gap-2">
-                        <i class="fa-solid fa-wrench"></i> <span>Go to Mechanics Tab</span> <i class="fa-solid fa-arrow-right small"></i>
-                    </a>
-                    <button type="button" class="btn btn-outline-light px-3 py-2 rounded-pill" data-bs-dismiss="modal">Stay on Dashboard</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
 
 <!-- 📊 Live Telemetry Category Details Grid Modal -->
 <div class="modal fade" id="mdlTelemetryDetails" tabindex="-1" aria-hidden="true">
@@ -931,22 +912,34 @@
             });
         }
 
-        // Configure and open the interactive result modal with link to Mechanics tab
+        // Show clean inline notification right under the heading
+        var alertHtml = '';
         if (status === 'Approved') {
-            $('#kycModalResultIcon').html('<i class="fa-solid fa-circle-check text-success fa-3x"></i>').removeClass('bg-danger border-danger').addClass('bg-success border-success');
-            $('#kycModalResultTitle').text('KYC Approved Successfully!').removeClass('text-danger').addClass('text-success');
-            $('#kycModalResultMessage').html(`Partner <strong>${name}</strong>'s KYC has been verified and approved. Their profile is now activated and eligible for live job dispatches.`);
+            alertHtml = `
+                <div class="p-3 bg-success bg-opacity-15 border border-success border-opacity-40 rounded-3 text-white d-flex align-items-center justify-content-between gap-2 shadow-sm animate-fadeIn">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-success fs-5"></i>
+                        <div>
+                            <strong class="text-success d-block" style="font-size: 0.95rem;">KYC Approved Successfully!</strong>
+                            <span class="text-light small">Partner <strong>${name}</strong>'s KYC has been verified and approved. Their profile is now activated and live.</span>
+                        </div>
+                    </div>
+                    <a href="/Admin/Mechanics" class="btn btn-warning btn-sm text-dark font-weight-bold px-3 py-1 rounded-pill flex-shrink-0">
+                        Go to Mechanics <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
+                </div>`;
         } else {
-            $('#kycModalResultIcon').html('<i class="fa-solid fa-circle-xmark text-danger fa-3x"></i>').removeClass('bg-success border-success').addClass('bg-danger border-danger');
-            $('#kycModalResultTitle').text('KYC Application Rejected').removeClass('text-success').addClass('text-danger');
-            $('#kycModalResultMessage').html(`Partner <strong>${name}</strong>'s KYC application has been rejected.`);
+            alertHtml = `
+                <div class="p-3 bg-danger bg-opacity-15 border border-danger border-opacity-40 rounded-3 text-white d-flex align-items-center gap-2 shadow-sm animate-fadeIn">
+                    <i class="fa-solid fa-circle-xmark text-danger fs-5"></i>
+                    <div>
+                        <strong class="text-danger d-block" style="font-size: 0.95rem;">KYC Application Rejected</strong>
+                        <span class="text-light small">Partner <strong>${name}</strong>'s KYC application has been rejected.</span>
+                    </div>
+                </div>`;
         }
 
-        var modalEl = document.getElementById('kycDecisionResultModal');
-        if (modalEl) {
-            var resModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            resModal.show();
-        }
+        $('#kycInlineSuccessAlert').html(alertHtml).hide().slideDown(300);
 
         // Refresh telemetry counter
         if (typeof pollAdminTelemetry === 'function') {
