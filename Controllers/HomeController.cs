@@ -468,11 +468,10 @@ namespace RaahSathi.Controllers
             }
 
             string apiKey = _configuration["GroqApiKey"] ?? Environment.GetEnvironmentVariable("GROQ_API_KEY") ?? "";
-
             string systemPrompt = $@"You are RaahSathi AI Support Assistant, India's 24x7 connected emergency roadside assistance AI.
 RaahSathi Services & Information (Updated Live from Database):
 - Platform: RaahSathi connects stranded drivers with verified patrol mechanics across 20+ cities & highways in India.
-- Emergency 24x7 Hotline: +91 9891819236 (Helpline).
+- Emergency 24x7 Hotline: {ContactInfoHelper.HelplineNumber} (Helpline), WhatsApp: {ContactInfoHelper.WhatsAppNumber}, Email: {ContactInfoHelper.SupportEmail}.
 - Upfront 2-Layer Pricing System (LIVE ADMIN RATES):
   * Layer 1 (Visiting Charge): Base Fee + (2 * Distance * Rate per KM) (to cover the mechanic's round trip).
     - Car/SUV/Van: Base ₹{carRule.BaseFee} + 2 * ₹{carRule.PerKmRate}/km
@@ -488,37 +487,30 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             {
                 try
                 {
-                    using var client = new System.Net.Http.HttpClient();
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+                    using var httpClient = new HttpClient();
+                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
-                    var reqBody = new
+                    var requestPayload = new
                     {
-                        model = "llama-3.3-70b-versatile",
+                        model = "llama3-70b-8192",
                         messages = new[]
                         {
                             new { role = "system", content = systemPrompt },
                             new { role = "user", content = prompt }
                         },
-                        max_tokens = 300,
-                        temperature = 0.6
+                        temperature = 0.5,
+                        max_tokens = 300
                     };
 
-                    var jsonContent = new System.Net.Http.StringContent(
-                        System.Text.Json.JsonSerializer.Serialize(reqBody),
-                        System.Text.Encoding.UTF8,
-                        "application/json");
-
-                    var response = await client.PostAsync("https://api.groq.com/openai/v1/chat/completions", jsonContent);
+                    var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(requestPayload), System.Text.Encoding.UTF8, "application/json");
+                    var response = await httpClient.PostAsync("https://api.groq.com/openai/v1/chat/completions", content);
 
                     if (response.IsSuccessStatusCode)
                     {
-                        var respStr = await response.Content.ReadAsStringAsync();
-                        using var doc = System.Text.Json.JsonDocument.Parse(respStr);
-                        string aiAnswer = doc.RootElement
-                            .GetProperty("choices")[0]
-                            .GetProperty("message")
-                            .GetProperty("content")
-                            .GetString() ?? "";
+                        var responseString = await response.Content.ReadAsStringAsync();
+                        using var jsonDoc = System.Text.Json.JsonDocument.Parse(responseString);
+                        var root = jsonDoc.RootElement;
+                        var aiAnswer = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
 
                         if (!string.IsNullOrWhiteSpace(aiAnswer))
                         {
@@ -534,7 +526,7 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
 
             // Built-in intelligent fallback knowledge engine trained on live DB pricing rules
             string lower = prompt.ToLower();
-            string answer = "I am RaahSathi's 24x7 AI Support Assistant! For instant emergency breakdown assistance, call our 24×7 Helpline at 9891819236.";
+            string answer = $"I am RaahSathi's 24x7 AI Support Assistant! For instant emergency breakdown assistance, call our 24×7 Helpline at {ContactInfoHelper.HelplineNumber}.";
 
             if (lower.Contains("book") || lower.Contains("request") || lower.Contains("mechanic") || lower.Contains("hire"))
             {
@@ -546,7 +538,7 @@ Answer queries concisely, politely, and accurately in English or Hinglish.";
             }
             else if (lower.Contains("number") || lower.Contains("helpline") || lower.Contains("hotline") || lower.Contains("phone") || lower.Contains("call") || lower.Contains("contact"))
             {
-                answer = "Our 24x7 Emergency Highway Helpline is +91 9891819236. You can also click the red SOS button in the footer for instant dispatch!";
+                answer = $"Our 24x7 Emergency Highway Helpline is {ContactInfoHelper.HelplineNumber}. WhatsApp support: {ContactInfoHelper.WhatsAppNumber}. You can also click the red SOS button in the footer for instant dispatch!";
             }
             else if (lower.Contains("track") || lower.Contains("gps") || lower.Contains("location"))
             {

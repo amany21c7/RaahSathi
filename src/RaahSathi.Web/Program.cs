@@ -62,6 +62,12 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.EnsureCreated(); // Creates RaahSathiDb on SQL Server
         
+        try
+        {
+            ContactInfoHelper.Initialize(context.AdminSystemSettings.ToList());
+        }
+        catch { }
+
         // Auto-create missing columns & tables for existing database
         try
         {

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaahSathi.Data;
 using RaahSathi.Models;
+using RaahSathi.Services;
 
 namespace RaahSathi.Controllers
 {
@@ -2245,17 +2246,50 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveSystemSettings(string smsApiKey, string emailSender, string whatsappNo, string googleMapsKey)
+        public async Task<IActionResult> SaveSystemSettings(
+            string smsApiKey, 
+            string emailSender, 
+            string whatsappNo, 
+            string googleMapsKey,
+            string helplineNumber = null,
+            string tollFreeNumber = null,
+            string emergencySupportNumber = null,
+            string whatsAppNumber = null,
+            string supportEmail = null,
+            string billingEmail = null,
+            string partnerHelplineNumber = null,
+            string officeAddress = null)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
+            // API Keys
             await SaveOrUpdateSettingAsync("SmsApiKey", smsApiKey ?? "", "API Gateway");
             await SaveOrUpdateSettingAsync("EmailSender", emailSender ?? "", "API Gateway");
-            await SaveOrUpdateSettingAsync("WhatsAppNo", whatsappNo ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("WhatsAppNo", (whatsAppNumber ?? whatsappNo) ?? "", "API Gateway");
             await SaveOrUpdateSettingAsync("GoogleMapsKey", googleMapsKey ?? "", "API Gateway");
 
-            await LogAdminActionAsync("SYSTEM_SETTINGS", "Updated Admin System Settings & Tiered Commission Rules");
-            TempData["Success"] = "System API Settings saved successfully.";
+            // RaahSathi Contact & Support Info
+            if (!string.IsNullOrEmpty(helplineNumber)) await SaveOrUpdateSettingAsync("HelplineNumber", helplineNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(tollFreeNumber)) await SaveOrUpdateSettingAsync("TollFreeNumber", tollFreeNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(emergencySupportNumber)) await SaveOrUpdateSettingAsync("EmergencySupportNumber", emergencySupportNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(whatsAppNumber ?? whatsappNo)) await SaveOrUpdateSettingAsync("WhatsAppNumber", (whatsAppNumber ?? whatsappNo).Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(supportEmail ?? emailSender)) await SaveOrUpdateSettingAsync("SupportEmail", (supportEmail ?? emailSender).Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(billingEmail)) await SaveOrUpdateSettingAsync("BillingEmail", billingEmail.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(partnerHelplineNumber)) await SaveOrUpdateSettingAsync("PartnerHelplineNumber", partnerHelplineNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(officeAddress)) await SaveOrUpdateSettingAsync("OfficeAddress", officeAddress.Trim(), "Contact Info");
+
+            // Update in-memory helper
+            if (!string.IsNullOrEmpty(helplineNumber)) ContactInfoHelper.UpdateSetting("HelplineNumber", helplineNumber);
+            if (!string.IsNullOrEmpty(tollFreeNumber)) ContactInfoHelper.UpdateSetting("TollFreeNumber", tollFreeNumber);
+            if (!string.IsNullOrEmpty(emergencySupportNumber)) ContactInfoHelper.UpdateSetting("EmergencySupportNumber", emergencySupportNumber);
+            if (!string.IsNullOrEmpty(whatsAppNumber ?? whatsappNo)) ContactInfoHelper.UpdateSetting("WhatsAppNumber", whatsAppNumber ?? whatsappNo);
+            if (!string.IsNullOrEmpty(supportEmail ?? emailSender)) ContactInfoHelper.UpdateSetting("SupportEmail", supportEmail ?? emailSender);
+            if (!string.IsNullOrEmpty(billingEmail)) ContactInfoHelper.UpdateSetting("BillingEmail", billingEmail);
+            if (!string.IsNullOrEmpty(partnerHelplineNumber)) ContactInfoHelper.UpdateSetting("PartnerHelplineNumber", partnerHelplineNumber);
+            if (!string.IsNullOrEmpty(officeAddress)) ContactInfoHelper.UpdateSetting("OfficeAddress", officeAddress);
+
+            await LogAdminActionAsync("SYSTEM_SETTINGS", "Updated System API Settings & RaahSathi Contact Details");
+            TempData["Success"] = "All system settings & contact info updated successfully across the entire platform.";
             return RedirectToAction("Settings");
         }
 

@@ -1,3 +1,4 @@
+@using RaahSathi.Services
 @{
     bool isAdminPage = Context.Request.Path.Value?.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase) == true;
     bool isMechanicPage = Context.Request.Path.Value?.StartsWith("/Mechanic", StringComparison.OrdinalIgnoreCase) == true;
@@ -70,7 +71,7 @@
           "logo": "@($"{Context.Request.Scheme}://{Context.Request.Host}/images/header-logo.png")",
           "image": "@($"{Context.Request.Scheme}://{Context.Request.Host}/images/header-logo.png")",
           "description": "India's premier 24x7 connected roadside assistance network. Instantly find verified mechanics, towing services, and workshops near you.",
-          "telephone": "9891819236",
+          "telephone": "@ContactInfoHelper.HelplineNumberClean",
           "priceRange": "₹49 - ₹8000",
           "areaServed": [
             "Noida", "Delhi", "Gurgaon", "Ghaziabad", "Faridabad", "Greater Noida", "Lucknow", "Jaipur", "Agra", "Kanpur", "India"
@@ -127,7 +128,7 @@
               "name": "Car breakdown hone par kya karein? (What to do during a vehicle breakdown?)",
               "acceptedAnswer": {
                 "@@type": "Answer",
-                "text": "Gaadi ko turant hazard lights on karke safe roadside par park karein. RaahSathi website ya helpline (9891819236) par apna live location share karein. 15-30 minutes me verified mechanic aap tak pahunch jayega."
+                "text": "Gaadi ko turant hazard lights on karke safe roadside par park karein. RaahSathi website ya helpline (@ContactInfoHelper.HelplineNumber) par apna live location share karein. 15-30 minutes me verified mechanic aap tak pahunch jayega."
               }
             },
             {
@@ -1207,7 +1208,7 @@
                                 <div>
                                     <span class="badge bg-danger text-white mb-1 font-weight-bold" style="font-size: 0.7rem;">24×7 EMERGENCY HOTLINE</span>
                                     <div class="text-white font-weight-extrabold" style="font-size: 1.15rem; font-family: 'Outfit';">
-                                        <i class="fa-solid fa-phone-volume text-danger me-2"></i> +91 9891819236
+                                        <i class="fa-solid fa-phone-volume text-danger me-2"></i> @ContactInfoHelper.HelplineNumber
                                     </div>
                                 </div>
                                 <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="btn btn-danger btn-sm font-weight-bold px-3 py-2">
@@ -1252,8 +1253,8 @@
                                 <span class="text-muted" style="font-size: 0.78rem;">Average Arrival ETA: Under 14 Mins</span>
                             </div>
                             <div class="d-flex gap-2 mt-3">
-                                <a href="tel:+919891819236" class="btn btn-outline-warning btn-sm flex-fill py-2"><i class="fa-solid fa-phone me-1"></i> Call Hotline</a>
-                                <a href="https://wa.me/919876543210" target="_blank" class="btn btn-outline-success btn-sm flex-fill py-2"><i class="fa-brands fa-whatsapp me-1"></i> WhatsApp</a>
+                                <a href="tel:@ContactInfoHelper.HelplineNumberClean" class="btn btn-outline-warning btn-sm flex-fill py-2"><i class="fa-solid fa-phone me-1"></i> Call Helpline</a>
+                                <a href="https://wa.me/@ContactInfoHelper.WhatsAppNumberClean" target="_blank" class="btn btn-outline-success btn-sm flex-fill py-2"><i class="fa-brands fa-whatsapp me-1"></i> WhatsApp</a>
                             </div>
                         </div>
                     </div>
@@ -1298,8 +1299,8 @@
                             <div id="collapseSupport" class="accordion-collapse collapse" aria-labelledby="headingSupport" data-bs-parent="#mobFooterAccordion">
                                 <div class="accordion-body">
                                     <div class="d-flex flex-column gap-2">
-                                        <a href="tel:+919891819236" class="btn btn-outline-danger btn-sm text-start"><i class="fa-solid fa-phone-volume me-2"></i> +91 9891819236 (Helpline)</a>
-                                        <a href="https://wa.me/919876543210" target="_blank" class="btn btn-outline-success btn-sm text-start"><i class="fa-brands fa-whatsapp me-2"></i> WhatsApp Support</a>
+                                        <a href="tel:@ContactInfoHelper.HelplineNumberClean" class="btn btn-outline-danger btn-sm text-start"><i class="fa-solid fa-phone-volume me-2"></i> @ContactInfoHelper.HelplineNumber (Helpline)</a>
+                                        <a href="https://wa.me/@ContactInfoHelper.WhatsAppNumberClean" target="_blank" class="btn btn-outline-success btn-sm text-start"><i class="fa-brands fa-whatsapp me-2"></i> WhatsApp Support</a>
                                         <a href="#" data-bs-toggle="modal" data-bs-target="#emergencySupportModal" class="btn btn-outline-warning btn-sm text-start"><i class="fa-solid fa-triangle-exclamation me-2"></i> 24×7 Highway SOS</a>
                                         <a href="/Home/Faq" class="text-muted small py-1"><i class="fa-solid fa-circle-question me-1 text-warning"></i> FAQs &amp; Help Center</a>
                                     </div>
@@ -1361,7 +1362,7 @@
             <!-- 📱 Sticky Mobile Bottom Emergency Action Bar (< 992px) -->
             <div class="mob-sticky-bottom-bar d-lg-none">
                 <div class="d-flex align-items-center gap-2">
-                    <a href="tel:+919891819236" class="btn btn-outline-danger btn-sm font-weight-bold px-3 py-2 text-nowrap d-flex align-items-center gap-1.5" style="border-radius: 10px;">
+                    <a href="tel:@ContactInfoHelper.HelplineNumberClean" class="btn btn-outline-danger btn-sm font-weight-bold px-3 py-2 text-nowrap d-flex align-items-center gap-1.5" style="border-radius: 10px;">
                         <i class="fa-solid fa-phone-volume"></i> <span>Call Now</span>
                     </a>
                     <a href="/Customer/Book" class="btn btn-warning flex-fill font-weight-bold py-2 text-dark shadow-sm d-flex align-items-center justify-content-center gap-1.5" style="background: linear-gradient(135deg, #ff6b00 0%, #e05d00 100%); color: #ffffff !important; border: none; border-radius: 10px; font-size: 0.92rem;">
@@ -1384,18 +1385,18 @@
                 <div class="modal-body">
                     <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-30 rounded-3 text-center mb-4">
                         <span class="badge bg-danger text-white mb-2 font-weight-bold">INSTANT DISPATCH HOTLINE</span>
-                        <h2 class="text-white font-weight-extrabold mb-1" style="font-family: 'Outfit';">+91 9891819236</h2>
+                        <h2 class="text-white font-weight-extrabold mb-1" style="font-family: 'Outfit';">@ContactInfoHelper.HelplineNumber</h2>
                         <span class="text-muted small">Available 24 Hours • 7 Days a Week</span>
                     </div>
 
                     <div class="d-flex flex-column gap-3">
-                        <a href="tel:+919891819236" class="btn btn-danger btn-lg py-3 font-weight-bold w-100">
+                        <a href="tel:@ContactInfoHelper.HelplineNumberClean" class="btn btn-danger btn-lg py-3 font-weight-bold w-100">
                             <i class="fa-solid fa-phone-volume me-2"></i> Call Helpline Now
                         </a>
                         <a href="/Customer/Book" class="btn btn-warning btn-lg py-3 font-weight-bold text-dark w-100">
                             <i class="fa-solid fa-location-arrow me-2"></i> Request Instant Mechanic Dispatch
                         </a>
-                        <a href="https://wa.me/919876543210" target="_blank" class="btn btn-outline-success py-2 w-100">
+                        <a href="https://wa.me/@ContactInfoHelper.WhatsAppNumberClean" target="_blank" class="btn btn-outline-success py-2 w-100">
                             <i class="fa-brands fa-whatsapp me-2"></i> Chat with Emergency Desk on WhatsApp
                         </a>
                     </div>
@@ -1505,14 +1506,14 @@
                 const loader = document.getElementById(loadingId);
                 if (loader) loader.remove();
 
-                const answer = res && res.answer ? res.answer : "For instant emergency breakdown assistance, call our 24×7 helpline at 9891819236.";
+                const answer = res && res.answer ? res.answer : `For instant emergency breakdown assistance, call our 24×7 helpline at ${window.raahHelpline || '@ContactInfoHelper.HelplineNumber'}.`;
                 box.innerHTML += `<div class="text-light my-1"><i class="fa-solid fa-robot text-warning me-1"></i> <strong>AI:</strong> ${answer.replace(/\n/g, '<br>')}</div>`;
                 box.scrollTop = box.scrollHeight;
             }).fail(function() {
                 const loader = document.getElementById(loadingId);
                 if (loader) loader.remove();
 
-                box.innerHTML += `<div class="text-light my-1"><i class="fa-solid fa-robot text-warning me-1"></i> <strong>AI:</strong> RaahSathi 24×7 Emergency Helpline: 9891819236. Or click 'Request Assistance Now' for instant mechanic dispatch.</div>`;
+                box.innerHTML += `<div class="text-light my-1"><i class="fa-solid fa-robot text-warning me-1"></i> <strong>AI:</strong> RaahSathi 24×7 Emergency Helpline: @ContactInfoHelper.HelplineNumber. Or click 'Request Assistance Now' for instant mechanic dispatch.</div>`;
                 box.scrollTop = box.scrollHeight;
             });
         }

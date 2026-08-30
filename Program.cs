@@ -75,6 +75,12 @@ using (var scope = app.Services.CreateScope())
         context.Database.EnsureCreated(); // Creates RaahSathiDb on SQL Server
         StoredProcedureInstaller.InstallStoredProceduresAsync(context).GetAwaiter().GetResult(); // Installs sp_ProcessJobPayment, sp_RequestMechanicPayout, sp_ProcessMechanicPayout, sp_UpdateUserProfile
         
+        try
+        {
+            ContactInfoHelper.Initialize(context.AdminSystemSettings.ToList());
+        }
+        catch { }
+
         // Auto-create missing columns & tables for existing database
         try
         {
