@@ -286,11 +286,16 @@
                     if (res && res.success) {
                         // Close modal
                         var modalEl = document.getElementById('kycReviewModal');
-                        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                        if (modal) modal.hide();
+                        if (modalEl) {
+                            var modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+                            if (modal) modal.hide();
+                        }
                         
-                        // Reload screen to refresh grid
-                        window.location.reload();
+                        if (typeof window.submitKycDecisionSuccess === 'function') {
+                            window.submitKycDecisionSuccess(res.userId, res.status, res.name);
+                        } else {
+                            window.location.reload();
+                        }
                     } else {
                         alert(res.message || 'Something went wrong. Please try again.');
                         btn.prop('disabled', false).html(originalHtml);

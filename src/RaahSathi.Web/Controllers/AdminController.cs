@@ -533,18 +533,35 @@ namespace RaahSathi.Controllers
                 if (!string.IsNullOrEmpty(status))
                 {
                     profile.KycStatus = status;
-                    if (status == "Suspended" || status == "Rejected")
+                    if (status == "Approved")
+                    {
+                        if (profile.User != null)
+                        {
+                            profile.User.IsBlocked = false;
+                        }
+                    }
+                    else if (status == "Suspended" || status == "Rejected")
                     {
                         profile.IsOnline = false;
                     }
                     await _dbContext.SaveChangesAsync();
+
+                    TempData["KycSuccessMessage"] = $"KYC for {profile.User?.Name ?? "Partner"} has been {status} successfully!";
+                    TempData["KycSuccessStatus"] = status;
+                    TempData["KycSuccessName"] = profile.User?.Name ?? "Partner";
                     TempData["Success"] = $"KYC status for {profile.User?.Name ?? "mechanic"} updated to {status}.";
                 }
             }
             
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
-                return Json(new { success = true, status = status });
+                return Json(new { 
+                    success = true, 
+                    status = status, 
+                    userId = userId, 
+                    name = profile?.User?.Name ?? "Partner", 
+                    message = $"KYC for {profile?.User?.Name ?? "Partner"} has been {status} successfully!" 
+                });
             }
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))

@@ -14,11 +14,27 @@
         </h3>
         <p class="text-muted small mb-0">Real-time National Operations Telemetry, Emergency Surge Monitoring & Dispatch Management</p>
     </div>
-    <div class="d-flex align-items-center gap-2">
-        <a href="/Admin/Messages" class="btn btn-dark border-secondary text-warning btn-sm font-weight-bold"><i class="fa-solid fa-headset me-1"></i> Support Inquiries</a>
-        <a href="/Admin/Mechanics" class="btn btn-warning text-dark btn-sm font-weight-bold"><i class="fa-solid fa-user-check me-1"></i> KYC Approvals</a>
+    <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-md-auto">
+        <a href="/Admin/Messages" class="btn btn-dark border-secondary text-warning btn-sm font-weight-bold flex-grow-1 flex-md-grow-0"><i class="fa-solid fa-headset me-1"></i> Support Inquiries</a>
+        <a href="/Admin/Mechanics" class="btn btn-warning text-dark btn-sm font-weight-bold flex-grow-1 flex-md-grow-0"><i class="fa-solid fa-user-check me-1"></i> KYC Approvals</a>
     </div>
 </div>
+
+@if (TempData["KycSuccessMessage"] != null)
+{
+    <div class="alert alert-success bg-success bg-opacity-20 border-success text-white d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3.5 rounded-3 mb-4 shadow-lg gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <i class="fa-solid fa-circle-check text-success fs-2"></i>
+            <div>
+                <strong class="d-block text-white" style="font-size: 1.05rem;">@TempData["KycSuccessMessage"]</strong>
+                <span class="text-light small">Partner profile is now verified and live on the network.</span>
+            </div>
+        </div>
+        <a href="/Admin/Mechanics" class="btn btn-warning font-weight-bold text-dark px-4 py-2 text-nowrap rounded-pill shadow-sm">
+            <i class="fa-solid fa-wrench me-1.5"></i> Go to Mechanics Tab <i class="fa-solid fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+}
 
 <!-- 🟢 Live Telemetry Status Row (Clickable Categories with Live Filter Grid) -->
 <div class="row g-3 mb-4">
@@ -274,92 +290,82 @@
 
 <div class="row g-4 mb-4">
     <!-- Partner Onboarding Queue -->
-    <div class="col-lg-6 col-12">
+    <div class="col-lg-6 col-12" id="cardPartnerOnboardingQueue">
         <div class="glass-card h-100 border-info border-opacity-30">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="text-white mb-0"><i class="fa-solid fa-address-card text-info me-2"></i> Partner Onboarding Queue</h4>
-                @if (pendingMechanics.Count > 0)
-                {
-                    <span class="badge bg-warning text-dark font-weight-bold">@pendingMechanics.Count Pending</span>
-                }
+                <span class="badge bg-warning text-dark font-weight-bold" id="badgePendingKycCount" style="@(pendingMechanics.Count > 0 ? "" : "display:none;")">@pendingMechanics.Count Pending</span>
             </div>
             
-            @if (pendingMechanics.Count == 0)
-            {
+            <div id="pnlNoPendingKyc" style="@(pendingMechanics.Count == 0 ? "" : "display:none;")">
                 <div class="text-center py-5">
                     <i class="fa-solid fa-clipboard-check text-success fs-1 mb-2 d-block opacity-75"></i>
                     <p class="text-muted mb-0">No pending KYC approvals in onboarding queue.</p>
                 </div>
-            }
-            else
-            {
-                <div class="d-flex flex-column gap-3">
-                    @foreach (var m in pendingMechanics)
-                    {
-                        <div class="p-3 bg-dark bg-opacity-40 rounded border border-secondary">
-                            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
-                                <div>
-                                    <h5 class="text-white mb-0"><i class="fa-solid fa-user-gear text-info me-1"></i> @m.User?.Name <span class="badge bg-warning bg-opacity-20 text-warning border border-warning ms-2" style="font-size:0.7rem;">@m.DisplayId</span></h5>
-                                    <span class="text-muted small">Phone: <b class="text-light">@m.User?.PhoneNumber</b></span>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-warning text-dark">KYC Audit</span>
-                                    <button type="button" class="btn btn-outline-info btn-xs py-1 px-2 open-kyc-modal" data-id="@m.UserId" style="font-size: 0.75rem;"><i class="fa-solid fa-eye me-1"></i> View Docs</button>
-                                </div>
+            </div>
+
+            <div class="d-flex flex-column gap-3" id="listPendingMechanics" style="@(pendingMechanics.Count > 0 ? "" : "display:none;")">
+                @foreach (var m in pendingMechanics)
+                {
+                    <div class="p-3 bg-dark bg-opacity-40 rounded border border-secondary" id="kyc-card-@m.UserId">
+                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
+                            <div>
+                                <h5 class="text-white mb-0"><i class="fa-solid fa-user-gear text-info me-1"></i> @m.User?.Name <span class="badge bg-warning bg-opacity-20 text-warning border border-warning ms-2" style="font-size:0.7rem;">@m.DisplayId</span></h5>
+                                <span class="text-muted small">Phone: <b class="text-light">@m.User?.PhoneNumber</b></span>
                             </div>
-                            
-                            <!-- Detailed Info Grid -->
-                            <div class="row g-2 text-muted small mb-3">
-                                <div class="col-sm-6 border-end border-secondary border-opacity-30">
-                                    <span class="d-block">Email: <strong class="text-light">@(string.IsNullOrEmpty(m.Email) ? "N/A" : m.Email)</strong></span>
-                                    <span class="d-block">Aadhaar: <strong class="text-light">@m.AadhaarNumber</strong></span>
-                                    <span class="d-block">Gender & DOB: <strong class="text-light">@m.Gender | @(m.DateOfBirth?.ToString("dd MMM yyyy") ?? "N/A")</strong></span>
-                                </div>
-                                <div class="col-sm-6">
-                                    <span class="d-block">Shop Name: <strong class="text-warning">@(string.IsNullOrEmpty(m.ShopName) ? "N/A" : m.ShopName)</strong></span>
-                                    <span class="d-block">Timings: <strong class="text-light">@(string.IsNullOrEmpty(m.ShopTiming) ? "N/A" : m.ShopTiming)</strong></span>
-                                    <span class="d-block">Experience: <strong class="text-light">@m.ExperienceYears Years @(m.IsCertified ? "(Certified)" : "")</strong></span>
-                                </div>
-                                <div class="col-12 mt-2 pt-2 border-top border-secondary border-opacity-30">
-                                    <span class="d-block mb-1"><strong>Vehicles:</strong> 
-                                        @if(!string.IsNullOrEmpty(m.VehicleExpertise)) {
-                                            @foreach(var v in m.VehicleExpertise.Split(',', StringSplitOptions.RemoveEmptyEntries)) {
-                                                <span class="badge bg-secondary text-light text-xs me-1">@v.Trim()</span>
-                                            }
-                                        } else {
-                                            <span class="text-muted">None</span>
-                                        }
-                                    </span>
-                                    <span class="d-block mt-1"><strong>Specializations:</strong> 
-                                        @if(!string.IsNullOrEmpty(m.Specialization)) {
-                                            @foreach(var s in m.Specialization.Split(',', StringSplitOptions.RemoveEmptyEntries)) {
-                                                <span class="badge bg-info text-dark text-xs me-1 font-weight-medium">@s.Trim()</span>
-                                            }
-                                        } else {
-                                            <span class="text-muted">None</span>
-                                        }
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex gap-2 justify-content-end border-top border-secondary pt-2">
-                                <form action="/Admin/ApproveKyc" method="POST" class="d-inline">
-                                    <input type="hidden" name="userId" value="@m.UserId">
-                                    <input type="hidden" name="status" value="Approved">
-                                    <input type="hidden" name="returnUrl" value="/Admin/Dashboard">
-                                    <button type="submit" class="btn btn-premium-primary btn-sm font-weight-bold" onclick="return confirm('Verify & Approve KYC for partner @(m.User?.Name)?');"><i class="fa-solid fa-circle-check me-1"></i> Approve KYC</button>
-                                </form>
-                                <form action="/Admin/ApproveKyc" method="POST" class="d-inline">
-                                    <input type="hidden" name="userId" value="@m.UserId">
-                                    <input type="hidden" name="status" value="Rejected">
-                                    <input type="hidden" name="returnUrl" value="/Admin/Dashboard">
-                                    <button type="submit" class="btn btn-premium-secondary btn-sm text-danger border-danger border-opacity-40 font-weight-bold" onclick="return confirm('Reject KYC application for partner @(m.User?.Name)?');"><i class="fa-solid fa-circle-xmark me-1"></i> Reject</button>
-                                </form>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-warning text-dark">KYC Audit</span>
+                                <button type="button" class="btn btn-outline-info btn-xs py-1 px-2 open-kyc-modal" data-id="@m.UserId" style="font-size: 0.75rem;"><i class="fa-solid fa-eye me-1"></i> View Docs</button>
                             </div>
                         </div>
-                    }
-                </div>
-            }
+                        
+                        <!-- Detailed Info Grid -->
+                        <div class="row g-2 text-muted small mb-3">
+                            <div class="col-sm-6 border-end border-secondary border-opacity-30">
+                                <span class="d-block">Email: <strong class="text-light">@(string.IsNullOrEmpty(m.Email) ? "N/A" : m.Email)</strong></span>
+                                <span class="d-block">Aadhaar: <strong class="text-light">@m.AadhaarNumber</strong></span>
+                                <span class="d-block">Gender & DOB: <strong class="text-light">@m.Gender | @(m.DateOfBirth?.ToString("dd MMM yyyy") ?? "N/A")</strong></span>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="d-block">Shop Name: <strong class="text-warning">@(string.IsNullOrEmpty(m.ShopName) ? "N/A" : m.ShopName)</strong></span>
+                                <span class="d-block">Timings: <strong class="text-light">@(string.IsNullOrEmpty(m.ShopTiming) ? "N/A" : m.ShopTiming)</strong></span>
+                                <span class="d-block">Experience: <strong class="text-light">@m.ExperienceYears Years @(m.IsCertified ? "(Certified)" : "")</strong></span>
+                            </div>
+                            <div class="col-12 mt-2 pt-2 border-top border-secondary border-opacity-30">
+                                <span class="d-block mb-1"><strong>Vehicles:</strong> 
+                                    @if(!string.IsNullOrEmpty(m.VehicleExpertise)) {
+                                        @foreach(var v in m.VehicleExpertise.Split(',', StringSplitOptions.RemoveEmptyEntries)) {
+                                            <span class="badge bg-secondary text-light text-xs me-1">@v.Trim()</span>
+                                        }
+                                    } else {
+                                        <span class="text-muted">None</span>
+                                    }
+                                </span>
+                                <span class="d-block mt-1"><strong>Specializations:</strong> 
+                                    @if(!string.IsNullOrEmpty(m.Specialization)) {
+                                        @foreach(var s in m.Specialization.Split(',', StringSplitOptions.RemoveEmptyEntries)) {
+                                            <span class="badge bg-info text-dark text-xs me-1 font-weight-medium">@s.Trim()</span>
+                                        }
+                                    } else {
+                                        <span class="text-muted">None</span>
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2 justify-content-end border-top border-secondary pt-2">
+                            <button type="button" class="btn btn-premium-primary btn-sm font-weight-bold" id="btnApproveKyc_@m.UserId" onclick="submitKycDecision(@m.UserId, 'Approved', '@(m.User?.Name?.Replace("'", "\\'") ?? "Partner")')">
+                                <i class="fa-solid fa-circle-check me-1"></i> Approve KYC
+                            </button>
+                            <button type="button" class="btn btn-premium-secondary btn-sm text-danger border-danger border-opacity-40 font-weight-bold" id="btnRejectKyc_@m.UserId" onclick="submitKycDecision(@m.UserId, 'Rejected', '@(m.User?.Name?.Replace("'", "\\'") ?? "Partner")')">
+                                <i class="fa-solid fa-circle-xmark me-1"></i> Reject
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -431,6 +437,31 @@
                     <div class="spinner-border text-warning" role="status">
                         <span class="visually-hidden">Loading KYC details...</span>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KYC Decision Result Modal (with Direct Link to Mechanics Tab) -->
+<div class="modal fade" id="kycDecisionResultModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content text-white shadow-lg border-0" style="border-radius: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.98) 100%); border: 1px solid rgba(16, 185, 129, 0.4) !important;">
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <div class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-20 border border-success border-opacity-40 shadow-sm" id="kycModalResultIcon">
+                        <i class="fa-solid fa-circle-check text-success fa-3x"></i>
+                    </div>
+                </div>
+                <h4 class="text-white font-weight-bold mb-2" id="kycModalResultTitle">KYC Approved Successfully!</h4>
+                <p class="text-light mb-4" id="kycModalResultMessage" style="font-size: 0.95rem; line-height: 1.5;">
+                    Partner KYC has been verified and approved. Their profile is now activated and live on the network.
+                </p>
+                <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                    <a href="/Admin/Mechanics" class="btn btn-warning font-weight-bold text-dark px-4 py-2.5 rounded-pill shadow-sm d-inline-flex align-items-center justify-content-center gap-2">
+                        <i class="fa-solid fa-wrench"></i> <span>Go to Mechanics Tab</span> <i class="fa-solid fa-arrow-right small"></i>
+                    </a>
+                    <button type="button" class="btn btn-outline-light px-3 py-2 rounded-pill" data-bs-dismiss="modal">Stay on Dashboard</button>
                 </div>
             </div>
         </div>
@@ -849,6 +880,94 @@
         
         $('#kycReviewModalBody').load('/Admin/ReviewKyc/' + id + '?partial=true');
     });
+
+    // Submit KYC Decision (Approve / Reject) with instant UI update and Mechanics Tab modal
+    window.submitKycDecision = function(userId, status, name) {
+        var confirmMsg = status === 'Approved' 
+            ? `Verify & Approve KYC for partner ${name}?` 
+            : `Reject KYC application for partner ${name}?`;
+        
+        if (!confirm(confirmMsg)) return;
+
+        var btnApprove = $(`#btnApproveKyc_${userId}`);
+        var btnReject = $(`#btnRejectKyc_${userId}`);
+        var origApproveHtml = btnApprove.html();
+        var origRejectHtml = btnReject.html();
+        btnApprove.prop('disabled', true);
+        btnReject.prop('disabled', true);
+        if (status === 'Approved') {
+            btnApprove.html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Approving...');
+        } else {
+            btnReject.html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Rejecting...');
+        }
+
+        $.ajax({
+            type: 'POST',
+            url: '/Admin/ApproveKyc',
+            data: { userId: userId, status: status },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(res) {
+                if (res && res.success) {
+                    submitKycDecisionSuccess(userId, status, name);
+                } else {
+                    alert('⚠️ ' + (res.message || 'Action could not be completed. Please try again.'));
+                    btnApprove.prop('disabled', false).html(origApproveHtml);
+                    btnReject.prop('disabled', false).html(origRejectHtml);
+                }
+            },
+            error: function() {
+                alert('⚠️ Error communicating with server. Please try again.');
+                btnApprove.prop('disabled', false).html(origApproveHtml);
+                btnReject.prop('disabled', false).html(origRejectHtml);
+            }
+        });
+    };
+
+    window.submitKycDecisionSuccess = function(userId, status, name) {
+        // Remove the card from dashboard queue with smooth animation
+        var card = $(`#kyc-card-${userId}`);
+        if (card.length) {
+            card.slideUp(350, function() {
+                $(this).remove();
+                updatePendingKycCounter();
+            });
+        }
+
+        // Configure and open the interactive result modal with link to Mechanics tab
+        if (status === 'Approved') {
+            $('#kycModalResultIcon').html('<i class="fa-solid fa-circle-check text-success fa-3x"></i>').removeClass('bg-danger border-danger').addClass('bg-success border-success');
+            $('#kycModalResultTitle').text('KYC Approved Successfully!').removeClass('text-danger').addClass('text-success');
+            $('#kycModalResultMessage').html(`Partner <strong>${name}</strong>'s KYC has been verified and approved. Their profile is now activated and eligible for live job dispatches.`);
+        } else {
+            $('#kycModalResultIcon').html('<i class="fa-solid fa-circle-xmark text-danger fa-3x"></i>').removeClass('bg-success border-success').addClass('bg-danger border-danger');
+            $('#kycModalResultTitle').text('KYC Application Rejected').removeClass('text-success').addClass('text-danger');
+            $('#kycModalResultMessage').html(`Partner <strong>${name}</strong>'s KYC application has been rejected.`);
+        }
+
+        var modalEl = document.getElementById('kycDecisionResultModal');
+        if (modalEl) {
+            var resModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            resModal.show();
+        }
+
+        // Refresh telemetry counter
+        if (typeof pollAdminTelemetry === 'function') {
+            pollAdminTelemetry();
+        }
+    };
+
+    window.updatePendingKycCounter = function() {
+        var remaining = $('#listPendingMechanics > div').length;
+        if (remaining <= 0) {
+            $('#badgePendingKycCount').hide();
+            $('#listPendingMechanics').hide();
+            $('#pnlNoPendingKyc').fadeIn();
+        } else {
+            $('#badgePendingKycCount').text(remaining + ' Pending').show();
+            $('#listPendingMechanics').show();
+            $('#pnlNoPendingKyc').hide();
+        }
+    };
 
     // Auto-poll telemetry & pipeline stepper in real-time (optimized 10s to keep server & UI ultra-fast)
     setInterval(pollAdminTelemetry, 10000);
