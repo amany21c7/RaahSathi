@@ -38,6 +38,22 @@ namespace RaahSathi.Services
 
         public static string OfficeAddress => _officeAddress;
 
+        public static void Initialize(SystemContactSetting contact)
+        {
+            if (contact == null) return;
+            lock (_lock)
+            {
+                if (!string.IsNullOrWhiteSpace(contact.HelplineNumber)) _helplineNumber = contact.HelplineNumber.Trim();
+                if (!string.IsNullOrWhiteSpace(contact.TollFreeNumber)) _tollFreeNumber = contact.TollFreeNumber.Trim();
+                if (!string.IsNullOrWhiteSpace(contact.EmergencySupportNumber)) _emergencySupportNumber = contact.EmergencySupportNumber.Trim();
+                if (!string.IsNullOrWhiteSpace(contact.WhatsAppNumber)) _whatsAppNumber = contact.WhatsAppNumber.Trim();
+                if (!string.IsNullOrWhiteSpace(contact.SupportEmail)) _supportEmail = contact.SupportEmail.Trim();
+                if (!string.IsNullOrWhiteSpace(contact.BillingEmail)) _billingEmail = contact.BillingEmail.Trim();
+                if (!string.IsNullOrWhiteSpace(contact.PartnerHelplineNumber)) _partnerHelplineNumber = contact.PartnerHelplineNumber.Trim();
+                if (!string.IsNullOrWhiteSpace(contact.OfficeAddress)) _officeAddress = contact.OfficeAddress.Trim();
+            }
+        }
+
         public static void Initialize(IEnumerable<AdminSystemSetting> settings)
         {
             if (settings == null) return;

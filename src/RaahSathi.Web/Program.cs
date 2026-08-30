@@ -62,16 +62,38 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.EnsureCreated(); // Creates RaahSathiDb on SQL Server
         
-        try
-        {
-            ContactInfoHelper.Initialize(context.AdminSystemSettings.ToList());
-        }
-        catch { }
-
         // Auto-create missing columns & tables for existing database
         try
         {
             context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[SystemApiSettings]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [SystemApiSettings] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [SmsApiKey] nvarchar(500) NOT NULL DEFAULT '',
+                        [WhatsAppBusinessNumber] nvarchar(100) NOT NULL DEFAULT '',
+                        [GoogleMapsApiKey] nvarchar(500) NOT NULL DEFAULT '',
+                        [SmtpSenderEmail] nvarchar(255) NOT NULL DEFAULT '',
+                        [UpdatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[SystemContactSettings]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [SystemContactSettings] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [HelplineNumber] nvarchar(100) NOT NULL DEFAULT '+91 9891819236',
+                        [TollFreeNumber] nvarchar(100) NOT NULL DEFAULT '1800-102-7224',
+                        [EmergencySupportNumber] nvarchar(100) NOT NULL DEFAULT '+91 9536838103',
+                        [WhatsAppNumber] nvarchar(100) NOT NULL DEFAULT '+91 9891819236',
+                        [SupportEmail] nvarchar(255) NOT NULL DEFAULT 'support.raahsathi@gmail.com',
+                        [BillingEmail] nvarchar(255) NOT NULL DEFAULT 'billing@raahsathi.in',
+                        [PartnerHelplineNumber] nvarchar(100) NOT NULL DEFAULT '+91 9891819236',
+                        [OfficeAddress] nvarchar(500) NOT NULL DEFAULT 'Tower B, DLF Cyber City, Sector 24, Gurugram, Haryana - 122002',
+                        [UpdatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END;
+
                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[DataProtectionKeys]') AND type in (N'U'))
                 BEGIN
                     CREATE TABLE [DataProtectionKeys] (
@@ -837,9 +859,21 @@ using (var scope = app.Services.CreateScope())
             var loggerSchema = services.GetRequiredService<ILogger<Program>>();
             loggerSchema.LogWarning(exSchema, "Schema update warning.");
         }
-        
 
-        
+        try
+        {
+            var contact = context.SystemContactSettings.FirstOrDefault();
+            if (contact != null)
+            {
+                ContactInfoHelper.Initialize(contact);
+            }
+            else
+            {
+                ContactInfoHelper.Initialize(context.AdminSystemSettings.ToList());
+            }
+        }
+        catch { }
+
         // Initial Seed for empty database: Only Admin & Pricing Rules
         var admin = context.Users.FirstOrDefault(u => u.PhoneNumber == "9536838103" || u.Role == "Admin");
         if (admin == null)

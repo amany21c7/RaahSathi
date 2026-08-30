@@ -1892,6 +1892,31 @@ namespace RaahSathi.Controllers
         public async Task<IActionResult> Settings()
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            SystemApiSetting apiSetting = null;
+            try
+            {
+                apiSetting = await _dbContext.SystemApiSettings.FromSqlRaw("EXEC dbo.sp_GetSystemApiSettings").AsNoTracking().FirstOrDefaultAsync();
+            }
+            catch { }
+            if (apiSetting == null)
+            {
+                apiSetting = await _dbContext.SystemApiSettings.FirstOrDefaultAsync() ?? new SystemApiSetting();
+            }
+
+            SystemContactSetting contactSetting = null;
+            try
+            {
+                contactSetting = await _dbContext.SystemContactSettings.FromSqlRaw("EXEC dbo.sp_GetSystemContactSettings").AsNoTracking().FirstOrDefaultAsync();
+            }
+            catch { }
+            if (contactSetting == null)
+            {
+                contactSetting = await _dbContext.SystemContactSettings.FirstOrDefaultAsync() ?? new SystemContactSetting();
+            }
+
+            ViewBag.ApiSettings = apiSetting;
+            ViewBag.ContactSettings = contactSetting;
             ViewBag.Settings = await _dbContext.AdminSystemSettings.ToListAsync();
             return View();
         }
@@ -2245,11 +2270,131 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> SaveApiSettings(
+            string smsApiKey, 
+            string whatsappNo, 
+            string googleMapsKey, 
+            string emailSender)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            try
+            {
+                var pSms = new Microsoft.Data.SqlClient.SqlParameter("@SmsApiKey", smsApiKey ?? "");
+                var pWa = new Microsoft.Data.SqlClient.SqlParameter("@WhatsAppBusinessNumber", whatsappNo ?? "");
+                var pMaps = new Microsoft.Data.SqlClient.SqlParameter("@GoogleMapsApiKey", googleMapsKey ?? "");
+                var pEmail = new Microsoft.Data.SqlClient.SqlParameter("@SmtpSenderEmail", emailSender ?? "");
+
+                await _dbContext.Database.ExecuteSqlRawAsync(
+                    "EXEC dbo.sp_SaveOrUpdateSystemApiSettings @SmsApiKey, @WhatsAppBusinessNumber, @GoogleMapsApiKey, @SmtpSenderEmail", 
+                    pSms, pWa, pMaps, pEmail);
+            }
+            catch
+            {
+                var api = await _dbContext.SystemApiSettings.FirstOrDefaultAsync();
+                if (api == null)
+                {
+                    api = new SystemApiSetting();
+                    _dbContext.SystemApiSettings.Add(api);
+                }
+                api.SmsApiKey = smsApiKey ?? "";
+                api.WhatsAppBusinessNumber = whatsappNo ?? "";
+                api.GoogleMapsApiKey = googleMapsKey ?? "";
+                api.SmtpSenderEmail = emailSender ?? "";
+                api.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // Mirror to legacy AdminSystemSettings
+            await SaveOrUpdateSettingAsync("SmsApiKey", smsApiKey ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("EmailSender", emailSender ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("WhatsAppNo", whatsappNo ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("GoogleMapsKey", googleMapsKey ?? "", "API Gateway");
+
+            await LogAdminActionAsync("API_SETTINGS_UPDATE", "Updated System API Integration & Gateway Keys via SP");
+            TempData["Success"] = "SMS, WhatsApp & Google Maps API credentials saved successfully.";
+            return RedirectToAction("Settings");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveContactSettings(
+            string helplineNumber,
+            string tollFreeNumber,
+            string emergencySupportNumber,
+            string whatsAppNumber,
+            string supportEmail,
+            string billingEmail,
+            string partnerHelplineNumber,
+            string officeAddress)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            try
+            {
+                var pHelp = new Microsoft.Data.SqlClient.SqlParameter("@HelplineNumber", helplineNumber ?? "");
+                var pToll = new Microsoft.Data.SqlClient.SqlParameter("@TollFreeNumber", tollFreeNumber ?? "");
+                var pEmerg = new Microsoft.Data.SqlClient.SqlParameter("@EmergencySupportNumber", emergencySupportNumber ?? "");
+                var pWa = new Microsoft.Data.SqlClient.SqlParameter("@WhatsAppNumber", whatsAppNumber ?? "");
+                var pSupEmail = new Microsoft.Data.SqlClient.SqlParameter("@SupportEmail", supportEmail ?? "");
+                var pBillEmail = new Microsoft.Data.SqlClient.SqlParameter("@BillingEmail", billingEmail ?? "");
+                var pPartner = new Microsoft.Data.SqlClient.SqlParameter("@PartnerHelplineNumber", partnerHelplineNumber ?? "");
+                var pAddr = new Microsoft.Data.SqlClient.SqlParameter("@OfficeAddress", officeAddress ?? "");
+
+                await _dbContext.Database.ExecuteSqlRawAsync(
+                    "EXEC dbo.sp_SaveOrUpdateSystemContactSettings @HelplineNumber, @TollFreeNumber, @EmergencySupportNumber, @WhatsAppNumber, @SupportEmail, @BillingEmail, @PartnerHelplineNumber, @OfficeAddress",
+                    pHelp, pToll, pEmerg, pWa, pSupEmail, pBillEmail, pPartner, pAddr);
+            }
+            catch
+            {
+                var contact = await _dbContext.SystemContactSettings.FirstOrDefaultAsync();
+                if (contact == null)
+                {
+                    contact = new SystemContactSetting();
+                    _dbContext.SystemContactSettings.Add(contact);
+                }
+                contact.HelplineNumber = helplineNumber ?? "";
+                contact.TollFreeNumber = tollFreeNumber ?? "";
+                contact.EmergencySupportNumber = emergencySupportNumber ?? "";
+                contact.WhatsAppNumber = whatsAppNumber ?? "";
+                contact.SupportEmail = supportEmail ?? "";
+                contact.BillingEmail = billingEmail ?? "";
+                contact.PartnerHelplineNumber = partnerHelplineNumber ?? "";
+                contact.OfficeAddress = officeAddress ?? "";
+                contact.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // Update in-memory helper
+            if (!string.IsNullOrEmpty(helplineNumber)) ContactInfoHelper.UpdateSetting("HelplineNumber", helplineNumber);
+            if (!string.IsNullOrEmpty(tollFreeNumber)) ContactInfoHelper.UpdateSetting("TollFreeNumber", tollFreeNumber);
+            if (!string.IsNullOrEmpty(emergencySupportNumber)) ContactInfoHelper.UpdateSetting("EmergencySupportNumber", emergencySupportNumber);
+            if (!string.IsNullOrEmpty(whatsAppNumber)) ContactInfoHelper.UpdateSetting("WhatsAppNumber", whatsAppNumber);
+            if (!string.IsNullOrEmpty(supportEmail)) ContactInfoHelper.UpdateSetting("SupportEmail", supportEmail);
+            if (!string.IsNullOrEmpty(billingEmail)) ContactInfoHelper.UpdateSetting("BillingEmail", billingEmail);
+            if (!string.IsNullOrEmpty(partnerHelplineNumber)) ContactInfoHelper.UpdateSetting("PartnerHelplineNumber", partnerHelplineNumber);
+            if (!string.IsNullOrEmpty(officeAddress)) ContactInfoHelper.UpdateSetting("OfficeAddress", officeAddress);
+
+            // Mirror to legacy AdminSystemSettings
+            if (!string.IsNullOrEmpty(helplineNumber)) await SaveOrUpdateSettingAsync("HelplineNumber", helplineNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(tollFreeNumber)) await SaveOrUpdateSettingAsync("TollFreeNumber", tollFreeNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(emergencySupportNumber)) await SaveOrUpdateSettingAsync("EmergencySupportNumber", emergencySupportNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(whatsAppNumber)) await SaveOrUpdateSettingAsync("WhatsAppNumber", whatsAppNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(supportEmail)) await SaveOrUpdateSettingAsync("SupportEmail", supportEmail.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(billingEmail)) await SaveOrUpdateSettingAsync("BillingEmail", billingEmail.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(partnerHelplineNumber)) await SaveOrUpdateSettingAsync("PartnerHelplineNumber", partnerHelplineNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(officeAddress)) await SaveOrUpdateSettingAsync("OfficeAddress", officeAddress.Trim(), "Contact Info");
+
+            await LogAdminActionAsync("CONTACT_SETTINGS_UPDATE", "Updated RaahSathi Public Contact Details & Helplines via SP");
+            TempData["Success"] = "RaahSathi contact & helpline details saved successfully across the platform.";
+            return RedirectToAction("Settings");
+        }
+
+        [HttpPost]
         public async Task<IActionResult> SaveSystemSettings(
             string smsApiKey, 
             string emailSender, 
             string whatsappNo, 
-            string googleMapsKey,
+            string googleMapsKey, 
             string helplineNumber = null,
             string tollFreeNumber = null,
             string emergencySupportNumber = null,
