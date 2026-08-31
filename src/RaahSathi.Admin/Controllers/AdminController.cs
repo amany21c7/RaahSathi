@@ -3114,10 +3114,11 @@ namespace RaahSathi.Controllers
             if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
             
             await LogAdminActionAsync("SEO_PING", "Submitted sitemap.xml update to search engines (Google & Bing indexers)");
+            var istTime = DateTime.UtcNow.AddHours(5).AddMinutes(30);
             return Json(new { 
                 success = true, 
                 message = "Sitemap successfully queued & pinged to Google & Bing bots! Indexed pages updated.",
-                timestamp = DateTime.UtcNow.ToString("dd MMM yyyy, hh:mm tt")
+                timestamp = istTime.ToString("dd MMM yyyy, hh:mm tt")
             });
         }
 
