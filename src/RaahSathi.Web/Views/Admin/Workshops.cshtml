@@ -76,49 +76,35 @@
         </div>
     </div>
 
-    <!-- Filters Bar (Workshop Name Search + Location Text Search Filter Only) -->
-    <form method="GET" action="/Admin/Workshops" class="bg-dark p-3 rounded-3 border border-secondary border-opacity-30 mb-3 shadow-sm">
-        <div class="row g-2 align-items-center">
-            <!-- Workshop Name / Owner Search -->
-            <div class="col-12 col-md-5">
-                <label class="form-label text-muted extra-small mb-1 font-weight-bold">
-                    <i class="fa-solid fa-magnifying-glass text-warning me-1"></i> Workshop / Owner Search
-                </label>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-black border-secondary text-muted"><i class="fa-solid fa-search"></i></span>
-                    <input type="text" id="workshopSearchInput" name="search" class="form-control bg-black border-secondary text-white small" value="@ViewBag.SelectedSearch" placeholder="Type workshop name, owner, phone, ID..." onkeyup="filterWorkshopsClientSide()">
-                </div>
-            </div>
-
-            <!-- Location Text Search (City / Sector / Area) - NO DROPDOWN -->
-            <div class="col-12 col-md-5">
-                <label class="form-label text-muted extra-small mb-1 font-weight-bold">
-                    <i class="fa-solid fa-location-dot text-info me-1"></i> Filter by Location / City / Sector
-                </label>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-black border-secondary text-muted"><i class="fa-solid fa-location-dot text-info"></i></span>
-                    <input type="text" id="locationSearchInput" name="location" class="form-control bg-black border-secondary text-white small" value="@ViewBag.SelectedLocation" placeholder="Type city, sector 44, area, pincode..." onkeyup="filterWorkshopsClientSide()">
-                </div>
-            </div>
-
-            <!-- Filter Buttons -->
-            <div class="col-12 col-md-2 d-flex gap-1 align-self-end">
-                <button type="submit" class="btn btn-warning btn-sm font-weight-bold flex-grow-1">
-                    <i class="fa-solid fa-filter me-1"></i> Filter
-                </button>
-                <a href="/Admin/Workshops" class="btn btn-outline-secondary btn-sm px-2.5" title="Reset Filters">
-                    <i class="fa-solid fa-rotate-left"></i>
-                </a>
-            </div>
-        </div>
-    </form>
-
-    <!-- Workshop Directory Table Card -->
+    <!-- Workshop Directory Table Card with Integrated Header Filters -->
     <div class="card bg-dark border-secondary border-opacity-30 shadow-sm">
-        <div class="card-header bg-black bg-opacity-30 border-bottom border-secondary border-opacity-30 py-2 px-3 d-flex align-items-center justify-content-between">
-            <span class="text-light font-weight-bold small">
+        <div class="card-header bg-black bg-opacity-40 border-bottom border-secondary border-opacity-30 py-2.5 px-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+            <span class="text-light font-weight-bold small text-nowrap my-auto">
                 <i class="fa-solid fa-list me-1.5 text-warning"></i> Listed Workshops (<span id="visibleRecordCount">@Model.Count</span>)
             </span>
+
+            <!-- Single-Line Compact Inline Search & Location Filters -->
+            <form method="GET" action="/Admin/Workshops" class="d-flex align-items-center flex-nowrap gap-2 mb-0 overflow-auto">
+                <!-- Workshop / Owner Search -->
+                <div class="input-group input-group-sm" style="width: 220px; min-width: 170px;">
+                    <span class="input-group-text bg-black bg-opacity-60 border-secondary text-muted px-2 py-1"><i class="fa-solid fa-magnifying-glass text-warning" style="font-size: 0.72rem;"></i></span>
+                    <input type="text" id="workshopSearchInput" name="search" class="form-control bg-dark border-secondary text-white py-1 px-2" style="font-size: 0.78rem; height: 32px;" value="@ViewBag.SelectedSearch" placeholder="Search workshop, owner..." onkeyup="filterWorkshopsClientSide()">
+                </div>
+
+                <!-- Location / City / Sector Search -->
+                <div class="input-group input-group-sm" style="width: 200px; min-width: 160px;">
+                    <span class="input-group-text bg-black bg-opacity-60 border-secondary text-muted px-2 py-1"><i class="fa-solid fa-location-dot text-info" style="font-size: 0.72rem;"></i></span>
+                    <input type="text" id="locationSearchInput" name="location" class="form-control bg-dark border-secondary text-white py-1 px-2" style="font-size: 0.78rem; height: 32px;" value="@ViewBag.SelectedLocation" placeholder="City, sector, area..." onkeyup="filterWorkshopsClientSide()">
+                </div>
+
+                <!-- Filter & Reset Buttons in same row -->
+                <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark px-3 py-1 shadow-sm text-nowrap d-inline-flex align-items-center gap-1" style="font-size: 0.78rem; background: #f59e0b; height: 32px;">
+                    <i class="fa-solid fa-filter"></i> Filter
+                </button>
+                <a href="/Admin/Workshops" class="btn btn-outline-secondary btn-sm px-2.5 py-1 text-nowrap d-inline-flex align-items-center justify-content-center" style="font-size: 0.78rem; height: 32px; width: 32px;" title="Reset Filters">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            </form>
         </div>
         
         <div class="card-body p-0">
