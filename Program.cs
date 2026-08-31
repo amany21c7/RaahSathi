@@ -875,6 +875,19 @@ using (var scope = app.Services.CreateScope())
                     );
                 END;
 
+                -- Ensure multi-problem & partial cancellation columns exist on Jobs table
+                ALTER TABLE [Jobs] ALTER COLUMN [ProblemType] NVARCHAR(MAX) NOT NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = 'SelectedProblemsJson')
+                    ALTER TABLE [Jobs] ADD [SelectedProblemsJson] NVARCHAR(MAX) NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = 'CancelledProblemItem')
+                    ALTER TABLE [Jobs] ADD [CancelledProblemItem] NVARCHAR(200) NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = 'ProblemCancelReason')
+                    ALTER TABLE [Jobs] ADD [ProblemCancelReason] NVARCHAR(500) NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = 'ProblemCancelDescription')
+                    ALTER TABLE [Jobs] ADD [ProblemCancelDescription] NVARCHAR(1000) NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = 'ProblemCancelledAt')
+                    ALTER TABLE [Jobs] ADD [ProblemCancelledAt] DATETIME2 NULL;
+
                 -- Stored Procedure: rs_payments_process_escrow
                 IF OBJECT_ID(N'[dbo].[rs_payments_process_escrow]', N'P') IS NOT NULL
                     DROP PROCEDURE [dbo].[rs_payments_process_escrow];

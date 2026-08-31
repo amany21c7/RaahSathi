@@ -248,180 +248,200 @@ namespace RaahSathi.Controllers
             string? fuelType,
             string? batteryType,
             bool isEmergencyCharging,
-            IFormFile? problemPhoto)
+            IFormFile? problemPhoto,
+            string? selectedProblemsJson = null)
         {
-            User? customer = await GetActiveCustomerAsync();
-
-            // If not logged in, perform instant verification and auto-registration
-            if (customer == null)
+            try
             {
-                if (string.IsNullOrWhiteSpace(phoneNumber) || phoneNumber.Length < 10)
-                {
-                    return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
-                }
+                User? customer = await GetActiveCustomerAsync();
 
-                if (string.IsNullOrWhiteSpace(fullName))
-                {
-                    return Json(new { success = false, message = "Please enter your full name." });
-                }
-
-                if (otpCode != "1234")
-                {
-                    return Json(new { success = false, message = "Invalid OTP code. Please use 1234 for instant verification." });
-                }
-
-                // Clean phone number
-                string cleanPhone = new string(phoneNumber.Where(char.IsDigit).ToArray());
-                if (cleanPhone.Length == 12 && cleanPhone.StartsWith("91")) cleanPhone = cleanPhone.Substring(2);
-
-                // Check or create user
-                customer = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == "Customer");
+                // If not logged in, perform instant verification and auto-registration
                 if (customer == null)
                 {
-                    customer = new User
+                    if (string.IsNullOrWhiteSpace(phoneNumber) || phoneNumber.Length < 10)
                     {
-                        Name = fullName.Trim(),
-                        PhoneNumber = cleanPhone,
-                        Role = "Customer",
-                        CreatedAt = DateTime.UtcNow
+                        return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
+                    }
+
+                    if (string.IsNullOrWhiteSpace(fullName))
+                    {
+                        return Json(new { success = false, message = "Please enter your full name." });
+                    }
+
+                    if (otpCode != "1234")
+                    {
+                        return Json(new { success = false, message = "Invalid OTP code. Please use 1234 for instant verification." });
+                    }
+
+                    // Clean phone number
+                    string cleanPhone = new string(phoneNumber.Where(char.IsDigit).ToArray());
+                    if (cleanPhone.Length == 12 && cleanPhone.StartsWith("91")) cleanPhone = cleanPhone.Substring(2);
+
+                    // Check or create user
+                    customer = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == "Customer");
+                    if (customer == null)
+                    {
+                        customer = new User
+                        {
+                            Name = fullName.Trim(),
+                            PhoneNumber = cleanPhone,
+                            Role = "Customer",
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _dbContext.Users.Add(customer);
+                        await _dbContext.SaveChangesAsync();
+                    }
+
+                    // Set login cookies
+                    var options = new CookieOptions
+                    {
+                        Expires = DateTime.UtcNow.AddDays(30),
+                        HttpOnly = true,
+                        IsEssential = true
                     };
-                    _dbContext.Users.Add(customer);
-                    await _dbContext.SaveChangesAsync();
+                    Response.Cookies.Append("RaahSathiCustomerUserId", customer.Id.ToString(), options);
+                    Response.Cookies.Append("RaahSathiUserName", customer.Name, options);
                 }
 
-                // Set login cookies
-                var options = new CookieOptions
+                // Ensure vehicle exists for user
+                Vehicle? vehicle = null;
+                if (vehicleId.HasValue && vehicleId.Value > 0)
                 {
-                    Expires = DateTime.UtcNow.AddDays(30),
-                    HttpOnly = true,
-                    IsEssential = true
-                };
-                Response.Cookies.Append("RaahSathiCustomerUserId", customer.Id.ToString(), options);
-                Response.Cookies.Append("RaahSathiUserName", customer.Name, options);
-            }
+                    vehicle = await _dbContext.Vehicles.FindAsync(vehicleId.Value);
+                }
 
-            // Ensure vehicle exists for user
-            Vehicle? vehicle = null;
-            if (vehicleId.HasValue && vehicleId.Value > 0)
-            {
-                vehicle = await _dbContext.Vehicles.FindAsync(vehicleId.Value);
-            }
-
-            if (vehicle == null)
-            {
-                string defaultType = string.IsNullOrWhiteSpace(vehicleType) ? "Car" : vehicleType;
-                vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(v => v.UserId == customer.Id && v.VehicleType == defaultType);
                 if (vehicle == null)
                 {
-                    vehicle = new Vehicle
+                    string defaultType = string.IsNullOrWhiteSpace(vehicleType) ? "Car" : vehicleType;
+                    vehicle = await _dbContext.Vehicles.FirstOrDefaultAsync(v => v.UserId == customer.Id && v.VehicleType == defaultType);
+                    if (vehicle == null)
                     {
-                        UserId = customer.Id,
-                        VehicleType = defaultType,
-                        Model = string.IsNullOrWhiteSpace(vehicleNameModel) ? $"{defaultType} Vehicle" : vehicleNameModel.Trim(),
-                        RegistrationNumber = !string.IsNullOrWhiteSpace(registrationNumber) ? registrationNumber.Trim() : ("UP16-RS-" + new Random().Next(1000, 9999))
-                    };
-                    _dbContext.Vehicles.Add(vehicle);
-                    await _dbContext.SaveChangesAsync();
+                        vehicle = new Vehicle
+                        {
+                            UserId = customer.Id,
+                            VehicleType = defaultType,
+                            Model = string.IsNullOrWhiteSpace(vehicleNameModel) ? $"{defaultType} Vehicle" : vehicleNameModel.Trim(),
+                            RegistrationNumber = !string.IsNullOrWhiteSpace(registrationNumber) ? registrationNumber.Trim() : ("UP16-RS-" + new Random().Next(1000, 9999))
+                        };
+                        _dbContext.Vehicles.Add(vehicle);
+                        await _dbContext.SaveChangesAsync();
+                    }
                 }
-            }
 
-            if (!string.IsNullOrWhiteSpace(vehicleNameModel))
-            {
-                vehicle.Model = vehicleNameModel.Trim();
-            }
-            if (!string.IsNullOrWhiteSpace(registrationNumber))
-            {
-                vehicle.RegistrationNumber = registrationNumber.Trim();
-            }
-            await _dbContext.SaveChangesAsync();
-
-            string photoUrl = string.Empty;
-            if (problemPhoto != null && problemPhoto.Length > 0)
-            {
-                if (!IsValidImageFile(problemPhoto))
+                if (!string.IsNullOrWhiteSpace(vehicleNameModel))
                 {
-                    return Json(new { success = false, message = "Invalid file type. Only JPG, JPEG, and PNG images are allowed." });
+                    vehicle.Model = vehicleNameModel.Trim();
+                }
+                if (!string.IsNullOrWhiteSpace(registrationNumber))
+                {
+                    vehicle.RegistrationNumber = registrationNumber.Trim();
+                }
+                await _dbContext.SaveChangesAsync();
+
+                string photoUrl = string.Empty;
+                if (problemPhoto != null && problemPhoto.Length > 0)
+                {
+                    if (!IsValidImageFile(problemPhoto))
+                    {
+                        return Json(new { success = false, message = "Invalid file type. Only JPG, JPEG, and PNG images are allowed." });
+                    }
+
+                    try
+                    {
+                        string uploadsFolder = System.IO.Path.Combine(_env.WebRootPath, "uploads", "problem_photos");
+                        if (!System.IO.Directory.Exists(uploadsFolder))
+                        {
+                            System.IO.Directory.CreateDirectory(uploadsFolder);
+                        }
+                        string safeExtension = System.IO.Path.GetExtension(problemPhoto.FileName).ToLowerInvariant();
+                        string uniqueFileName = Guid.NewGuid().ToString("N") + safeExtension;
+                        string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                        using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                        {
+                            await problemPhoto.CopyToAsync(fileStream);
+                        }
+                        photoUrl = "/uploads/problem_photos/" + uniqueFileName;
+                    }
+                    catch { }
                 }
 
+                string detectedCity = "";
+                if (!string.IsNullOrWhiteSpace(address))
+                {
+                    var matchedCity = await _dbContext.CityServiceAreas.FirstOrDefaultAsync(c => address.ToLower().Contains(c.CityName.ToLower()));
+                    if (matchedCity != null) detectedCity = matchedCity.CityName;
+                }
+
+                double mockDist = 3.5;
+                var (baseFee, visitingCharge) = await _pricingEngine.CalculateVisitingChargeAsync(vehicle.VehicleType, mockDist);
+                var (serviceMin, serviceMax) = _pricingEngine.GetServiceChargeRange(problemType ?? "Other", detectedCity);
+
+                var job = new Job
+                {
+                    CustomerId = customer.Id,
+                    VehicleId = vehicle.Id,
+                    ProblemType = string.IsNullOrWhiteSpace(problemType) ? "Breakdown Support" : problemType,
+                    SelectedProblemsJson = selectedProblemsJson ?? "",
+                    Status = "Requested",
+                    FuelType = string.IsNullOrWhiteSpace(fuelType) ? (vehicleType == "E-Rickshaw" ? "Electric" : "Petrol") : fuelType,
+                    BatteryType = string.IsNullOrWhiteSpace(batteryType) ? "Don't Know" : batteryType,
+                    IsEmergencyCharging = isEmergencyCharging || (problemType != null && problemType.Contains("Emergency EV Charging", StringComparison.OrdinalIgnoreCase)),
+                    ProblemDescription = string.IsNullOrWhiteSpace(problemDescription) ? "30-Second Fast Request" : problemDescription,
+                    ProblemPhotoUrl = photoUrl,
+                    Landmark = landmark ?? "Current GPS Location",
+                    CustomerLat = lat > 0 ? lat : 28.6250,
+                    CustomerLng = lng > 0 ? lng : 77.3100,
+                    Address = string.IsNullOrWhiteSpace(address) ? "Current GPS Location" : address,
+                    VisitingCharge = visitingCharge,
+                    ServiceChargeMin = serviceMin,
+                    ServiceChargeMax = serviceMax,
+                    FinalBillAmount = Math.Round(visitingCharge + serviceMin, 2)
+                };
+
+                _dbContext.Jobs.Add(job);
+                await _dbContext.SaveChangesAsync();
+
+                // Get all ranked mechanics for tiered parallel dispatch with 5-star repeat preference
+                List<ScoredMechanic> allRanked = new();
                 try
                 {
-                    string uploadsFolder = System.IO.Path.Combine(_env.WebRootPath, "uploads", "problem_photos");
-                    if (!System.IO.Directory.Exists(uploadsFolder))
-                    {
-                        System.IO.Directory.CreateDirectory(uploadsFolder);
-                    }
-                    string safeExtension = System.IO.Path.GetExtension(problemPhoto.FileName).ToLowerInvariant();
-                    string uniqueFileName = Guid.NewGuid().ToString("N") + safeExtension;
-                    string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
-                    using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
-                    {
-                        await problemPhoto.CopyToAsync(fileStream);
-                    }
-                    photoUrl = "/uploads/problem_photos/" + uniqueFileName;
+                    allRanked = await _dispatchEngine.FindAndRankMechanicsAsync(
+                        job.CustomerLat, job.CustomerLng, vehicle.VehicleType, job.ProblemType, customer.Id);
                 }
-                catch { }
+                catch
+                {
+                    allRanked = new List<ScoredMechanic>();
+                }
+
+                var top5 = allRanked.Take(5).ToList();
+                var preferredMechanic = allRanked.FirstOrDefault(m => m.Is5StarPreferred);
+
+                return Json(new {
+                    success = true,
+                    jobId = job.Id,
+                    customerId = customer.Id,
+                    customerName = customer.Name,
+                    hasPreferred = preferredMechanic != null,
+                    preferredName = preferredMechanic?.Mechanic?.Name,
+                    topMechanicsCount = top5.Count,
+                    totalMechanicsCount = allRanked.Count,
+                    topMechanic = top5.FirstOrDefault() != null && top5.First().Mechanic != null ? new {
+                        id = top5.First().Mechanic.Id,
+                        name = top5.First().Mechanic.Name,
+                        rating = top5.First().Profile?.Rating ?? 4.8,
+                        eta = top5.First().EtaMinutes,
+                        distance = top5.First().DistanceKm,
+                        isPreferred = top5.First().Is5StarPreferred
+                    } : null
+                });
             }
-
-            string detectedCity = "";
-            if (!string.IsNullOrWhiteSpace(address))
+            catch (Exception ex)
             {
-                var matchedCity = await _dbContext.CityServiceAreas.FirstOrDefaultAsync(c => address.ToLower().Contains(c.CityName.ToLower()));
-                if (matchedCity != null) detectedCity = matchedCity.CityName;
+                return Json(new { 
+                    success = false, 
+                    message = "Server error while processing request: " + ex.Message + (ex.InnerException != null ? " (" + ex.InnerException.Message + ")" : "")
+                });
             }
-
-            double mockDist = 3.5;
-            var (baseFee, visitingCharge) = await _pricingEngine.CalculateVisitingChargeAsync(vehicle.VehicleType, mockDist);
-            var (serviceMin, serviceMax) = _pricingEngine.GetServiceChargeRange(problemType ?? "Other", detectedCity);
-
-            var job = new Job
-            {
-                CustomerId = customer.Id,
-                VehicleId = vehicle.Id,
-                ProblemType = string.IsNullOrWhiteSpace(problemType) ? "Breakdown Support" : problemType,
-                Status = "Requested",
-                FuelType = string.IsNullOrWhiteSpace(fuelType) ? (vehicleType == "E-Rickshaw" ? "Electric" : "Petrol") : fuelType,
-                BatteryType = string.IsNullOrWhiteSpace(batteryType) ? "Don't Know" : batteryType,
-                IsEmergencyCharging = isEmergencyCharging || (problemType != null && problemType.Contains("Emergency EV Charging", StringComparison.OrdinalIgnoreCase)),
-                ProblemDescription = string.IsNullOrWhiteSpace(problemDescription) ? "30-Second Fast Request" : problemDescription,
-                ProblemPhotoUrl = photoUrl,
-                Landmark = landmark ?? "Current GPS Location",
-                CustomerLat = lat > 0 ? lat : 28.6250,
-                CustomerLng = lng > 0 ? lng : 77.3100,
-                Address = string.IsNullOrWhiteSpace(address) ? "Current GPS Location" : address,
-                VisitingCharge = visitingCharge,
-                ServiceChargeMin = serviceMin,
-                ServiceChargeMax = serviceMax,
-                FinalBillAmount = Math.Round(visitingCharge + serviceMin, 2)
-            };
-
-            _dbContext.Jobs.Add(job);
-            await _dbContext.SaveChangesAsync();
-
-            // Get all ranked mechanics for tiered parallel dispatch with 5-star repeat preference
-            var allRanked = await _dispatchEngine.FindAndRankMechanicsAsync(
-                job.CustomerLat, job.CustomerLng, vehicle.VehicleType, job.ProblemType, customer.Id);
-
-            var top5 = allRanked.Take(5).ToList();
-            var preferredMechanic = allRanked.FirstOrDefault(m => m.Is5StarPreferred);
-
-            return Json(new {
-                success = true,
-                jobId = job.Id,
-                customerId = customer.Id,
-                customerName = customer.Name,
-                hasPreferred = preferredMechanic != null,
-                preferredName = preferredMechanic?.Mechanic.Name,
-                topMechanicsCount = top5.Count,
-                totalMechanicsCount = allRanked.Count,
-                topMechanic = top5.FirstOrDefault() != null ? new {
-                    id = top5.First().Mechanic.Id,
-                    name = top5.First().Mechanic.Name,
-                    rating = top5.First().Profile.Rating,
-                    eta = top5.First().EtaMinutes,
-                    distance = top5.First().DistanceKm,
-                    isPreferred = top5.First().Is5StarPreferred
-                } : null
-            });
         }
 
         [HttpGet]
@@ -644,6 +664,12 @@ namespace RaahSathi.Controllers
                 towingProofPhoto = job.TowingProofPhoto,
                 towingApproved = job.TowingApproved,
                 finalBillAmount = job.FinalBillAmount,
+                problemType = job.ProblemType,
+                selectedProblemsJson = job.SelectedProblemsJson,
+                cancelledProblemItem = job.CancelledProblemItem,
+                problemCancelReason = job.ProblemCancelReason,
+                problemCancelDescription = job.ProblemCancelDescription,
+                problemCancelledAt = job.ProblemCancelledAt?.ToString("o"),
                 disputeStatus = job.DisputeStatus,
                 customerLat = job.CustomerLat,
                 customerLng = job.CustomerLng,

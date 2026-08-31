@@ -211,12 +211,40 @@
                 </span>
             </div>
 
-            <!-- Job Selector if multiple active jobs -->
+            <!-- Job Selector and Pagination Controls (Visible when active jobs exist) -->
             <div id="pipelineJobSelectorContainer" class="mb-3 d-none">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-black text-warning border-secondary"><i class="fa-solid fa-list-check me-1"></i> Active Job:</span>
-                    <select id="selPipelineJob" class="form-select bg-dark text-white border-secondary small">
-                    </select>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                    <div class="input-group input-group-sm flex-grow-1" style="min-width: 200px;">
+                        <span class="input-group-text bg-black text-warning border-secondary"><i class="fa-solid fa-list-check me-1"></i> Job:</span>
+                        <select id="selPipelineJob" class="form-select bg-dark text-white border-secondary small text-truncate">
+                        </select>
+                    </div>
+                    <!-- Quick Prev / Next Job Switching Buttons -->
+                    <div class="btn-group btn-group-sm ms-auto" role="group">
+                        <button type="button" class="btn btn-outline-secondary py-1 px-2 text-white" id="btnPipelinePrevJob" title="Previous Job" style="font-size:0.75rem;">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <span class="btn btn-dark disabled py-1 px-2 border-secondary text-info fw-bold" id="lblPipelineJobIndex" style="font-size:0.7rem;">1 / 1</span>
+                        <button type="button" class="btn btn-outline-secondary py-1 px-2 text-white" id="btnPipelineNextJob" title="Next Job" style="font-size:0.75rem;">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 20 Jobs / Page Pagination Bar (Appears when total active jobs > 20) -->
+                <div id="pipelinePaginationContainer" class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-1.5 rounded bg-black bg-opacity-40 border border-secondary border-opacity-30 d-none">
+                    <span class="text-muted small" style="font-size:0.7rem;" id="lblPipelinePaginationInfo">
+                        <i class="fa-solid fa-layer-group text-warning me-1"></i> Page 1 of 1 (Max 20/page)
+                    </span>
+                    <div class="d-flex align-items-center gap-1 ms-auto">
+                        <button type="button" class="btn btn-outline-warning btn-xs py-0 px-2" id="btnPipelinePrevPage" style="font-size:0.7rem;">
+                            <i class="fa-solid fa-angles-left me-1"></i> Prev
+                        </button>
+                        <span class="badge bg-secondary text-white" id="lblPipelinePageBadge" style="font-size:0.65rem;">Page 1</span>
+                        <button type="button" class="btn btn-outline-warning btn-xs py-0 px-2" id="btnPipelineNextPage" style="font-size:0.7rem;">
+                            Next <i class="fa-solid fa-angles-right ms-1"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -699,6 +727,10 @@
     }
 
     var selectedJobId = 0;
+    var pipelineCurrentPage = 1;
+    var pipelineTotalPages = 1;
+    var pipelinePageSize = 20;
+    var pipelineCurrentJobs = [];
 
     function renderPipelineStepper(job) {
         if (!job) {
@@ -718,10 +750,27 @@
         $('#lblAssignJobDisplayId').text(job.displayId);
 
         var step = 1;
-        var statusText = job.status || "Requested";
-        if (statusText === "Assigned" || statusText === "Accepted") step = 2;
-        else if (statusText === "En Route" || statusText === "In Progress" || statusText === "Repairing") step = 3;
-        else if (statusText === "Completed") step = 4;
+        var rawStatus = (job.status || "Requested").trim();
+        var statusLower = rawStatus.toLowerCase();
+        
+        var step3Subtext = "In Progress";
+        if (statusLower === "assigned" || statusLower === "accepted") {
+            step = 2;
+        } else if (statusLower === "driving" || statusLower === "en route") {
+            step = 3;
+            step3Subtext = "Driving";
+        } else if (statusLower === "inspecting" || statusLower === "arrived" || statusLower === "estimatepending" || statusLower === "reached spot") {
+            step = 3;
+            step3Subtext = "Inspecting";
+        } else if (statusLower === "repairing" || statusLower === "in progress" || statusLower === "workinprogress") {
+            step = 3;
+            step3Subtext = "Repairing";
+        } else if (statusLower === "completed" || statusLower === "finished" || statusLower === "paid") {
+            step = 4;
+        } else if (job.mechanicId) {
+            // Safety fallback: If mechanic is assigned but status is custom
+            step = 2;
+        }
 
         var step1Class = step >= 1 ? "bg-primary text-white shadow-sm" : "bg-dark text-muted border border-secondary";
         var step2Class = step >= 2 ? "bg-info text-dark shadow-sm" : "bg-dark text-muted border border-secondary";
@@ -729,26 +778,26 @@
         var step4Class = step >= 4 ? "bg-success text-white shadow-sm" : "bg-dark text-muted border border-secondary";
 
         var html = `
-            <!-- Dynamic 4-Step Pipeline Visual Stepper -->
+            <!-- Dynamic 4-Step Pipeline Visual Stepper (Mobile Optimized) -->
             <div class="d-flex align-items-center justify-content-between mb-3 px-1">
-                <div class="text-center flex-fill">
-                    <span class="badge ${step1Class} rounded-circle p-2 mb-1" style="width:30px; height:30px; line-height:16px;">1</span>
-                    <div class="small ${step >= 1 ? 'text-primary font-weight-bold' : 'text-muted'}" style="font-size:0.7rem;">Requested</div>
+                <div class="text-center flex-fill" style="min-width: 48px;">
+                    <span class="badge ${step1Class} rounded-circle p-2 mb-1" style="width:28px; height:28px; line-height:14px; font-size:0.75rem;">1</span>
+                    <div class="small ${step >= 1 ? 'text-primary font-weight-bold' : 'text-muted'}" style="font-size:0.68rem; line-height:1.1;">Requested</div>
                 </div>
-                <div class="border-top flex-fill ${step >= 2 ? 'border-info' : 'border-secondary'}" style="margin-top:-15px;"></div>
-                <div class="text-center flex-fill">
-                    <span class="badge ${step2Class} rounded-circle p-2 mb-1" style="width:30px; height:30px; line-height:16px;">2</span>
-                    <div class="small ${step >= 2 ? 'text-info font-weight-bold' : 'text-muted'}" style="font-size:0.7rem;">Assigned</div>
+                <div class="border-top flex-fill ${step >= 2 ? 'border-info' : 'border-secondary'}" style="margin-top:-16px;"></div>
+                <div class="text-center flex-fill" style="min-width: 48px;">
+                    <span class="badge ${step2Class} rounded-circle p-2 mb-1" style="width:28px; height:28px; line-height:14px; font-size:0.75rem;">2</span>
+                    <div class="small ${step >= 2 ? 'text-info font-weight-bold' : 'text-muted'}" style="font-size:0.68rem; line-height:1.1;">Assigned</div>
                 </div>
-                <div class="border-top flex-fill ${step >= 3 ? 'border-warning' : 'border-secondary'}" style="margin-top:-15px;"></div>
-                <div class="text-center flex-fill">
-                    <span class="badge ${step3Class} rounded-circle p-2 mb-1" style="width:30px; height:30px; line-height:16px;">3</span>
-                    <div class="small ${step >= 3 ? 'text-warning font-weight-bold' : 'text-muted'}" style="font-size:0.7rem;">In Progress</div>
+                <div class="border-top flex-fill ${step >= 3 ? 'border-warning' : 'border-secondary'}" style="margin-top:-16px;"></div>
+                <div class="text-center flex-fill" style="min-width: 48px;">
+                    <span class="badge ${step3Class} rounded-circle p-2 mb-1" style="width:28px; height:28px; line-height:14px; font-size:0.75rem;">3</span>
+                    <div class="small ${step >= 3 ? 'text-warning font-weight-bold' : 'text-muted'}" style="font-size:0.68rem; line-height:1.1;">${step === 3 ? step3Subtext : 'In Progress'}</div>
                 </div>
-                <div class="border-top flex-fill ${step >= 4 ? 'border-success' : 'border-secondary'}" style="margin-top:-15px;"></div>
-                <div class="text-center flex-fill">
-                    <span class="badge ${step4Class} rounded-circle p-2 mb-1" style="width:30px; height:30px; line-height:16px;">4</span>
-                    <div class="small ${step >= 4 ? 'text-success font-weight-bold' : 'text-muted'}" style="font-size:0.7rem;">Completed</div>
+                <div class="border-top flex-fill ${step >= 4 ? 'border-success' : 'border-secondary'}" style="margin-top:-16px;"></div>
+                <div class="text-center flex-fill" style="min-width: 48px;">
+                    <span class="badge ${step4Class} rounded-circle p-2 mb-1" style="width:28px; height:28px; line-height:14px; font-size:0.75rem;">4</span>
+                    <div class="small ${step >= 4 ? 'text-success font-weight-bold' : 'text-muted'}" style="font-size:0.68rem; line-height:1.1;">Completed</div>
                 </div>
             </div>
 
@@ -760,7 +809,7 @@
                         <span class="text-white small font-weight-bold">${job.customerName}</span>
                         <span class="text-muted small">(${job.customerPhone})</span>
                     </div>
-                    <span class="badge bg-warning text-dark font-weight-bold text-wrap text-break mt-1 mt-sm-0" style="max-width: 100%;">${job.problem}</span>
+                    <span class="badge bg-warning text-dark font-weight-bold text-wrap text-break mt-1 mt-sm-0" style="max-width: 100%; font-size:0.72rem;">${job.problem}</span>
                 </div>
                 <div class="text-muted small d-flex flex-wrap align-items-center justify-content-between gap-1 mt-1">
                     <span class="text-truncate"><i class="fa-solid fa-car me-1 text-secondary"></i> ${job.vehicle}</span>
@@ -775,7 +824,7 @@
                         <span class="badge ${job.mechanicId ? 'bg-info text-dark' : 'bg-secondary'}">${job.mechanicId ? 'Assigned Partner' : 'Unassigned'}</span>
                         <span class="text-white small font-weight-bold">${job.mechanicName}</span>
                     </div>
-                    <span class="text-info small font-weight-bold text-nowrap">${job.etaMins}</span>
+                    <span class="text-info small font-weight-bold text-nowrap">${job.etaMins || rawStatus}</span>
                 </div>
                 <div class="text-muted small text-break mt-1">
                     <i class="fa-solid fa-location-dot me-1 text-danger"></i> ${job.address} ${(job.landmark ? ' • ' + job.landmark : '')}
@@ -786,31 +835,62 @@
         $('#pipelineStepperCard').html(html);
     }
 
+    function updateJobIndexLabel(idx, totalInPage, totalCount) {
+        if (idx < 0) idx = 0;
+        var globalIndex = ((pipelineCurrentPage - 1) * pipelinePageSize) + (idx + 1);
+        $('#lblPipelineJobIndex').text(globalIndex + ' / ' + totalCount);
+        $('#btnPipelinePrevJob').prop('disabled', globalIndex <= 1);
+        $('#btnPipelineNextJob').prop('disabled', globalIndex >= totalCount);
+    }
+
     function pollLivePipelineStepper() {
-        $.get('/Admin/GetLivePipelineJobs', function(res) {
+        $.get('/Admin/GetLivePipelineJobs', { page: pipelineCurrentPage, pageSize: pipelinePageSize }, function(res) {
             if (res && res.success) {
                 $('#lblLiveJobsCount').text(res.count + ' Active');
-                if (res.count === 0) {
+                pipelineTotalPages = res.totalPages || 1;
+                pipelineCurrentPage = res.page || 1;
+                pipelineCurrentJobs = res.jobs || [];
+
+                if (res.count === 0 || !res.jobs || res.jobs.length === 0) {
                     renderPipelineStepper(null);
                     $('#pipelineJobSelectorContainer').addClass('d-none');
+                    $('#pipelinePaginationContainer').addClass('d-none');
                 } else {
+                    $('#pipelineJobSelectorContainer').removeClass('d-none');
                     var select = $('#selPipelineJob');
                     var currentVal = select.val();
                     
                     var optionsHtml = '';
-                    res.jobs.forEach(function(j) {
-                        optionsHtml += `<option value="${j.id}">${j.displayId} - ${j.customerName} (${j.problem}) - [${j.status}]</option>`;
+                    res.jobs.forEach(function(j, idx) {
+                        var globalNum = ((pipelineCurrentPage - 1) * pipelinePageSize) + (idx + 1);
+                        optionsHtml += `<option value="${j.id}">#${globalNum} ${j.displayId} - ${j.customerName} (${j.problem}) [${j.status}]</option>`;
                     });
                     select.html(optionsHtml);
 
-                    if (res.count > 1) $('#pipelineJobSelectorContainer').removeClass('d-none');
-                    else $('#pipelineJobSelectorContainer').addClass('d-none');
+                    // Multi-page Pagination Bar (Max 20 jobs per page)
+                    if (pipelineTotalPages > 1 || res.count > 20) {
+                        $('#pipelinePaginationContainer').removeClass('d-none');
+                        var startItem = ((pipelineCurrentPage - 1) * pipelinePageSize) + 1;
+                        var endItem = Math.min(res.count, pipelineCurrentPage * pipelinePageSize);
+                        $('#lblPipelinePaginationInfo').html(`<i class="fa-solid fa-layer-group text-warning me-1"></i> Jobs ${startItem}-${endItem} of ${res.count} (Max 20/page)`);
+                        $('#lblPipelinePageBadge').text(`Page ${pipelineCurrentPage} of ${pipelineTotalPages}`);
+                        $('#btnPipelinePrevPage').prop('disabled', pipelineCurrentPage <= 1);
+                        $('#btnPipelineNextPage').prop('disabled', pipelineCurrentPage >= pipelineTotalPages);
+                    } else {
+                        $('#pipelinePaginationContainer').addClass('d-none');
+                    }
 
                     var activeJob = res.jobs[0];
                     if (currentVal && res.jobs.some(j => j.id == currentVal)) {
                         select.val(currentVal);
                         activeJob = res.jobs.find(j => j.id == currentVal);
+                    } else if (selectedJobId && res.jobs.some(j => j.id == selectedJobId)) {
+                        select.val(selectedJobId);
+                        activeJob = res.jobs.find(j => j.id == selectedJobId);
                     }
+
+                    var currentIdx = select.prop('selectedIndex');
+                    updateJobIndexLabel(currentIdx, res.jobs.length, res.count);
                     renderPipelineStepper(activeJob);
                 }
             }
@@ -818,7 +898,55 @@
     }
 
     $('#selPipelineJob').change(function() {
-        pollLivePipelineStepper();
+        var val = $(this).val();
+        if (pipelineCurrentJobs && pipelineCurrentJobs.length > 0) {
+            var selectedJob = pipelineCurrentJobs.find(j => j.id == val);
+            if (selectedJob) {
+                var currentIdx = $(this).prop('selectedIndex');
+                var totalCount = parseInt($('#lblLiveJobsCount').text()) || pipelineCurrentJobs.length;
+                updateJobIndexLabel(currentIdx, pipelineCurrentJobs.length, totalCount);
+                renderPipelineStepper(selectedJob);
+            }
+        }
+    });
+
+    // Quick Prev / Next Job switcher
+    $('#btnPipelinePrevJob').click(function() {
+        var select = $('#selPipelineJob');
+        var idx = select.prop('selectedIndex');
+        if (idx > 0) {
+            select.prop('selectedIndex', idx - 1).trigger('change');
+        } else if (pipelineCurrentPage > 1) {
+            pipelineCurrentPage--;
+            pollLivePipelineStepper();
+        }
+    });
+
+    $('#btnPipelineNextJob').click(function() {
+        var select = $('#selPipelineJob');
+        var idx = select.prop('selectedIndex');
+        var totalInPage = select.find('option').length;
+        if (idx < totalInPage - 1) {
+            select.prop('selectedIndex', idx + 1).trigger('change');
+        } else if (pipelineCurrentPage < pipelineTotalPages) {
+            pipelineCurrentPage++;
+            pollLivePipelineStepper();
+        }
+    });
+
+    // Page switcher buttons (Max 20 jobs / page)
+    $('#btnPipelinePrevPage').click(function() {
+        if (pipelineCurrentPage > 1) {
+            pipelineCurrentPage--;
+            pollLivePipelineStepper();
+        }
+    });
+
+    $('#btnPipelineNextPage').click(function() {
+        if (pipelineCurrentPage < pipelineTotalPages) {
+            pipelineCurrentPage++;
+            pollLivePipelineStepper();
+        }
     });
 
     window.adminUpdateJobStatus = function(status) {

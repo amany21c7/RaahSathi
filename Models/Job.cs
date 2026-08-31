@@ -16,8 +16,14 @@ namespace RaahSathi.Models
         public int VehicleId { get; set; }
 
         [Required]
-        [StringLength(50)]
+        [StringLength(500)]
         public string ProblemType { get; set; } = string.Empty; 
+
+        public string? SelectedProblemsJson { get; set; } = string.Empty;
+        public string? CancelledProblemItem { get; set; }
+        public string? ProblemCancelReason { get; set; }
+        public string? ProblemCancelDescription { get; set; }
+        public DateTime? ProblemCancelledAt { get; set; }
 
         [Required]
         [StringLength(50)]

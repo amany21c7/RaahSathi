@@ -142,16 +142,28 @@ namespace RaahSathi.Controllers
         }
 
         [HttpGet("/Admin/GetLivePipelineJobs")]
-        public async Task<IActionResult> GetLivePipelineJobs()
+        public async Task<IActionResult> GetLivePipelineJobs(int page = 1, int pageSize = 20)
         {
             if (!IsAdmin()) return Unauthorized();
 
-            var activeJobs = await _dbContext.Jobs
+            if (page < 1) page = 1;
+            if (pageSize <= 0 || pageSize > 50) pageSize = 20;
+
+            var baseQuery = _dbContext.Jobs
                 .Include(j => j.Customer)
                 .Include(j => j.Mechanic)
                 .Include(j => j.Vehicle)
-                .Where(j => j.Status != "Completed" && j.Status != "Cancelled")
+                .Where(j => j.Status != "Completed" && j.Status != "Cancelled");
+
+            var totalCount = await baseQuery.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            if (totalPages == 0) totalPages = 1;
+            if (page > totalPages) page = totalPages;
+
+            var activeJobs = await baseQuery
                 .OrderByDescending(j => j.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             var result = activeJobs.Select(j => new
@@ -171,10 +183,23 @@ namespace RaahSathi.Controllers
                 mechanicPhone = j.Mechanic?.PhoneNumber ?? "N/A",
                 createdAt = j.CreatedAt.ToString("g"),
                 elapsedMinutes = (int)Math.Max(0, (DateTime.UtcNow - j.CreatedAt).TotalMinutes),
-                etaMins = j.Status == "Requested" ? "Searching Match..." : j.Status == "Assigned" || j.Status == "Accepted" ? "10-15 mins" : j.Status == "In Progress" || j.Status == "Repairing" ? "On-Site Service" : "N/A"
+                etaMins = j.Status == "Requested" ? "Searching Match..." 
+                    : (j.Status == "Assigned" || j.Status == "Accepted") ? "Assigned (10-15 mins)" 
+                    : (j.Status == "Driving" || j.Status == "En Route") ? "En Route (5-10 mins)" 
+                    : (j.Status == "Inspecting" || j.Status == "Arrived" || j.Status == "EstimatePending") ? "Reached Spot (Inspecting)" 
+                    : (j.Status == "In Progress" || j.Status == "Repairing" || j.Status == "WorkInProgress") ? "On-Site Repairing" 
+                    : j.Status == "Completed" ? "Completed" 
+                    : "Active Service"
             }).ToList();
 
-            return Json(new { success = true, count = result.Count, jobs = result });
+            return Json(new { 
+                success = true, 
+                count = totalCount, 
+                page = page, 
+                pageSize = pageSize, 
+                totalPages = totalPages, 
+                jobs = result 
+            });
         }
 
         [HttpPost("/Admin/AssignMechanicToJob")]
@@ -1401,36 +1426,40 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
-            if (req == null) return NotFound();
-
-            if (req.Status != "Pending")
+            var dto = new DTOs.AdminProcessPayoutDto
             {
-                TempData["Error"] = "This request has already been processed.";
+                PayoutRequestId = requestId,
+                Action = "Approve",
+                Remarks = string.IsNullOrEmpty(remarks) ? "Payout released by Admin" : remarks,
+                TransactionReference = string.IsNullOrEmpty(referenceNumber) ? Guid.NewGuid().ToString().Substring(0, 12).ToUpper() : referenceNumber
+            };
+
+            bool success = await _walletService.ProcessPayoutRequestAsync(dto);
+            if (!success)
+            {
+                TempData["Error"] = "This request could not be processed or is already completed.";
                 return RedirectToAction("Payments");
             }
 
-            req.Status = "Approved";
-            req.ProcessedAt = DateTime.UtcNow;
-            req.TransactionReference = string.IsNullOrEmpty(referenceNumber) ? Guid.NewGuid().ToString().Substring(0, 12).ToUpper() : referenceNumber;
-            req.AdminRemarks = string.IsNullOrEmpty(remarks) ? "Payout released by Admin" : remarks;
-
-            var supportMsg = new MechanicSupportMessage
+            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
+            if (req != null)
             {
-                MechanicId = req.MechanicId,
-                Title = "💰 Payout Released",
-                MessageText = $"Your payout request for ₹{req.Amount:N2} has been approved and released.\nMethod: {req.PayoutMethod}\nReference Number: {req.TransactionReference}\nRemarks: {req.AdminRemarks}",
-                SenderRole = "Admin",
-                SenderName = "RaahSathi Finance Desk",
-                IsFromAdmin = true,
-                IsRead = false,
-                SentAt = DateTime.UtcNow
-            };
-            _dbContext.MechanicSupportMessages.Add(supportMsg);
+                var supportMsg = new MechanicSupportMessage
+                {
+                    MechanicId = req.MechanicId,
+                    Title = "💰 Payout Released",
+                    MessageText = $"Your payout request for ₹{req.Amount:N2} has been approved and released.\nMethod: {req.PayoutMethod}\nReference Number: {dto.TransactionReference}\nRemarks: {dto.Remarks}",
+                    SenderRole = "Admin",
+                    SenderName = "RaahSathi Finance Desk",
+                    IsFromAdmin = true,
+                    IsRead = false,
+                    SentAt = DateTime.UtcNow
+                };
+                _dbContext.MechanicSupportMessages.Add(supportMsg);
+                await _dbContext.SaveChangesAsync();
+            }
 
-            await _dbContext.SaveChangesAsync();
-
-            TempData["Success"] = $"Payout of ₹{req.Amount:N2} approved and released successfully!";
+            TempData["Success"] = "Payout approved and released successfully via atomic transaction!";
             return RedirectToAction("Payments");
         }
 
@@ -1439,42 +1468,39 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
-            if (req == null) return NotFound();
-
-            if (req.Status != "Pending")
+            var dto = new DTOs.AdminProcessPayoutDto
             {
-                TempData["Error"] = "This request has already been processed.";
+                PayoutRequestId = requestId,
+                Action = "Reject",
+                Remarks = string.IsNullOrEmpty(remarks) ? "Rejected by Admin" : remarks
+            };
+
+            bool success = await _walletService.ProcessPayoutRequestAsync(dto);
+            if (!success)
+            {
+                TempData["Error"] = "This request could not be processed or is already completed.";
                 return RedirectToAction("Payments");
             }
 
-            req.Status = "Rejected";
-            req.ProcessedAt = DateTime.UtcNow;
-            req.AdminRemarks = string.IsNullOrEmpty(remarks) ? "Rejected by Admin" : remarks;
-
-            // Refund held funds
-            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == req.MechanicId);
-            if (profile != null)
+            var req = await _dbContext.MechanicPayoutRequests.FindAsync(requestId);
+            if (req != null)
             {
-                profile.CurrentEarnings += req.Amount;
+                var supportMsg = new MechanicSupportMessage
+                {
+                    MechanicId = req.MechanicId,
+                    Title = "❌ Payout Request Rejected",
+                    MessageText = $"Your payout request for ₹{req.Amount:N2} was rejected by Admin.\nReason: {dto.Remarks}\nAmount has been refunded to your wallet balance.",
+                    SenderRole = "Admin",
+                    SenderName = "RaahSathi Finance Desk",
+                    IsFromAdmin = true,
+                    IsRead = false,
+                    SentAt = DateTime.UtcNow
+                };
+                _dbContext.MechanicSupportMessages.Add(supportMsg);
+                await _dbContext.SaveChangesAsync();
             }
 
-            var supportMsg = new MechanicSupportMessage
-            {
-                MechanicId = req.MechanicId,
-                Title = "❌ Payout Request Rejected",
-                MessageText = $"Your payout request for ₹{req.Amount:N2} was rejected by Admin.\nReason: {req.AdminRemarks}\nAmount has been refunded to your wallet balance.",
-                SenderRole = "Admin",
-                SenderName = "RaahSathi Finance Desk",
-                IsFromAdmin = true,
-                IsRead = false,
-                SentAt = DateTime.UtcNow
-            };
-            _dbContext.MechanicSupportMessages.Add(supportMsg);
-
-            await _dbContext.SaveChangesAsync();
-
-            TempData["Success"] = $"Payout request of ₹{req.Amount:N2} rejected. Funds returned to mechanic wallet.";
+            TempData["Success"] = "Payout request rejected and balance refunded to mechanic wallet atomically.";
             return RedirectToAction("Payments");
         }
 
@@ -1893,7 +1919,7 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
-            SystemApiSetting apiSetting = null;
+            SystemApiSetting? apiSetting = null;
             try
             {
                 apiSetting = await _dbContext.SystemApiSettings.FromSqlRaw("EXEC dbo.sp_GetSystemApiSettings").AsNoTracking().FirstOrDefaultAsync();
@@ -1904,7 +1930,7 @@ namespace RaahSathi.Controllers
                 apiSetting = await _dbContext.SystemApiSettings.FirstOrDefaultAsync() ?? new SystemApiSetting();
             }
 
-            SystemContactSetting contactSetting = null;
+            SystemContactSetting? contactSetting = null;
             try
             {
                 contactSetting = await _dbContext.SystemContactSettings.FromSqlRaw("EXEC dbo.sp_GetSystemContactSettings").AsNoTracking().FirstOrDefaultAsync();
@@ -2391,18 +2417,18 @@ namespace RaahSathi.Controllers
 
         [HttpPost]
         public async Task<IActionResult> SaveSystemSettings(
-            string smsApiKey, 
-            string emailSender, 
-            string whatsappNo, 
-            string googleMapsKey, 
-            string helplineNumber = null,
-            string tollFreeNumber = null,
-            string emergencySupportNumber = null,
-            string whatsAppNumber = null,
-            string supportEmail = null,
-            string billingEmail = null,
-            string partnerHelplineNumber = null,
-            string officeAddress = null)
+            string? smsApiKey, 
+            string? emailSender, 
+            string? whatsappNo, 
+            string? googleMapsKey,
+            string? helplineNumber = null,
+            string? tollFreeNumber = null,
+            string? emergencySupportNumber = null,
+            string? whatsAppNumber = null,
+            string? supportEmail = null,
+            string? billingEmail = null,
+            string? partnerHelplineNumber = null,
+            string? officeAddress = null)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
@@ -2416,8 +2442,13 @@ namespace RaahSathi.Controllers
             if (!string.IsNullOrEmpty(helplineNumber)) await SaveOrUpdateSettingAsync("HelplineNumber", helplineNumber.Trim(), "Contact Info");
             if (!string.IsNullOrEmpty(tollFreeNumber)) await SaveOrUpdateSettingAsync("TollFreeNumber", tollFreeNumber.Trim(), "Contact Info");
             if (!string.IsNullOrEmpty(emergencySupportNumber)) await SaveOrUpdateSettingAsync("EmergencySupportNumber", emergencySupportNumber.Trim(), "Contact Info");
-            if (!string.IsNullOrEmpty(whatsAppNumber ?? whatsappNo)) await SaveOrUpdateSettingAsync("WhatsAppNumber", (whatsAppNumber ?? whatsappNo).Trim(), "Contact Info");
-            if (!string.IsNullOrEmpty(supportEmail ?? emailSender)) await SaveOrUpdateSettingAsync("SupportEmail", (supportEmail ?? emailSender).Trim(), "Contact Info");
+            
+            string resolvedWhatsApp = (whatsAppNumber ?? whatsappNo ?? "").Trim();
+            if (!string.IsNullOrEmpty(resolvedWhatsApp)) await SaveOrUpdateSettingAsync("WhatsAppNumber", resolvedWhatsApp, "Contact Info");
+            
+            string resolvedSupportEmail = (supportEmail ?? emailSender ?? "").Trim();
+            if (!string.IsNullOrEmpty(resolvedSupportEmail)) await SaveOrUpdateSettingAsync("SupportEmail", resolvedSupportEmail, "Contact Info");
+            
             if (!string.IsNullOrEmpty(billingEmail)) await SaveOrUpdateSettingAsync("BillingEmail", billingEmail.Trim(), "Contact Info");
             if (!string.IsNullOrEmpty(partnerHelplineNumber)) await SaveOrUpdateSettingAsync("PartnerHelplineNumber", partnerHelplineNumber.Trim(), "Contact Info");
             if (!string.IsNullOrEmpty(officeAddress)) await SaveOrUpdateSettingAsync("OfficeAddress", officeAddress.Trim(), "Contact Info");
@@ -2426,8 +2457,8 @@ namespace RaahSathi.Controllers
             if (!string.IsNullOrEmpty(helplineNumber)) ContactInfoHelper.UpdateSetting("HelplineNumber", helplineNumber);
             if (!string.IsNullOrEmpty(tollFreeNumber)) ContactInfoHelper.UpdateSetting("TollFreeNumber", tollFreeNumber);
             if (!string.IsNullOrEmpty(emergencySupportNumber)) ContactInfoHelper.UpdateSetting("EmergencySupportNumber", emergencySupportNumber);
-            if (!string.IsNullOrEmpty(whatsAppNumber ?? whatsappNo)) ContactInfoHelper.UpdateSetting("WhatsAppNumber", whatsAppNumber ?? whatsappNo);
-            if (!string.IsNullOrEmpty(supportEmail ?? emailSender)) ContactInfoHelper.UpdateSetting("SupportEmail", supportEmail ?? emailSender);
+            if (!string.IsNullOrEmpty(resolvedWhatsApp)) ContactInfoHelper.UpdateSetting("WhatsAppNumber", resolvedWhatsApp);
+            if (!string.IsNullOrEmpty(resolvedSupportEmail)) ContactInfoHelper.UpdateSetting("SupportEmail", resolvedSupportEmail);
             if (!string.IsNullOrEmpty(billingEmail)) ContactInfoHelper.UpdateSetting("BillingEmail", billingEmail);
             if (!string.IsNullOrEmpty(partnerHelplineNumber)) ContactInfoHelper.UpdateSetting("PartnerHelplineNumber", partnerHelplineNumber);
             if (!string.IsNullOrEmpty(officeAddress)) ContactInfoHelper.UpdateSetting("OfficeAddress", officeAddress);

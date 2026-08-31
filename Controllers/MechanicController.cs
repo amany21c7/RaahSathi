@@ -19,6 +19,7 @@ namespace RaahSathi.Controllers
         private readonly Services.IWalletService _walletService;
         private readonly Services.IUserService _userService;
         private readonly Services.IReferralService _referralService;
+        private readonly Services.IPricingEngine _pricingEngine;
 
         public MechanicController(
             ApplicationDbContext dbContext,
@@ -28,7 +29,8 @@ namespace RaahSathi.Controllers
             Services.IJobService jobService,
             Services.IWalletService walletService,
             Services.IUserService userService,
-            Services.IReferralService referralService)
+            Services.IReferralService referralService,
+            Services.IPricingEngine pricingEngine)
         {
             _dbContext = dbContext;
             _env = env;
@@ -38,6 +40,7 @@ namespace RaahSathi.Controllers
             _walletService = walletService;
             _userService = userService;
             _referralService = referralService;
+            _pricingEngine = pricingEngine;
         }
 
         private async Task<User?> GetActiveMechanicUserAsync()
@@ -1183,9 +1186,96 @@ namespace RaahSathi.Controllers
                 partsApproved = job.PartsApproved,
                 towingApproved = job.TowingApproved,
                 finalBillAmount = job.FinalBillAmount,
+                problemType = job.ProblemType,
+                selectedProblemsJson = job.SelectedProblemsJson,
+                cancelledProblemItem = job.CancelledProblemItem,
+                problemCancelReason = job.ProblemCancelReason,
+                problemCancelDescription = job.ProblemCancelDescription,
+                problemCancelledAt = job.ProblemCancelledAt?.ToString("o"),
                 isSimulationPaused = job.IsSimulationPaused,
                 inactiveSeconds = inactiveSeconds,
                 unreadChatCount = unreadChatCount
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CancelJobProblemItem(int jobId, string problemName, string reason, string? description)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated." });
+
+            var job = await _dbContext.Jobs.FirstOrDefaultAsync(j => j.Id == jobId && j.MechanicId == user.Id);
+            if (job == null) return Json(new { success = false, message = "Job not found or not assigned to you." });
+
+            // 1. Validation: Allowed only in Inspecting (or Arrived) and Repairing stages
+            if (!string.Equals(job.Status, "Inspecting", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(job.Status, "Arrived", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(job.Status, "Repairing", StringComparison.OrdinalIgnoreCase))
+            {
+                return Json(new { success = false, message = "Problems can only be dropped/cancelled during Inspection or Repairing stages." });
+            }
+
+            // 2. Validation: Only 1 problem can be cancelled across the whole job
+            if (!string.IsNullOrEmpty(job.CancelledProblemItem))
+            {
+                return Json(new { success = false, message = $"Only 1 problem item can be cancelled per job. Problem '{job.CancelledProblemItem}' was already dropped." });
+            }
+
+            // 3. Validation: Must have at least 2 problems in total
+            var problems = (job.ProblemType ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            if (problems.Count < 2)
+            {
+                return Json(new { success = false, message = "A problem item can only be cancelled if the job contains 2 or more problems." });
+            }
+
+            // 4. Validation: Check that the requested problemName is in the job
+            var matchedProblem = problems.FirstOrDefault(p => p.Equals(problemName, StringComparison.OrdinalIgnoreCase) || p.Contains(problemName, StringComparison.OrdinalIgnoreCase) || problemName.Contains(p, StringComparison.OrdinalIgnoreCase));
+            if (matchedProblem == null)
+            {
+                return Json(new { success = false, message = "Specified problem was not found in this job request." });
+            }
+
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return Json(new { success = false, message = "Please select a valid cancellation reason." });
+            }
+
+            // Calculate price to deduct
+            var (minRate, _) = _pricingEngine.GetServiceChargeRange(matchedProblem);
+            double deductionAmount = minRate > 0 ? minRate : 150;
+
+            // Mark job fields
+            job.CancelledProblemItem = matchedProblem;
+            job.ProblemCancelReason = reason;
+            job.ProblemCancelDescription = description ?? "";
+            job.ProblemCancelledAt = DateTime.UtcNow;
+
+            // Recalculate bill
+            job.ServiceChargeMin = Math.Max(0, job.ServiceChargeMin - deductionAmount);
+            job.FinalBillAmount = Math.Max(job.VisitingCharge, job.FinalBillAmount - deductionAmount);
+
+            // Audit log
+            var audit = new AuditLog
+            {
+                ActionType = "CANCEL_JOB_PROBLEM",
+                AdminName = user.Name,
+                UserRole = "Mechanic",
+                TimeStamp = DateTime.UtcNow,
+                Details = $"Job #{job.Id}: Mechanic {user.Name} dropped problem '{matchedProblem}' (Deducted: ₹{deductionAmount}). Reason: {reason}. Notes: {description}"
+            };
+            _dbContext.AuditLogs.Add(audit);
+
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new
+            {
+                success = true,
+                message = $"Problem '{matchedProblem}' successfully dropped. Bill deducted by -₹{deductionAmount}.",
+                cancelledProblem = matchedProblem,
+                reason = reason,
+                description = description,
+                newServiceChargeMin = job.ServiceChargeMin,
+                newFinalBillAmount = job.FinalBillAmount
             });
         }
 

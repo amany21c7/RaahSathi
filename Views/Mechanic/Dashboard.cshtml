@@ -291,7 +291,7 @@
                                 <span class="d-flex align-items-center gap-2">
                                     <i class="fa-solid fa-gift text-warning" style="width: 20px;"></i> Refer &amp; Earn
                                 </span>
-                                <span class="badge bg-warning text-dark">₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0")</span>
+                                <span class="badge bg-warning text-dark">₹100</span>
                             </a>
                         </li>
                         <li><hr class="dropdown-divider border-secondary opacity-25"></li>
@@ -352,7 +352,7 @@
                     <i class="fa-solid fa-wallet me-1"></i> Earnings
                 </button>
                 <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 font-weight-bold text-dark shadow-sm" data-bs-toggle="modal" data-bs-target="#mechanicReferralModal" onclick="openMechanicReferralModal(event)">
-                    <i class="fa-solid fa-gift me-1"></i> Refer &amp; Earn <span class="badge bg-dark text-warning ms-1">₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0")</span>
+                    <i class="fa-solid fa-gift me-1"></i> Refer &amp; Earn <span class="badge bg-dark text-warning ms-1">₹100</span>
                 </button>
                 <button class="btn btn-outline-info btn-sm rounded-pill px-3 position-relative" onclick="switchMechTab('tab-support')">
                     <i class="fa-solid fa-inbox me-1"></i> Support Inbox
@@ -420,7 +420,68 @@
                     <div>
                         <span class="badge bg-warning text-dark px-3 py-1 font-weight-bold mb-1">JOB #@activeJob.Id • IN PROGRESS</span>
                         <h3 class="text-white font-weight-bold mb-0" style="font-family: 'Outfit';">@activeJob.Vehicle?.Model (@activeJob.Vehicle?.VehicleType)</h3>
-                        <p class="text-muted small mb-0"><i class="fa-solid fa-wrench text-warning me-1"></i> Issue: <b class="text-light">@activeJob.ProblemType</b></p>
+                        
+                        @{
+                            var jobProblems = (activeJob.ProblemType ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                            bool canCancelSingleProblem = jobProblems.Count >= 2 
+                                                          && string.IsNullOrEmpty(activeJob.CancelledProblemItem)
+                                                          && (activeJob.Status == "Inspecting" || activeJob.Status == "Arrived" || activeJob.Status == "Repairing");
+                        }
+                        
+                        <div class="mt-2 mb-2">
+                            <span class="text-muted small font-weight-bold d-block mb-1">
+                                <i class="fa-solid fa-screwdriver-wrench text-warning me-1"></i> Customer Breakdown Issues (@jobProblems.Count):
+                            </span>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                @foreach (var prob in jobProblems)
+                                {
+                                    bool isCancelled = !string.IsNullOrEmpty(activeJob.CancelledProblemItem) && 
+                                                       (prob.Equals(activeJob.CancelledProblemItem, StringComparison.OrdinalIgnoreCase) || prob.Contains(activeJob.CancelledProblemItem, StringComparison.OrdinalIgnoreCase) || activeJob.CancelledProblemItem.Contains(prob, StringComparison.OrdinalIgnoreCase));
+                                    
+                                    if (isCancelled)
+                                    {
+                                        <div class="badge bg-danger bg-opacity-10 border border-danger text-light p-2 rounded-3 d-inline-flex align-items-center gap-2 text-start">
+                                            <i class="fa-solid fa-circle-xmark text-danger"></i>
+                                            <div>
+                                                <span class="text-decoration-line-through text-muted font-weight-bold">@prob</span>
+                                                <div class="text-danger small" style="font-size:0.7rem;">
+                                                    <i class="fa-solid fa-ban me-1"></i> Dropped: @activeJob.ProblemCancelReason
+                                                    @if(!string.IsNullOrWhiteSpace(activeJob.ProblemCancelDescription))
+                                                    {
+                                                        <span>- @activeJob.ProblemCancelDescription</span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="badge bg-dark border border-warning border-opacity-40 text-white p-2 rounded-3 d-inline-flex align-items-center gap-2 shadow-sm">
+                                            <i class="fa-solid fa-wrench text-warning"></i>
+                                            <span class="font-weight-bold">@prob</span>
+                                            @if (canCancelSingleProblem)
+                                            {
+                                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1.5 ms-1" style="font-size:0.68rem;" onclick="openCancelProblemModal('@prob.Replace("'", "\\'")')" title="Drop this problem with reason">
+                                                    <i class="fa-solid fa-xmark me-1"></i> Remove Issue
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(activeJob.CancelledProblemItem))
+                            {
+                                <div class="text-muted extra-small mt-1" style="font-size: 0.72rem;">
+                                    <i class="fa-solid fa-shield-halved text-info me-1"></i> 1 Problem dropped (Limit 1 per job reached). Price adjusted automatically in bill.
+                                </div>
+                            }
+                            else if (jobProblems.Count >= 2 && (activeJob.Status == "Inspecting" || activeJob.Status == "Arrived" || activeJob.Status == "Repairing"))
+                            {
+                                <div class="text-info extra-small mt-1" style="font-size: 0.72rem;">
+                                    <i class="fa-solid fa-circle-info text-info me-1"></i> Multi-item job: You can remove max 1 issue if selected by mistake or parts unavailable.
+                                </div>
+                            }
+                        </div>
                     </div>
                     <div class="text-md-end">
                         <span class="text-muted small d-block font-weight-bold text-light">Job Total</span>
@@ -3902,6 +3963,121 @@
         var msg = "Join RaahSathi roadside network! Use referral code: " + code + ". Link: " + shareLink;
         window.location.href = 'sms:?body=' + encodeURIComponent(msg);
     }
+</script>
+
+<!-- Drop / Cancel Problem Item Modal -->
+<div class="modal fade" id="cancelProblemItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-warning border-opacity-40" style="background:#0f172a;">
+            <div class="modal-header border-secondary border-opacity-30">
+                <h5 class="modal-title text-white font-weight-bold">
+                    <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> Remove Problem Item
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label text-muted small font-weight-bold">Problem Item to Remove</label>
+                    <input type="text" id="cancelProblemTargetName" class="form-control glass-input text-warning font-weight-bold" readonly />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small font-weight-bold">Reason for Cancellation <span class="text-warning">*</span></label>
+                    <select id="cancelProblemReasonSelect" class="form-select glass-input text-white border-secondary" onchange="toggleCancelProblemDescription()">
+                        <option value="" disabled selected>-- Select Cancellation Reason --</option>
+                        <option value="Selected by customer by mistake">Selected by customer by mistake</option>
+                        <option value="Spare parts / specialized tools unavailable on spot">Spare parts / specialized tools unavailable on spot</option>
+                        <option value="Customer refused this particular repair">Customer refused this particular repair</option>
+                        <option value="Minor issue resolved / not applicable on inspection">Minor issue resolved / not applicable on inspection</option>
+                        <option value="Other Reason">Other Reason</option>
+                    </select>
+                </div>
+
+                <div id="cancelProblemDescriptionContainer" class="mb-3 d-none">
+                    <label class="form-label text-muted small font-weight-bold">Detailed Description / Notes <span class="text-warning">*</span></label>
+                    <textarea id="cancelProblemDescriptionText" class="form-control glass-input text-white" rows="3" placeholder="Enter specific explanation for dropping this issue..."></textarea>
+                </div>
+
+                <button type="button" class="btn btn-danger w-100 py-3 font-weight-bold shadow" id="btnConfirmCancelProblem" onclick="submitCancelProblemItem()">
+                    <i class="fa-solid fa-trash-can me-1"></i> Confirm &amp; Drop Issue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.toggleCancelProblemDescription = function() {
+        var reason = $('#cancelProblemReasonSelect').val();
+        if (reason === 'Other Reason') {
+            $('#cancelProblemDescriptionContainer').removeClass('d-none');
+            $('#cancelProblemDescriptionText').focus();
+        } else {
+            $('#cancelProblemDescriptionContainer').addClass('d-none');
+            $('#cancelProblemDescriptionText').val('');
+        }
+    };
+
+    window.openCancelProblemModal = function(probName) {
+        $('#cancelProblemTargetName').val(probName);
+        $('#cancelProblemReasonSelect').val('');
+        $('#cancelProblemDescriptionText').val('');
+        $('#cancelProblemDescriptionContainer').addClass('d-none');
+        var modalEl = document.getElementById('cancelProblemItemModal');
+        if (modalEl) {
+            if (modalEl.parentNode !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    };
+
+    window.submitCancelProblemItem = function() {
+        var probName = $('#cancelProblemTargetName').val().trim();
+        var reason = $('#cancelProblemReasonSelect').val();
+        var desc = $('#cancelProblemDescriptionText').val().trim();
+
+        if (!reason) {
+            alert("Please select a valid cancellation reason from the dropdown.");
+            $('#cancelProblemReasonSelect').focus();
+            return;
+        }
+        if (reason === 'Other Reason' && !desc) {
+            alert("Please enter a description/note explaining why this problem item is being dropped.");
+            $('#cancelProblemDescriptionText').focus();
+            return;
+        }
+
+        var btn = $('#btnConfirmCancelProblem');
+        btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Removing issue...');
+
+        $.ajax({
+            url: '/Mechanic/CancelJobProblemItem',
+            type: 'POST',
+            data: {
+                jobId: @(activeJob?.Id ?? 0),
+                problemName: probName,
+                reason: reason,
+                description: (reason === 'Other Reason' ? desc : reason)
+            },
+            success: function(res) {
+                btn.prop('disabled', false).html('<i class="fa-solid fa-trash-can me-1"></i> Confirm &amp; Drop Issue');
+                if (res.success) {
+                    var mInst = bootstrap.Modal.getInstance(document.getElementById('cancelProblemItemModal'));
+                    if (mInst) mInst.hide();
+                    alert("✅ " + res.message);
+                    window.location.reload();
+                } else {
+                    alert("⚠️ " + res.message);
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).html('<i class="fa-solid fa-trash-can me-1"></i> Confirm &amp; Drop Issue');
+                alert("Error dropping problem item. Please try again.");
+            }
+        });
+    };
 </script>
 
 

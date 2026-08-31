@@ -369,6 +369,50 @@
             </div>
         </div>
 
+        <!-- Vehicle & Issues Summary Card with Multi-Problem Breakdown -->
+        <div class="glass-card p-3 mb-3 border-secondary">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                <div>
+                    <span class="badge bg-warning text-dark font-weight-bold mb-1">JOB #@job.Id</span>
+                    <h5 class="text-white font-weight-bold mb-1">@job.Vehicle?.Model (@job.Vehicle?.VehicleType)</h5>
+                    <div id="trackerProblemsContainer" class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                        @{
+                            var custJobProblems = (job.ProblemType ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                        }
+                        @foreach (var p in custJobProblems)
+                        {
+                            bool isCancelled = !string.IsNullOrEmpty(job.CancelledProblemItem) &&
+                                               (p.Equals(job.CancelledProblemItem, StringComparison.OrdinalIgnoreCase) || p.Contains(job.CancelledProblemItem, StringComparison.OrdinalIgnoreCase) || job.CancelledProblemItem.Contains(p, StringComparison.OrdinalIgnoreCase));
+                            
+                            if (isCancelled)
+                            {
+                                <div class="badge bg-danger bg-opacity-10 border border-danger text-light p-2 rounded-3 d-inline-flex align-items-center gap-1.5 tracker-prob-badge" data-prob-name="@p">
+                                    <i class="fa-solid fa-circle-xmark text-danger"></i>
+                                    <span class="text-decoration-line-through text-muted font-weight-bold">@p</span>
+                                    <span class="text-danger small" style="font-size:0.7rem;">(Cancelled by mechanic)</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="badge bg-dark border border-warning border-opacity-40 text-white p-2 rounded-3 d-inline-flex align-items-center gap-1.5 shadow-sm tracker-prob-badge" data-prob-name="@p">
+                                    <i class="fa-solid fa-wrench text-warning"></i>
+                                    <span class="prob-title">@p</span>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="text-md-end">
+                    <span class="text-muted small d-block font-weight-bold">Upfront Estimate</span>
+                    <h4 class="text-warning font-weight-extrabold mb-0" id="trackerEstimatedBillText">₹@job.FinalBillAmount.ToString("N0")</h4>
+                </div>
+            </div>
+
+            <div id="trackerCancelledAlert" class="alert alert-danger bg-dark border-danger text-light small p-2.5 mt-2.5 mb-0 rounded @(string.IsNullOrEmpty(job.CancelledProblemItem) ? "d-none" : "")">
+                <i class="fa-solid fa-circle-info text-danger me-1"></i> <strong>Notice:</strong> Problem <strong><span id="trackerCancelledItemName">@job.CancelledProblemItem</span></strong> was removed by mechanic (<span id="trackerCancelledReasonText">@job.ProblemCancelReason</span>). Total estimate adjusted.
+            </div>
+        </div>
+
         <!-- Tracker Map Card -->
         <div class="glass-card p-0 mb-3 overflow-hidden" style="display:flex; flex-direction:column;">
             <div class="p-3 bg-dark border-bottom border-secondary d-flex align-items-center justify-content-between">
@@ -1131,6 +1175,27 @@
 
             // Update Timeline steps
             updateTimelineUI(res.status);
+
+            // Real-time Problem Cancellation sync
+            if (res.cancelledProblemItem) {
+                $('#trackerCancelledItemName').text(res.cancelledProblemItem);
+                $('#trackerCancelledReasonText').text(res.problemCancelReason || 'Cancelled by mechanic');
+                $('#trackerCancelledAlert').removeClass('d-none');
+                
+                // Strike through cancelled badge in list
+                $('.tracker-prob-badge').each(function() {
+                    var bName = $(this).attr('data-prob-name');
+                    if (bName && (bName.toLowerCase() === res.cancelledProblemItem.toLowerCase() || bName.toLowerCase().includes(res.cancelledProblemItem.toLowerCase()))) {
+                        $(this).removeClass('bg-dark border-warning text-white shadow-sm')
+                               .addClass('bg-danger bg-opacity-10 border-danger text-light');
+                        $(this).html(`<i class="fa-solid fa-circle-xmark text-danger"></i> <span class="text-decoration-line-through text-muted font-weight-bold">${bName}</span> <span class="text-danger small" style="font-size:0.7rem;">(Cancelled by mechanic)</span>`);
+                    }
+                });
+            }
+
+            if (res.finalBillAmount) {
+                $('#trackerEstimatedBillText').text('₹' + Number(res.finalBillAmount).toFixed(0));
+            }
 
             // Show/hide receipt button dynamically in real-time
             if (res.status === "Completed") {

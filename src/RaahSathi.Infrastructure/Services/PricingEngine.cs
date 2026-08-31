@@ -120,6 +120,27 @@ namespace RaahSathi.Services
 
         public (double min, double max) GetServiceChargeRange(string problemType, string? cityName = null)
         {
+            if (string.IsNullOrWhiteSpace(problemType)) return (150, 1000);
+
+            var items = problemType.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (items.Length > 1)
+            {
+                double totalMin = 0;
+                double totalMax = 0;
+                foreach (var item in items)
+                {
+                    var (itemMin, itemMax) = GetSingleServiceChargeRange(item, cityName);
+                    totalMin += itemMin;
+                    totalMax += itemMax;
+                }
+                return (totalMin, totalMax);
+            }
+
+            return GetSingleServiceChargeRange(problemType, cityName);
+        }
+
+        private (double min, double max) GetSingleServiceChargeRange(string problemType, string? cityName = null)
+        {
             (double min, double max) result = (150, 1000);
 
             if (!string.IsNullOrWhiteSpace(problemType))
@@ -154,15 +175,15 @@ namespace RaahSathi.Services
             {
                 result = problemType.ToLower() switch
                 {
-                    "battery dead / low battery" or "battery dead" or "battery" => (150, 2500),
+                    "battery dead / low battery" or "battery dead" or "battery" or "battery jumpstart" or "battery jump-start" => (150, 2500),
                     "emergency ev charging" or "charging problem" => (250, 800),
                     "controller problem" or "controller" => (350, 1800),
                     "motor problem" or "bldc motor" => (400, 2500),
                     "battery overheating" => (200, 1200),
                     "wiring / electrical problem" or "electrical problem" or "wiring" => (150, 850),
                     "fuel problem" or "cng problem" or "cng gas problem" or "fuel finished" or "fuel" => (150, 950),
-                    "clutch / gear problem" or "gearbox issue" or "gearbox" or "clutch" => (250, 1800),
-                    "flat tyre" or "puncture" or "puncture / tyre problem" => (99, 450),
+                    "clutch / gear problem" or "gearbox issue" or "gearbox" or "clutch" or "heavy clutch & pressure plate issue" => (250, 1800),
+                    "flat tyre" or "puncture" or "puncture / tyre problem" or "tyre puncture" => (99, 450),
                     "key locked" or "ignition / switch problem" or "lockout" => (150, 500),
                     "suspension issue" or "suspension" or "shocker" => (300, 1800),
                     "brake issue" or "clutch issue" or "brake/clutch" => (180, 800),
