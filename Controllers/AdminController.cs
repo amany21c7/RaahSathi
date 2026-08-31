@@ -142,6 +142,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpGet("/Admin/GetLivePipelineJobs")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("live-polling-policy")]
         public async Task<IActionResult> GetLivePipelineJobs(int page = 1, int pageSize = 20)
         {
             if (!IsAdmin()) return Unauthorized();
@@ -203,6 +204,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost("/Admin/AssignMechanicToJob")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("booking-action-policy")]
         public async Task<IActionResult> AssignMechanicToJob(int jobId, int mechanicUserId)
         {
             if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
@@ -232,6 +234,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost("/Admin/UpdateJobStatusDirect")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("booking-action-policy")]
         public async Task<IActionResult> UpdateJobStatusDirect(int jobId, string status)
         {
             if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });

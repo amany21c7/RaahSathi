@@ -51,6 +51,128 @@ if (builder.Environment.IsDevelopment())
     mvcBuilder.AddRazorRuntimeCompilation();
 }
 
+// Add Native Tiered Rate Limiting (Protects auth, bookings, and global traffic while ensuring zero disruption for live polling)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.Headers.Append("Retry-After", "15");
+
+        bool isAjaxOrApi = context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                           context.HttpContext.Request.Headers.Accept.ToString().Contains("application/json") ||
+                           context.HttpContext.Request.Path.Value?.StartsWith("/api/", StringComparison.OrdinalIgnoreCase) == true ||
+                           context.HttpContext.Request.Path.Value?.Contains("/GetLive", StringComparison.OrdinalIgnoreCase) == true ||
+                           context.HttpContext.Request.Path.Value?.Contains("/GetTelemetry", StringComparison.OrdinalIgnoreCase) == true;
+
+        if (isAjaxOrApi)
+        {
+            context.HttpContext.Response.ContentType = "application/json";
+            await context.HttpContext.Response.WriteAsync("{\"success\":false,\"message\":\"Too many requests. Please slow down and wait a moment.\",\"statusCode\":429,\"retryAfter\":15}", cancellationToken);
+        }
+        else
+        {
+            context.HttpContext.Response.ContentType = "text/html";
+            await context.HttpContext.Response.WriteAsync(@"
+                <!DOCTYPE html>
+                <html lang='en'>
+                <head>
+                    <meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+                    <title>429 - Too Many Requests | RaahSathi</title>
+                    <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css'>
+                </head>
+                <body class='bg-dark text-white d-flex align-items-center justify-content-center min-vh-100 p-3'>
+                    <div class='card bg-black border-warning text-center p-4 shadow-lg' style='max-width: 480px;'>
+                        <div class='mb-3 text-warning fs-1'>⚠️</div>
+                        <h4 class='text-warning fw-bold mb-2'>Too Many Requests</h4>
+                        <p class='text-muted small mb-4'>We noticed unusual traffic spikes. To keep RaahSathi emergency services secure and fast, please wait 15 seconds before trying again.</p>
+                        <a href='javascript:location.reload();' class='btn btn-warning btn-sm font-weight-bold'>Refresh Page</a>
+                    </div>
+                </body>
+                </html>", cancellationToken);
+        }
+    };
+
+    // 1. Strict Auth & OTP Policy (10 req/min per IP) - Brute-force & OTP abuse protection
+    options.AddPolicy("auth-policy", httpContext =>
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "anon_auth_ip";
+        return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(ip, _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+
+    // 2. High-Capacity Live Polling Policy (120 req/min with sliding window) - Zero disruption for 3s/5s polling
+    options.AddPolicy("live-polling-policy", httpContext =>
+    {
+        var partitionKey = httpContext.User.Identity?.IsAuthenticated == true 
+            ? $"user_{httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value}" 
+            : (httpContext.Connection.RemoteIpAddress?.ToString() ?? "anon_polling_ip");
+
+        return System.Threading.RateLimiting.RateLimitPartition.GetSlidingWindowLimiter(partitionKey, _ => new System.Threading.RateLimiting.SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 120,
+            Window = TimeSpan.FromMinutes(1),
+            SegmentsPerWindow = 6,
+            QueueLimit = 2,
+            AutoReplenishment = true
+        });
+    });
+
+    // 3. Action & Booking Policy (Anti-Spam / Anti-Duplicate Click Token Bucket)
+    options.AddPolicy("booking-action-policy", httpContext =>
+    {
+        var partitionKey = httpContext.User.Identity?.IsAuthenticated == true 
+            ? $"action_user_{httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value}" 
+            : (httpContext.Connection.RemoteIpAddress?.ToString() ?? "anon_action_ip");
+
+        return System.Threading.RateLimiting.RateLimitPartition.GetTokenBucketLimiter(partitionKey, _ => new System.Threading.RateLimiting.TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 15,
+            TokensPerPeriod = 3,
+            ReplenishmentPeriod = TimeSpan.FromSeconds(5),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+
+    // 4. Global Fallback Policy for general browsing (150 req/min)
+    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        // Bypass rate limiting for static assets
+        var path = httpContext.Request.Path.Value ?? "";
+        if (path.StartsWith("/css", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/js", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/lib", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/images", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/uploads", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) ||
+            path.EndsWith(".woff2", StringComparison.OrdinalIgnoreCase))
+        {
+            return System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("static_assets");
+        }
+
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "anon_global_ip";
+        return System.Threading.RateLimiting.RateLimitPartition.GetSlidingWindowLimiter(ip, _ => new System.Threading.RateLimiting.SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 150,
+            Window = TimeSpan.FromMinutes(1),
+            SegmentsPerWindow = 6,
+            QueueLimit = 5,
+            AutoReplenishment = true
+        });
+    });
+});
+
 var app = builder.Build();
 
 // Automatically ensure DB is created and seeded on startup
@@ -1026,6 +1148,7 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapStaticAssets();
 
