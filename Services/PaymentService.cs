@@ -133,8 +133,6 @@ namespace RaahSathi.Services
             var paymentModel = new Payment
             {
                 JobId = job.Id,
-                MechanicId = job.MechanicId ?? 0,
-                CustomerId = job.CustomerId,
                 Amount = finalBill,
                 PaymentStatus = "Released",
                 RazorpayPaymentId = payId,
