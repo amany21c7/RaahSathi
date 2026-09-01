@@ -454,9 +454,9 @@
         
         bool isSettingsHubPage = Context.Request.Path.Value?.Equals("/Admin/Settings", StringComparison.OrdinalIgnoreCase) == true;
         
-        bool isCustLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Customer");
-        bool isMechLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Mechanic");
-        bool isAdminLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Admin");
+        bool isCustLoggedIn = Context.User.Identity?.IsAuthenticated == true && (Context.User.IsInRole("Customer") || Context.User.Claims.Any(c => (c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role" || c.Type == "Role") && c.Value == "Customer") || Context.Request.Cookies["RaahSathiUserRole"] == "Customer");
+        bool isMechLoggedIn = isMechPage || (Context.User.Identity?.IsAuthenticated == true && (Context.User.IsInRole("Mechanic") || Context.User.Claims.Any(c => (c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role" || c.Type == "Role") && c.Value == "Mechanic") || Context.Request.Cookies["RaahSathiUserRole"] == "Mechanic"));
+        bool isAdminLoggedIn = Context.User.Identity?.IsAuthenticated == true && (Context.User.IsInRole("Admin") || Context.User.Claims.Any(c => (c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role" || c.Type == "Role") && c.Value == "Admin") || Context.Request.Cookies["RaahSathiUserRole"] == "Admin");
         
         string adminSubRole = Context.User.FindFirst("AdminRole")?.Value ?? "Super Admin";
         bool isSuperAdmin = isAdminLoggedIn && adminSubRole.Equals("Super Admin", StringComparison.OrdinalIgnoreCase);

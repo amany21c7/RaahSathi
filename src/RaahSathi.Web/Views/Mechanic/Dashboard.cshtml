@@ -3071,6 +3071,9 @@
         @if (pingJob != null && activeJob == null)
         {
             <text>
+            if (typeof switchMechTab === 'function') {
+                try { switchMechTab('tab-requests'); } catch(e) {}
+            }
             setTimeout(function() {
                 if (typeof window.openDispatchModal === 'function' && !window.currentDispatchJobId) {
                     window.currentDispatchJobId = @pingJob.Id;
