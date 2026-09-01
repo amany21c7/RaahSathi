@@ -492,7 +492,8 @@
                             double baseEstBill = activeJob.VisitingCharge + activeJob.ServiceChargeMin;
                             double currentBill = activeJob.FinalBillAmount > baseEstBill ? activeJob.FinalBillAmount : baseEstBill;
                             double activePartsAmt = (activeJob.PartsApproved == true) ? activeJob.PartsEstimateAmount : 0;
-                            var commCalc = PaymentService.CalculateTieredCommissionAndNetEarnings(currentBill, activePartsAmt);
+                            double activeCustomAmt = (activeJob.CustomEstimateApproved == true) ? activeJob.CustomEstimateAmount : 0;
+                            var commCalc = PaymentService.CalculateTieredCommissionAndNetEarnings(currentBill, activePartsAmt, activeCustomAmt);
                         }
                         <h3 class="text-success font-weight-extrabold mb-0" style="font-family: 'Outfit';">₹@currentBill.ToString("N2")</h3>
                         <span class="text-muted extra-small d-block mt-1" style="font-size: 0.76rem;" title="Platform Fee calculated dynamically from live admin rules">

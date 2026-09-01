@@ -55,7 +55,7 @@ namespace RaahSathi.Services
     {
         Task<bool> ProcessEscrowPaymentForJobAsync(int jobId, string? paymentId);
         Task<JobInvoiceBreakdownResult> GenerateJobInvoiceBreakdownAsync(int jobId);
-        PaymentCommissionCalculationResult CalculateTieredCommissionAndNetEarnings(double totalBillAmount, double partsAmount = 0);
+        PaymentCommissionCalculationResult CalculateTieredCommissionAndNetEarnings(double totalBillAmount, double partsAmount = 0, double customRepairAmount = 0);
         Task<List<Payment>> GetAdminEscrowTransactionsLedgerAsync();
     }
 }

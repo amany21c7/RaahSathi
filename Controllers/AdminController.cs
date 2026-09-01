@@ -1189,6 +1189,7 @@ namespace RaahSathi.Controllers
             ViewBag.CommPhase2 = await GetSettingDoubleAsync("CommissionPhase2", 10);
             ViewBag.CommPhase3 = await GetSettingDoubleAsync("CommissionPhase3", 12);
             ViewBag.CommParts = await GetSettingDoubleAsync("CommissionParts", 5);
+            ViewBag.CommCustomRepair = await GetSettingDoubleAsync("CommissionCustomRepair", 0);
 
             return View();
         }
@@ -2791,7 +2792,7 @@ namespace RaahSathi.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> SaveCommissionSettings(double phase1, double phase2, double phase3, double parts)
+        public async Task<IActionResult> SaveCommissionSettings(double phase1, double phase2, double phase3, double parts, double customRepair = 0)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
@@ -2799,8 +2800,9 @@ namespace RaahSathi.Controllers
             await SaveOrUpdateSettingAsync("CommissionPhase2", phase2.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
             await SaveOrUpdateSettingAsync("CommissionPhase3", phase3.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
             await SaveOrUpdateSettingAsync("CommissionParts", parts.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
+            await SaveOrUpdateSettingAsync("CommissionCustomRepair", customRepair.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
 
-            await LogAdminActionAsync("COMMISSION_SETTINGS", $"Updated commission phases: P1={phase1}%, P2={phase2}%, P3={phase3}%, Parts={parts}%");
+            await LogAdminActionAsync("COMMISSION_SETTINGS", $"Updated commission phases: P1={phase1}%, P2={phase2}%, P3={phase3}%, Parts={parts}%, CustomRepair={customRepair}%");
             
             TempData["Success"] = "Admin commission rates updated successfully!";
             return RedirectToAction("Pricing");

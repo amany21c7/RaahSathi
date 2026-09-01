@@ -26,58 +26,72 @@
     </div>
     
     <form action="/Admin/SaveCommissionSettings" method="POST">
-        <div class="row g-3">
-            <div class="col-6 col-md-3">
-                <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-warning border-opacity-30 h-100">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="badge bg-warning text-dark font-weight-bold">TIER 1</span>
-                        <span class="text-muted extra-small font-monospace">&lt; ₹1,000</span>
+        <div class="row g-2 g-sm-3">
+            <div class="col-6 col-md-4 col-lg">
+                <div class="p-2.5 p-sm-3 rounded-3 bg-black bg-opacity-40 border border-warning border-opacity-30 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <span class="badge bg-warning text-dark font-weight-bold" style="font-size:0.65rem;">TIER 1</span>
+                        <span class="text-muted extra-small font-monospace">&lt; ₹1k</span>
                     </div>
-                    <label class="text-light small font-weight-bold d-block mb-1.5">Jobs under ₹1,000</label>
+                    <label class="text-light small font-weight-bold d-block mb-1 text-truncate" style="font-size:0.75rem;">Under ₹1,000</label>
                     <div class="input-group input-group-sm">
-                        <input type="number" name="phase1" step="0.1" min="0" max="50" class="form-control bg-dark text-warning font-weight-bold border-secondary" value="@(ViewBag.CommPhase1 ?? 8)" required placeholder="e.g. 8">
+                        <input type="number" name="phase1" step="0.1" min="0" max="50" class="form-control bg-dark text-warning font-weight-bold border-secondary small" value="@(ViewBag.CommPhase1 ?? 8)" required placeholder="8">
                         <span class="input-group-text bg-secondary bg-opacity-30 text-warning font-weight-bold border-secondary">%</span>
                     </div>
                 </div>
             </div>
             
-            <div class="col-6 col-md-3">
-                <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-warning border-opacity-30 h-100">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="badge bg-warning text-dark font-weight-bold">TIER 2</span>
-                        <span class="text-muted extra-small font-monospace">₹1,000 - ₹3,000</span>
+            <div class="col-6 col-md-4 col-lg">
+                <div class="p-2.5 p-sm-3 rounded-3 bg-black bg-opacity-40 border border-warning border-opacity-30 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <span class="badge bg-warning text-dark font-weight-bold" style="font-size:0.65rem;">TIER 2</span>
+                        <span class="text-muted extra-small font-monospace">₹1k - ₹3k</span>
                     </div>
-                    <label class="text-light small font-weight-bold d-block mb-1.5">Jobs ₹1,000 to ₹3,000</label>
+                    <label class="text-light small font-weight-bold d-block mb-1 text-truncate" style="font-size:0.75rem;">₹1k to ₹3,000</label>
                     <div class="input-group input-group-sm">
-                        <input type="number" name="phase2" step="0.1" min="0" max="50" class="form-control bg-dark text-warning font-weight-bold border-secondary" value="@(ViewBag.CommPhase2 ?? 10)" required placeholder="e.g. 10">
+                        <input type="number" name="phase2" step="0.1" min="0" max="50" class="form-control bg-dark text-warning font-weight-bold border-secondary small" value="@(ViewBag.CommPhase2 ?? 10)" required placeholder="10">
                         <span class="input-group-text bg-secondary bg-opacity-30 text-warning font-weight-bold border-secondary">%</span>
                     </div>
                 </div>
             </div>
             
-            <div class="col-6 col-md-3">
-                <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-warning border-opacity-30 h-100">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="badge bg-warning text-dark font-weight-bold">TIER 3</span>
-                        <span class="text-muted extra-small font-monospace">&gt; ₹3,000</span>
+            <div class="col-6 col-md-4 col-lg">
+                <div class="p-2.5 p-sm-3 rounded-3 bg-black bg-opacity-40 border border-warning border-opacity-30 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <span class="badge bg-warning text-dark font-weight-bold" style="font-size:0.65rem;">TIER 3</span>
+                        <span class="text-muted extra-small font-monospace">&gt; ₹3k</span>
                     </div>
-                    <label class="text-light small font-weight-bold d-block mb-1.5">Jobs above ₹3,000</label>
+                    <label class="text-light small font-weight-bold d-block mb-1 text-truncate" style="font-size:0.75rem;">Above ₹3,000</label>
                     <div class="input-group input-group-sm">
-                        <input type="number" name="phase3" step="0.1" min="0" max="50" class="form-control bg-dark text-warning font-weight-bold border-secondary" value="@(ViewBag.CommPhase3 ?? 12)" required placeholder="e.g. 12">
+                        <input type="number" name="phase3" step="0.1" min="0" max="50" class="form-control bg-dark text-warning font-weight-bold border-secondary small" value="@(ViewBag.CommPhase3 ?? 12)" required placeholder="12">
                         <span class="input-group-text bg-secondary bg-opacity-30 text-warning font-weight-bold border-secondary">%</span>
                     </div>
                 </div>
             </div>
             
-            <div class="col-6 col-md-3">
-                <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-info border-opacity-30 h-100">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="badge bg-info text-dark font-weight-bold">PARTS</span>
-                        <span class="text-muted extra-small font-monospace">Spare Parts</span>
+            <div class="col-6 col-md-4 col-lg">
+                <div class="p-2.5 p-sm-3 rounded-3 bg-black bg-opacity-40 border border-info border-opacity-30 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <span class="badge bg-info text-dark font-weight-bold" style="font-size:0.65rem;">PARTS</span>
+                        <span class="text-muted extra-small font-monospace">Parts</span>
                     </div>
-                    <label class="text-light small font-weight-bold d-block mb-1.5">Extra Spare Parts</label>
+                    <label class="text-light small font-weight-bold d-block mb-1 text-truncate" style="font-size:0.75rem;">Spare Parts</label>
                     <div class="input-group input-group-sm">
-                        <input type="number" name="parts" step="0.1" min="0" max="50" class="form-control bg-dark text-info font-weight-bold border-secondary" value="@(ViewBag.CommParts ?? 5)" required placeholder="e.g. 5">
+                        <input type="number" name="parts" step="0.1" min="0" max="50" class="form-control bg-dark text-info font-weight-bold border-secondary small" value="@(ViewBag.CommParts ?? 5)" required placeholder="5">
+                        <span class="input-group-text bg-secondary bg-opacity-30 text-info font-weight-bold border-secondary">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-4 col-lg">
+                <div class="p-2.5 p-sm-3 rounded-3 bg-black bg-opacity-40 border border-info border-opacity-40 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <span class="badge bg-info text-dark font-weight-bold" style="font-size:0.65rem;">CUSTOM REPAIR</span>
+                        <span class="text-muted extra-small font-monospace">Custom</span>
+                    </div>
+                    <label class="text-light small font-weight-bold d-block mb-1 text-truncate" style="font-size:0.75rem;">Custom Repair</label>
+                    <div class="input-group input-group-sm">
+                        <input type="number" name="customRepair" step="0.1" min="0" max="50" class="form-control bg-dark text-info font-weight-bold border-secondary small" value="@(ViewBag.CommCustomRepair ?? 0)" required placeholder="0">
                         <span class="input-group-text bg-secondary bg-opacity-30 text-info font-weight-bold border-secondary">%</span>
                     </div>
                 </div>

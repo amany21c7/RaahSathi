@@ -1035,7 +1035,8 @@ namespace RaahSathi.Controllers
             double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
             double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
             double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
-            var commCalc = _paymentService.CalculateTieredCommissionAndNetEarnings(totalBill, partsAmt);
+            double customAmt = (job.CustomEstimateApproved == true) ? job.CustomEstimateAmount : 0;
+            var commCalc = _paymentService.CalculateTieredCommissionAndNetEarnings(totalBill, partsAmt, customAmt);
 
             double adminCommission = payment != null && payment.AdminCommissionAmount > 0 ? payment.AdminCommissionAmount : commCalc.AdminCommissionAmount;
             double mechanicNetEarning = payment != null && payment.MechanicEarningAmount > 0 ? payment.MechanicEarningAmount : commCalc.MechanicNetEarningAmount;
