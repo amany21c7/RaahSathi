@@ -120,9 +120,9 @@
                         </div>
                         
                         <div class="col-12 mb-3">
-                            <label class="form-label text-light small font-weight-bold">Profile Photo (Portrait / Face Closeup) <span class="text-danger">*</span></label>
-                            <input type="file" name="ProfilePhoto" class="form-control glass-input previewable-upload" data-preview="#previewProfilePhoto" accept="image/*" @(hasPhoto ? "" : "required")>
-                            <span class="text-muted d-block mt-1" style="font-size:0.75rem;">Upload a clear photo of your face.</span>
+                            <label class="form-label text-light small font-weight-bold">Profile Photo (Portrait / Face Closeup) <span class="text-danger">*</span> <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">Max 5MB</span></label>
+                            <input type="file" name="ProfilePhoto" class="form-control glass-input previewable-upload" data-preview="#previewProfilePhoto" accept="image/jpeg,image/png,image/webp,application/pdf" @(hasPhoto ? "" : "required")>
+                            <span class="text-muted d-block mt-1" style="font-size:0.75rem;">Upload a clear photo of your face (Max 5MB • JPG, PNG, PDF).</span>
                             <div id="previewProfilePhoto" class="mt-2 @(hasPhoto ? "" : "d-none")">
                                 <img src="@(hasPhoto && profile != null ? profile.ProfilePhotoUrl : "")" class="doc-preview-thumb" style="max-width: 140px; height: 110px; object-fit: cover;" alt="Profile Preview" />
                             </div>
@@ -144,36 +144,36 @@
                         </div>
                         
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-light small font-weight-bold">Aadhaar Card Front Photo <span class="text-danger">*</span></label>
-                            <input type="file" name="AadhaarFrontPhoto" class="form-control glass-input previewable-upload" data-preview="#previewAadhaarFront" accept="image/*" @(hasAadhaar ? "" : "required")>
+                            <label class="form-label text-light small font-weight-bold">Aadhaar Card Front Photo <span class="text-danger">*</span> <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">Max 5MB</span></label>
+                            <input type="file" name="AadhaarFrontPhoto" class="form-control glass-input previewable-upload" data-preview="#previewAadhaarFront" accept="image/jpeg,image/png,image/webp,application/pdf" @(hasAadhaar ? "" : "required")>
                             <div id="previewAadhaarFront" class="mt-2 @(hasAadhaar ? "" : "d-none")">
                                 <img src="@(hasAadhaar && profile != null ? profile.AadhaarFrontUrl : "")" class="doc-preview-thumb" alt="Aadhaar Front Preview" />
                             </div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-light small font-weight-bold">Aadhaar Card Back Photo <span class="text-danger">*</span></label>
-                            <input type="file" name="AadhaarBackPhoto" class="form-control glass-input previewable-upload" data-preview="#previewAadhaarBack" accept="image/*" @(profile != null && !string.IsNullOrEmpty(profile.AadhaarBackUrl) ? "" : "required")>
+                            <label class="form-label text-light small font-weight-bold">Aadhaar Card Back Photo <span class="text-danger">*</span> <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">Max 5MB</span></label>
+                            <input type="file" name="AadhaarBackPhoto" class="form-control glass-input previewable-upload" data-preview="#previewAadhaarBack" accept="image/jpeg,image/png,image/webp,application/pdf" @(profile != null && !string.IsNullOrEmpty(profile.AadhaarBackUrl) ? "" : "required")>
                             <div id="previewAadhaarBack" class="mt-2 @(profile != null && !string.IsNullOrEmpty(profile.AadhaarBackUrl) ? "" : "d-none")">
                                 <img src="@(profile?.AadhaarBackUrl ?? "")" class="doc-preview-thumb" alt="Aadhaar Back Preview" />
                             </div>
                         </div>
                         
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-light small font-weight-bold">Driving Licence Photo <span class="text-muted">(Optional)</span></label>
-                            <input type="file" name="DrivingLicencePhoto" class="form-control glass-input previewable-upload" data-preview="#previewDrivingLicence" accept="image/*">
+                            <label class="form-label text-light small font-weight-bold">Driving Licence Photo <span class="text-muted">(Optional)</span> <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">Max 5MB</span></label>
+                            <input type="file" name="DrivingLicencePhoto" class="form-control glass-input previewable-upload" data-preview="#previewDrivingLicence" accept="image/jpeg,image/png,image/webp,application/pdf">
                             <div id="previewDrivingLicence" class="mt-2 @(profile != null && !string.IsNullOrEmpty(profile.DrivingLicenceUrl) ? "" : "d-none")">
                                 <img src="@(profile?.DrivingLicenceUrl ?? "")" class="doc-preview-thumb" alt="Driving Licence Preview" />
                             </div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label text-light small font-weight-bold">Selfie Verification Photo <span class="text-danger">*</span></label>
+                            <label class="form-label text-light small font-weight-bold">Selfie Verification Photo <span class="text-danger">*</span> <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">Max 5MB</span></label>
                             <div class="input-group">
-                                <input type="file" name="SelfiePhoto" id="selfieFileInput" class="form-control glass-input previewable-upload" data-preview="#previewSelfiePhoto" accept="image/*" @(profile != null && !string.IsNullOrEmpty(profile.SelfieUrl) ? "" : "required")>
+                                <input type="file" name="SelfiePhoto" id="selfieFileInput" class="form-control glass-input previewable-upload" data-preview="#previewSelfiePhoto" accept="image/jpeg,image/png,image/webp" @(profile != null && !string.IsNullOrEmpty(profile.SelfieUrl) ? "" : "required")>
                                 <button type="button" class="btn btn-warning text-dark font-weight-bold px-3" id="btnOpenSelfieCamera">
                                     <i class="fa-solid fa-camera"></i> Camera
                                 </button>
                             </div>
-                            <span class="text-muted d-block mt-1" id="selfieHelpText" style="font-size:0.75rem;">Take a selfie holding your Aadhaar card close to your face.</span>
+                            <span class="text-muted d-block mt-1" id="selfieHelpText" style="font-size:0.75rem;">Take a selfie holding your Aadhaar card close to your face (Max 5MB).</span>
                             <div id="previewSelfiePhoto" class="mt-2 @(profile != null && !string.IsNullOrEmpty(profile.SelfieUrl) ? "" : "d-none")">
                                 <img src="@(profile?.SelfieUrl ?? "")" class="doc-preview-thumb" style="max-width: 140px; height: 110px; object-fit: cover;" alt="Selfie Preview" />
                             </div>
@@ -231,9 +231,9 @@
                         </div>
                         
                         <div class="col-12">
-                            <label class="form-label text-light small font-weight-bold">Shop / Garage Front Photo <span class="text-danger">*</span></label>
-                            <input type="file" name="ShopPhoto" class="form-control glass-input previewable-upload" data-preview="#previewShopPhoto" accept="image/*" @(hasShop ? "" : "required")>
-                            <span class="text-muted" style="font-size:0.75rem;">Upload a photo showing the front signboard of your shop/garage.</span>
+                            <label class="form-label text-light small font-weight-bold">Shop / Garage Front Photo <span class="text-danger">*</span> <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">Max 5MB</span></label>
+                            <input type="file" name="ShopPhoto" class="form-control glass-input previewable-upload" data-preview="#previewShopPhoto" accept="image/jpeg,image/png,image/webp,application/pdf" @(hasShop ? "" : "required")>
+                            <span class="text-muted" style="font-size:0.75rem;">Upload a photo showing the front signboard of your shop/garage (Max 5MB • JPG, PNG, PDF).</span>
                             <div id="previewShopPhoto" class="mt-2 @(hasShop ? "" : "d-none")">
                                 <img src="@(hasShop && profile != null ? profile.ShopPhotoUrl : "")" class="doc-preview-thumb" alt="Shop Photo Preview" />
                             </div>
@@ -463,16 +463,30 @@
         }
     }
 
-    // Instant image preview for file uploads on mobile & desktop
+    // Instant image preview and file size validation (Max 5MB)
+    const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
     $(document).on('change', '.previewable-upload', function() {
         const input = this;
         const targetPreview = $(this).data('preview');
-        if (input.files && input.files[0] && targetPreview) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                $(targetPreview).removeClass('d-none').find('img').attr('src', e.target.result);
-            };
-            reader.readAsDataURL(input.files[0]);
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                var sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert('⚠️ File size bohot badi hai (' + sizeMb + ' MB). Maximum 5 MB ki photo ya document upload karein.');
+                $(input).val('');
+                if (targetPreview && !$(targetPreview).find('img').attr('data-persisted')) {
+                    $(targetPreview).addClass('d-none');
+                }
+                return;
+            }
+
+            if (targetPreview) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    $(targetPreview).removeClass('d-none').find('img').attr('src', e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
         }
     });
 

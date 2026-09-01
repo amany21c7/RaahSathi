@@ -477,16 +477,17 @@ namespace RaahSathi.Controllers
                 _dbContext.MechanicProfiles.Add(profile);
             }
 
-            // Helper to validate files
+            // Helper to validate files (Max 5MB, JPG/PNG/WEBP/PDF)
             bool IsValidDocument(IFormFile f)
             {
                 if (f == null || f.Length == 0) return false;
+                if (f.Length > 5 * 1024 * 1024) return false; // 5MB limit
                 var ext = System.IO.Path.GetExtension(f.FileName).ToLowerInvariant();
-                var allowed = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+                var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".pdf" };
                 if (!allowed.Contains(ext)) return false;
 
                 var mime = f.ContentType.ToLowerInvariant();
-                var allowedMime = new[] { "image/jpeg", "image/jpg", "image/png", "application/pdf" };
+                var allowedMime = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf" };
                 if (!allowedMime.Contains(mime)) return false;
 
                 return true;
@@ -501,7 +502,7 @@ namespace RaahSathi.Controllers
                 (SelfiePhoto != null && !IsValidDocument(SelfiePhoto)) ||
                 (ShopPhoto != null && !IsValidDocument(ShopPhoto)))
             {
-                TempData["Error"] = "Invalid document file type. Only JPG, JPEG, PNG and PDF formats are allowed.";
+                TempData["Error"] = "File size 5MB se choti honi chahiye aur format JPG, PNG, WEBP ya PDF hona chahiye.";
                 return RedirectToAction("Dashboard");
             }
 

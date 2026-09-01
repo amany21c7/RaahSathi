@@ -413,6 +413,20 @@
         }
     }
 
+    // Instant image preview and file size validation (Max 5MB)
+    const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+    $(document).on('change', 'input[type="file"]', function() {
+        const input = this;
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                var sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert('⚠️ File size bohot badi hai (' + sizeMb + ' MB). Maximum 5 MB ki photo ya document upload karein.');
+                $(input).val('');
+            }
+        }
+    });
+
     $('#btnNext').click(function() {
         // Run standard HTML5 validity validation on inputs of the active step container
         const stepInputs = $('#step-' + currentStep).find('input[required], select[required], textarea[required]');
