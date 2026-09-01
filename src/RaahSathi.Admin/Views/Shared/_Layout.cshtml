@@ -2795,6 +2795,8 @@
                     });
                 }
 
+                window.openDispatchModal = openDispatchModal;
+
                 function acceptPing(jobId) {
                     window.stopSirenAlert();
                     if (dispatchCountdownTimer) clearInterval(dispatchCountdownTimer);
@@ -2859,22 +2861,20 @@
                 }
                 window.snoozePing = snoozePing;
 
-                // Start background worker polling immediately on page readiness
-                setTimeout(function() {
-                    try {
-                        var blob = new Blob([
-                            "setInterval(function() { postMessage('tick'); }, 2000);"
-                        ], { type: "text/javascript" });
-                        var worker = new Worker(URL.createObjectURL(blob));
-                        worker.onmessage = function(e) {
-                            window.pollIncomingDispatchRequests();
-                        };
-                        window.pollIncomingDispatchRequests();
-                    } catch (err) {
-                        setInterval(window.pollIncomingDispatchRequests, 2000);
+                // Start reliable real-time polling
+                window.pollIncomingDispatchRequests();
+                setInterval(function() {
+                    window.pollIncomingDispatchRequests();
+                }, 2000);
+
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden) {
                         window.pollIncomingDispatchRequests();
                     }
-                }, 100);
+                });
+                window.addEventListener('focus', function() {
+                    window.pollIncomingDispatchRequests();
+                });
             });
         </script>
     }

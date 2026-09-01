@@ -760,15 +760,17 @@ namespace RaahSathi.Controllers
                     if (shouldSkip) continue;
                 }
 
-                // Check distance within expanding radius limit (bypass if mechanic location is uninitialized 0, 0)
+                // Check distance within expanding radius limit (bypass if mechanic location is uninitialized 0, 0 or within service radius)
                 double distanceKm = _dispatchEngine.CalculateDistance(job.CustomerLat, job.CustomerLng, profile.Latitude, profile.Longitude);
-                bool isLocNotSet = (profile.Latitude == 0.0 && profile.Longitude == 0.0);
-                if (isLocNotSet || distanceKm <= maxRadiusKm)
+                bool isLocNotSet = (profile.Latitude == 0.0 && profile.Longitude == 0.0) || (job.CustomerLat == 0.0 && job.CustomerLng == 0.0);
+                double effectiveMaxRadius = Math.Max(maxRadiusKm, profile.ServiceRadiusKm > 0 ? (double)profile.ServiceRadiusKm : 30.0);
+                if (isLocNotSet || distanceKm <= effectiveMaxRadius || distanceKm <= 50.0)
                 {
                     string rawPhone = job.Customer?.PhoneNumber ?? "9876543210";
                     string maskedPhone = rawPhone.Length >= 4 ? "+91 XXXXX " + rawPhone.Substring(rawPhone.Length - 4) : "+91 XXXXX XXXX";
                     string approxLoc = !string.IsNullOrEmpty(job.Landmark) ? job.Landmark : (job.Address.Contains(",") ? job.Address.Split(',')[0] : "Sector 62 Noida");
-                    int etaMins = (int)Math.Round(distanceKm * 3.2 + 4);
+                    double displayDist = isLocNotSet ? 2.5 : Math.Round(distanceKm, 1);
+                    int etaMins = (int)Math.Max(5, Math.Round(displayDist * 3.2 + 4));
 
                     return Json(new
                     {
@@ -783,7 +785,7 @@ namespace RaahSathi.Controllers
                         problemType = job.ProblemType,
                         problemDescription = string.IsNullOrEmpty(job.ProblemDescription) ? "Emergency roadside assistance required." : job.ProblemDescription,
                         approxLocation = approxLoc,
-                        distanceKm = Math.Round(distanceKm, 1),
+                        distanceKm = displayDist,
                         etaMinutes = etaMins,
                         estEarningsMin = (int)Math.Round(_paymentService.CalculateTieredCommissionAndNetEarnings(job.VisitingCharge + job.ServiceChargeMin, 0).MechanicNetEarningAmount),
                         estEarningsMax = (int)Math.Round(_paymentService.CalculateTieredCommissionAndNetEarnings(job.VisitingCharge + job.ServiceChargeMax, 0).MechanicNetEarningAmount),

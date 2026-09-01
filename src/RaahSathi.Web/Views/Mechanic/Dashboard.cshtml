@@ -3068,6 +3068,35 @@
     if (currentActiveJobId && currentActiveJobId !== "0") {
         setInterval(pollActiveJobState, 3500);
     } else {
+        @if (pingJob != null && activeJob == null)
+        {
+            <text>
+            setTimeout(function() {
+                if (typeof window.openDispatchModal === 'function' && !window.currentDispatchJobId) {
+                    window.currentDispatchJobId = @pingJob.Id;
+                    window.openDispatchModal({
+                        jobId: @pingJob.Id,
+                        customerName: "@(pingJob.Customer?.Name ?? "Customer")",
+                        customerPhoneMasked: "+91 XXXXX XXXX",
+                        vehicleType: "@(pingJob.Vehicle?.VehicleType ?? "Car")",
+                        vehicleModel: "@(pingJob.Vehicle?.Model ?? "Vehicle")",
+                        vehicleReg: "@(pingJob.Vehicle?.RegistrationNumber ?? "")",
+                        problemType: "@(pingJob.ProblemType ?? "Breakdown Support")",
+                        problemDescription: "@(string.IsNullOrWhiteSpace(pingJob.ProblemDescription) ? "Emergency roadside assistance required." : pingJob.ProblemDescription)",
+                        approxLocation: "@(string.IsNullOrWhiteSpace(pingJob.Address) ? "Nearby" : (pingJob.Address.Contains(",") ? pingJob.Address.Split(',')[0] : pingJob.Address))",
+                        distanceKm: 2.5,
+                        etaMinutes: 10,
+                        estEarningsMin: @((int)Math.Round(PaymentService.CalculateTieredCommissionAndNetEarnings(pingJob.VisitingCharge + pingJob.ServiceChargeMin, 0).MechanicNetEarningAmount)),
+                        estEarningsMax: @((int)Math.Round(PaymentService.CalculateTieredCommissionAndNetEarnings(pingJob.VisitingCharge + pingJob.ServiceChargeMax, 0).MechanicNetEarningAmount)),
+                        smartScore: 5,
+                        smartMatchTag: "@(pingJob.ProblemType ?? "Breakdown") Expert Match",
+                        acceptanceChance: "High"
+                    });
+                }
+            }, 300);
+            </text>
+        }
+
         // Standby polling: Only reload if an active job has actually been assigned to this mechanic directly
         setInterval(function() {
             if (window.currentDispatchJobId || document.hidden) return; // Do not reload while 15-second dispatch modal is active/ringing
