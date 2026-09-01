@@ -821,6 +821,10 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [CmsBanners] ADD [ExpiresAt] datetime2 NULL;
                 END;
 
+                -- Cleanup any invalid local paths or quoted strings in CmsBanners
+                DELETE FROM [CmsBanners] WHERE [ImageUrl] LIKE '%C:%' OR [ImageUrl] LIKE '%Downloads%' OR [ImageUrl] LIKE '%' + CHAR(34) + '%';
+
+
                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[PushNotificationLogs]') AND type in (N'U'))
                 BEGIN
                     CREATE TABLE [PushNotificationLogs] (

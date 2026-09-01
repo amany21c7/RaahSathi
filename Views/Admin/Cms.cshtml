@@ -95,23 +95,30 @@
 <!-- Modal Add CMS Banner -->
 <div class="modal fade" id="addBannerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark text-white border border-secondary">
+        <div class="modal-content bg-dark text-white border border-secondary shadow-lg">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-plus me-1.5"></i> Add Homepage Banner</h5>
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-plus me-1.5"></i> Add New CMS Banner</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/Admin/AddCmsBanner" method="POST">
+            <form action="/Admin/AddCmsBanner" method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Banner Title</label>
-                        <input type="text" name="title" class="form-control glass-input text-white" placeholder="e.g. 24/7 National Highway Assistance Banner" required>
+                        <label class="form-label text-muted small font-weight-bold">Banner Title <span class="text-warning">*</span></label>
+                        <input type="text" name="title" class="form-control glass-input text-white" placeholder="e.g. 24/7 Roadside Assistance Promo" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Image URL / File Path</label>
-                        <input type="text" name="imageUrl" class="form-control glass-input text-white" value="/images/hero-banner.jpg" required>
+                        <label class="form-label text-muted small font-weight-bold">Upload Banner Image <span class="text-warning">*</span></label>
+                        <input type="file" name="bannerImage" id="addBannerImageInput" class="form-control glass-input text-white" accept="image/png, image/jpeg, image/jpg, image/webp" onchange="validateBannerFile(this, 'addPreviewContainer', 'addPreviewImg', 'addFileSizeBadge')" required />
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="text-muted extra-small"><i class="fa-solid fa-circle-info text-warning me-1"></i> Max size: <strong>2 MB</strong> (JPG, PNG, WEBP)</span>
+                            <span id="addFileSizeBadge" class="badge bg-secondary extra-small">No file chosen</span>
+                        </div>
+                        <div id="addPreviewContainer" class="mt-2 text-center p-2 rounded bg-black bg-opacity-40 border border-secondary" style="display:none;">
+                            <img id="addPreviewImg" src="" alt="Banner Preview" style="max-height: 140px; max-width: 100%; border-radius: 8px; object-fit: cover;" />
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Target Page / Location</label>
+                        <label class="form-label text-muted small font-weight-bold">Target Page / Location</label>
                         <select name="targetPage" class="form-select glass-input text-white">
                             <option value="Homepage">Homepage Banner</option>
                             <option value="Customer Dashboard">Customer Dashboard Page</option>
@@ -120,7 +127,7 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Target Audience</label>
+                        <label class="form-label text-muted small font-weight-bold">Target Audience</label>
                         <select name="targetAudience" class="form-select glass-input text-white">
                             <option value="All Users">All Users (Customers & Mechanics)</option>
                             <option value="Customers">Customers Only</option>
@@ -128,12 +135,15 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Expires At (Optional - Date & Time until this banner is active)</label>
+                        <label class="form-label text-muted small font-weight-bold">Expires At (Optional - Auto Expire Date & Time)</label>
                         <input type="datetime-local" name="expiresAt" class="form-control glass-input text-white">
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
-                    <button type="submit" class="btn btn-warning text-dark font-weight-bold w-100">Add Banner</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4 shadow">
+                        <i class="fa-solid fa-plus-circle me-1"></i> Add Banner
+                    </button>
                 </div>
             </form>
         </div>
@@ -148,20 +158,28 @@
                 <h5 class="modal-title font-weight-bold"><i class="fa-solid fa-pen-to-square me-2"></i> Modify CMS Banner</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/Admin/UpdateCmsBanner" method="POST">
+            <form action="/Admin/UpdateCmsBanner" method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="id" id="editBannerId" />
+                    <input type="hidden" name="existingImageUrl" id="editBannerImageUrl" />
                     
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Banner Title</label>
+                        <label class="form-label text-muted small font-weight-bold">Banner Title <span class="text-warning">*</span></label>
                         <input type="text" name="title" id="editBannerTitle" class="form-control bg-dark text-white border-secondary" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Image URL / File Path</label>
-                        <input type="text" name="imageUrl" id="editBannerImageUrl" class="form-control bg-dark text-white border-secondary" required>
+                        <label class="form-label text-muted small font-weight-bold">Upload New Image <span class="text-muted font-weight-normal">(Optional - leave empty to keep current)</span></label>
+                        <input type="file" name="bannerImage" id="editBannerImageInput" class="form-control bg-dark text-white border-secondary" accept="image/png, image/jpeg, image/jpg, image/webp" onchange="validateBannerFile(this, 'editPreviewContainer', 'editPreviewImg', 'editFileSizeBadge')" />
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="text-muted extra-small"><i class="fa-solid fa-circle-info text-warning me-1"></i> Max size: <strong>2 MB</strong> (JPG, PNG, WEBP)</span>
+                            <span id="editFileSizeBadge" class="badge bg-secondary extra-small">Current Image active</span>
+                        </div>
+                        <div id="editPreviewContainer" class="mt-2 text-center p-2 rounded bg-black bg-opacity-40 border border-secondary">
+                            <img id="editPreviewImg" src="" alt="Banner Preview" style="max-height: 140px; max-width: 100%; border-radius: 8px; object-fit: cover;" />
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Target Page / Location</label>
+                        <label class="form-label text-muted small font-weight-bold">Target Page / Location</label>
                         <select name="targetPage" id="editBannerTargetPage" class="form-select bg-dark text-white border-secondary">
                             <option value="Homepage">Homepage Banner</option>
                             <option value="Customer Dashboard">Customer Dashboard Page</option>
@@ -170,7 +188,7 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Target Audience</label>
+                        <label class="form-label text-muted small font-weight-bold">Target Audience</label>
                         <select name="targetAudience" id="editBannerTargetAudience" class="form-select bg-dark text-white border-secondary">
                             <option value="All Users">All Users (Customers & Mechanics)</option>
                             <option value="Customers">Customers Only</option>
@@ -178,7 +196,7 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Expires At (Optional - Date & Time until this banner is active)</label>
+                        <label class="form-label text-muted small font-weight-bold">Expires At (Optional - Auto Expire Date & Time)</label>
                         <input type="datetime-local" name="expiresAt" id="editBannerExpiresAt" class="form-control bg-dark text-white border-secondary">
                     </div>
                     <div class="mb-3 form-check form-switch ms-1">
@@ -188,7 +206,7 @@
                 </div>
                 <div class="modal-footer border-secondary">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4">
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-4 shadow">
                         <i class="fa-solid fa-floppy-disk me-1"></i> Save Changes
                     </button>
                 </div>
@@ -199,12 +217,75 @@
 
 @section Scripts {
 <script>
+    function validateBannerFile(input, containerId, imgId, badgeId) {
+        var file = input.files && input.files[0];
+        var container = document.getElementById(containerId);
+        var img = document.getElementById(imgId);
+        var badge = document.getElementById(badgeId);
+        
+        if (!file) {
+            if (badge) badge.textContent = 'No file chosen';
+            return;
+        }
+        
+        // 2 MB limit in bytes
+        var maxSize = 2 * 1024 * 1024;
+        var fileSizeKb = (file.size / 1024).toFixed(1);
+        
+        if (file.size > maxSize) {
+            alert('❌ File size (' + (file.size / (1024 * 1024)).toFixed(2) + ' MB) exceeds the 2 MB limit! Please choose a compressed image.');
+            input.value = '';
+            if (container && containerId === 'addPreviewContainer') container.style.display = 'none';
+            if (badge) {
+                badge.textContent = 'Too Large (>2MB)';
+                badge.className = 'badge bg-danger extra-small';
+            }
+            return;
+        }
+        
+        var validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!validTypes.includes(file.type.toLowerCase())) {
+            alert('❌ Invalid file format. Only JPG, PNG, and WEBP image files are allowed.');
+            input.value = '';
+            if (container && containerId === 'addPreviewContainer') container.style.display = 'none';
+            if (badge) {
+                badge.textContent = 'Invalid Format';
+                badge.className = 'badge bg-danger extra-small';
+            }
+            return;
+        }
+        
+        if (badge) {
+            badge.textContent = fileSizeKb + ' KB / 2 MB max';
+            badge.className = 'badge bg-success extra-small';
+        }
+        
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            if (img) img.src = e.target.result;
+            if (container) container.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
     function openEditBannerModal(id, title, imageUrl, targetPage, targetAudience, expiresAt, isActive) {
         $('#editBannerId').val(id);
         $('#editBannerTitle').val(decodeURIComponent(title));
         $('#editBannerImageUrl').val(decodeURIComponent(imageUrl));
         $('#editBannerTargetPage').val(decodeURIComponent(targetPage));
         $('#editBannerTargetAudience').val(decodeURIComponent(targetAudience));
+        $('#editBannerImageInput').val('');
+        
+        var decodedImg = decodeURIComponent(imageUrl);
+        if (decodedImg && !decodedImg.includes('C:') && !decodedImg.includes('Downloads')) {
+            $('#editPreviewImg').attr('src', decodedImg);
+            $('#editPreviewContainer').show();
+            $('#editFileSizeBadge').text('Current Image active').attr('class', 'badge bg-secondary extra-small');
+        } else {
+            $('#editPreviewImg').attr('src', '/images/hero-banner.jpg');
+            $('#editPreviewContainer').show();
+            $('#editFileSizeBadge').text('No image set').attr('class', 'badge bg-warning text-dark extra-small');
+        }
         
         if (expiresAt) {
             $('#editBannerExpiresAt').val(expiresAt);
@@ -219,3 +300,4 @@
     }
 </script>
 }
+

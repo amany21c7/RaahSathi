@@ -19,7 +19,10 @@
         .Where(b => b.IsActive 
                  && (b.TargetPage == "Mechanic Dashboard" || b.TargetPage == "Homepage")
                  && (b.TargetAudience == "All Users" || b.TargetAudience == "Mechanics")
-                 && (b.ExpiresAt == null || b.ExpiresAt > now))
+                 && (b.ExpiresAt == null || b.ExpiresAt > now)
+                 && !b.ImageUrl.Contains("C:")
+                 && !b.ImageUrl.Contains("Downloads")
+                 && !b.ImageUrl.StartsWith("\""))
         .OrderByDescending(b => b.Id)
         .ToList();
 }

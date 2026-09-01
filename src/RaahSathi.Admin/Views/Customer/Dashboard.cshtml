@@ -12,7 +12,10 @@
         .Where(b => b.IsActive 
                  && (b.TargetPage == "Customer Dashboard" || b.TargetPage == "Homepage")
                  && (b.TargetAudience == "All Users" || b.TargetAudience == "Customers")
-                 && (b.ExpiresAt == null || b.ExpiresAt > now))
+                 && (b.ExpiresAt == null || b.ExpiresAt > now)
+                 && !b.ImageUrl.Contains("C:")
+                 && !b.ImageUrl.Contains("Downloads")
+                 && !b.ImageUrl.StartsWith("\""))
         .OrderByDescending(b => b.Id)
         .ToList();
 }
@@ -358,7 +361,7 @@
                 <a href="/Customer/Dashboard?action=addVehicle" class="btn btn-outline-secondary btn-sm font-weight-bold text-light">
                     <i class="fa-solid fa-car-plus me-1"></i> Add / Manage Vehicles
                 </a>
-                <button type="button" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openComplaintModal()">
+                <button type="button" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm mt-3" onclick="openComplaintModal()">
                     <i class="fa-solid fa-triangle-exclamation me-1"></i> Report Issue / File Complaint
                 </button>
                 <button type="button" class="btn btn-info btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openSupportTicketModal()">

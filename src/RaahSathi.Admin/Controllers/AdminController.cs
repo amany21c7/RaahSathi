@@ -1858,13 +1858,56 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddCmsBanner(string title, string imageUrl, string targetPage, string targetAudience, DateTime? expiresAt)
+        public async Task<IActionResult> AddCmsBanner(
+            string title, 
+            IFormFile? bannerImage, 
+            string? imageUrl, 
+            string targetPage, 
+            string targetAudience, 
+            DateTime? expiresAt,
+            [FromServices] Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            string finalImageUrl = "/images/hero-banner.jpg";
+
+            if (bannerImage != null && bannerImage.Length > 0)
+            {
+                // Max 2 MB validation
+                if (bannerImage.Length > 2 * 1024 * 1024)
+                {
+                    TempData["Error"] = "Image size exceeds 2 MB limit. Please upload a smaller or compressed image.";
+                    return RedirectToAction("Cms");
+                }
+
+                var ext = System.IO.Path.GetExtension(bannerImage.FileName).ToLowerInvariant();
+                var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                if (!allowedExts.Contains(ext))
+                {
+                    TempData["Error"] = "Invalid image format. Allowed formats: JPG, PNG, WEBP.";
+                    return RedirectToAction("Cms");
+                }
+
+                var uploadsFolder = System.IO.Path.Combine(env.WebRootPath, "uploads", "banners");
+                System.IO.Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = Guid.NewGuid().ToString("N") + ext;
+                var filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                {
+                    await bannerImage.CopyToAsync(stream);
+                }
+                finalImageUrl = "/uploads/banners/" + uniqueFileName;
+            }
+            else if (!string.IsNullOrWhiteSpace(imageUrl) && !imageUrl.Contains("C:") && !imageUrl.Contains("Downloads"))
+            {
+                finalImageUrl = imageUrl.Trim().Trim('"');
+            }
+
             var banner = new CmsBanner
             {
                 Title = title,
-                ImageUrl = imageUrl,
+                ImageUrl = finalImageUrl,
                 TargetPage = string.IsNullOrWhiteSpace(targetPage) ? "Homepage" : targetPage,
                 TargetAudience = targetAudience ?? "All Users",
                 ExpiresAt = expiresAt,
@@ -1880,14 +1923,55 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateCmsBanner(int id, string title, string imageUrl, string targetPage, string targetAudience, DateTime? expiresAt, bool isActive)
+        public async Task<IActionResult> UpdateCmsBanner(
+            int id, 
+            string title, 
+            IFormFile? bannerImage, 
+            string? existingImageUrl, 
+            string targetPage, 
+            string targetAudience, 
+            DateTime? expiresAt, 
+            bool isActive,
+            [FromServices] Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
             var banner = await _dbContext.CmsBanners.FindAsync(id);
             if (banner == null) return NotFound();
 
+            if (bannerImage != null && bannerImage.Length > 0)
+            {
+                // Max 2 MB validation
+                if (bannerImage.Length > 2 * 1024 * 1024)
+                {
+                    TempData["Error"] = "Image size exceeds 2 MB limit. Please upload a smaller or compressed image.";
+                    return RedirectToAction("Cms");
+                }
+
+                var ext = System.IO.Path.GetExtension(bannerImage.FileName).ToLowerInvariant();
+                var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                if (!allowedExts.Contains(ext))
+                {
+                    TempData["Error"] = "Invalid image format. Allowed formats: JPG, PNG, WEBP.";
+                    return RedirectToAction("Cms");
+                }
+
+                var uploadsFolder = System.IO.Path.Combine(env.WebRootPath, "uploads", "banners");
+                System.IO.Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = Guid.NewGuid().ToString("N") + ext;
+                var filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                {
+                    await bannerImage.CopyToAsync(stream);
+                }
+                banner.ImageUrl = "/uploads/banners/" + uniqueFileName;
+            }
+            else if (!string.IsNullOrWhiteSpace(existingImageUrl) && !existingImageUrl.Contains("C:") && !existingImageUrl.Contains("Downloads"))
+            {
+                banner.ImageUrl = existingImageUrl.Trim().Trim('"');
+            }
+
             banner.Title = title;
-            banner.ImageUrl = imageUrl;
             banner.TargetPage = string.IsNullOrWhiteSpace(targetPage) ? "Homepage" : targetPage;
             banner.TargetAudience = targetAudience ?? "All Users";
             banner.ExpiresAt = expiresAt;

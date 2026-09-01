@@ -12,7 +12,10 @@
         .Where(b => b.IsActive 
                  && (b.TargetPage == "Customer Dashboard" || b.TargetPage == "Homepage")
                  && (b.TargetAudience == "All Users" || b.TargetAudience == "Customers")
-                 && (b.ExpiresAt == null || b.ExpiresAt > now))
+                 && (b.ExpiresAt == null || b.ExpiresAt > now)
+                 && !b.ImageUrl.Contains("C:")
+                 && !b.ImageUrl.Contains("Downloads")
+                 && !b.ImageUrl.StartsWith("\""))
         .OrderByDescending(b => b.Id)
         .ToList();
 }
@@ -385,7 +388,7 @@
                 </a>
 
                 <!-- Complaint -->
-                <button type="button" class="btn btn-danger w-100 p-2 font-weight-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2 rounded-3" style="font-size:0.85rem;" onclick="openComplaintModal()">
+                <button type="button" class="btn btn-danger w-100 p-2 font-weight-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2 rounded-3" style="font-size:0.85rem; margin-top: 14px !important;" onclick="openComplaintModal()">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     <span>Report Issue / File Complaint</span>
                 </button>
