@@ -365,6 +365,9 @@
     <!-- Custom Design System CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/RaahSathi.styles.css" asp-append-version="true" />
+
+    <!-- jQuery Core (Loaded early so inline scripts & admin components have $ available) -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- Custom Alert Toast Container -->
@@ -1519,8 +1522,7 @@
     </script>
     }
 
-    <!-- Bootstrap & jQuery -->
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <!-- Bootstrap & Plugins -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Leaflet JS Map -->
@@ -1987,6 +1989,7 @@
 
             // Real-Time Push Notifications fetcher
             var isUserAuthenticated = @((User.Identity?.IsAuthenticated == true).ToString().ToLower());
+            var isAdminLoggedIn = @(isAdminLoggedIn.ToString().ToLower());
             var currentBroadcastModalId = null;
             var sessionDismissedBroadcastIds = [];
 
@@ -2167,26 +2170,23 @@
             };
 
             // Start polling if user is NOT an admin
-            $(document).ready(function() {
-                var isAdminLoggedIn = @(isAdminLoggedIn.ToString().ToLower());
-                var isPushPollingInFlight = false;
-                var origPushPoll = window.pollPushNotifications;
-                
-                window.pollPushNotifications = function() {
-                    if (isPushPollingInFlight || document.hidden) return;
-                    isPushPollingInFlight = true;
-                    if (typeof origPushPoll === 'function') {
-                        try { origPushPoll(); } catch(e) {}
-                    }
-                    setTimeout(function() { isPushPollingInFlight = false; }, 3000);
-                };
-
-                if (!isAdminLoggedIn) {
-                    window.pollPushNotifications();
-                    // Check for new broadcasts every 45 seconds (lightweight & visibility-aware)
-                    setInterval(window.pollPushNotifications, 45000);
+            var isPushPollingInFlight = false;
+            var origPushPoll = window.pollPushNotifications;
+            
+            window.pollPushNotifications = function() {
+                if (isPushPollingInFlight || document.hidden) return;
+                isPushPollingInFlight = true;
+                if (typeof origPushPoll === 'function') {
+                    try { origPushPoll(); } catch(e) {}
                 }
-            });
+                setTimeout(function() { isPushPollingInFlight = false; }, 3000);
+            };
+
+            if (!isAdminLoggedIn) {
+                window.pollPushNotifications();
+                // Check for new broadcasts every 45 seconds (lightweight & visibility-aware)
+                setInterval(window.pollPushNotifications, 45000);
+            }
 
             // Real-Time Admin Operations Notification fetcher
             var isAdminPollingInFlight = false;
