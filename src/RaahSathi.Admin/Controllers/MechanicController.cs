@@ -834,6 +834,26 @@ namespace RaahSathi.Controllers
             if (feeSetting != null && double.TryParse(feeSetting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double fVal))
                 monthlyFee = fVal;
 
+            if ((paymentMethod == "UPI" || !string.IsNullOrEmpty(upiRef)) && string.IsNullOrEmpty(rzpPaymentId))
+            {
+                if (string.IsNullOrWhiteSpace(upiRef))
+                {
+                    return Json(new { success = false, message = "⚠️ Kripya 12-digit ka UPI UTR / Reference number enter karein." });
+                }
+
+                string cleanUtr = upiRef.Trim();
+                if (cleanUtr.Length != 12 || !cleanUtr.All(char.IsDigit))
+                {
+                    return Json(new { success = false, message = "⚠️ Invalid UTR! UPI Transaction Ref number bilkul 12 ank (digits) ki honi chahiye (jaise: 429182394812)." });
+                }
+
+                bool utrUsed = await _dbContext.MechanicSubscriptions.AnyAsync(s => s.RazorpayPaymentId == cleanUtr || (s.Notes != null && s.Notes.Contains(cleanUtr)));
+                if (utrUsed)
+                {
+                    return Json(new { success = false, message = "⚠️ Yeh 12-digit UTR number pehle hi use ho chuka hai. Kripya apna fresh UPI payment UTR check karein." });
+                }
+            }
+
             DateTime currentExpiry = (profile.SubscriptionValidTill.HasValue && profile.SubscriptionValidTill.Value > DateTime.UtcNow)
                 ? profile.SubscriptionValidTill.Value
                 : DateTime.UtcNow;
@@ -846,7 +866,7 @@ namespace RaahSathi.Controllers
 
             string finalPayId = !string.IsNullOrEmpty(rzpPaymentId)
                 ? rzpPaymentId
-                : (!string.IsNullOrEmpty(upiRef) ? upiRef : ("pay_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12)));
+                : (!string.IsNullOrEmpty(upiRef) ? ("pay_utr_" + upiRef.Trim()) : ("pay_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12)));
 
             string finalOrdId = !string.IsNullOrEmpty(rzpOrderId)
                 ? rzpOrderId
@@ -1226,7 +1246,13 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CollectPaymentWithQr(int jobId, string paymentMode = "UPI_QR")
+        public async Task<IActionResult> CollectPaymentWithQr(
+            int jobId, 
+            string paymentMode = "UPI_QR", 
+            string? upiUtr = null,
+            string? rzpPaymentId = null,
+            string? rzpOrderId = null,
+            string? rzpSignature = null)
         {
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated." });
@@ -1242,10 +1268,45 @@ namespace RaahSathi.Controllers
             var mechProfile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (mechProfile == null) return Json(new { success = false, message = "Mechanic profile not found." });
 
-            string payId = "pay_qr_" + Guid.NewGuid().ToString().Substring(0, 12);
+            string finalPayId = "";
 
-            bool success = await _paymentService.ProcessEscrowPaymentForJobAsync(job.Id, payId);
-            if (!success) return Json(new { success = false, message = "Failed to process QR payment." });
+            if (paymentMode == "UPI_QR")
+            {
+                if (string.IsNullOrWhiteSpace(upiUtr))
+                {
+                    return Json(new { success = false, message = "⚠️ Kripya customer ka 12-digit UPI UTR / Reference number enter karein." });
+                }
+
+                string cleanUtr = upiUtr.Trim();
+                if (cleanUtr.Length != 12 || !cleanUtr.All(char.IsDigit))
+                {
+                    return Json(new { success = false, message = "⚠️ Invalid UTR! UPI Transaction ID bilkul 12 ank (digits) ki honi chahiye (jaise: 429182394812)." });
+                }
+
+                // Anti-fraud duplicate UTR check across Payments
+                bool utrExists = await _dbContext.Payments.AnyAsync(p => p.RazorpayPaymentId == cleanUtr || p.RazorpayPaymentId == "pay_utr_" + cleanUtr);
+                if (utrExists)
+                {
+                    return Json(new { success = false, message = "⚠️ Yeh 12-digit UTR number pehle hi kisi dusre payment me use ho chuka hai. Kripya customer ki app se fresh receipt check karein." });
+                }
+
+                finalPayId = "pay_utr_" + cleanUtr;
+            }
+            else if (paymentMode == "Razorpay")
+            {
+                if (string.IsNullOrEmpty(rzpPaymentId))
+                {
+                    return Json(new { success = false, message = "⚠️ Razorpay payment verification ID missing." });
+                }
+                finalPayId = rzpPaymentId;
+            }
+            else
+            {
+                finalPayId = "pay_qr_" + Guid.NewGuid().ToString().Substring(0, 12);
+            }
+
+            bool success = await _paymentService.ProcessEscrowPaymentForJobAsync(job.Id, finalPayId);
+            if (!success) return Json(new { success = false, message = "Failed to process payment." });
 
             // Fetch updated invoice breakdown via IPaymentService
             var breakdown = await _paymentService.GenerateJobInvoiceBreakdownAsync(job.Id);
@@ -1253,7 +1314,7 @@ namespace RaahSathi.Controllers
             return Json(new
             {
                 success = true,
-                message = $"Payment of ₹{breakdown.TotalBillAmount:N2} collected successfully!",
+                message = $"Payment of ₹{breakdown.TotalBillAmount:N2} verified & collected successfully!",
                 jobId = job.Id,
                 finalBillAmount = breakdown.TotalBillAmount,
                 adminCommission = breakdown.AdminCommission,
@@ -1321,6 +1382,46 @@ namespace RaahSathi.Controllers
             double mechanicNetEarning = payment != null && payment.MechanicEarningAmount > 0 ? payment.MechanicEarningAmount : commCalc.MechanicNetEarningAmount;
             double effectiveCommRatePct = (payment?.CommissionRateUsed ?? commCalc.CommissionRate) * 100;
 
+            // Admin active bank & gateway credentials
+            string adminUpiId = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminUpiId"))?.SettingValue ?? "";
+            string adminHolderName = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountHolderName"))?.SettingValue ?? "";
+            string adminBankName = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminBankName"))?.SettingValue ?? "";
+            string adminAccNo = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountNumber"))?.SettingValue ?? "";
+            string adminIfsc = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminIfscCode"))?.SettingValue ?? "";
+
+            if (string.IsNullOrEmpty(adminUpiId) && string.IsNullOrEmpty(adminAccNo))
+            {
+                var accountsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountsJson");
+                if (accountsSetting != null && !string.IsNullOrEmpty(accountsSetting.SettingValue))
+                {
+                    try
+                    {
+                        var accList = System.Text.Json.JsonSerializer.Deserialize<List<AdminAccountModel>>(accountsSetting.SettingValue);
+                        var activeAcc = accList?.FirstOrDefault(a => a.IsActive) ?? accList?.FirstOrDefault();
+                        if (activeAcc != null)
+                        {
+                            adminUpiId = activeAcc.UpiId ?? "";
+                            adminHolderName = activeAcc.HolderName ?? "";
+                            adminBankName = activeAcc.BankName ?? "";
+                            adminAccNo = activeAcc.AccountNumber ?? "";
+                            adminIfsc = activeAcc.IfscCode ?? "";
+                        }
+                    }
+                    catch {}
+                }
+            }
+
+            string razorpayKeyId = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "RazorpayKeyId"))?.SettingValue ?? "";
+            string razorpayMode = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "RazorpayMode"))?.SettingValue ?? "Test";
+            bool isGatewayEnabled = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "PaymentGatewayEnabled"))?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? (!string.IsNullOrEmpty(razorpayKeyId));
+
+            string finalUpiId = !string.IsNullOrEmpty(adminUpiId) ? adminUpiId.Trim() : "raahsathi@upi";
+            string finalHolder = !string.IsNullOrEmpty(adminHolderName) ? adminHolderName.Trim() : "RaahSathi Services India";
+
+            // NPCI-compliant standard UPI URI (mode=02 for secure QR, purpose=00 standard)
+            string npciUpiString = $"upi://pay?pa={Uri.EscapeDataString(finalUpiId)}&pn={Uri.EscapeDataString(finalHolder)}&am={totalBill:F2}&cu=INR&tn={Uri.EscapeDataString("RSJOB" + job.Id)}&mode=02&purpose=00";
+            string qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={Uri.EscapeDataString(npciUpiString)}";
+
             return Json(new
             {
                 success = true,
@@ -1357,8 +1458,16 @@ namespace RaahSathi.Controllers
                 adminCommission = adminCommission,
                 mechanicNetEarning = mechanicNetEarning,
                 commissionPercent = effectiveCommRatePct,
-                adminUpiId = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminUpiId"))?.SettingValue ?? "raahsathi@upi",
-                adminAccountHolderName = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountHolderName"))?.SettingValue ?? "RaahSathi URA"
+                adminUpiId = finalUpiId,
+                adminAccountHolderName = finalHolder,
+                adminBankName = adminBankName,
+                adminAccountNumber = adminAccNo,
+                adminIfscCode = adminIfsc,
+                razorpayKeyId = razorpayKeyId,
+                razorpayMode = razorpayMode,
+                isGatewayEnabled = isGatewayEnabled && !string.IsNullOrEmpty(razorpayKeyId),
+                npciUpiString = npciUpiString,
+                qrCodeUrl = qrCodeUrl
             });
         }
 
@@ -1734,18 +1843,48 @@ namespace RaahSathi.Controllers
                 profile.WorkingHours = workingHours;
             }
 
-            // 11. Payment details
-            if (bankName != null) profile.BankName = bankName;
-            if (accountNumber != null) profile.BankAccountNumber = accountNumber;
-            if (ifscCode != null) profile.IfscCode = ifscCode;
-            if (upiId != null) profile.UpiId = upiId;
-            if (accountHolderName != null) profile.AccountHolderName = accountHolderName;
-            if (!string.IsNullOrWhiteSpace(preferredPayoutMethod)) profile.PreferredPayoutMethod = preferredPayoutMethod;
+            // 11. Payment details & Payout preferences
+            if (!string.IsNullOrWhiteSpace(preferredPayoutMethod) && preferredPayoutMethod != profile.PreferredPayoutMethod)
+            {
+                changedFields.Add($"Payout Mode ('{profile.PreferredPayoutMethod}' ➔ '{preferredPayoutMethod}')");
+                profile.PreferredPayoutMethod = preferredPayoutMethod;
+            }
+
+            if (upiId != null && upiId.Trim() != (profile.UpiId ?? ""))
+            {
+                changedFields.Add($"UPI ID ('{profile.UpiId}' ➔ '{upiId.Trim()}')");
+                profile.UpiId = upiId.Trim();
+            }
+
+            if (bankName != null && bankName.Trim() != (profile.BankName ?? ""))
+            {
+                changedFields.Add($"Bank Name ('{profile.BankName}' ➔ '{bankName.Trim()}')");
+                profile.BankName = bankName.Trim();
+            }
+
+            if (accountNumber != null && accountNumber.Trim() != (profile.BankAccountNumber ?? ""))
+            {
+                changedFields.Add($"Account No ('{profile.BankAccountNumber}' ➔ '{accountNumber.Trim()}')");
+                profile.BankAccountNumber = accountNumber.Trim();
+            }
+
+            if (ifscCode != null && ifscCode.Trim().ToUpper() != (profile.IfscCode ?? "").ToUpper())
+            {
+                changedFields.Add($"IFSC ('{profile.IfscCode}' ➔ '{ifscCode.Trim().ToUpper()}')");
+                profile.IfscCode = ifscCode.Trim().ToUpper();
+            }
+
+            if (accountHolderName != null && accountHolderName.Trim() != (profile.AccountHolderName ?? ""))
+            {
+                changedFields.Add($"Account Holder ('{profile.AccountHolderName}' ➔ '{accountHolderName.Trim()}')");
+                profile.AccountHolderName = accountHolderName.Trim();
+            }
+
             profile.AcceptsCash = acceptsCash;
 
             await _dbContext.SaveChangesAsync();
 
-            // 12. Create Audit Log for Admin Notification if any changes were made
+            // 12. Create Audit Log for Admin Notification & Mechanic History if any changes were made
             if (changedFields.Count > 0)
             {
                 var auditLog = new AuditLog
@@ -1753,7 +1892,7 @@ namespace RaahSathi.Controllers
                     AdminName = user.Name,
                     UserRole = "Mechanic",
                     ActionType = "MECHANIC_PROFILE_UPDATE",
-                    Details = $"Mechanic {user.Name} (ID: RS{user.Id:D2}M, Phone: {user.PhoneNumber}) updated: {string.Join(", ", changedFields)}",
+                    Details = $"Mechanic {user.Name} (ID: RS{user.Id:D2}M, Phone: {user.PhoneNumber}) updated: {string.Join(" • ", changedFields)}",
                     TimeStamp = DateTime.UtcNow,
                     IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
                     UserAgent = Request.Headers["User-Agent"].ToString() ?? "Mobile/Web App"
@@ -1767,8 +1906,37 @@ namespace RaahSathi.Controllers
                 message = "Profile details updated successfully!", 
                 profilePhotoUrl = profile.ProfilePhotoUrl,
                 name = user.Name,
-                phone = user.PhoneNumber
+                phone = user.PhoneNumber,
+                changedCount = changedFields.Count,
+                changedSummary = string.Join(" • ", changedFields)
             });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetProfileAuditLogs()
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Unauthorized();
+
+            var mechIdStr = $"RS{user.Id:D2}M";
+            var logs = await _dbContext.AuditLogs
+                .Where(l => (l.ActionType == "MECHANIC_PROFILE_UPDATE" || l.ActionType == "UPDATE") &&
+                            (l.Details.Contains(mechIdStr) || l.AdminName == user.Name))
+                .OrderByDescending(l => l.TimeStamp)
+                .Take(25)
+                .Select(l => new {
+                    id = l.Id,
+                    actionType = l.ActionType,
+                    details = l.Details,
+                    timeStamp = l.TimeStamp.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt"),
+                    timeAgo = (DateTime.UtcNow - l.TimeStamp).TotalMinutes < 1 ? "Just now" :
+                              (DateTime.UtcNow - l.TimeStamp).TotalHours < 1 ? $"{(int)(DateTime.UtcNow - l.TimeStamp).TotalMinutes} mins ago" :
+                              (DateTime.UtcNow - l.TimeStamp).TotalDays < 1 ? $"{(int)(DateTime.UtcNow - l.TimeStamp).TotalHours} hours ago" :
+                              l.TimeStamp.ToLocalTime().ToString("dd MMM yyyy")
+                })
+                .ToListAsync();
+
+            return Json(new { success = true, logs });
         }
 
         [HttpPost]
