@@ -35,6 +35,17 @@
 <style>
     #admin-map {
         background: #0f172a;
+        height: 580px;
+        min-height: 580px;
+    }
+    @@media (max-width: 768px) {
+        #admin-map {
+            height: 360px !important;
+            min-height: 320px !important;
+        }
+        .card.overflow-hidden {
+            min-height: 360px !important;
+        }
     }
     .filter-btn {
         transition: all 0.2s ease-in-out;

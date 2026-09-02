@@ -19,6 +19,7 @@ namespace RaahSathi.Controllers
         private readonly Services.IWalletService _walletService;
         private readonly Services.IUserService _userService;
         private readonly Services.IReferralService _referralService;
+        private readonly Services.IPricingEngine _pricingEngine;
 
         public MechanicController(
             ApplicationDbContext dbContext,
@@ -28,7 +29,8 @@ namespace RaahSathi.Controllers
             Services.IJobService jobService,
             Services.IWalletService walletService,
             Services.IUserService userService,
-            Services.IReferralService referralService)
+            Services.IReferralService referralService,
+            Services.IPricingEngine pricingEngine)
         {
             _dbContext = dbContext;
             _env = env;
@@ -38,6 +40,7 @@ namespace RaahSathi.Controllers
             _walletService = walletService;
             _userService = userService;
             _referralService = referralService;
+            _pricingEngine = pricingEngine;
         }
 
         private async Task<User?> GetActiveMechanicUserAsync()
@@ -65,15 +68,19 @@ namespace RaahSathi.Controllers
 
         private bool OtherMechanicAvailable(Job job, double maxRadiusKm, int currentMechanicId)
         {
-            var onlineProfiles = _dbContext.MechanicProfiles
+            var busyMechanicIds = _dbContext.Jobs.AsNoTracking()
+                .Where(j => j.MechanicId != null && j.Status != "Completed" && j.Status != "Cancelled")
+                .Select(j => j.MechanicId!.Value)
+                .ToHashSet();
+
+            var onlineProfiles = _dbContext.MechanicProfiles.AsNoTracking()
                 .Where(p => p.UserId != currentMechanicId && p.IsOnline && p.KycStatus == "Approved")
                 .ToList();
 
             foreach (var profile in onlineProfiles)
             {
-                // Check active job
-                bool hasActive = _dbContext.Jobs.Any(j => j.MechanicId == profile.UserId && j.Status != "Completed" && j.Status != "Cancelled");
-                if (hasActive)
+                // Check active job in memory from pre-fetched set
+                if (busyMechanicIds.Contains(profile.UserId))
                     continue;
 
                 // Check distance
@@ -124,7 +131,7 @@ namespace RaahSathi.Controllers
                         continue;
                 }
 
-                return true;
+                return true; // Found another viable mechanic
             }
 
             return false;
@@ -160,6 +167,12 @@ namespace RaahSathi.Controllers
                 .Include(j => j.Customer)
                 .Include(j => j.Vehicle)
                 .FirstOrDefaultAsync(j => j.MechanicId == user.Id && j.Status != "Completed" && j.Status != "Cancelled");
+
+            if (activeJob != null && activeJob.Status == "Arrived")
+            {
+                activeJob.Status = "Inspecting";
+                await _dbContext.SaveChangesAsync();
+            }
 
             // Check if there is an unassigned "Requested" job nearby that fits this mechanic's skills
             // To simulate incoming dispatch pings in the UI
@@ -353,6 +366,82 @@ namespace RaahSathi.Controllers
             ViewBag.ReferralSummary = referralSummary;
             ViewBag.ReferralSettings = await _referralService.GetSettingsAsync();
 
+            // Subscription Evaluation
+            bool isSubscriptionMasterEnabled = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionEnabled"))?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+            double monthlySubFee = 499;
+            var feeSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "MonthlySubscriptionFee");
+            if (feeSetting != null && double.TryParse(feeSetting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double fVal))
+                monthlySubFee = fVal;
+
+            int trialDays = 30;
+            var trialSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionFreeTrialDays");
+            if (trialSetting != null && int.TryParse(trialSetting.SettingValue, out int tVal))
+                trialDays = tVal;
+
+            int minJobs = 2;
+            var minJobsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionMinJobsRequired");
+            if (minJobsSetting != null && int.TryParse(minJobsSetting.SettingValue, out int jVal))
+                minJobs = jVal;
+
+            DateTime regDate = user.CreatedAt;
+            int daysSinceJoined = (int)Math.Max(0, (DateTime.UtcNow - regDate).TotalDays);
+            int totalCompletedJobs = await _dbContext.Jobs.CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed");
+
+            string subStatus = "Trial";
+            bool isSubRequired = false;
+            int remainingTrialDays = Math.Max(0, trialDays - daysSinceJoined);
+
+            if (!isSubscriptionMasterEnabled)
+            {
+                subStatus = "Disabled";
+                isSubRequired = false;
+            }
+            else
+            {
+                if (daysSinceJoined < trialDays)
+                {
+                    subStatus = "Trial";
+                    isSubRequired = false;
+                }
+                else if (totalCompletedJobs < minJobs)
+                {
+                    subStatus = "Exempt";
+                    isSubRequired = false;
+                }
+                else
+                {
+                    // Joined >= 30 days AND Completed >= 2 jobs
+                    if (profile.SubscriptionValidTill.HasValue && profile.SubscriptionValidTill.Value > DateTime.UtcNow)
+                    {
+                        subStatus = "Active";
+                        isSubRequired = false;
+                    }
+                    else
+                    {
+                        subStatus = "Due";
+                        isSubRequired = true;
+
+                        // Strict Enforcement: Auto-kick offline if subscription is due
+                        if (profile.IsOnline)
+                        {
+                            profile.IsOnline = false;
+                            await _dbContext.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+
+            ViewBag.SubscriptionMasterEnabled = isSubscriptionMasterEnabled;
+            ViewBag.SubscriptionStatus = subStatus;
+            ViewBag.IsSubscriptionRequired = isSubRequired;
+            ViewBag.MonthlySubscriptionFee = monthlySubFee;
+            ViewBag.SubscriptionValidTill = profile.SubscriptionValidTill;
+            ViewBag.RemainingTrialDays = remainingTrialDays;
+            ViewBag.TotalCompletedJobs = totalCompletedJobs;
+            ViewBag.DaysSinceJoined = daysSinceJoined;
+            ViewBag.SubscriptionTrialDays = trialDays;
+            ViewBag.SubscriptionMinJobs = minJobs;
+
             return View();
         }
 
@@ -464,16 +553,17 @@ namespace RaahSathi.Controllers
                 _dbContext.MechanicProfiles.Add(profile);
             }
 
-            // Helper to validate files
+            // Helper to validate files (Max 5MB, JPG/PNG/WEBP/PDF)
             bool IsValidDocument(IFormFile f)
             {
                 if (f == null || f.Length == 0) return false;
+                if (f.Length > 5 * 1024 * 1024) return false; // 5MB limit
                 var ext = System.IO.Path.GetExtension(f.FileName).ToLowerInvariant();
-                var allowed = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+                var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".pdf" };
                 if (!allowed.Contains(ext)) return false;
 
                 var mime = f.ContentType.ToLowerInvariant();
-                var allowedMime = new[] { "image/jpeg", "image/jpg", "image/png", "application/pdf" };
+                var allowedMime = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf" };
                 if (!allowedMime.Contains(mime)) return false;
 
                 return true;
@@ -488,7 +578,7 @@ namespace RaahSathi.Controllers
                 (SelfiePhoto != null && !IsValidDocument(SelfiePhoto)) ||
                 (ShopPhoto != null && !IsValidDocument(ShopPhoto)))
             {
-                TempData["Error"] = "Invalid document file type. Only JPG, JPEG, PNG and PDF formats are allowed.";
+                TempData["Error"] = "File size 5MB se choti honi chahiye aur format JPG, PNG, WEBP ya PDF hona chahiye.";
                 return RedirectToAction("Dashboard");
             }
 
@@ -575,12 +665,103 @@ namespace RaahSathi.Controllers
             var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile != null)
             {
+                // If attempting to turn Online, check subscription eligibility
+                if (!profile.IsOnline)
+                {
+                    bool isMasterEnabled = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionEnabled"))?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+                    if (isMasterEnabled)
+                    {
+                        int trialDays = 30;
+                        var trialSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionFreeTrialDays");
+                        if (trialSetting != null && int.TryParse(trialSetting.SettingValue, out int tVal)) trialDays = tVal;
+
+                        int minJobs = 2;
+                        var minJobsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionMinJobsRequired");
+                        if (minJobsSetting != null && int.TryParse(minJobsSetting.SettingValue, out int jVal)) minJobs = jVal;
+
+                        double monthlyFee = 499;
+                        var feeSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "MonthlySubscriptionFee");
+                        if (feeSetting != null && double.TryParse(feeSetting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double fVal)) monthlyFee = fVal;
+
+                        DateTime regDate = user.CreatedAt;
+                        int daysSinceJoined = (int)Math.Max(0, (DateTime.UtcNow - regDate).TotalDays);
+                        int completedJobsCount = await _dbContext.Jobs.CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed");
+
+                        // If >= trialDays AND completed >= minJobs -> Subscription mandatory
+                        if (daysSinceJoined >= trialDays && completedJobsCount >= minJobs)
+                        {
+                            if (!profile.SubscriptionValidTill.HasValue || profile.SubscriptionValidTill.Value <= DateTime.UtcNow)
+                            {
+                                profile.IsOnline = false;
+                                await _dbContext.SaveChangesAsync();
+                                return Json(new { 
+                                    success = false, 
+                                    subscriptionRequired = true, 
+                                    monthlyFee = monthlyFee, 
+                                    message = "Fast Monthly Subscription required to go online and receive live breakdown orders." 
+                                });
+                            }
+                        }
+                    }
+                }
+
                 profile.IsOnline = !profile.IsOnline;
                 await _dbContext.SaveChangesAsync();
                 return Json(new { success = true, isOnline = profile.IsOnline });
             }
 
             return Json(new { success = false });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ProcessSubscriptionPayment(string? paymentMethod, string? upiRef)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated." });
+
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (profile == null) return Json(new { success = false, message = "Profile not found." });
+
+            double monthlyFee = 499;
+            var feeSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "MonthlySubscriptionFee");
+            if (feeSetting != null && double.TryParse(feeSetting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double fVal))
+                monthlyFee = fVal;
+
+            DateTime currentExpiry = (profile.SubscriptionValidTill.HasValue && profile.SubscriptionValidTill.Value > DateTime.UtcNow)
+                ? profile.SubscriptionValidTill.Value
+                : DateTime.UtcNow;
+
+            profile.SubscriptionValidTill = currentExpiry.AddDays(30);
+            profile.SubscriptionAmountPaid += monthlyFee;
+            profile.SubscriptionLastPaidAt = DateTime.UtcNow;
+            profile.SubscriptionStatus = "Active";
+            profile.IsOnline = true; // Automatically turn online upon successful payment
+
+            string rzpPayId = "pay_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+            string rzpOrdId = "order_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+
+            var subRecord = new MechanicSubscription
+            {
+                MechanicId = user.Id,
+                Amount = monthlyFee,
+                StartDate = currentExpiry,
+                EndDate = profile.SubscriptionValidTill.Value,
+                PaymentStatus = "Success",
+                RazorpayPaymentId = rzpPayId,
+                RazorpayOrderId = rzpOrdId,
+                Notes = $"Monthly subscription paid via {paymentMethod ?? "Online Gateway"} (Ref: {upiRef ?? rzpPayId})",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.MechanicSubscriptions.Add(subRecord);
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { 
+                success = true, 
+                message = "🎉 Badhaai ho! Aapka VIP Monthly Subscription safaltapoorvak activate ho gaya hai. Aap ab LIVE ONLINE hain aur VIP leads receive karne ke liye ready hain!", 
+                validTill = profile.SubscriptionValidTill.Value.ToString("dd MMM yyyy"),
+                isOnline = true
+            });
         }
 
         [HttpPost]
@@ -666,12 +847,13 @@ namespace RaahSathi.Controllers
                 }
             }
 
-            // Search for unassigned "Requested" jobs within 15 km radius
+            // Search for unassigned "Requested" jobs (take latest 10 and verify age in C# to eliminate timezone discrepancies)
             var requestedJobs = await _dbContext.Jobs.AsNoTracking()
                 .Include(j => j.Customer)
                 .Include(j => j.Vehicle)
                 .Where(j => j.Status == "Requested" && j.MechanicId == null)
                 .OrderByDescending(j => j.CreatedAt)
+                .Take(10)
                 .ToListAsync();
 
             string userStrId = user.Id.ToString();
@@ -679,14 +861,7 @@ namespace RaahSathi.Controllers
             foreach (var job in requestedJobs)
             {
                 double jobAgeSeconds = (DateTime.UtcNow - job.CreatedAt).TotalSeconds;
-
-                // Auto-timeout jobs older than 300 seconds
-                if (jobAgeSeconds >= 300)
-                {
-                    job.Status = "TimedOut";
-                    await _dbContext.SaveChangesAsync();
-                    continue;
-                }
+                if (jobAgeSeconds >= 300) continue;
 
                 // Dynamic radius expansion based on job age (0-20s: 15km, 20-30s: 30km, 30s+: 50km)
                 double maxRadiusKm = jobAgeSeconds < 20 ? 15.0 : (jobAgeSeconds < 30 ? 30.0 : 50.0);
@@ -752,15 +927,17 @@ namespace RaahSathi.Controllers
                     if (shouldSkip) continue;
                 }
 
-                // Check distance within expanding radius limit (bypass if mechanic location is uninitialized 0, 0)
+                // Check distance within expanding radius limit (bypass if mechanic location is uninitialized 0, 0 or within service radius)
                 double distanceKm = _dispatchEngine.CalculateDistance(job.CustomerLat, job.CustomerLng, profile.Latitude, profile.Longitude);
-                bool isLocNotSet = (profile.Latitude == 0.0 && profile.Longitude == 0.0);
-                if (isLocNotSet || distanceKm <= maxRadiusKm)
+                bool isLocNotSet = (profile.Latitude == 0.0 && profile.Longitude == 0.0) || (job.CustomerLat == 0.0 && job.CustomerLng == 0.0);
+                double effectiveMaxRadius = Math.Max(maxRadiusKm, profile.ServiceRadiusKm > 0 ? (double)profile.ServiceRadiusKm : 30.0);
+                if (isLocNotSet || distanceKm <= effectiveMaxRadius || distanceKm <= 50.0)
                 {
                     string rawPhone = job.Customer?.PhoneNumber ?? "9876543210";
                     string maskedPhone = rawPhone.Length >= 4 ? "+91 XXXXX " + rawPhone.Substring(rawPhone.Length - 4) : "+91 XXXXX XXXX";
                     string approxLoc = !string.IsNullOrEmpty(job.Landmark) ? job.Landmark : (job.Address.Contains(",") ? job.Address.Split(',')[0] : "Sector 62 Noida");
-                    int etaMins = (int)Math.Round(distanceKm * 3.2 + 4);
+                    double displayDist = isLocNotSet ? 2.5 : Math.Round(distanceKm, 1);
+                    int etaMins = (int)Math.Max(5, Math.Round(displayDist * 3.2 + 4));
 
                     return Json(new
                     {
@@ -775,7 +952,7 @@ namespace RaahSathi.Controllers
                         problemType = job.ProblemType,
                         problemDescription = string.IsNullOrEmpty(job.ProblemDescription) ? "Emergency roadside assistance required." : job.ProblemDescription,
                         approxLocation = approxLoc,
-                        distanceKm = Math.Round(distanceKm, 1),
+                        distanceKm = displayDist,
                         etaMinutes = etaMins,
                         estEarningsMin = (int)Math.Round(_paymentService.CalculateTieredCommissionAndNetEarnings(job.VisitingCharge + job.ServiceChargeMin, 0).MechanicNetEarningAmount),
                         estEarningsMax = (int)Math.Round(_paymentService.CalculateTieredCommissionAndNetEarnings(job.VisitingCharge + job.ServiceChargeMax, 0).MechanicNetEarningAmount),
@@ -1025,7 +1202,8 @@ namespace RaahSathi.Controllers
             double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
             double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
             double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
-            var commCalc = _paymentService.CalculateTieredCommissionAndNetEarnings(totalBill, partsAmt);
+            double customAmt = (job.CustomEstimateApproved == true) ? job.CustomEstimateAmount : 0;
+            var commCalc = _paymentService.CalculateTieredCommissionAndNetEarnings(totalBill, partsAmt, customAmt);
 
             double adminCommission = payment != null && payment.AdminCommissionAmount > 0 ? payment.AdminCommissionAmount : commCalc.AdminCommissionAmount;
             double mechanicNetEarning = payment != null && payment.MechanicEarningAmount > 0 ? payment.MechanicEarningAmount : commCalc.MechanicNetEarningAmount;
@@ -1179,9 +1357,96 @@ namespace RaahSathi.Controllers
                 partsApproved = job.PartsApproved,
                 towingApproved = job.TowingApproved,
                 finalBillAmount = job.FinalBillAmount,
+                problemType = job.ProblemType,
+                selectedProblemsJson = job.SelectedProblemsJson,
+                cancelledProblemItem = job.CancelledProblemItem,
+                problemCancelReason = job.ProblemCancelReason,
+                problemCancelDescription = job.ProblemCancelDescription,
+                problemCancelledAt = job.ProblemCancelledAt?.ToString("o"),
                 isSimulationPaused = job.IsSimulationPaused,
                 inactiveSeconds = inactiveSeconds,
                 unreadChatCount = unreadChatCount
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CancelJobProblemItem(int jobId, string problemName, string reason, string? description)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated." });
+
+            var job = await _dbContext.Jobs.FirstOrDefaultAsync(j => j.Id == jobId && j.MechanicId == user.Id);
+            if (job == null) return Json(new { success = false, message = "Job not found or not assigned to you." });
+
+            // 1. Validation: Allowed only in Inspecting (or Arrived) and Repairing stages
+            if (!string.Equals(job.Status, "Inspecting", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(job.Status, "Arrived", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(job.Status, "Repairing", StringComparison.OrdinalIgnoreCase))
+            {
+                return Json(new { success = false, message = "Problems can only be dropped/cancelled during Inspection or Repairing stages." });
+            }
+
+            // 2. Validation: Only 1 problem can be cancelled across the whole job
+            if (!string.IsNullOrEmpty(job.CancelledProblemItem))
+            {
+                return Json(new { success = false, message = $"Only 1 problem item can be cancelled per job. Problem '{job.CancelledProblemItem}' was already dropped." });
+            }
+
+            // 3. Validation: Must have at least 2 problems in total
+            var problems = (job.ProblemType ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            if (problems.Count < 2)
+            {
+                return Json(new { success = false, message = "A problem item can only be cancelled if the job contains 2 or more problems." });
+            }
+
+            // 4. Validation: Check that the requested problemName is in the job
+            var matchedProblem = problems.FirstOrDefault(p => p.Equals(problemName, StringComparison.OrdinalIgnoreCase) || p.Contains(problemName, StringComparison.OrdinalIgnoreCase) || problemName.Contains(p, StringComparison.OrdinalIgnoreCase));
+            if (matchedProblem == null)
+            {
+                return Json(new { success = false, message = "Specified problem was not found in this job request." });
+            }
+
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return Json(new { success = false, message = "Please select a valid cancellation reason." });
+            }
+
+            // Calculate price to deduct
+            var (minRate, _) = _pricingEngine.GetServiceChargeRange(matchedProblem);
+            double deductionAmount = minRate > 0 ? minRate : 150;
+
+            // Mark job fields
+            job.CancelledProblemItem = matchedProblem;
+            job.ProblemCancelReason = reason;
+            job.ProblemCancelDescription = description ?? "";
+            job.ProblemCancelledAt = DateTime.UtcNow;
+
+            // Recalculate bill
+            job.ServiceChargeMin = Math.Max(0, job.ServiceChargeMin - deductionAmount);
+            job.FinalBillAmount = Math.Max(job.VisitingCharge, job.FinalBillAmount - deductionAmount);
+
+            // Audit log
+            var audit = new AuditLog
+            {
+                ActionType = "CANCEL_JOB_PROBLEM",
+                AdminName = user.Name,
+                UserRole = "Mechanic",
+                TimeStamp = DateTime.UtcNow,
+                Details = $"Job #{job.Id}: Mechanic {user.Name} dropped problem '{matchedProblem}' (Deducted: ₹{deductionAmount}). Reason: {reason}. Notes: {description}"
+            };
+            _dbContext.AuditLogs.Add(audit);
+
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new
+            {
+                success = true,
+                message = $"Problem '{matchedProblem}' successfully dropped. Bill deducted by -₹{deductionAmount}.",
+                cancelledProblem = matchedProblem,
+                reason = reason,
+                description = description,
+                newServiceChargeMin = job.ServiceChargeMin,
+                newFinalBillAmount = job.FinalBillAmount
             });
         }
 
@@ -1357,18 +1622,48 @@ namespace RaahSathi.Controllers
                 profile.WorkingHours = workingHours;
             }
 
-            // 11. Payment details
-            if (bankName != null) profile.BankName = bankName;
-            if (accountNumber != null) profile.BankAccountNumber = accountNumber;
-            if (ifscCode != null) profile.IfscCode = ifscCode;
-            if (upiId != null) profile.UpiId = upiId;
-            if (accountHolderName != null) profile.AccountHolderName = accountHolderName;
-            if (!string.IsNullOrWhiteSpace(preferredPayoutMethod)) profile.PreferredPayoutMethod = preferredPayoutMethod;
+            // 11. Payment details & Payout preferences
+            if (!string.IsNullOrWhiteSpace(preferredPayoutMethod) && preferredPayoutMethod != profile.PreferredPayoutMethod)
+            {
+                changedFields.Add($"Payout Mode ('{profile.PreferredPayoutMethod}' ➔ '{preferredPayoutMethod}')");
+                profile.PreferredPayoutMethod = preferredPayoutMethod;
+            }
+
+            if (upiId != null && upiId.Trim() != (profile.UpiId ?? ""))
+            {
+                changedFields.Add($"UPI ID ('{profile.UpiId}' ➔ '{upiId.Trim()}')");
+                profile.UpiId = upiId.Trim();
+            }
+
+            if (bankName != null && bankName.Trim() != (profile.BankName ?? ""))
+            {
+                changedFields.Add($"Bank Name ('{profile.BankName}' ➔ '{bankName.Trim()}')");
+                profile.BankName = bankName.Trim();
+            }
+
+            if (accountNumber != null && accountNumber.Trim() != (profile.BankAccountNumber ?? ""))
+            {
+                changedFields.Add($"Account No ('{profile.BankAccountNumber}' ➔ '{accountNumber.Trim()}')");
+                profile.BankAccountNumber = accountNumber.Trim();
+            }
+
+            if (ifscCode != null && ifscCode.Trim().ToUpper() != (profile.IfscCode ?? "").ToUpper())
+            {
+                changedFields.Add($"IFSC ('{profile.IfscCode}' ➔ '{ifscCode.Trim().ToUpper()}')");
+                profile.IfscCode = ifscCode.Trim().ToUpper();
+            }
+
+            if (accountHolderName != null && accountHolderName.Trim() != (profile.AccountHolderName ?? ""))
+            {
+                changedFields.Add($"Account Holder ('{profile.AccountHolderName}' ➔ '{accountHolderName.Trim()}')");
+                profile.AccountHolderName = accountHolderName.Trim();
+            }
+
             profile.AcceptsCash = acceptsCash;
 
             await _dbContext.SaveChangesAsync();
 
-            // 12. Create Audit Log for Admin Notification if any changes were made
+            // 12. Create Audit Log for Admin Notification & Mechanic History if any changes were made
             if (changedFields.Count > 0)
             {
                 var auditLog = new AuditLog
@@ -1376,7 +1671,7 @@ namespace RaahSathi.Controllers
                     AdminName = user.Name,
                     UserRole = "Mechanic",
                     ActionType = "MECHANIC_PROFILE_UPDATE",
-                    Details = $"Mechanic {user.Name} (ID: RS{user.Id:D2}M, Phone: {user.PhoneNumber}) updated: {string.Join(", ", changedFields)}",
+                    Details = $"Mechanic {user.Name} (ID: RS{user.Id:D2}M, Phone: {user.PhoneNumber}) updated: {string.Join(" • ", changedFields)}",
                     TimeStamp = DateTime.UtcNow,
                     IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
                     UserAgent = Request.Headers["User-Agent"].ToString() ?? "Mobile/Web App"
@@ -1390,8 +1685,37 @@ namespace RaahSathi.Controllers
                 message = "Profile details updated successfully!", 
                 profilePhotoUrl = profile.ProfilePhotoUrl,
                 name = user.Name,
-                phone = user.PhoneNumber
+                phone = user.PhoneNumber,
+                changedCount = changedFields.Count,
+                changedSummary = string.Join(" • ", changedFields)
             });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetProfileAuditLogs()
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Unauthorized();
+
+            var mechIdStr = $"RS{user.Id:D2}M";
+            var logs = await _dbContext.AuditLogs
+                .Where(l => (l.ActionType == "MECHANIC_PROFILE_UPDATE" || l.ActionType == "UPDATE") &&
+                            (l.Details.Contains(mechIdStr) || l.AdminName == user.Name))
+                .OrderByDescending(l => l.TimeStamp)
+                .Take(25)
+                .Select(l => new {
+                    id = l.Id,
+                    actionType = l.ActionType,
+                    details = l.Details,
+                    timeStamp = l.TimeStamp.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt"),
+                    timeAgo = (DateTime.UtcNow - l.TimeStamp).TotalMinutes < 1 ? "Just now" :
+                              (DateTime.UtcNow - l.TimeStamp).TotalHours < 1 ? $"{(int)(DateTime.UtcNow - l.TimeStamp).TotalMinutes} mins ago" :
+                              (DateTime.UtcNow - l.TimeStamp).TotalDays < 1 ? $"{(int)(DateTime.UtcNow - l.TimeStamp).TotalHours} hours ago" :
+                              l.TimeStamp.ToLocalTime().ToString("dd MMM yyyy")
+                })
+                .ToListAsync();
+
+            return Json(new { success = true, logs });
         }
 
         [HttpPost]

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaahSathi.Data;
 using RaahSathi.Models;
+using RaahSathi.Services;
 
 namespace RaahSathi.Controllers
 {
@@ -141,16 +142,29 @@ namespace RaahSathi.Controllers
         }
 
         [HttpGet("/Admin/GetLivePipelineJobs")]
-        public async Task<IActionResult> GetLivePipelineJobs()
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("live-polling-policy")]
+        public async Task<IActionResult> GetLivePipelineJobs(int page = 1, int pageSize = 20)
         {
             if (!IsAdmin()) return Unauthorized();
 
-            var activeJobs = await _dbContext.Jobs
+            if (page < 1) page = 1;
+            if (pageSize <= 0 || pageSize > 50) pageSize = 20;
+
+            var baseQuery = _dbContext.Jobs
                 .Include(j => j.Customer)
                 .Include(j => j.Mechanic)
                 .Include(j => j.Vehicle)
-                .Where(j => j.Status != "Completed" && j.Status != "Cancelled")
+                .Where(j => j.Status != "Completed" && j.Status != "Cancelled");
+
+            var totalCount = await baseQuery.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            if (totalPages == 0) totalPages = 1;
+            if (page > totalPages) page = totalPages;
+
+            var activeJobs = await baseQuery
                 .OrderByDescending(j => j.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             var result = activeJobs.Select(j => new
@@ -170,13 +184,27 @@ namespace RaahSathi.Controllers
                 mechanicPhone = j.Mechanic?.PhoneNumber ?? "N/A",
                 createdAt = j.CreatedAt.ToString("g"),
                 elapsedMinutes = (int)Math.Max(0, (DateTime.UtcNow - j.CreatedAt).TotalMinutes),
-                etaMins = j.Status == "Requested" ? "Searching Match..." : j.Status == "Assigned" || j.Status == "Accepted" ? "10-15 mins" : j.Status == "In Progress" || j.Status == "Repairing" ? "On-Site Service" : "N/A"
+                etaMins = j.Status == "Requested" ? "Searching Match..." 
+                    : (j.Status == "Assigned" || j.Status == "Accepted") ? "Assigned (10-15 mins)" 
+                    : (j.Status == "Driving" || j.Status == "En Route") ? "En Route (5-10 mins)" 
+                    : (j.Status == "Inspecting" || j.Status == "Arrived" || j.Status == "EstimatePending") ? "Reached Spot (Inspecting)" 
+                    : (j.Status == "In Progress" || j.Status == "Repairing" || j.Status == "WorkInProgress") ? "On-Site Repairing" 
+                    : j.Status == "Completed" ? "Completed" 
+                    : "Active Service"
             }).ToList();
 
-            return Json(new { success = true, count = result.Count, jobs = result });
+            return Json(new { 
+                success = true, 
+                count = totalCount, 
+                page = page, 
+                pageSize = pageSize, 
+                totalPages = totalPages, 
+                jobs = result 
+            });
         }
 
         [HttpPost("/Admin/AssignMechanicToJob")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("booking-action-policy")]
         public async Task<IActionResult> AssignMechanicToJob(int jobId, int mechanicUserId)
         {
             if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
@@ -206,6 +234,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost("/Admin/UpdateJobStatusDirect")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("booking-action-policy")]
         public async Task<IActionResult> UpdateJobStatusDirect(int jobId, string status)
         {
             if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
@@ -533,18 +562,35 @@ namespace RaahSathi.Controllers
                 if (!string.IsNullOrEmpty(status))
                 {
                     profile.KycStatus = status;
-                    if (status == "Suspended" || status == "Rejected")
+                    if (status == "Approved")
+                    {
+                        if (profile.User != null)
+                        {
+                            profile.User.IsBlocked = false;
+                        }
+                    }
+                    else if (status == "Suspended" || status == "Rejected")
                     {
                         profile.IsOnline = false;
                     }
                     await _dbContext.SaveChangesAsync();
+
+                    TempData["KycSuccessMessage"] = $"KYC for {profile.User?.Name ?? "Partner"} has been {status} successfully!";
+                    TempData["KycSuccessStatus"] = status;
+                    TempData["KycSuccessName"] = profile.User?.Name ?? "Partner";
                     TempData["Success"] = $"KYC status for {profile.User?.Name ?? "mechanic"} updated to {status}.";
                 }
             }
             
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
-                return Json(new { success = true, status = status });
+                return Json(new { 
+                    success = true, 
+                    status = status, 
+                    userId = userId, 
+                    name = profile?.User?.Name ?? "Partner", 
+                    message = $"KYC for {profile?.User?.Name ?? "Partner"} has been {status} successfully!" 
+                });
             }
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -1143,6 +1189,7 @@ namespace RaahSathi.Controllers
             ViewBag.CommPhase2 = await GetSettingDoubleAsync("CommissionPhase2", 10);
             ViewBag.CommPhase3 = await GetSettingDoubleAsync("CommissionPhase3", 12);
             ViewBag.CommParts = await GetSettingDoubleAsync("CommissionParts", 5);
+            ViewBag.CommCustomRepair = await GetSettingDoubleAsync("CommissionCustomRepair", 0);
 
             return View();
         }
@@ -1815,13 +1862,56 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddCmsBanner(string title, string imageUrl, string targetPage, string targetAudience, DateTime? expiresAt)
+        public async Task<IActionResult> AddCmsBanner(
+            string title, 
+            IFormFile? bannerImage, 
+            string? imageUrl, 
+            string targetPage, 
+            string targetAudience, 
+            DateTime? expiresAt,
+            [FromServices] Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            string finalImageUrl = "/images/hero-banner.jpg";
+
+            if (bannerImage != null && bannerImage.Length > 0)
+            {
+                // Max 2 MB validation
+                if (bannerImage.Length > 2 * 1024 * 1024)
+                {
+                    TempData["Error"] = "Image size exceeds 2 MB limit. Please upload a smaller or compressed image.";
+                    return RedirectToAction("Cms");
+                }
+
+                var ext = System.IO.Path.GetExtension(bannerImage.FileName).ToLowerInvariant();
+                var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                if (!allowedExts.Contains(ext))
+                {
+                    TempData["Error"] = "Invalid image format. Allowed formats: JPG, PNG, WEBP.";
+                    return RedirectToAction("Cms");
+                }
+
+                var uploadsFolder = System.IO.Path.Combine(env.WebRootPath, "uploads", "banners");
+                System.IO.Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = Guid.NewGuid().ToString("N") + ext;
+                var filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                {
+                    await bannerImage.CopyToAsync(stream);
+                }
+                finalImageUrl = "/uploads/banners/" + uniqueFileName;
+            }
+            else if (!string.IsNullOrWhiteSpace(imageUrl) && !imageUrl.Contains("C:") && !imageUrl.Contains("Downloads"))
+            {
+                finalImageUrl = imageUrl.Trim().Trim('"');
+            }
+
             var banner = new CmsBanner
             {
                 Title = title,
-                ImageUrl = imageUrl,
+                ImageUrl = finalImageUrl,
                 TargetPage = string.IsNullOrWhiteSpace(targetPage) ? "Homepage" : targetPage,
                 TargetAudience = targetAudience ?? "All Users",
                 ExpiresAt = expiresAt,
@@ -1837,14 +1927,55 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateCmsBanner(int id, string title, string imageUrl, string targetPage, string targetAudience, DateTime? expiresAt, bool isActive)
+        public async Task<IActionResult> UpdateCmsBanner(
+            int id, 
+            string title, 
+            IFormFile? bannerImage, 
+            string? existingImageUrl, 
+            string targetPage, 
+            string targetAudience, 
+            DateTime? expiresAt, 
+            bool isActive,
+            [FromServices] Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
             var banner = await _dbContext.CmsBanners.FindAsync(id);
             if (banner == null) return NotFound();
 
+            if (bannerImage != null && bannerImage.Length > 0)
+            {
+                // Max 2 MB validation
+                if (bannerImage.Length > 2 * 1024 * 1024)
+                {
+                    TempData["Error"] = "Image size exceeds 2 MB limit. Please upload a smaller or compressed image.";
+                    return RedirectToAction("Cms");
+                }
+
+                var ext = System.IO.Path.GetExtension(bannerImage.FileName).ToLowerInvariant();
+                var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                if (!allowedExts.Contains(ext))
+                {
+                    TempData["Error"] = "Invalid image format. Allowed formats: JPG, PNG, WEBP.";
+                    return RedirectToAction("Cms");
+                }
+
+                var uploadsFolder = System.IO.Path.Combine(env.WebRootPath, "uploads", "banners");
+                System.IO.Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = Guid.NewGuid().ToString("N") + ext;
+                var filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                {
+                    await bannerImage.CopyToAsync(stream);
+                }
+                banner.ImageUrl = "/uploads/banners/" + uniqueFileName;
+            }
+            else if (!string.IsNullOrWhiteSpace(existingImageUrl) && !existingImageUrl.Contains("C:") && !existingImageUrl.Contains("Downloads"))
+            {
+                banner.ImageUrl = existingImageUrl.Trim().Trim('"');
+            }
+
             banner.Title = title;
-            banner.ImageUrl = imageUrl;
             banner.TargetPage = string.IsNullOrWhiteSpace(targetPage) ? "Homepage" : targetPage;
             banner.TargetAudience = targetAudience ?? "All Users";
             banner.ExpiresAt = expiresAt;
@@ -1875,6 +2006,31 @@ namespace RaahSathi.Controllers
         public async Task<IActionResult> Settings()
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            SystemApiSetting? apiSetting = null;
+            try
+            {
+                apiSetting = await _dbContext.SystemApiSettings.FromSqlRaw("EXEC dbo.sp_GetSystemApiSettings").AsNoTracking().FirstOrDefaultAsync();
+            }
+            catch { }
+            if (apiSetting == null)
+            {
+                apiSetting = await _dbContext.SystemApiSettings.FirstOrDefaultAsync() ?? new SystemApiSetting();
+            }
+
+            SystemContactSetting? contactSetting = null;
+            try
+            {
+                contactSetting = await _dbContext.SystemContactSettings.FromSqlRaw("EXEC dbo.sp_GetSystemContactSettings").AsNoTracking().FirstOrDefaultAsync();
+            }
+            catch { }
+            if (contactSetting == null)
+            {
+                contactSetting = await _dbContext.SystemContactSettings.FirstOrDefaultAsync() ?? new SystemContactSetting();
+            }
+
+            ViewBag.ApiSettings = apiSetting;
+            ViewBag.ContactSettings = contactSetting;
             ViewBag.Settings = await _dbContext.AdminSystemSettings.ToListAsync();
             return View();
         }
@@ -2228,17 +2384,175 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveSystemSettings(string smsApiKey, string emailSender, string whatsappNo, string googleMapsKey)
+        public async Task<IActionResult> SaveApiSettings(
+            string smsApiKey, 
+            string whatsappNo, 
+            string googleMapsKey, 
+            string emailSender)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
+            try
+            {
+                var pSms = new Microsoft.Data.SqlClient.SqlParameter("@SmsApiKey", smsApiKey ?? "");
+                var pWa = new Microsoft.Data.SqlClient.SqlParameter("@WhatsAppBusinessNumber", whatsappNo ?? "");
+                var pMaps = new Microsoft.Data.SqlClient.SqlParameter("@GoogleMapsApiKey", googleMapsKey ?? "");
+                var pEmail = new Microsoft.Data.SqlClient.SqlParameter("@SmtpSenderEmail", emailSender ?? "");
+
+                await _dbContext.Database.ExecuteSqlRawAsync(
+                    "EXEC dbo.sp_SaveOrUpdateSystemApiSettings @SmsApiKey, @WhatsAppBusinessNumber, @GoogleMapsApiKey, @SmtpSenderEmail", 
+                    pSms, pWa, pMaps, pEmail);
+            }
+            catch
+            {
+                var api = await _dbContext.SystemApiSettings.FirstOrDefaultAsync();
+                if (api == null)
+                {
+                    api = new SystemApiSetting();
+                    _dbContext.SystemApiSettings.Add(api);
+                }
+                api.SmsApiKey = smsApiKey ?? "";
+                api.WhatsAppBusinessNumber = whatsappNo ?? "";
+                api.GoogleMapsApiKey = googleMapsKey ?? "";
+                api.SmtpSenderEmail = emailSender ?? "";
+                api.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // Mirror to legacy AdminSystemSettings
             await SaveOrUpdateSettingAsync("SmsApiKey", smsApiKey ?? "", "API Gateway");
             await SaveOrUpdateSettingAsync("EmailSender", emailSender ?? "", "API Gateway");
             await SaveOrUpdateSettingAsync("WhatsAppNo", whatsappNo ?? "", "API Gateway");
             await SaveOrUpdateSettingAsync("GoogleMapsKey", googleMapsKey ?? "", "API Gateway");
 
-            await LogAdminActionAsync("SYSTEM_SETTINGS", "Updated Admin System Settings & Tiered Commission Rules");
-            TempData["Success"] = "System API Settings saved successfully.";
+            await LogAdminActionAsync("API_SETTINGS_UPDATE", "Updated System API Integration & Gateway Keys via SP");
+            TempData["Success"] = "SMS, WhatsApp & Google Maps API credentials saved successfully.";
+            return RedirectToAction("Settings");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveContactSettings(
+            string helplineNumber,
+            string tollFreeNumber,
+            string emergencySupportNumber,
+            string whatsAppNumber,
+            string supportEmail,
+            string billingEmail,
+            string partnerHelplineNumber,
+            string officeAddress)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            try
+            {
+                var pHelp = new Microsoft.Data.SqlClient.SqlParameter("@HelplineNumber", helplineNumber ?? "");
+                var pToll = new Microsoft.Data.SqlClient.SqlParameter("@TollFreeNumber", tollFreeNumber ?? "");
+                var pEmerg = new Microsoft.Data.SqlClient.SqlParameter("@EmergencySupportNumber", emergencySupportNumber ?? "");
+                var pWa = new Microsoft.Data.SqlClient.SqlParameter("@WhatsAppNumber", whatsAppNumber ?? "");
+                var pSupEmail = new Microsoft.Data.SqlClient.SqlParameter("@SupportEmail", supportEmail ?? "");
+                var pBillEmail = new Microsoft.Data.SqlClient.SqlParameter("@BillingEmail", billingEmail ?? "");
+                var pPartner = new Microsoft.Data.SqlClient.SqlParameter("@PartnerHelplineNumber", partnerHelplineNumber ?? "");
+                var pAddr = new Microsoft.Data.SqlClient.SqlParameter("@OfficeAddress", officeAddress ?? "");
+
+                await _dbContext.Database.ExecuteSqlRawAsync(
+                    "EXEC dbo.sp_SaveOrUpdateSystemContactSettings @HelplineNumber, @TollFreeNumber, @EmergencySupportNumber, @WhatsAppNumber, @SupportEmail, @BillingEmail, @PartnerHelplineNumber, @OfficeAddress",
+                    pHelp, pToll, pEmerg, pWa, pSupEmail, pBillEmail, pPartner, pAddr);
+            }
+            catch
+            {
+                var contact = await _dbContext.SystemContactSettings.FirstOrDefaultAsync();
+                if (contact == null)
+                {
+                    contact = new SystemContactSetting();
+                    _dbContext.SystemContactSettings.Add(contact);
+                }
+                contact.HelplineNumber = helplineNumber ?? "";
+                contact.TollFreeNumber = tollFreeNumber ?? "";
+                contact.EmergencySupportNumber = emergencySupportNumber ?? "";
+                contact.WhatsAppNumber = whatsAppNumber ?? "";
+                contact.SupportEmail = supportEmail ?? "";
+                contact.BillingEmail = billingEmail ?? "";
+                contact.PartnerHelplineNumber = partnerHelplineNumber ?? "";
+                contact.OfficeAddress = officeAddress ?? "";
+                contact.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // Update in-memory helper
+            if (!string.IsNullOrEmpty(helplineNumber)) ContactInfoHelper.UpdateSetting("HelplineNumber", helplineNumber);
+            if (!string.IsNullOrEmpty(tollFreeNumber)) ContactInfoHelper.UpdateSetting("TollFreeNumber", tollFreeNumber);
+            if (!string.IsNullOrEmpty(emergencySupportNumber)) ContactInfoHelper.UpdateSetting("EmergencySupportNumber", emergencySupportNumber);
+            if (!string.IsNullOrEmpty(whatsAppNumber)) ContactInfoHelper.UpdateSetting("WhatsAppNumber", whatsAppNumber);
+            if (!string.IsNullOrEmpty(supportEmail)) ContactInfoHelper.UpdateSetting("SupportEmail", supportEmail);
+            if (!string.IsNullOrEmpty(billingEmail)) ContactInfoHelper.UpdateSetting("BillingEmail", billingEmail);
+            if (!string.IsNullOrEmpty(partnerHelplineNumber)) ContactInfoHelper.UpdateSetting("PartnerHelplineNumber", partnerHelplineNumber);
+            if (!string.IsNullOrEmpty(officeAddress)) ContactInfoHelper.UpdateSetting("OfficeAddress", officeAddress);
+
+            // Mirror to legacy AdminSystemSettings
+            if (!string.IsNullOrEmpty(helplineNumber)) await SaveOrUpdateSettingAsync("HelplineNumber", helplineNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(tollFreeNumber)) await SaveOrUpdateSettingAsync("TollFreeNumber", tollFreeNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(emergencySupportNumber)) await SaveOrUpdateSettingAsync("EmergencySupportNumber", emergencySupportNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(whatsAppNumber)) await SaveOrUpdateSettingAsync("WhatsAppNumber", whatsAppNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(supportEmail)) await SaveOrUpdateSettingAsync("SupportEmail", supportEmail.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(billingEmail)) await SaveOrUpdateSettingAsync("BillingEmail", billingEmail.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(partnerHelplineNumber)) await SaveOrUpdateSettingAsync("PartnerHelplineNumber", partnerHelplineNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(officeAddress)) await SaveOrUpdateSettingAsync("OfficeAddress", officeAddress.Trim(), "Contact Info");
+
+            await LogAdminActionAsync("CONTACT_SETTINGS_UPDATE", "Updated RaahSathi Public Contact Details & Helplines via SP");
+            TempData["Success"] = "RaahSathi contact & helpline details saved successfully across the platform.";
+            return RedirectToAction("Settings");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveSystemSettings(
+            string? smsApiKey, 
+            string? emailSender, 
+            string? whatsappNo, 
+            string? googleMapsKey,
+            string? helplineNumber = null,
+            string? tollFreeNumber = null,
+            string? emergencySupportNumber = null,
+            string? whatsAppNumber = null,
+            string? supportEmail = null,
+            string? billingEmail = null,
+            string? partnerHelplineNumber = null,
+            string? officeAddress = null)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            // API Keys
+            await SaveOrUpdateSettingAsync("SmsApiKey", smsApiKey ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("EmailSender", emailSender ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("WhatsAppNo", (whatsAppNumber ?? whatsappNo) ?? "", "API Gateway");
+            await SaveOrUpdateSettingAsync("GoogleMapsKey", googleMapsKey ?? "", "API Gateway");
+
+            // RaahSathi Contact & Support Info
+            if (!string.IsNullOrEmpty(helplineNumber)) await SaveOrUpdateSettingAsync("HelplineNumber", helplineNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(tollFreeNumber)) await SaveOrUpdateSettingAsync("TollFreeNumber", tollFreeNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(emergencySupportNumber)) await SaveOrUpdateSettingAsync("EmergencySupportNumber", emergencySupportNumber.Trim(), "Contact Info");
+            
+            string resolvedWhatsApp = (whatsAppNumber ?? whatsappNo ?? "").Trim();
+            if (!string.IsNullOrEmpty(resolvedWhatsApp)) await SaveOrUpdateSettingAsync("WhatsAppNumber", resolvedWhatsApp, "Contact Info");
+            
+            string resolvedSupportEmail = (supportEmail ?? emailSender ?? "").Trim();
+            if (!string.IsNullOrEmpty(resolvedSupportEmail)) await SaveOrUpdateSettingAsync("SupportEmail", resolvedSupportEmail, "Contact Info");
+            
+            if (!string.IsNullOrEmpty(billingEmail)) await SaveOrUpdateSettingAsync("BillingEmail", billingEmail.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(partnerHelplineNumber)) await SaveOrUpdateSettingAsync("PartnerHelplineNumber", partnerHelplineNumber.Trim(), "Contact Info");
+            if (!string.IsNullOrEmpty(officeAddress)) await SaveOrUpdateSettingAsync("OfficeAddress", officeAddress.Trim(), "Contact Info");
+
+            // Update in-memory helper
+            if (!string.IsNullOrEmpty(helplineNumber)) ContactInfoHelper.UpdateSetting("HelplineNumber", helplineNumber);
+            if (!string.IsNullOrEmpty(tollFreeNumber)) ContactInfoHelper.UpdateSetting("TollFreeNumber", tollFreeNumber);
+            if (!string.IsNullOrEmpty(emergencySupportNumber)) ContactInfoHelper.UpdateSetting("EmergencySupportNumber", emergencySupportNumber);
+            if (!string.IsNullOrEmpty(resolvedWhatsApp)) ContactInfoHelper.UpdateSetting("WhatsAppNumber", resolvedWhatsApp);
+            if (!string.IsNullOrEmpty(resolvedSupportEmail)) ContactInfoHelper.UpdateSetting("SupportEmail", resolvedSupportEmail);
+            if (!string.IsNullOrEmpty(billingEmail)) ContactInfoHelper.UpdateSetting("BillingEmail", billingEmail);
+            if (!string.IsNullOrEmpty(partnerHelplineNumber)) ContactInfoHelper.UpdateSetting("PartnerHelplineNumber", partnerHelplineNumber);
+            if (!string.IsNullOrEmpty(officeAddress)) ContactInfoHelper.UpdateSetting("OfficeAddress", officeAddress);
+
+            await LogAdminActionAsync("SYSTEM_SETTINGS", "Updated System API Settings & RaahSathi Contact Details");
+            TempData["Success"] = "All system settings & contact info updated successfully across the entire platform.";
             return RedirectToAction("Settings");
         }
 
@@ -2269,10 +2583,27 @@ namespace RaahSathi.Controllers
             return RedirectToAction("Admins");
         }
 
-        public async Task<IActionResult> Logs()
+        public async Task<IActionResult> Logs(DateTime? fromDate = null, DateTime? toDate = null)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
-            var logs = await _dbContext.AuditLogs.OrderByDescending(l => l.Id).Take(200).ToListAsync();
+            
+            var query = _dbContext.AuditLogs.AsQueryable();
+
+            if (fromDate.HasValue)
+            {
+                var fromUtc = fromDate.Value.Date;
+                query = query.Where(l => l.TimeStamp >= fromUtc);
+            }
+
+            if (toDate.HasValue)
+            {
+                var toUtc = toDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(l => l.TimeStamp <= toUtc);
+            }
+
+            var logs = await query.OrderByDescending(l => l.TimeStamp).Take(5000).ToListAsync();
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
             return View(logs);
         }
 
@@ -2461,7 +2792,7 @@ namespace RaahSathi.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> SaveCommissionSettings(double phase1, double phase2, double phase3, double parts)
+        public async Task<IActionResult> SaveCommissionSettings(double phase1, double phase2, double phase3, double parts, double customRepair = 0)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
@@ -2469,8 +2800,9 @@ namespace RaahSathi.Controllers
             await SaveOrUpdateSettingAsync("CommissionPhase2", phase2.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
             await SaveOrUpdateSettingAsync("CommissionPhase3", phase3.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
             await SaveOrUpdateSettingAsync("CommissionParts", parts.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
+            await SaveOrUpdateSettingAsync("CommissionCustomRepair", customRepair.ToString(System.Globalization.CultureInfo.InvariantCulture), "Commission");
 
-            await LogAdminActionAsync("COMMISSION_SETTINGS", $"Updated commission phases: P1={phase1}%, P2={phase2}%, P3={phase3}%, Parts={parts}%");
+            await LogAdminActionAsync("COMMISSION_SETTINGS", $"Updated commission phases: P1={phase1}%, P2={phase2}%, P3={phase3}%, Parts={parts}%, CustomRepair={customRepair}%");
             
             TempData["Success"] = "Admin commission rates updated successfully!";
             return RedirectToAction("Pricing");
@@ -2512,18 +2844,225 @@ namespace RaahSathi.Controllers
             return defaultValue;
         }
 
-        private async Task<int> GetSettingIntAsync(string key, int defaultValue)
+        private async Task<string> GetSettingStringAsync(string key, string defaultValue)
         {
             try
             {
                 var setting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
-                if (setting != null && int.TryParse(setting.SettingValue, out int val))
+                if (setting != null && !string.IsNullOrWhiteSpace(setting.SettingValue))
                 {
-                    return val;
+                    return setting.SettingValue.Trim();
                 }
             }
             catch { }
             return defaultValue;
+        }
+
+        public async Task<IActionResult> Subscriptions(int page = 1, int pageSize = 100, string status = "all", string city = "all")
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            if (page < 1) page = 1;
+            if (pageSize < 10) pageSize = 100;
+            if (pageSize > 500) pageSize = 500;
+            if (string.IsNullOrWhiteSpace(status)) status = "all";
+            if (string.IsNullOrWhiteSpace(city)) city = "all";
+
+            bool isMasterEnabled = (await GetSettingStringAsync("SubscriptionEnabled", "false")).Equals("true", StringComparison.OrdinalIgnoreCase);
+            double monthlyFee = await GetSettingDoubleAsync("MonthlySubscriptionFee", 499);
+            int freeTrialDays = (int)await GetSettingDoubleAsync("SubscriptionFreeTrialDays", 30);
+            int minJobsRequired = (int)await GetSettingDoubleAsync("SubscriptionMinJobsRequired", 2);
+
+            var mechanics = await _dbContext.MechanicProfiles
+                .Include(m => m.User)
+                .OrderByDescending(m => m.UserId)
+                .ToListAsync();
+
+            var allCompletedJobs = await _dbContext.Jobs
+                .Where(j => j.Status == "Completed" && j.MechanicId != null)
+                .GroupBy(j => j.MechanicId!.Value)
+                .Select(g => new { MechanicId = g.Key, CompletedCount = g.Count() })
+                .ToDictionaryAsync(g => g.MechanicId, g => g.CompletedCount);
+
+            var recentSubscriptions = await _dbContext.MechanicSubscriptions
+                .Include(s => s.Mechanic)
+                .OrderByDescending(s => s.CreatedAt)
+                .Take(50)
+                .ToListAsync();
+
+            // Extract all distinct cities with counts
+            var cityGroups = mechanics
+                .Select(m => string.IsNullOrWhiteSpace(m.City) ? "Noida" : m.City.Trim())
+                .GroupBy(c => c, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new CityCountDto { CityName = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .ThenBy(x => x.CityName)
+                .ToList();
+
+            var allMechDtos = new List<MechanicSubscriptionStatusDto>();
+
+            foreach (var m in mechanics)
+            {
+                DateTime registeredDate = m.User?.CreatedAt ?? DateTime.UtcNow;
+                int daysJoined = (int)Math.Max(0, (DateTime.UtcNow - registeredDate).TotalDays);
+                int jobsDone = allCompletedJobs.ContainsKey(m.UserId) ? allCompletedJobs[m.UserId] : m.TotalJobs;
+                
+                string mechStatus = "Trial";
+                bool isRequired = false;
+                int remainingTrial = Math.Max(0, freeTrialDays - daysJoined);
+
+                if (m.SubscriptionValidTill.HasValue && m.SubscriptionValidTill.Value > DateTime.UtcNow)
+                {
+                    mechStatus = "Active";
+                    isRequired = false;
+                }
+                else if (daysJoined < freeTrialDays)
+                {
+                    mechStatus = "Trial";
+                    isRequired = false;
+                }
+                else if (jobsDone < minJobsRequired)
+                {
+                    mechStatus = "Exempt";
+                    isRequired = false;
+                }
+                else
+                {
+                    mechStatus = "Due";
+                    isRequired = isMasterEnabled;
+                }
+
+                allMechDtos.Add(new MechanicSubscriptionStatusDto
+                {
+                    MechanicId = m.UserId,
+                    MechanicName = m.User?.Name ?? $"Mechanic #{m.UserId}",
+                    PhoneNumber = m.User?.PhoneNumber ?? "N/A",
+                    ShopName = m.ShopName ?? "",
+                    City = string.IsNullOrWhiteSpace(m.City) ? "Noida" : m.City.Trim(),
+                    RegisteredAt = registeredDate,
+                    DaysSinceJoined = daysJoined,
+                    CompletedJobsCount = jobsDone,
+                    Status = mechStatus,
+                    IsSubscriptionRequired = isRequired,
+                    ValidTill = m.SubscriptionValidTill,
+                    AmountPaidTotal = m.SubscriptionAmountPaid,
+                    RemainingTrialDays = remainingTrial,
+                    LastPaymentDate = m.SubscriptionLastPaidAt
+                });
+            }
+
+            // 1. Filter by City first (for both KPI metrics and grid)
+            var cityFilteredMechs = allMechDtos;
+            if (!city.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                cityFilteredMechs = allMechDtos
+                    .Where(x => x.City.Equals(city, StringComparison.OrdinalIgnoreCase) || x.City.Contains(city, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            // 2. Calculate KPI summary metrics specifically for the selected city
+            int totalCityMechanics = cityFilteredMechs.Count;
+            int activeCount = cityFilteredMechs.Count(x => x.Status == "Active");
+            int trialCount = cityFilteredMechs.Count(x => x.Status == "Trial");
+            int dueCount = cityFilteredMechs.Count(x => x.Status == "Due");
+            int exemptCount = cityFilteredMechs.Count(x => x.Status == "Exempt");
+            double totalRevenue = cityFilteredMechs.Sum(x => x.AmountPaidTotal);
+
+            // 3. Apply Status filter for table view
+            var statusFilteredList = cityFilteredMechs;
+            if (!status.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                statusFilteredList = cityFilteredMechs.Where(x => x.Status.Equals(status, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            int totalFiltered = statusFilteredList.Count;
+            int totalPages = pageSize > 0 ? (int)Math.Ceiling((double)totalFiltered / pageSize) : 1;
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var pagedMechanics = statusFilteredList
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var vm = new AdminSubscriptionsPageViewModel
+            {
+                IsMasterEnabled = isMasterEnabled,
+                MonthlyFee = monthlyFee,
+                FreeTrialDays = freeTrialDays,
+                MinJobsRequired = minJobsRequired,
+                TotalMechanics = totalCityMechanics,
+                ActiveSubscribersCount = activeCount,
+                FreeTrialCount = trialCount,
+                DueCount = dueCount,
+                ExemptCount = exemptCount,
+                TotalSubscriptionRevenue = totalRevenue,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalRecords = totalFiltered,
+                StatusFilter = status.ToLowerInvariant(),
+                SelectedCity = city,
+                AvailableCities = cityGroups,
+                Mechanics = pagedMechanics,
+                RecentTransactions = recentSubscriptions
+            };
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveSubscriptionSettings(bool isMasterEnabled, double monthlyFee, int freeTrialDays, int minJobsRequired)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            await SaveOrUpdateSettingAsync("SubscriptionEnabled", isMasterEnabled ? "true" : "false", "Subscription");
+            await SaveOrUpdateSettingAsync("MonthlySubscriptionFee", monthlyFee.ToString(System.Globalization.CultureInfo.InvariantCulture), "Subscription");
+            await SaveOrUpdateSettingAsync("SubscriptionFreeTrialDays", freeTrialDays.ToString(), "Subscription");
+            await SaveOrUpdateSettingAsync("SubscriptionMinJobsRequired", minJobsRequired.ToString(), "Subscription");
+
+            await LogAdminActionAsync("SUBSCRIPTION_RULES", $"Updated subscription rules: MasterEnabled={isMasterEnabled}, Fee=₹{monthlyFee}, TrialDays={freeTrialDays}, MinJobs={minJobsRequired}");
+
+            TempData["Success"] = "Mechanic subscription rules and pricing updated successfully!";
+            return RedirectToAction("Subscriptions");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GrantMechanicSubscription(int mechanicId, int daysToAdd, string? notes)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var mech = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(m => m.UserId == mechanicId);
+            if (mech == null)
+            {
+                TempData["Error"] = "Mechanic not found.";
+                return RedirectToAction("Subscriptions");
+            }
+
+            DateTime currentExpiry = (mech.SubscriptionValidTill.HasValue && mech.SubscriptionValidTill.Value > DateTime.UtcNow) 
+                ? mech.SubscriptionValidTill.Value 
+                : DateTime.UtcNow;
+
+            mech.SubscriptionValidTill = currentExpiry.AddDays(daysToAdd > 0 ? daysToAdd : 30);
+            mech.SubscriptionStatus = "Active";
+            mech.SubscriptionLastPaidAt = DateTime.UtcNow;
+
+            var subRecord = new MechanicSubscription
+            {
+                MechanicId = mechanicId,
+                Amount = 0.0,
+                StartDate = currentExpiry,
+                EndDate = mech.SubscriptionValidTill.Value,
+                PaymentStatus = "ManualGrant",
+                Notes = string.IsNullOrWhiteSpace(notes) ? $"Admin granted +{daysToAdd} days" : notes.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.MechanicSubscriptions.Add(subRecord);
+            await _dbContext.SaveChangesAsync();
+
+            await LogAdminActionAsync("SUBSCRIPTION_GRANT", $"Granted +{daysToAdd} days subscription to Mechanic #{mechanicId}. Valid till: {mech.SubscriptionValidTill.Value:dd MMM yyyy}");
+
+            TempData["Success"] = $"Successfully granted +{daysToAdd} days subscription to mechanic!";
+            return RedirectToAction("Subscriptions");
         }
 
         [HttpGet("/Admin/GlobalSearch")]
@@ -2871,10 +3410,11 @@ namespace RaahSathi.Controllers
             if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
             
             await LogAdminActionAsync("SEO_PING", "Submitted sitemap.xml update to search engines (Google & Bing indexers)");
+            var istTime = DateTime.UtcNow.AddHours(5).AddMinutes(30);
             return Json(new { 
                 success = true, 
                 message = "Sitemap successfully queued & pinged to Google & Bing bots! Indexed pages updated.",
-                timestamp = DateTime.UtcNow.ToString("dd MMM yyyy, hh:mm tt")
+                timestamp = istTime.ToString("dd MMM yyyy, hh:mm tt")
             });
         }
 

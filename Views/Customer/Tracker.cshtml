@@ -66,11 +66,13 @@
         align-items: center;
         z-index: 2;
         position: relative;
-        width: 75px;
+        flex: 1 1 0;
+        min-width: 48px;
+        max-width: 85px;
     }
     .timeline-step {
-        width: 34px;
-        height: 34px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         background: #1e293b;
         border: 2px solid rgba(255, 255, 255, 0.2);
@@ -78,7 +80,7 @@
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         transition: all 0.3s ease;
         color: #94a3b8;
     }
@@ -96,15 +98,17 @@
         box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
     }
     .timeline-label {
-        margin-top: 8px;
-        font-size: 0.75rem;
+        margin-top: 6px;
+        font-size: 0.7rem;
         font-weight: 500;
         text-align: center;
         color: #94a3b8;
         transition: color 0.3s ease;
         position: static !important;
         transform: none !important;
-        width: auto !important;
+        width: 100% !important;
+        word-break: break-word;
+        line-height: 1.2;
     }
     .timeline-step.active ~ .timeline-label,
     .timeline-step.completed ~ .timeline-label {
@@ -365,8 +369,52 @@
             </div>
         </div>
 
+        <!-- Vehicle & Issues Summary Card with Multi-Problem Breakdown -->
+        <div class="glass-card p-3 mb-3 border-secondary">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                <div>
+                    <span class="badge bg-warning text-dark font-weight-bold mb-1">JOB #@job.Id</span>
+                    <h5 class="text-white font-weight-bold mb-1">@job.Vehicle?.Model (@job.Vehicle?.VehicleType)</h5>
+                    <div id="trackerProblemsContainer" class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                        @{
+                            var custJobProblems = (job.ProblemType ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                        }
+                        @foreach (var p in custJobProblems)
+                        {
+                            bool isCancelled = !string.IsNullOrEmpty(job.CancelledProblemItem) &&
+                                               (p.Equals(job.CancelledProblemItem, StringComparison.OrdinalIgnoreCase) || p.Contains(job.CancelledProblemItem, StringComparison.OrdinalIgnoreCase) || job.CancelledProblemItem.Contains(p, StringComparison.OrdinalIgnoreCase));
+                            
+                            if (isCancelled)
+                            {
+                                <div class="badge bg-danger bg-opacity-10 border border-danger text-light p-2 rounded-3 d-inline-flex align-items-center gap-1.5 tracker-prob-badge" data-prob-name="@p">
+                                    <i class="fa-solid fa-circle-xmark text-danger"></i>
+                                    <span class="text-decoration-line-through text-muted font-weight-bold">@p</span>
+                                    <span class="text-danger small" style="font-size:0.7rem;">(Cancelled by mechanic)</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="badge bg-dark border border-warning border-opacity-40 text-white p-2 rounded-3 d-inline-flex align-items-center gap-1.5 shadow-sm tracker-prob-badge" data-prob-name="@p">
+                                    <i class="fa-solid fa-wrench text-warning"></i>
+                                    <span class="prob-title">@p</span>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="text-md-end">
+                    <span class="text-muted small d-block font-weight-bold">Upfront Estimate</span>
+                    <h4 class="text-warning font-weight-extrabold mb-0" id="trackerEstimatedBillText">₹@job.FinalBillAmount.ToString("N0")</h4>
+                </div>
+            </div>
+
+            <div id="trackerCancelledAlert" class="alert alert-danger bg-dark border-danger text-light small p-2.5 mt-2.5 mb-0 rounded @(string.IsNullOrEmpty(job.CancelledProblemItem) ? "d-none" : "")">
+                <i class="fa-solid fa-circle-info text-danger me-1"></i> <strong>Notice:</strong> Problem <strong><span id="trackerCancelledItemName">@job.CancelledProblemItem</span></strong> was removed by mechanic (<span id="trackerCancelledReasonText">@job.ProblemCancelReason</span>). Total estimate adjusted.
+            </div>
+        </div>
+
         <!-- Tracker Map Card -->
-        <div class="glass-card p-0 mb-4 overflow-hidden" style="min-height: 400px; display:flex; flex-direction:column;">
+        <div class="glass-card p-0 mb-3 overflow-hidden" style="display:flex; flex-direction:column;">
             <div class="p-3 bg-dark border-bottom border-secondary d-flex align-items-center justify-content-between">
                 <div>
                     <h5 class="mb-0 text-white"><i class="fa-solid fa-route text-warning me-2"></i> Live Mechanic Tracking</h5>
@@ -378,12 +426,12 @@
                 </div>
             </div>
             
-            <div id="map-container" style="flex-grow:1; min-height: 350px;"></div>
+            <div id="map-container" style="height: 290px; width: 100%;"></div>
         </div>
 
         <!-- Job Progress Checklist (Visual State Machine) -->
-        <div class="glass-card mb-4">
-            <h5 class="text-white mb-4"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Roadmap Status</h5>
+        <div class="glass-card p-3 mb-3">
+            <h5 class="text-white mb-3"><i class="fa-solid fa-list-check text-warning me-2"></i> Service Roadmap Status</h5>
             <div class="timeline-progress-wrapper">
                 <div class="timeline-item-col">
                     <div class="timeline-step" id="step-Accepted">1</div>
@@ -394,19 +442,15 @@
                     <div class="timeline-label">Driving</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Arrived">3</div>
-                    <div class="timeline-label">Arrived</div>
+                    <div class="timeline-step" id="step-Inspecting">3</div>
+                    <div class="timeline-label">Reached Spot & Inspection</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Inspecting">4</div>
-                    <div class="timeline-label">Inspecting</div>
-                </div>
-                <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Repairing">5</div>
+                    <div class="timeline-step" id="step-Repairing">4</div>
                     <div class="timeline-label">Repairing</div>
                 </div>
                 <div class="timeline-item-col">
-                    <div class="timeline-step" id="step-Completed">6</div>
+                    <div class="timeline-step" id="step-Completed">5</div>
                     <div class="timeline-label">Finished</div>
                 </div>
             </div>
@@ -417,47 +461,63 @@
     <div class="col-lg-4">
         <!-- Mechanic Info Card & Verification -->
         <div class="glass-card mb-4" id="mechanicDetailsCard">
-            <h5 class="text-white mb-3">Assigned Expert</h5>
-            
-            <!-- Inactivity Warning Alert -->
-            <div id="customer-inactivity-warning" class="alert alert-danger bg-dark border-danger text-danger small p-3 mb-3 d-none">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <i class="fa-solid fa-triangle-exclamation text-danger fa-lg"></i>
-                    <span><strong>Mechanic Stopped Moving!</strong> No progress detected for 5 minutes.</span>
+            <!-- 🔍 Searching State (shown while Status is Requested) -->
+            <div id="searchingMechanicBox" class="@(job.Status == "Requested" ? "" : "d-none") text-center py-2">
+                <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10 border border-warning border-opacity-30 rounded-circle mb-3 p-3" style="width: 65px; height: 65px;">
+                    <i class="fa-solid fa-satellite-dish text-warning fa-2x animate-pulse"></i>
                 </div>
-                <div class="d-flex gap-2 mt-2">
-                    <button type="button" class="btn btn-danger btn-sm font-weight-bold flex-fill py-2 shadow-sm" onclick="reassignMechanic()">
-                        <i class="fa-solid fa-rotate me-1"></i> Reassign Mechanic
-                    </button>
-                    <button type="button" class="btn btn-outline-warning btn-sm font-weight-bold flex-fill py-2 shadow-sm" onclick="keepWaiting()">
-                        <i class="fa-solid fa-hourglass-start me-1"></i> I Will Wait
+                <h6 class="text-white font-weight-bold mb-1">Broadcasting Request</h6>
+                <p class="text-muted small mb-3">Connecting with nearby certified mechanics in your area. Live tracking will activate as soon as a partner accepts.</p>
+                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill font-weight-bold px-3 py-1.5 shadow-sm" onclick="reassignMechanic()">
+                    <i class="fa-solid fa-rotate me-1"></i> Re-broadcast Alert
+                </button>
+            </div>
+
+            <!-- 👤 Assigned Mechanic State (shown when MechanicId is assigned) -->
+            <div id="assignedMechanicBox" class="@(job.Status != "Requested" && job.MechanicId.HasValue ? "" : "d-none")">
+                <h5 class="text-white mb-3">Assigned Expert</h5>
+                
+                <!-- Inactivity Warning Alert -->
+                <div id="customer-inactivity-warning" class="alert alert-danger bg-dark border-danger text-danger small p-3 mb-3 d-none">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fa-solid fa-triangle-exclamation text-danger fa-lg"></i>
+                        <span><strong>Mechanic Stopped Moving!</strong> No progress detected for 5 minutes.</span>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-danger btn-sm font-weight-bold flex-fill py-2 shadow-sm" onclick="reassignMechanic()">
+                            <i class="fa-solid fa-rotate me-1"></i> Reassign Mechanic
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm font-weight-bold flex-fill py-2 shadow-sm" onclick="keepWaiting()">
+                            <i class="fa-solid fa-hourglass-start me-1"></i> I Will Wait
+                        </button>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center mb-3">
+                    <div class="position-relative me-3">
+                        <div id="mechAvatarCircle" class="rounded-circle bg-warning p-3 d-flex align-items-center justify-content-center text-dark font-weight-bold" style="width: 55px; height: 55px; font-size:1.2rem;">
+                            @(string.IsNullOrEmpty(job.Mechanic?.Name) ? "M" : job.Mechanic.Name[0].ToString().ToUpper())
+                        </div>
+                        <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success border border-white" style="font-size:0.5rem;"><i class="fa-solid fa-check"></i> Verified</span>
+                    </div>
+                    <div>
+                        <h6 class="text-white mb-0" id="lblTrackerMechName">@(job.Mechanic?.Name ?? "Assigned Partner")</h6>
+                        <div class="text-muted small">Rating: <span class="text-warning" id="lblTrackerMechRating">@(profile?.Rating ?? 5.0) ★</span> | <span id="lblTrackerMechExp">@(profile?.ExperienceYears ?? 5)</span> Yrs Exp</div>
+                        <div class="text-warning small"><i class="fa-solid fa-certificate me-1"></i> KYC Document Verified</div>
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2 mb-2">
+                    <a id="btnTrackerCallMech" href="tel:@(job.Mechanic?.PhoneNumber ?? "")" class="btn btn-warning font-weight-bold flex-fill py-2.5 shadow-sm">
+                        <i class="fa-solid fa-phone me-1.5"></i> 📞 Call
+                    </a>
+                    <button type="button" class="btn btn-outline-info font-weight-bold flex-fill py-2.5 shadow-sm position-relative" data-bs-toggle="modal" data-bs-target="#liveChatModal" onclick="fetchChatMessages()">
+                        <i class="fa-solid fa-comments me-1.5"></i> 💬 Chat
+                        <span id="chat-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
                     </button>
                 </div>
             </div>
 
-            <div class="d-flex align-items-center mb-3">
-                <div class="position-relative me-3">
-                    <div class="rounded-circle bg-warning p-3 d-flex align-items-center justify-content-center text-dark" style="width: 55px; height: 55px; font-weight:bold; font-size:1.2rem;">
-                        @job.Mechanic?.Name[0]
-                    </div>
-                    <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success border border-white" style="font-size:0.5rem;"><i class="fa-solid fa-check"></i> Verified</span>
-                </div>
-                <div>
-                    <h6 class="text-white mb-0">@job.Mechanic?.Name</h6>
-                    <div class="text-muted small">Rating: <span class="text-warning">@(profile?.Rating ?? 5.0) ★</span> | @(profile?.ExperienceYears ?? 5) Yrs Exp</div>
-                    <div class="text-warning small"><i class="fa-solid fa-certificate me-1"></i> KYC Document Verified</div>
-                </div>
-            </div>
-            
-            <div class="d-flex gap-2 mb-2">
-                <a href="tel:@job.Mechanic?.PhoneNumber" class="btn btn-warning font-weight-bold flex-fill py-2.5 shadow-sm">
-                    <i class="fa-solid fa-phone me-1.5"></i> 📞 Call
-                </a>
-                <button type="button" class="btn btn-outline-info font-weight-bold flex-fill py-2.5 shadow-sm position-relative" data-bs-toggle="modal" data-bs-target="#liveChatModal" onclick="fetchChatMessages()">
-                    <i class="fa-solid fa-comments me-1.5"></i> 💬 Chat
-                    <span id="chat-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
-                </button>
-            </div>
             <button type="button" id="sidebarReceiptBtn" class="btn btn-outline-info font-weight-bold w-100 py-2.5 shadow-sm @(job.Status == "Completed" ? "" : "d-none")" onclick="showCustomerInvoiceModal(@job.Id)">
                 <i class="fa-solid fa-receipt me-2"></i> View Itemized Tax Invoice / Receipt
             </button>
@@ -913,6 +973,83 @@
     var mechanicLat = 0;
     var mechanicLng = 0;
 
+    var lastRouteFetchCoords = { mechLat: 0, mechLng: 0, custLat: 0, custLng: 0 };
+    var isFetchingRoute = false;
+
+    function updateRoadRoute(mLat, mLng, cLat, cLng) {
+        if (!map || !mLat || !mLng || !cLat || !cLng) return;
+
+        var dLat = Math.abs(lastRouteFetchCoords.mechLat - mLat);
+        var dLng = Math.abs(lastRouteFetchCoords.mechLng - mLng);
+        if (dLat < 0.00015 && dLng < 0.00015 && linePath) {
+            return; // Cache route if position shift is negligible
+        }
+
+        if (isFetchingRoute) return;
+        isFetchingRoute = true;
+
+        var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' + 
+                      mLng + ',' + mLat + ';' + cLng + ',' + cLat + 
+                      '?overview=full&geometries=geojson';
+
+        fetch(osrmUrl)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                isFetchingRoute = false;
+                if (data && data.routes && data.routes.length > 0 && data.routes[0].geometry) {
+                    var routeCoords = data.routes[0].geometry.coordinates.map(function(coord) {
+                        return [coord[1], coord[0]]; // Leaflet expects [lat, lng]
+                    });
+
+                    if (linePath) {
+                        map.removeLayer(linePath);
+                    }
+
+                    // 🛣️ Glowing Turn-by-Turn Road Route Polyline (Uber / Zomato style)
+                    linePath = L.polyline(routeCoords, {
+                        color: '#ff6b00',
+                        weight: 5,
+                        opacity: 0.92,
+                        lineJoin: 'round',
+                        lineCap: 'round'
+                    }).addTo(map);
+
+                    lastRouteFetchCoords = { mechLat: mLat, mechLng: mLng, custLat: cLat, custLng: cLng };
+
+                    // Auto-fit map bounds
+                    var bounds = L.latLngBounds(routeCoords);
+                    map.fitBounds(bounds, { padding: [50, 50] });
+
+                    if (data.routes[0].distance && data.routes[0].duration) {
+                        window.currentRoadDistanceKm = (data.routes[0].distance / 1000).toFixed(1);
+                        window.currentRoadEtaMins = Math.max(2, Math.round(data.routes[0].duration / 60));
+                    }
+                } else {
+                    drawFallbackStraightLine(mLat, mLng, cLat, cLng);
+                }
+            })
+            .catch(function(err) {
+                isFetchingRoute = false;
+                drawFallbackStraightLine(mLat, mLng, cLat, cLng);
+            });
+    }
+
+    function drawFallbackStraightLine(mLat, mLng, cLat, cLng) {
+        if (linePath) {
+            map.removeLayer(linePath);
+        }
+        linePath = L.polyline([
+            [mLat, mLng],
+            [cLat, cLng]
+        ], { color: '#ff6b00', weight: 4, dashArray: '6, 8', opacity: 0.85 }).addTo(map);
+
+        var bounds = L.latLngBounds([
+            [mLat, mLng],
+            [cLat, cLng]
+        ]);
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
+
     function calculateDistance(lat1, lon1, lat2, lon2) {
         var R = 6371; // Radius of the earth in km
         var dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1015,12 +1152,28 @@
             $('#isRecommendedInput').val(val);
         });
 
-        // Begin polling status every 3 seconds
+        // Begin polling status every 3.5 seconds
         pollJobStatus();
-        setInterval(pollJobStatus, 3000);
+        setInterval(function() {
+            if (!document.hidden) pollJobStatus();
+        }, 3500);
+
+        // Instant refresh on mobile screen unlock or tab focus
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                pollJobStatus();
+            }
+        });
+        window.addEventListener('focus', function() {
+            pollJobStatus();
+        });
     });
 
+    var isTrackerPolling = false;
     function pollJobStatus() {
+        if (isTrackerPolling || document.hidden) return;
+        isTrackerPolling = true;
+
         $.get('/Customer/GetJobStatus?id=@job.Id&_t=' + Date.now(), function(res) {
             // Update unread chat message badge
             if (res.unreadChatCount > 0 && !$('#liveChatModal').hasClass('show')) {
@@ -1039,6 +1192,27 @@
             // Update Timeline steps
             updateTimelineUI(res.status);
 
+            // Real-time Problem Cancellation sync
+            if (res.cancelledProblemItem) {
+                $('#trackerCancelledItemName').text(res.cancelledProblemItem);
+                $('#trackerCancelledReasonText').text(res.problemCancelReason || 'Cancelled by mechanic');
+                $('#trackerCancelledAlert').removeClass('d-none');
+                
+                // Strike through cancelled badge in list
+                $('.tracker-prob-badge').each(function() {
+                    var bName = $(this).attr('data-prob-name');
+                    if (bName && (bName.toLowerCase() === res.cancelledProblemItem.toLowerCase() || bName.toLowerCase().includes(res.cancelledProblemItem.toLowerCase()))) {
+                        $(this).removeClass('bg-dark border-warning text-white shadow-sm')
+                               .addClass('bg-danger bg-opacity-10 border-danger text-light');
+                        $(this).html(`<i class="fa-solid fa-circle-xmark text-danger"></i> <span class="text-decoration-line-through text-muted font-weight-bold">${bName}</span> <span class="text-danger small" style="font-size:0.7rem;">(Cancelled by mechanic)</span>`);
+                    }
+                });
+            }
+
+            if (res.finalBillAmount) {
+                $('#trackerEstimatedBillText').text('₹' + Number(res.finalBillAmount).toFixed(0));
+            }
+
             // Show/hide receipt button dynamically in real-time
             if (res.status === "Completed") {
                 $('#sidebarReceiptBtn').removeClass('d-none');
@@ -1047,8 +1221,20 @@
             }
 
             // Update mechanic details and map
-            if (res.mechanicId) {
-                $('#mechanicDetailsCard').removeClass('d-none');
+            if (res.mechanicId && res.status !== "Requested") {
+                $('#searchingMechanicBox').addClass('d-none');
+                $('#assignedMechanicBox').removeClass('d-none');
+                
+                if (res.mechanicName) {
+                    $('#lblTrackerMechName').text(res.mechanicName);
+                    $('#mechAvatarCircle').text(res.mechanicName.charAt(0).toUpperCase());
+                }
+                if (res.mechanicRating) {
+                    $('#lblTrackerMechRating').text(res.mechanicRating + ' ★');
+                }
+                if (res.mechanicPhone) {
+                    $('#btnTrackerCallMech').attr('href', 'tel:' + res.mechanicPhone);
+                }
                 
                 // Draw/Update mechanic marker
                 if (res.mechanicLat && res.mechanicLng) {
@@ -1058,33 +1244,23 @@
                     if (!mechanicMarker) {
                         // Create mechanic marker
                         var mechIcon = L.icon({
-                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
-                            iconSize: [25, 41],
-                            iconAnchor: [12, 41]
+                            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3202/3202926.png',
+                            iconSize: [40, 40],
+                            iconAnchor: [20, 20]
                         });
                         mechanicMarker = L.marker([mechanicLat, mechanicLng], {icon: mechIcon}).addTo(map);
-                        mechanicMarker.bindPopup("<span class='text-dark'>Roadside Mechanic travelling...</span>");
+                        mechanicMarker.bindPopup('<b>Mechanic En Route</b>').openPopup();
                     } else {
                         // Move marker smoothly
                         mechanicMarker.setLatLng([mechanicLat, mechanicLng]);
                     }
 
-                    // Redraw path line
-                    if (linePath) {
-                        map.removeLayer(linePath);
-                    }
-                    linePath = L.polyline([
-                        [customerLat, customerLng],
-                        [mechanicLat, mechanicLng]
-                    ], {color: '#f59e0b', weight: 4, dashArray: '5, 10'}).addTo(map);
-
-                    // Re-center map to fit both
-                    var bounds = L.latLngBounds([
-                        [customerLat, customerLng],
-                        [mechanicLat, mechanicLng]
-                    ]);
-                    map.fitBounds(bounds, {padding: [50, 50]});
+                    // Draw and update real turn-by-turn road route
+                    updateRoadRoute(mechanicLat, mechanicLng, customerLat, customerLng);
                 }
+            } else {
+                $('#searchingMechanicBox').removeClass('d-none');
+                $('#assignedMechanicBox').addClass('d-none');
             }
 
             // Check requested status timeout alert
@@ -1100,20 +1276,22 @@
                 $('#dispatch-timeout-alert').addClass('d-none');
             }
 
-            // Estimate ETA description
+            // Estimate ETA description with accurate road-routing distance & time
             if (res.status === "Accepted" || res.status === "Driving") {
                 var etaDisplay = "<b>~8 mins</b>";
                 if (res.mechanicLat && res.mechanicLng) {
-                    var dist = calculateDistance(customerLat, customerLng, res.mechanicLat, res.mechanicLng);
-                    var mins = Math.round(dist * 3.2 + 2);
-                    if (mins < 2) mins = 2; // minimum 2 minutes
-                    etaDisplay = "<b>~" + mins + " mins</b> (" + dist.toFixed(1) + " km away)";
+                    if (window.currentRoadEtaMins && window.currentRoadDistanceKm) {
+                        etaDisplay = "<b>~" + window.currentRoadEtaMins + " mins</b> (" + window.currentRoadDistanceKm + " km by road)";
+                    } else {
+                        var dist = calculateDistance(customerLat, customerLng, res.mechanicLat, res.mechanicLng);
+                        var mins = Math.round(dist * 3.2 + 2);
+                        if (mins < 2) mins = 2;
+                        etaDisplay = "<b>~" + mins + " mins</b> (" + dist.toFixed(1) + " km away)";
+                    }
                 }
-                $('#etaText').html("<i class='fa-solid fa-spinner fa-spin text-warning me-1'></i> Mechanic travelling. ETA " + etaDisplay);
-            } else if (res.status === "Arrived") {
-                $('#etaText').html("<span class='text-success font-weight-bold'><i class='fa-solid fa-check-circle me-1'></i> Mechanic has arrived on scene.</span>");
-            } else if (res.status === "Inspecting") {
-                $('#etaText').html("<span class='text-warning font-weight-bold'><i class='fa-solid fa-magnifying-glass fa-spin me-1'></i> Running full vehicle diagnostics...</span>");
+                $('#etaText').html("<i class='fa-solid fa-route text-warning me-1'></i> Mechanic travelling. ETA " + etaDisplay);
+            } else if (res.status === "Inspecting" || res.status === "Arrived") {
+                $('#etaText').html("<span class='text-warning font-weight-bold'><i class='fa-solid fa-stethoscope fa-spin me-1'></i> Mechanic reached breakdown spot & inspecting vehicle...</span>");
             } else if (res.status === "EstimatePending") {
                 $('#etaText').text("Awaiting your parts estimate approval.");
             } else if (res.status === "Repairing") {
@@ -1149,7 +1327,7 @@
 
             // Handle Escrow settlement panel showing
             // Show checkout either when completed or when mechanic marked inspection done (or towing approved)
-            if ((res.status === "Completed" && res.partsApproved !== null) || (res.status === "Repairing" && res.partsApproved !== null && res.towingApproved === null) || (res.status === "Arrived" && res.partsApproved === false)) {
+            if ((res.status === "Completed" && res.partsApproved !== null) || (res.status === "Repairing" && res.partsApproved !== null && res.towingApproved === null) || ((res.status === "Inspecting" || res.status === "Arrived") && res.partsApproved === false)) {
                 // If it is already completed in database, go straight to rating/review panel
                 if (res.status === "Completed") {
                     $('#paymentCheckoutCard').addClass('d-none');
@@ -1168,6 +1346,8 @@
             } else {
                 $('#paymentCheckoutCard').addClass('d-none');
             }
+        }).always(function() {
+            isTrackerPolling = false;
         });
     }
 
@@ -1179,25 +1359,18 @@
         } else if (status === "Driving") {
             $('#step-Accepted').addClass('completed');
             $('#step-Driving').addClass('active');
-        } else if (status === "Arrived") {
+        } else if (status === "Inspecting" || status === "EstimatePending" || status === "Arrived") {
             $('#step-Accepted').addClass('completed');
             $('#step-Driving').addClass('completed');
-            $('#step-Arrived').addClass('active');
-        } else if (status === "Inspecting" || status === "EstimatePending") {
-            $('#step-Accepted').addClass('completed');
-            $('#step-Driving').addClass('completed');
-            $('#step-Arrived').addClass('completed');
             $('#step-Inspecting').addClass('active');
         } else if (status === "Repairing") {
             $('#step-Accepted').addClass('completed');
             $('#step-Driving').addClass('completed');
-            $('#step-Arrived').addClass('completed');
             $('#step-Inspecting').addClass('completed');
             $('#step-Repairing').addClass('active');
         } else if (status === "Completed") {
             $('#step-Accepted').addClass('completed');
             $('#step-Driving').addClass('completed');
-            $('#step-Arrived').addClass('completed');
             $('#step-Inspecting').addClass('completed');
             $('#step-Repairing').addClass('completed');
             $('#step-Completed').addClass('completed');

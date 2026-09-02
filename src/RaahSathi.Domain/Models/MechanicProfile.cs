@@ -86,6 +86,13 @@ namespace RaahSathi.Models
 
         public double CurrentEarnings { get; set; } = 0.0; // Simulated wallet balance
 
+        // Mechanic Monthly Subscription Details
+        public DateTime? SubscriptionValidTill { get; set; }
+        public double SubscriptionAmountPaid { get; set; } = 0.0;
+        public DateTime? SubscriptionLastPaidAt { get; set; }
+        [StringLength(50)]
+        public string SubscriptionStatus { get; set; } = "Trial"; // "Trial", "Active", "Due", "Exempt"
+
         // Additional Profile Info & Payments (All Optional)
         [StringLength(200)]
         public string Languages { get; set; } = "Hindi, English";

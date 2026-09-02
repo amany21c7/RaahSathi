@@ -7,6 +7,7 @@ namespace RaahSathi.Controllers.Api
 {
     [ApiController]
     [Route("api")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth-policy")]
     public class AuthApiController : ControllerBase
     {
         private readonly IAuthService _authService;

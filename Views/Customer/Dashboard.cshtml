@@ -12,7 +12,10 @@
         .Where(b => b.IsActive 
                  && (b.TargetPage == "Customer Dashboard" || b.TargetPage == "Homepage")
                  && (b.TargetAudience == "All Users" || b.TargetAudience == "Customers")
-                 && (b.ExpiresAt == null || b.ExpiresAt > now))
+                 && (b.ExpiresAt == null || b.ExpiresAt > now)
+                 && !b.ImageUrl.Contains("C:")
+                 && !b.ImageUrl.Contains("Downloads")
+                 && !b.ImageUrl.StartsWith("\""))
         .OrderByDescending(b => b.Id)
         .ToList();
 }
@@ -49,79 +52,43 @@
         </div>
     }
 
-    <!-- Quick Emergency Request for Registered Vehicles Card -->
-    <div class="col-12">
-        <div class="glass-card mb-4 border border-warning border-opacity-40" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));">
-            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                <div>
-                    <h5 class="text-white font-weight-bold mb-1">
-                        <i class="fa-solid fa-bolt text-warning me-2 animate-pulse"></i> Registered Vehicle Quick Request
-                    </h5>
-                    <p class="text-muted small mb-0">Select your registered vehicle to send an instant roadside assistance request.</p>
-                </div>
-                <div>
-                    @if (vehicles.Count > 0)
-                    {
-                        <div class="d-flex align-items-center gap-2">
-                            <select class="form-select glass-input text-white font-weight-bold" id="dashboardVehicleSelect" style="min-width: 210px;">
-                                @foreach (var v in vehicles)
-                                {
-                                    <option value="@v.Id">@v.Model (@v.RegistrationNumber)</option>
-                                }
-                            </select>
-                            <button class="btn btn-warning font-weight-bold text-dark text-nowrap shadow" onclick="submitQuickVehicleRequest()">
-                                <i class="fa-solid fa-paper-plane me-1"></i> Send Request
-                            </button>
-                        </div>
-                    }
-                    else
-                    {
-                        <a href="/Customer/Book" class="btn btn-warning font-weight-bold text-dark text-nowrap shadow">
-                            <i class="fa-solid fa-location-crosshairs me-1"></i> Request Emergency Assistance
-                        </a>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Left Column (col-lg-7 on Desktop, order-2 on Mobile): Active Requests, Registration, & Breakdown History -->
+    <div class="col-lg-7 col-xl-7 order-lg-1 order-2">
 
-    <!-- Left Column (col-lg-7): Vehicle Registration (Conditional) + Active Requests + Breakdown History -->
-    <div class="col-lg-7">
-
-        <!-- Vehicle Registration Section (Left Side - Shown ONLY on button click via action=addVehicle) -->
+        <!-- Vehicle Registration Section (Shown ONLY on button click via action=addVehicle) -->
         <div id="leftVehicleRegistrationSection" class="glass-card mb-4 border border-warning border-opacity-40" style="display: none; background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));">
             <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-40 pb-2">
-                <h4 class="text-white font-weight-bold mb-0">
+                <h5 class="text-white font-weight-bold mb-0">
                     <i class="fa-solid fa-car text-warning me-2"></i> My Vehicle &amp; Registration
-                </h4>
+                </h5>
                 <span class="badge bg-warning text-dark font-weight-bold">@vehicles.Count Vehicles</span>
             </div>
 
             @if (vehicles.Count > 0)
             {
-                <div class="row g-2 mb-4">
+                <div class="row g-2 mb-3">
                     @foreach (var v in vehicles)
                     {
-                        <div class="col-md-6">
-                            <div class="p-3 rounded bg-dark bg-opacity-60 border border-secondary d-flex justify-content-between align-items-center h-100">
-                                <div class="d-flex align-items-center gap-2.5">
+                        <div class="col-12">
+                            <div class="p-2.5 rounded bg-dark bg-opacity-60 border border-secondary d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-2">
                                     @if (!string.IsNullOrEmpty(v.VehiclePhotoUrl))
                                     {
-                                        <img src="@v.VehiclePhotoUrl" style="width:48px; height:48px; object-fit:cover; border-radius:8px; border:1px solid #f59e0b;" alt="@v.Model" />
+                                        <img src="@v.VehiclePhotoUrl" style="width:40px; height:40px; object-fit:cover; border-radius:6px; border:1px solid #f59e0b;" alt="@v.Model" />
                                     }
                                     else
                                     {
-                                        <div class="rounded-circle bg-dark border border-secondary d-flex align-items-center justify-content-center text-warning" style="width:40px; height:40px;">
+                                        <div class="rounded-circle bg-dark border border-secondary d-flex align-items-center justify-content-center text-warning" style="width:34px; height:34px;">
                                             <i class="fa-solid fa-car"></i>
                                         </div>
                                     }
                                     <div>
-                                        <h6 class="mb-0 text-white font-weight-bold">@v.Model</h6>
-                                        <span class="badge bg-secondary mt-1" style="font-size:0.7rem;">@v.VehicleType</span>
-                                        <div class="text-warning font-weight-bold small mt-0.5">@v.RegistrationNumber</div>
+                                        <div class="mb-0 text-white font-weight-bold small">@v.Model</div>
+                                        <span class="badge bg-secondary" style="font-size:0.65rem;">@v.VehicleType</span>
+                                        <span class="text-warning font-weight-bold small ms-1">@v.RegistrationNumber</span>
                                     </div>
                                 </div>
-                                <a href="/Customer/Book?selectedVehicleId=@v.Id" class="btn btn-warning btn-sm font-weight-bold text-dark shadow-sm text-nowrap">
+                                <a href="/Customer/Book?selectedVehicleId=@v.Id" class="btn btn-warning btn-sm font-weight-bold text-dark py-1 px-2.5 shadow-sm text-nowrap" style="font-size:0.75rem;">
                                     <i class="fa-solid fa-bolt me-1"></i> Request
                                 </a>
                             </div>
@@ -135,58 +102,59 @@
             }
 
             <!-- Add Vehicle Form Card -->
-            <div id="addVehicleCard" class="p-3.5 rounded-3 border border-warning border-opacity-40 bg-dark bg-opacity-70">
-                <h5 class="text-white font-weight-bold mb-3 d-flex align-items-center">
+            <div id="addVehicleCard" class="p-3 rounded-3 border border-warning border-opacity-30 bg-dark bg-opacity-70">
+                <h6 class="text-white font-weight-bold mb-2.5 d-flex align-items-center">
                     <i class="fa-solid fa-car-on text-warning me-2"></i> Register New Vehicle
-                </h5>
+                </h6>
                 <form action="/Customer/AddVehicle" method="POST" enctype="multipart/form-data">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small font-weight-bold">Vehicle Type <span class="text-warning">*</span></label>
-                            <select class="form-select glass-input text-white bg-dark border-secondary" name="vehicleType" required>
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label text-muted small font-weight-bold mb-1">Vehicle Type <span class="text-warning">*</span></label>
+                            <select class="form-select glass-input text-white bg-dark border-secondary py-1.5" name="vehicleType" required>
                                 <option value="Car">Car / SUV / Van</option>
                                 <option value="2-Wheeler">2-Wheeler / Auto / E-Rickshaw</option>
                                 <option value="Commercial">Commercial (Truck/Bus/Loader/Pickup)</option>
                                 <option value="Heavy">Heavy Vehicle (JCB/Tractor)</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small font-weight-bold">Vehicle Name &amp; Model <span class="text-warning">*</span></label>
-                            <input type="text" class="form-control glass-input text-white bg-dark border-secondary" name="model" placeholder="e.g. Maruti Swift 2022 / Honda Activa 6G" required />
+                        <div class="col-12">
+                            <label class="form-label text-muted small font-weight-bold mb-1">Vehicle Name &amp; Model <span class="text-warning">*</span></label>
+                            <input type="text" class="form-control glass-input text-white bg-dark border-secondary py-1.5" name="model" placeholder="e.g. Maruti Swift 2022 / Activa 6G" required />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small font-weight-bold">Registration Number <span class="text-warning">*</span></label>
-                            <input type="text" class="form-control glass-input text-white bg-dark border-secondary text-uppercase" name="registrationNumber" placeholder="e.g. DL-3C-AB-1234" required />
+                        <div class="col-12">
+                            <label class="form-label text-muted small font-weight-bold mb-1">Registration Number <span class="text-warning">*</span></label>
+                            <input type="text" class="form-control glass-input text-white bg-dark border-secondary py-1.5 text-uppercase" name="registrationNumber" placeholder="e.g. DL-3C-AB-1234" required />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small font-weight-bold">Vehicle Photo <span class="text-warning font-weight-normal">(Optional)</span></label>
-                            <input type="file" class="form-control glass-input text-white bg-dark border-secondary" name="vehiclePhoto" accept="image/*" />
-                            <span class="text-muted" style="font-size:0.75rem;">Upload photo for easy identification by mechanics</span>
+                        <div class="col-12">
+                            <label class="form-label text-muted small font-weight-bold mb-1">Vehicle Photo <span class="text-warning font-weight-normal">(Optional)</span></label>
+                            <input type="file" class="form-control glass-input text-white bg-dark border-secondary py-1" name="vehiclePhoto" accept="image/*" />
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-warning w-100 mt-3 font-weight-extrabold text-dark py-2.5 shadow" style="background:#f59e0b;">
+                    <button type="submit" class="btn btn-warning w-100 mt-2.5 font-weight-extrabold text-dark py-2 shadow" style="background:#f59e0b;">
                         <i class="fa-solid fa-plus-circle me-1"></i> Register Vehicle Now
                     </button>
                 </form>
             </div>
         </div>
 
-        <!-- Active Request Section -->
+        <!-- Active Request Section (Clean & Prominent) -->
         <div class="glass-card mb-4">
-            <h4 class="text-white mb-4 d-flex align-items-center justify-content-between">
-                <span><i class="fa-solid fa-bell text-warning me-2 animate-pulse"></i> Active Roadside Requests</span>
-                <span class="badge bg-danger">@activeJobs.Count Active</span>
-            </h4>
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-30 pb-2">
+                <h5 class="text-white font-weight-bold mb-0">
+                    <i class="fa-solid fa-bell text-warning me-2 animate-pulse"></i> Active Roadside Requests
+                </h5>
+                <span class="badge @(activeJobs.Count > 0 ? "bg-danger animate-pulse" : "bg-secondary") font-weight-bold">@activeJobs.Count Active</span>
+            </div>
             
             @if (activeJobs.Count == 0)
             {
-                <div class="text-center py-5">
-                    <div class="rounded-circle bg-dark p-4 mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:70px; height:70px;">
-                        <i class="fa-solid fa-shield text-muted" style="font-size: 2rem;"></i>
+                <div class="text-center py-4 px-2">
+                    <div class="rounded-circle bg-dark border border-secondary p-3 mx-auto mb-2.5 d-flex align-items-center justify-content-center" style="width:58px; height:58px;">
+                        <i class="fa-solid fa-shield text-muted fa-lg"></i>
                     </div>
-                    <h5 class="text-white">Your vehicle is safe.</h5>
-                    <p class="text-muted">No active breakdown requests at the moment.</p>
-                    <a href="/Customer/Book" class="btn btn-premium-primary mt-2">
+                    <h6 class="text-white font-weight-bold mb-1">Your vehicle is safe.</h6>
+                    <p class="text-muted small mb-3">No active breakdown requests at the moment.</p>
+                    <a href="/Customer/Book" class="btn btn-warning btn-sm font-weight-bold text-dark px-3 py-2 shadow-sm" style="background:#f59e0b;">
                         <i class="fa-solid fa-location-crosshairs me-1"></i> Request Emergency Assistance
                     </a>
                 </div>
@@ -197,29 +165,34 @@
                     @foreach (var job in activeJobs)
                     {
                         <div class="col-12">
-                            <div class="p-3 rounded border border-warning border-opacity-30 bg-dark bg-opacity-40">
+                            <div class="p-3 rounded-3 border border-warning border-opacity-40 bg-dark bg-opacity-60 shadow-sm">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div>
-                                        <span class="badge bg-warning text-dark mb-2">@job.Status</span>
+                                        <span class="badge bg-warning text-dark font-weight-bold mb-2">@job.Status</span>
                                         @if (job.DisputeStatus == "Active")
                                         {
                                             <span class="badge bg-danger text-white mb-2 ms-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation me-1"></i> Complaint Filed</span>
                                         }
-                                        <h5 class="text-white mb-1">@job.Vehicle?.Model (@job.ProblemType Issue)</h5>
-                                        <p class="text-muted small mb-0"><i class="fa-solid fa-map-marker-alt me-1"></i> @job.Address</p>
+                                        <h5 class="text-white font-weight-bold mb-1">@job.Vehicle?.Model (@job.ProblemType)</h5>
+                                        <p class="text-muted small mb-0"><i class="fa-solid fa-location-dot me-1 text-danger"></i> @job.Address</p>
                                     </div>
                                     <div class="text-end">
-                                        <div class="text-muted small">Upfront Bill</div>
-                                        <h5 class="text-warning">₹@job.FinalBillAmount</h5>
+                                        <div class="text-muted small font-weight-bold">Estimate</div>
+                                        <h4 class="text-warning font-weight-extrabold mb-0">₹@job.FinalBillAmount</h4>
                                     </div>
                                 </div>
-                                <hr class="border-secondary my-2">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                    <span class="text-muted small">Created: @job.CreatedAt.ToLocalTime().ToString("hh:mm tt")</span>
-                                    <div class="d-flex gap-2">
-                                        <a href="/Customer/Tracker?id=@job.Id" class="btn btn-premium-primary btn-sm">
-                                            <i class="fa-solid fa-compass me-1"></i> Open Live Route Tracker
+                                <hr class="border-secondary border-opacity-40 my-2.5">
+                                <div class="row align-items-center text-center text-sm-start g-2">
+                                    <div class="col-sm-4 text-muted extra-small">
+                                        <i class="fa-solid fa-clock me-1 text-secondary"></i> Created: @job.CreatedAt.ToLocalTime().ToString("hh:mm tt")
+                                    </div>
+                                    <div class="col-sm-4 text-center">
+                                        <a href="/Customer/Tracker?id=@job.Id" class="btn btn-warning font-weight-bold text-dark px-4 py-1.5 shadow rounded-pill d-inline-flex align-items-center gap-1.5" style="font-size:0.85rem; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
+                                            <i class="fa-solid fa-compass text-dark animate-spin-slow"></i> Open Tracker
                                         </a>
+                                    </div>
+                                    <div class="col-sm-4 text-sm-end text-muted extra-small">
+                                        <span class="badge bg-black border border-info border-opacity-50 text-info" style="font-size:0.68rem;"><i class="fa-solid fa-signal me-1"></i> Live Telemetry</span>
                                     </div>
                                 </div>
                             </div>
@@ -231,11 +204,16 @@
 
         <!-- Past Request History -->
         <div class="glass-card mb-4">
-            <h4 class="text-white mb-4"><i class="fa-solid fa-history text-muted me-2"></i> Breakdown History</h4>
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-30 pb-2">
+                <h5 class="text-white font-weight-bold mb-0">
+                    <i class="fa-solid fa-clock-rotate-left text-muted me-2"></i> Breakdown History
+                </h5>
+                <span class="badge bg-dark border border-secondary text-muted font-weight-bold">@pastJobs.Count Past</span>
+            </div>
             
             @if (pastJobs.Count == 0)
             {
-                <p class="text-muted text-center py-4">No past services recorded.</p>
+                <p class="text-muted text-center py-4 mb-0 small"><i class="fa-solid fa-receipt me-1"></i> No past services recorded.</p>
             }
             else
             {
@@ -273,9 +251,6 @@
                                             <span class="badge bg-success text-white mt-1" style="font-size: 0.7rem;" data-bs-toggle="tooltip" title="Resolution: @job.DisputeResolution">
                                                 <i class="fa-solid fa-circle-check me-1"></i> Complaint Resolved
                                             </span>
-                                            <div class="text-success extra-small mt-0.5" style="font-size: 0.72rem; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                                Res: @job.DisputeResolution
-                                            </div>
                                         }
                                     </td>
                                     <td>@(job.Mechanic?.Name ?? "Unassigned")</td>
@@ -321,48 +296,104 @@
         </div>
     </div>
 
-    <!-- Right Column (col-lg-5): Customer Quick Profile & Support Card -->
-    <div class="col-lg-5">
-        <div class="glass-card mb-4">
-            <h4 class="text-white mb-3 d-flex align-items-center justify-content-between">
-                <span><i class="fa-solid fa-shield-halved text-warning me-2"></i> Safety &amp; Support</span>
-                <span class="badge bg-success text-white font-weight-bold">Active 24x7</span>
-            </h4>
+    <!-- Right Column (col-lg-5 on Desktop, order-1 on Mobile): Safety & Support Center -->
+    <div class="col-lg-5 col-xl-5 order-lg-2 order-1 mb-4">
+
+        <!-- Registered Vehicle Quick Action Card (Equal Size & Compact) -->
+        <div class="glass-card mb-3 p-2.5 border border-warning border-opacity-40 shadow-sm" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap flex-sm-nowrap">
+                <div class="d-flex align-items-center gap-1.5 text-nowrap">
+                    <i class="fa-solid fa-car text-warning fs-6 animate-pulse"></i>
+                    <span class="text-white font-weight-bold small">Registered Vehicle:</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5 flex-grow-1 justify-content-end w-100 w-sm-auto">
+                    @if (vehicles.Count > 0)
+                    {
+                        <select class="form-select form-select-sm glass-input text-white font-weight-bold py-1 flex-grow-1" id="dashboardVehicleSelect" style="min-width: 140px; font-size:0.8rem;">
+                            @foreach (var v in vehicles)
+                            {
+                                <option value="@v.Id">@v.Model (@v.RegistrationNumber)</option>
+                            }
+                        </select>
+                        <button class="btn btn-warning btn-sm font-weight-bold text-dark text-nowrap shadow-sm py-1 px-2.5" onclick="submitQuickVehicleRequest()" style="font-size:0.8rem; background:#f59e0b;">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Send Request
+                        </button>
+                    }
+                    else
+                    {
+                        <a href="/Customer/Book" class="btn btn-warning btn-sm font-weight-bold text-dark text-nowrap shadow-sm py-1 px-2.5 w-100 text-center" style="font-size:0.8rem; background:#f59e0b;">
+                            <i class="fa-solid fa-location-crosshairs me-1"></i> Request Help
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card border border-warning border-opacity-30 shadow-lg" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95));">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-40 pb-2.5">
+                <div>
+                    <h5 class="text-white font-weight-bold mb-0 d-flex align-items-center" style="font-family: 'Outfit';">
+                        <i class="fa-solid fa-shield-halved text-warning me-2"></i> Safety &amp; Support
+                    </h5>
+                    <span class="text-muted extra-small">24×7 Connected Assistance &amp; Help</span>
+                </div>
+                <span class="badge bg-success text-white font-weight-bold px-2.5 py-1 shadow-sm" style="font-size:0.75rem;">
+                    <i class="fa-solid fa-circle text-light me-1 animate-pulse" style="font-size:0.45rem;"></i> Active 24x7
+                </span>
+            </div>
             
-            <div class="p-3 bg-dark bg-opacity-60 border border-secondary rounded-3 mb-3">
-                <div class="d-flex align-items-center me-2 mb-2">
-                    <div class="rounded-circle bg-warning text-dark font-weight-bold me-2 d-flex align-items-center justify-content-center" style="width:36px; height:36px;">
+            <!-- User Profile & 24x7 Helpline Summary Banner -->
+            <div class="p-3 bg-dark bg-opacity-70 border border-secondary border-opacity-50 rounded-3 mb-3 shadow-sm">
+                <div class="d-flex align-items-center gap-2.5 mb-2">
+                    <div class="rounded-circle bg-warning text-dark font-weight-extrabold d-flex align-items-center justify-content-center shadow" style="width:38px; height:38px; font-size:1rem;">
                         <i class="fa-solid fa-user text-dark"></i>
                     </div>
                     <div>
                         <h6 class="text-white font-weight-bold mb-0">@(Context.User.Identity?.IsAuthenticated == true ? Context.User.Identity.Name : "Customer")</h6>
-                        <span class="text-muted small">RaahSathi Verified User</span>
+                        <span class="text-muted extra-small">RaahSathi Verified User</span>
                     </div>
                 </div>
-                <div class="text-muted small mb-0">
-                    <i class="fa-solid fa-phone text-warning me-1"></i> Toll-Free Hotline: <strong>1800-102-7224</strong>
+                <div class="pt-2 border-top border-secondary border-opacity-30 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small"><i class="fa-solid fa-headset text-warning me-1"></i> 24×7 Helpline:</span>
+                    <a href="tel:@RaahSathi.Services.ContactInfoHelper.HelplineNumber" class="btn btn-warning btn-sm font-weight-bold text-dark px-3 py-1 rounded-pill shadow-sm d-inline-flex align-items-center gap-1.5" style="font-size:0.8rem; background:#f59e0b;" title="Call @RaahSathi.Services.ContactInfoHelper.HelplineNumber">
+                        <i class="fa-solid fa-phone text-dark animate-pulse"></i> Call Now
+                    </a>
                 </div>
             </div>
 
+            <!-- Quick Action Cards Grid -->
             <div class="d-grid gap-2">
-                <button type="button" class="btn btn-warning font-weight-bold text-dark shadow d-flex align-items-center justify-content-center gap-2 py-2.5" onclick="openCustomerReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
-                    <i class="fa-solid fa-gift fs-5 animate-bounce"></i> 
-                    <div class="text-start">
-                        <div class="fw-bold" style="font-size: 0.9rem; line-height: 1.1;">Refer &amp; Earn ₹100</div>
-                        <small class="text-dark opacity-75" style="font-size: 0.72rem;">Wallet: ₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0") | @(refSummary?.PendingReferralCount ?? 0) Pending</small>
+                <!-- Refer & Earn Golden Card -->
+                <button type="button" class="btn btn-warning w-100 font-weight-bold text-dark shadow d-flex align-items-center justify-content-center gap-2.5 p-2 rounded-3" data-bs-toggle="modal" data-bs-target="#customerReferralModal" onclick="openCustomerReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); border: none;">
+                    <i class="fa-solid fa-gift fs-5 animate-bounce"></i>
+                    <div class="text-center">
+                        <div class="fw-bold" style="font-size: 0.88rem; line-height: 1.2;">Refer &amp; Earn ₹100</div>
+                        <small class="text-dark opacity-85 fw-semibold d-block" style="font-size: 0.72rem;">Wallet: ₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0") | @(refSummary?.PendingReferralCount ?? 0) Pending</small>
                     </div>
                 </button>
-                <a href="/Customer/Book" class="btn btn-outline-warning font-weight-bold shadow-sm">
-                    <i class="fa-solid fa-location-crosshairs me-1"></i> Emergency Assistance
+
+                <!-- Emergency Assistance -->
+                <a href="/Customer/Book" class="btn btn-outline-warning w-100 p-2 font-weight-bold d-flex align-items-center justify-content-center gap-2 rounded-3 shadow-sm" style="border-width:1.5px; font-size:0.88rem;">
+                    <i class="fa-solid fa-location-crosshairs text-warning"></i>
+                    <span>Emergency Assistance</span>
                 </a>
-                <a href="/Customer/Dashboard?action=addVehicle" class="btn btn-outline-secondary btn-sm font-weight-bold text-light">
-                    <i class="fa-solid fa-car-plus me-1"></i> Add / Manage Vehicles
+
+                <!-- Manage Vehicles -->
+                <a href="/Customer/Dashboard?action=addVehicle" class="btn btn-outline-secondary w-100 p-2 font-weight-bold text-light d-flex align-items-center justify-content-center gap-2 rounded-3 shadow-sm" style="background: rgba(255,255,255,0.03); font-size:0.85rem;">
+                    <i class="fa-solid fa-car-side text-info"></i>
+                    <span>Add / Manage Vehicles</span>
                 </a>
-                <button type="button" class="btn btn-danger btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openComplaintModal()">
-                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Report Issue / File Complaint
+
+                <!-- Complaint -->
+                <button type="button" class="btn btn-danger w-100 p-2 font-weight-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2 rounded-3" style="font-size:0.85rem; margin-top: 14px !important;" onclick="openComplaintModal()">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Report Issue / File Complaint</span>
                 </button>
-                <button type="button" class="btn btn-info btn-sm font-weight-bold text-white shadow-sm mt-1" onclick="openSupportTicketModal()">
-                    <i class="fa-solid fa-headset me-1"></i> Support / Help Desk
+
+                <!-- Help Desk -->
+                <button type="button" class="btn btn-info w-100 p-2 font-weight-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-2 rounded-3" style="font-size:0.85rem;" onclick="openSupportTicketModal()">
+                    <i class="fa-solid fa-headset text-dark"></i>
+                    <span>24×7 Support / Help Desk</span>
                 </button>
             </div>
         </div>
@@ -1085,9 +1116,17 @@
 </div>
 
 <script>
-    function openCustomerReferralModal() {
-        new bootstrap.Modal(document.getElementById('customerReferralModal')).show();
-    }
+    window.openCustomerReferralModal = function() {
+        var modalEl = document.getElementById('customerReferralModal');
+        if (modalEl) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                instance.show();
+            } else if (typeof $ !== 'undefined' && $.fn && $.fn.modal) {
+                $('#customerReferralModal').modal('show');
+            }
+        }
+    };
 
     function toggleCustPayoutFields() {
         var method = document.getElementById('custPayoutMethodSelect').value;

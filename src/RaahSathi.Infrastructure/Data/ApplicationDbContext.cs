@@ -40,10 +40,13 @@ namespace RaahSathi.Data
         public DbSet<PushNotificationLog> PushNotificationLogs { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<AdminSystemSetting> AdminSystemSettings { get; set; }
+        public DbSet<SystemApiSetting> SystemApiSettings { get; set; }
+        public DbSet<SystemContactSetting> SystemContactSettings { get; set; }
         public DbSet<MechanicPayoutRequest> MechanicPayoutRequests { get; set; }
         public DbSet<ReferralProgramSetting> ReferralProgramSettings { get; set; }
         public DbSet<ReferralTransaction> ReferralTransactions { get; set; }
         public DbSet<ReferralWithdrawalRequest> ReferralWithdrawalRequests { get; set; }
+        public DbSet<MechanicSubscription> MechanicSubscriptions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

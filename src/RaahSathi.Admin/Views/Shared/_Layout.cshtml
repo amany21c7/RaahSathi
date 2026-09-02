@@ -148,7 +148,7 @@
         </script>
     }
     
-    <!-- Instant Zero-Flash Translation Guard -->
+    <!-- Instant Zero-Flash Translation Guard & Global Modal Stacking -->
     <style id="fouc-guard-style">
         html.lang-loading body {
             visibility: hidden !important;
@@ -158,6 +158,15 @@
             visibility: visible !important;
             opacity: 1 !important;
             transition: opacity 0.1s ease-in;
+        }
+        .modal {
+            z-index: 1060 !important;
+        }
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+        .modal-dialog {
+            z-index: 1070 !important;
         }
     </style>
     <script>
@@ -196,6 +205,19 @@
             return false;
         }
 
+        function loadGT(callback) {
+            if (!window.gtScriptLoaded) {
+                window.gtScriptLoaded = true;
+                var s = document.createElement('script');
+                s.type = 'text/javascript';
+                s.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+                s.onload = function() { if (callback) callback(); };
+                document.body.appendChild(s);
+            } else if (callback) {
+                callback();
+            }
+        }
+
         function changeLanguage(lang) {
             const isAdmin = @(isAdminPage.ToString().ToLower());
             const key = isAdmin ? 'admin_lang' : 'public_lang';
@@ -207,13 +229,19 @@
 
             window.currentSelectedLang = lang;
 
-            // Instant Real-Time translation without full reload
-            if (!applyTranslationToCombo(lang)) {
+            if (lang === 'en') {
                 window.location.reload();
-            } else {
-                revealPage();
-                updateLanguageLabel(lang);
+                return;
             }
+
+            loadGT(function() {
+                if (!applyTranslationToCombo(lang)) {
+                    window.location.reload();
+                } else {
+                    revealPage();
+                    updateLanguageLabel(lang);
+                }
+            });
         }
 
         function revealPage() {
@@ -287,12 +315,16 @@
                 setTimeout(revealPage, 120);
             }
         })();
+
+        // Only load Google Translate if non-English language is active
+        if (window.currentSelectedLang && window.currentSelectedLang !== 'en') {
+            loadGT();
+        }
     </script>
 
-    <!-- Google Translate Engine Pre-Loader -->
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-
-    <title>@(ViewData["Title"] ?? "RaahSathi | Roadside Assistance")</title>
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} | RaahSathi" : "RaahSathi — Every Vehicle, Every Problem, Everywhere | 24/7 Roadside Assistance")</title>
+    <meta name="description" content="RaahSathi — India's 24/7 On-Demand Roadside Assistance & Emergency Mechanic Dispatch. Every Vehicle, Every Problem, Everywhere. Fast 15-min arrival for bikes, cars, EVs & commercial vehicles." />
+    <meta name="keywords" content="roadside assistance, car breakdown, bike mechanic near me, 24/7 towing service, flat tyre puncture repair, battery jumpstart, EV charging emergency, highway mechanic India, RaahSathi" />
 
     <!-- 📲 Progressive Web App (PWA) & Mobile Meta Tags -->
     <meta name="theme-color" content="#ff6b00" />
@@ -422,9 +454,9 @@
         
         bool isSettingsHubPage = Context.Request.Path.Value?.Equals("/Admin/Settings", StringComparison.OrdinalIgnoreCase) == true;
         
-        bool isCustLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Customer");
-        bool isMechLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Mechanic");
-        bool isAdminLoggedIn = Context.User.Identity?.IsAuthenticated == true && Context.User.IsInRole("Admin");
+        bool isCustLoggedIn = Context.User.Identity?.IsAuthenticated == true && (Context.User.IsInRole("Customer") || Context.User.Claims.Any(c => (c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role" || c.Type == "Role") && c.Value == "Customer") || Context.Request.Cookies["RaahSathiUserRole"] == "Customer");
+        bool isMechLoggedIn = isMechPage || (Context.User.Identity?.IsAuthenticated == true && (Context.User.IsInRole("Mechanic") || Context.User.Claims.Any(c => (c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role" || c.Type == "Role") && c.Value == "Mechanic") || Context.Request.Cookies["RaahSathiUserRole"] == "Mechanic"));
+        bool isAdminLoggedIn = Context.User.Identity?.IsAuthenticated == true && (Context.User.IsInRole("Admin") || Context.User.Claims.Any(c => (c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role" || c.Type == "Role") && c.Value == "Admin") || Context.Request.Cookies["RaahSathiUserRole"] == "Admin");
         
         string adminSubRole = Context.User.FindFirst("AdminRole")?.Value ?? "Super Admin";
         bool isSuperAdmin = isAdminLoggedIn && adminSubRole.Equals("Super Admin", StringComparison.OrdinalIgnoreCase);
@@ -468,6 +500,7 @@
             .noc-sidebar a.noc-nav-item:hover:not(.active), .noc-settings-menu-drawer a.noc-middle-item:hover:not(.active) { background-color: rgba(56, 189, 248, 0.12) !important; color: #60A5FA !important; }
             .noc-main { margin-left: 260px; flex-grow: 1; min-height: 100vh; display: flex; flex-direction: column; background-color: #0F172A; }
             .noc-topbar { height: 65px; background-color: #111827; border-bottom: 1px solid #1E293B; display: flex; align-items: center; justify-content: space-between; padding: 0 1.75rem; position: sticky; top: 0; z-index: 1030; }
+            .noc-mobile-header { height: 62px; background: linear-gradient(180deg, #111827 0%, #0c1427 100%); border-bottom: 1px solid rgba(245, 158, 11, 0.35); position: sticky; top: 0; z-index: 1030; display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
             .noc-sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); z-index: 1040; }
             
             /* 📱 Mobile & Tablet Responsive Media Queries */
@@ -475,14 +508,7 @@
                 .noc-sidebar { transform: translateX(-100%); transition: transform 0.3s ease-in-out; box-shadow: 0 0 25px rgba(0,0,0,0.8); }
                 .noc-sidebar.show { transform: translateX(0); }
                 .noc-main { margin-left: 0 !important; }
-                .noc-topbar { padding: 0 1rem; }
-                .noc-topbar-search { width: 160px !important; }
                 .noc-sidebar-overlay.show { display: block !important; }
-            }
-            @@media (max-width: 575.98px) {
-                .noc-topbar-search { display: none !important; }
-                .noc-topbar-clock { display: none !important; }
-                .noc-topbar { padding: 0 0.75rem; }
             }
             @@keyframes pulse-red {
                 0% { transform: scale(0.95); opacity: 0.8; }
@@ -517,6 +543,27 @@
                         </div>
                     </div>
                     <button type="button" class="btn-close btn-close-white d-lg-none" onclick="toggleAdminSidebar()"></button>
+                </div>
+
+                <!-- Mobile Admin User Info Header inside Drawer -->
+                <div class="p-3 d-lg-none border-bottom border-secondary border-opacity-30 bg-black bg-opacity-30">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-warning text-dark font-weight-extrabold d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px; font-size: 0.88rem;">
+                                @activeUserInitials
+                            </div>
+                            <div>
+                                <strong class="text-white small d-block" style="font-size: 0.85rem;">@(Context.User.Identity?.Name ?? "Admin")</strong>
+                                <span class="badge bg-warning bg-opacity-20 text-warning font-weight-bold" style="font-size: 0.62rem;">@adminSubRole</span>
+                            </div>
+                        </div>
+                        <a href="/Auth/Logout" class="btn btn-outline-danger btn-xs py-1 px-2 font-weight-bold" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-power-off me-1"></i> Logout
+                        </a>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 font-weight-bold py-1.5 mt-1 d-flex align-items-center justify-content-center gap-1.5" onclick="openEmergencySurgeModal(); toggleAdminSidebar();" style="font-size: 0.78rem;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Emergency Weather Surge (+12%)
+                    </button>
                 </div>
 
                 <!-- Mobile Only Search Bar inside Sidebar -->
@@ -583,12 +630,65 @@
 
             <!-- Main Content Container -->
             <div class="noc-main">
-                <header class="noc-topbar">
+                <!-- 📱 Mobile Admin Header Navbar (< 992px) -->
+                <header class="noc-mobile-header d-lg-none">
+                    <a href="/Admin/Dashboard" class="d-flex align-items-center gap-2 notranslate text-decoration-none" translate="no">
+                        <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi Logo" style="height: 38px; border-radius: 8px; object-fit: contain; border: 1.5px solid #ff6b00;" class="shadow me-1" />
+                        <span class="font-weight-extrabold" style="font-family:'Outfit', sans-serif; font-size:1.4rem; letter-spacing:0.5px;">
+                            <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span>
+                        </span>
+                    </a>
+
                     <div class="d-flex align-items-center gap-2">
-                        <!-- Mobile Sidebar Hamburger Toggle Button -->
-                        <button type="button" class="btn btn-outline-warning btn-sm d-lg-none px-2 py-1 me-1" onclick="toggleAdminSidebar()">
-                            <i class="fa-solid fa-bars fs-6"></i>
+                        <!-- Language Selector Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-warning btn-sm dropdown-toggle font-weight-bold px-2 py-1 text-warning d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" style="font-size: 0.8rem; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); border-radius: 8px;">
+                                <i class="fa-solid fa-globe text-warning"></i> <span class="selectedLangName">En</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg py-2" style="max-height: 300px; overflow-y: auto;">
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('en')">🇬🇧 English</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('hi')">🇮🇳 Hindi (हिंदी)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('mr')">🇮🇳 Marathi (मराठी)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('gu')">🇮🇳 Gujarati (ગુજરાતી)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('pa')">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('bn')">🇮🇳 Bengali (বাংলা)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('ta')">🇮🇳 Tamil (தமிழ்)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('te')">🇮🇳 Telugu (తెలుగు)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('kn')">🇮🇳 Kannada (ಕನ್ನಡ)</a></li>
+                                <li><a class="dropdown-item text-light py-1.5 small" href="javascript:void(0);" onclick="changeLanguage('ml')">🇮🇳 Malayalam (മലയാളം)</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Admin Notifications Bell -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-warning btn-sm position-relative px-2 py-1 text-warning d-flex align-items-center justify-content-center" type="button" id="adminNotifBellBtnMob" data-bs-toggle="dropdown" style="font-size: 0.9rem; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); width: 34px; height: 34px; border-radius: 50%;">
+                                <i class="fa-solid fa-bell"></i>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light d-none" id="adminNotifBadgeMob" style="font-size: 0.62rem; padding: 0.2em 0.35em;">0</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg p-0" id="adminNotifDropdownMenuMob" style="width: 310px; max-width: 90vw; max-height: 420px; overflow-y: auto; z-index: 1050; border-radius: 12px;">
+                                <div class="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
+                                    <h6 class="text-white font-weight-bold mb-0" style="font-family:'Outfit';"><i class="fa-solid fa-bell text-warning me-1.5"></i> Pending Operations</h6>
+                                    <span class="badge bg-danger text-white small" id="adminNotifCountBadgeMob">0 Pending</span>
+                                </div>
+                                <div class="p-1" id="adminNotifItemsListMob">
+                                    <div class="text-center py-4 text-muted small">
+                                        <i class="fa-solid fa-circle-check fa-2x mb-2 text-success opacity-80"></i>
+                                        <p class="mb-0">All operations up to date.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Hamburger Button with 3 Lines Icon -->
+                        <button type="button" class="btn btn-outline-secondary p-2 d-flex align-items-center justify-content-center shadow-none" onclick="toggleAdminSidebar()" style="border: 1.5px solid rgba(255,255,255,0.28) !important; border-radius: 10px; background: rgba(255,255,255,0.06); width: 44px; height: 38px; cursor: pointer;">
+                            <i class="fa-solid fa-bars fs-5 text-white"></i>
                         </button>
+                    </div>
+                </header>
+
+                <!-- 💻 Desktop Command Topbar (>= 992px) -->
+                <header class="noc-topbar d-none d-lg-flex">
+                    <div class="d-flex align-items-center gap-2">
                         <div class="input-group input-group-sm noc-topbar-search" style="width: 260px; position: relative;">
                             <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
                             <input type="text" id="globalSearchInput" class="form-control bg-dark border-secondary text-white small" placeholder="Search mechanics, jobs..." autocomplete="off">
@@ -596,10 +696,10 @@
                         </div>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2 gap-sm-3">
+                    <div class="d-flex align-items-center gap-3">
                         <!-- Emergency Mode Toggle Button -->
-                        <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold px-2.5 px-sm-3 py-1.5" id="btnNocEmergencyToggle" onclick="openEmergencySurgeModal()" style="font-size: 0.8rem;">
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span class="d-none d-sm-inline">Emergency Mode: </span><span id="txtEmergencyModeState">OFF</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold px-3 py-1.5" id="btnNocEmergencyToggle" onclick="openEmergencySurgeModal()" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span>Emergency Mode: </span><span id="txtEmergencyModeState">OFF</span>
                         </button>
 
                         <!-- Language Selector Dropdown -->
@@ -674,6 +774,9 @@
                         <a href="/Admin/Pricing" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Pricing", StringComparison.OrdinalIgnoreCase) == true || Context.Request.Path.Value?.StartsWith("/Admin/ManagePricing", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                             <i class="fa-solid fa-tags"></i> Pricing
                         </a>
+                        <a href="/Admin/Subscriptions" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Subscriptions", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-crown text-warning"></i> Subscriptions
+                        </a>
                         <a href="/Admin/Services" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Services", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                             <i class="fa-solid fa-screwdriver-wrench"></i> Services
                         </a>
@@ -701,7 +804,7 @@
                     </div>
                 </aside>
 
-                <main class="p-4 flex-grow-1">
+                <main class="p-2.5 p-sm-3 p-md-4 flex-grow-1">
                     @RenderBody()
                 </main>
 
@@ -921,6 +1024,31 @@
     else
     {
         <header>
+            <!-- 📲 Top PWA App Install Banner (Placed above Main Header) -->
+            <div id="pwaInstallBanner" class="pwa-top-install-banner" style="display: none;">
+                <div class="container py-1.5 px-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2.5 flex-grow-1 overflow-hidden me-2" onclick="triggerPwaInstall()" style="cursor: pointer;">
+                        <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi App" class="rounded-3 shadow-sm flex-shrink-0 pulse-ring" style="width: 36px; height: 36px; object-fit: cover; border: 1.5px solid #ff6b00;" />
+                        <div class="overflow-hidden text-start">
+                            <div class="d-flex align-items-center gap-1.5 flex-nowrap">
+                                <strong class="text-white font-weight-bold text-truncate" style="font-size: 0.88rem;">RaahSathi App</strong>
+                                <span class="badge bg-warning text-dark font-weight-extrabold py-0.5 px-1.5" style="font-size: 0.62rem; border-radius: 4px;">FAST</span>
+                                <span class="text-muted text-truncate d-none d-md-inline small ms-1" style="font-size: 0.74rem;">• ⚡ 14-Min Roadside Help • 24×7 SOS</span>
+                            </div>
+                            <span class="text-muted text-truncate d-block d-md-none small" style="font-size: 0.72rem;">⚡ 14-Min Help • 24×7 SOS</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <button type="button" class="btn btn-warning btn-sm font-weight-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1.5 text-dark" id="btnPwaInstall" onclick="triggerPwaInstall()" style="border-radius: 20px; font-size: 0.8rem; background: #ff6b00; border: none;">
+                            <i class="fa-solid fa-download"></i> <span>Install</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm text-muted rounded-circle p-1 border-0" onclick="dismissPwaBanner()" title="Close" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-xmark" style="font-size: 0.85rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <nav class="navbar navbar-expand-lg navbar-dark portal-switcher-navbar py-2 mb-4 sticky-top">
                 <div class="container">
                     <a class="navbar-brand portal-nav-brand d-flex align-items-center gap-2 notranslate me-lg-3" translate="no" asp-controller="Home" asp-action="Index">
@@ -1072,7 +1200,7 @@
                                 <img src="~/images/header-logo.png?v=8" asp-append-version="true" alt="RaahSathi Logo" style="height: 42px; border-radius: 10px; object-fit: contain; border: 1.5px solid #ff6b00;" class="me-2 shadow" />
                                 <span class="font-weight-extrabold" style="font-family:'Outfit', sans-serif; font-size:1.4rem; letter-spacing:0.5px;"><span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span></span>
                             </div>
-                            <p class="text-muted small mb-3" style="line-height: 1.4;">India's connected roadside assistance network. Instant breakdown dispatch for 2-wheelers, cars, commercial, and heavy vehicles across cities and highways.</p>
+                            <p class="text-muted small mb-3" style="line-height: 1.4;"><strong class="text-warning d-block mb-1">Every Vehicle, Every Problem, Everywhere.</strong>India's connected roadside assistance network. Instant breakdown dispatch for 2-wheelers, cars, commercial, and heavy vehicles across cities and highways.</p>
                             
                             <!-- Emergency Support Highlight Box -->
                             <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-40 rounded-3 d-flex align-items-center justify-content-between mb-3">
@@ -1872,24 +2000,22 @@
                 var numId = parseInt(id);
                 if (isNaN(numId)) return;
                 
-                // Track in-session dismissal so 30s background poll doesn't reopen it in same view
+                // Track in-session dismissal so background poll doesn't reopen it
                 if (!sessionDismissedBroadcastIds.includes(numId)) {
                     sessionDismissedBroadcastIds.push(numId);
                 }
 
-                // If user is logged in, save permanently in localStorage so it never shows again
-                if (isUserAuthenticated) {
-                    try {
-                        var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
-                        if (!Array.isArray(dismissedNotifs)) dismissedNotifs = [];
-                        dismissedNotifs = dismissedNotifs.map(Number);
-                        if (!dismissedNotifs.includes(numId)) {
-                            dismissedNotifs.push(numId);
-                            localStorage.setItem('raahsathi_dismissed_notifs', JSON.stringify(dismissedNotifs));
-                        }
-                    } catch(e) {
-                        console.error('Error saving dismissed notif:', e);
+                // Save permanently in localStorage so it NEVER shows again for ANY user (guest or logged-in)
+                try {
+                    var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
+                    if (!Array.isArray(dismissedNotifs)) dismissedNotifs = [];
+                    dismissedNotifs = dismissedNotifs.map(Number);
+                    if (!dismissedNotifs.includes(numId)) {
+                        dismissedNotifs.push(numId);
+                        localStorage.setItem('raahsathi_dismissed_notifs', JSON.stringify(dismissedNotifs));
                     }
+                } catch(e) {
+                    console.error('Error saving dismissed notif:', e);
                 }
             }
 
@@ -1932,26 +2058,24 @@
                                     }
                                 }
                                 
-                                // Auto popup logic strictly based on Admin's Target Audience setting:
+                                // Auto popup logic:
+                                // If the notification was already dismissed (in localStorage OR in current session), do NOT popup again!
+                                var isDismissed = dismissedNotifs.includes(nid) || sessionDismissedBroadcastIds.includes(nid);
                                 var shouldPopup = false;
-                                var audience = (n.targetAudience || '').toLowerCase();
-                                var isHomepageOnly = (audience.indexOf('homepage') !== -1);
+                                
+                                if (!isDismissed) {
+                                    var audience = (n.targetAudience || '').toLowerCase();
+                                    var isHomepageOnly = (audience.indexOf('homepage') !== -1 || audience.indexOf('visitors') !== -1);
 
-                                if (!isUserAuthenticated) {
-                                    if (isHomepageOnly) {
-                                        // Admin chose Homepage Visitors -> Show popup ONLY on Homepage
-                                        if (onHome && !sessionDismissedBroadcastIds.includes(nid)) {
+                                    if (!isUserAuthenticated) {
+                                        if (onHome || !isHomepageOnly) {
                                             shouldPopup = true;
                                         }
                                     } else {
-                                        // Admin chose All Users -> Show popup on any public page (unless dismissed in session)
-                                        if (!sessionDismissedBroadcastIds.includes(nid)) {
+                                        // For authenticated users: show once until dismissed
+                                        if (audience.indexOf('all') !== -1 || audience.indexOf('customer') !== -1 || audience.indexOf('mechanic') !== -1) {
                                             shouldPopup = true;
                                         }
-                                    }
-                                } else if (isUserAuthenticated) {
-                                    if (!dismissedNotifs.includes(nid) && !sessionDismissedBroadcastIds.includes(nid)) {
-                                        shouldPopup = true;
                                     }
                                 }
                                 
@@ -2005,6 +2129,18 @@
                 var modalEl = document.getElementById('raahSathiBroadcastModal');
                 if (!modalEl) return;
 
+                // If language modal is currently visible, queue broadcast modal to show as soon as language modal closes
+                var langModalEl = document.getElementById('firstTimeLanguageModal');
+                if (langModalEl && langModalEl.classList.contains('show')) {
+                    $(langModalEl).off('hidden.bs.modal.broadcast').one('hidden.bs.modal.broadcast', function() {
+                        setTimeout(function() {
+                            var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                            instance.show();
+                        }, 400);
+                    });
+                    return;
+                }
+
                 // Whenever modal is hidden by any action (backdrop click, close button, Got It button, Esc key)
                 $(modalEl).off('hidden.bs.modal').on('hidden.bs.modal', function() {
                     if (currentBroadcastModalId) {
@@ -2033,15 +2169,31 @@
             // Start polling if user is NOT an admin
             $(document).ready(function() {
                 var isAdminLoggedIn = @(isAdminLoggedIn.ToString().ToLower());
+                var isPushPollingInFlight = false;
+                var origPushPoll = window.pollPushNotifications;
+                
+                window.pollPushNotifications = function() {
+                    if (isPushPollingInFlight || document.hidden) return;
+                    isPushPollingInFlight = true;
+                    if (typeof origPushPoll === 'function') {
+                        try { origPushPoll(); } catch(e) {}
+                    }
+                    setTimeout(function() { isPushPollingInFlight = false; }, 3000);
+                };
+
                 if (!isAdminLoggedIn) {
                     window.pollPushNotifications();
-                    // Check for new broadcasts every 30 seconds
-                    setInterval(window.pollPushNotifications, 30000);
+                    // Check for new broadcasts every 45 seconds (lightweight & visibility-aware)
+                    setInterval(window.pollPushNotifications, 45000);
                 }
             });
 
             // Real-Time Admin Operations Notification fetcher
+            var isAdminPollingInFlight = false;
             window.pollAdminNotifications = function() {
+                if (isAdminPollingInFlight || document.hidden) return;
+                isAdminPollingInFlight = true;
+
                 $.get('/Admin/GetAdminNotifications', { _t: Date.now() }, function(res) {
                     if (res && res.success && res.notifications) {
                         var notifications = res.notifications;
@@ -2070,23 +2222,25 @@
                             });
                         }
                         
-                        $('#adminNotifItemsList').html(listHtml);
-                        $('#adminNotifCountBadge').text(count + ' Pending');
+                        $('#adminNotifItemsList, #adminNotifItemsListMob').html(listHtml);
+                        $('#adminNotifCountBadge, #adminNotifCountBadgeMob').text(count + ' Pending');
                         
                         if (count > 0) {
-                            $('#adminNotifBadge').text(count).removeClass('d-none');
+                            $('#adminNotifBadge, #adminNotifBadgeMob').text(count).removeClass('d-none');
                         } else {
-                            $('#adminNotifBadge').addClass('d-none');
+                            $('#adminNotifBadge, #adminNotifBadgeMob').addClass('d-none');
                         }
                     }
+                }).always(function() {
+                    isAdminPollingInFlight = false;
                 });
             };
 
             // Start polling if Admin bell icon exists and user is Admin
             if ($('#adminNotifBellBtn').length && isAdminLoggedIn) {
                 window.pollAdminNotifications();
-                // Check for new pending items every 20 seconds
-                setInterval(window.pollAdminNotifications, 20000);
+                // Check for new pending items every 35 seconds
+                setInterval(window.pollAdminNotifications, 35000);
             }
         });
     </script>
@@ -2271,7 +2425,7 @@
         </div>
 
         <!-- 🚨 Unstoppable HTML5 Siren Audio Element -->
-        <audio id="rsSirenAudioElement" preload="auto" loop style="display:none;"></audio>
+        <audio id="rsSirenAudioElement" preload="none" loop style="display:none;"></audio>
 
         <script type="text/javascript">
             $(document).ready(function() {
@@ -2286,11 +2440,11 @@
                 window.sirenRepeatInterval = null;
                 window.sirenAudioUnlocked = false;
 
-                // 🔊 Generate In-Memory Emergency Siren PCM WAV (Piercing High-Low Wail)
+                // 🔊 Generate In-Memory Heavy Dual-Tune Alert (Ti-Ti -> pause -> TING-TING-TING)
                 function generateSirenWavBlob() {
                     try {
                         var sampleRate = 22050;
-                        var duration = 2.0; // 2 seconds loop
+                        var duration = 1.35; // 1.35 seconds loop
                         var numSamples = Math.floor(sampleRate * duration);
                         var buffer = new ArrayBuffer(44 + numSamples * 2);
                         var view = new DataView(buffer);
@@ -2314,18 +2468,38 @@
                         writeString(36, 'data');
                         view.setUint32(40, numSamples * 2, true);
 
-                        var phase1 = 0;
-                        var phase2 = 0;
+                        // 🔔 Heavy Dual-Tune Rhythmic Hits: Ti-Ti ... pause ... TING-TING-TING
+                        var hits = [
+                            // Part 1: Ti-Ti
+                            { start: 0.00, f1: 880, f2: 1320, fsub: 220, dur: 0.09, gain: 0.95 },
+                            { start: 0.14, f1: 880, f2: 1320, fsub: 220, dur: 0.09, gain: 0.98 },
+                            // Part 2: pause (0.23 -> 0.40), then TING-TING-TING
+                            { start: 0.40, f1: 1180, f2: 1770, fsub: 295, dur: 0.13, gain: 1.00 },
+                            { start: 0.58, f1: 1320, f2: 1980, fsub: 330, dur: 0.13, gain: 1.00 },
+                            { start: 0.76, f1: 1560, f2: 2340, fsub: 390, dur: 0.38, gain: 1.00 }
+                        ];
+
                         for (var i = 0; i < numSamples; i++) {
                             var t = i / sampleRate;
-                            // Fast sweeping siren 650Hz -> 1450Hz
-                            var freq1 = 650 + 800 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 1.5 * t - Math.PI / 2));
-                            var freq2 = freq1 * 1.05; // Harmonic detune
+                            var sample = 0;
 
-                            phase1 += 2 * Math.PI * freq1 / sampleRate;
-                            phase2 += 2 * Math.PI * freq2 / sampleRate;
+                            for (var n = 0; n < hits.length; n++) {
+                                var h = hits[n];
+                                if (t >= h.start && t < (h.start + h.dur)) {
+                                    var dt = t - h.start;
+                                    var decay = h.dur > 0.2 ? 6.5 : 12.0;
+                                    var env = Math.exp(-dt * decay);
+                                    if (dt < 0.002) {
+                                        env *= (dt / 0.002); // 2ms instant attack punch
+                                    }
+                                    var tone1 = Math.sin(2 * Math.PI * h.f1 * dt);
+                                    var tone2 = Math.sin(2 * Math.PI * h.f2 * dt);
+                                    var toneSub = Math.sin(2 * Math.PI * h.fsub * dt) * 0.40;
+                                    var toneHarm = Math.sin(2 * Math.PI * (h.f2 * 1.5) * dt) * 0.25;
+                                    sample += (tone1 * 0.45 + tone2 * 0.40 + toneSub + toneHarm) * env * h.gain;
+                                }
+                            }
 
-                            var sample = (Math.sin(phase1) * 0.65 + Math.sin(phase2) * 0.35);
                             sample = Math.max(-1, Math.min(1, sample));
                             var intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
                             view.setInt16(44 + i * 2, intSample, true);
@@ -2345,13 +2519,13 @@
                     }
                 }
 
-                // 🔓 Proactive Audio Unlocker
+                // 🔓 Proactive Audio Unlocker (Unlocks audio context on first click without prompting permissions)
                 window.unlockSirenAudio = function() {
                     try {
                         if (!window.sirenAudioCtx) {
                             window.sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
                         }
-                        if (window.sirenAudioCtx.state === 'suspended') {
+                        if (window.sirenAudioCtx && window.sirenAudioCtx.state === 'suspended') {
                             window.sirenAudioCtx.resume();
                         }
                         var audioEl = document.getElementById('rsSirenAudioElement');
@@ -2366,15 +2540,11 @@
                                 }).catch(function() {});
                             }
                         }
-                        // Request notification permissions if supported
-                        if ('Notification' in window && Notification.permission === 'default') {
-                            Notification.requestPermission();
-                        }
                     } catch(e) {}
                 };
 
-                // Unlock on any user gesture anywhere on the screen
-                $(document).on('click touchstart mousedown keydown', function() {
+                // Unlock once on first user interaction cleanly
+                $(document).one('click touchstart', function() {
                     window.unlockSirenAudio();
                 });
 
@@ -2435,43 +2605,64 @@
                     function runSiren() {
                         try {
                             let now = window.sirenAudioCtx.currentTime;
-                            // 3-Pulse Heavy Dual-Ring PCR Siren
-                            for (let i = 0; i < 3; i++) {
-                                let startTime = now + (i * 0.9);
+                            let hits = [
+                                { start: 0.00, f1: 880, f2: 1320, fsub: 220, dur: 0.09, gain: 0.85 },
+                                { start: 0.14, f1: 880, f2: 1320, fsub: 220, dur: 0.09, gain: 0.90 },
+                                { start: 0.40, f1: 1180, f2: 1770, fsub: 295, dur: 0.13, gain: 0.95 },
+                                { start: 0.58, f1: 1320, f2: 1980, fsub: 330, dur: 0.13, gain: 0.98 },
+                                { start: 0.76, f1: 1560, f2: 2340, fsub: 390, dur: 0.38, gain: 1.00 }
+                            ];
 
-                                let osc1a = window.sirenAudioCtx.createOscillator();
-                                let gain1a = window.sirenAudioCtx.createGain();
-                                osc1a.type = 'sawtooth';
-                                osc1a.frequency.setValueAtTime(600, startTime);
-                                osc1a.frequency.linearRampToValueAtTime(1450, startTime + 0.4);
-                                osc1a.frequency.linearRampToValueAtTime(600, startTime + 0.85);
-                                osc1a.detune.setValueAtTime(-15, startTime);
-                                gain1a.gain.setValueAtTime(0.7, startTime);
-                                gain1a.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-                                osc1a.connect(gain1a);
-                                gain1a.connect(window.sirenAudioCtx.destination);
-                                osc1a.start(startTime);
-                                osc1a.stop(startTime + 0.87);
+                            hits.forEach(function(h) {
+                                let hitStart = now + h.start;
+                                let hitEnd = hitStart + h.dur;
 
-                                let osc1b = window.sirenAudioCtx.createOscillator();
-                                let gain1b = window.sirenAudioCtx.createGain();
-                                osc1b.type = 'sawtooth';
-                                osc1b.frequency.setValueAtTime(630, startTime);
-                                osc1b.frequency.linearRampToValueAtTime(1480, startTime + 0.4);
-                                osc1b.frequency.linearRampToValueAtTime(630, startTime + 0.85);
-                                osc1b.detune.setValueAtTime(15, startTime);
-                                gain1b.gain.setValueAtTime(0.7, startTime);
-                                gain1b.gain.exponentialRampToValueAtTime(0.01, startTime + 0.87);
-                                osc1b.connect(gain1b);
-                                gain1b.connect(window.sirenAudioCtx.destination);
-                                osc1b.start(startTime);
-                                osc1b.stop(startTime + 0.87);
-                            }
+                                let osc1 = window.sirenAudioCtx.createOscillator();
+                                let gain1 = window.sirenAudioCtx.createGain();
+                                osc1.type = 'triangle';
+                                osc1.frequency.setValueAtTime(h.f1, hitStart);
+
+                                let osc2 = window.sirenAudioCtx.createOscillator();
+                                let gain2 = window.sirenAudioCtx.createGain();
+                                osc2.type = 'sine';
+                                osc2.frequency.setValueAtTime(h.f2, hitStart);
+
+                                let oscSub = window.sirenAudioCtx.createOscillator();
+                                let gainSub = window.sirenAudioCtx.createGain();
+                                oscSub.type = 'triangle';
+                                oscSub.frequency.setValueAtTime(h.fsub, hitStart);
+
+                                gain1.gain.setValueAtTime(0.001, hitStart);
+                                gain1.gain.linearRampToValueAtTime(h.gain * 0.50, hitStart + 0.002);
+                                gain1.gain.exponentialRampToValueAtTime(0.001, hitEnd);
+
+                                gain2.gain.setValueAtTime(0.001, hitStart);
+                                gain2.gain.linearRampToValueAtTime(h.gain * 0.40, hitStart + 0.002);
+                                gain2.gain.exponentialRampToValueAtTime(0.001, hitEnd);
+
+                                gainSub.gain.setValueAtTime(0.001, hitStart);
+                                gainSub.gain.linearRampToValueAtTime(h.gain * 0.35, hitStart + 0.002);
+                                gainSub.gain.exponentialRampToValueAtTime(0.001, hitEnd);
+
+                                osc1.connect(gain1);
+                                gain1.connect(window.sirenAudioCtx.destination);
+                                osc2.connect(gain2);
+                                gain2.connect(window.sirenAudioCtx.destination);
+                                oscSub.connect(gainSub);
+                                gainSub.connect(window.sirenAudioCtx.destination);
+
+                                osc1.start(hitStart);
+                                osc1.stop(hitEnd);
+                                osc2.start(hitStart);
+                                osc2.stop(hitEnd);
+                                oscSub.start(hitStart);
+                                oscSub.stop(hitEnd);
+                            });
                         } catch(e) {}
                     }
 
                     triggerSirenBurst();
-                    window.sirenRepeatInterval = setInterval(triggerSirenBurst, 2700);
+                    window.sirenRepeatInterval = setInterval(triggerSirenBurst, 1350);
 
                     // 3. Heavy Physical Vibration Alert on Mobile Devices
                     if (navigator.vibrate) {
@@ -2499,11 +2690,15 @@
                 };
 
                 // Real-Time Dispatch Checker
+                var isDispatchPollingInFlight = false;
                 window.pollIncomingDispatchRequests = function() {
                     // If an active job is open on mechanic dashboard, skip standby polling to ensure instant button response
                     if (typeof currentActiveJobId !== 'undefined' && currentActiveJobId && currentActiveJobId !== "0" && currentActiveJobId !== 0) {
                         return;
                     }
+
+                    if (isDispatchPollingInFlight) return;
+                    isDispatchPollingInFlight = true;
 
                     $.get('/Mechanic/CheckIncomingDispatch', { currentAlertJobId: window.currentDispatchJobId, _t: Date.now() }, function(res) {
                         if (res && res.success) {
@@ -2536,6 +2731,8 @@
                                 }
                             }
                         }
+                    }).always(function() {
+                        isDispatchPollingInFlight = false;
                     });
                 };
 
@@ -2558,19 +2755,6 @@
                         }
                     } catch(e) {}
 
-                    $('#lblDispVehicle').text(data.vehicleModel + ' (' + data.vehicleType + ')');  var modalEl = document.getElementById('incomingDispatchModal');
-                                if (modalEl) {
-                                    var instance = bootstrap.Modal.getInstance(modalEl);
-                                    if (instance) instance.hide();
-                                }
-                            }
-                        }
-                    });
-                };
-
-                function openDispatchModal(data) {
-                    window.playSirenAlert();
-                    
                     $('#lblDispVehicle').text(data.vehicleModel + ' (' + data.vehicleType + ')');
                     $('#lblDispReg').text(data.vehicleReg);
                     $('#lblDispCustomer').text(data.customerName);
@@ -2613,6 +2797,8 @@
                         snoozePing(data.jobId);
                     });
                 }
+
+                window.openDispatchModal = openDispatchModal;
 
                 function acceptPing(jobId) {
                     window.stopSirenAlert();
@@ -2678,20 +2864,20 @@
                 }
                 window.snoozePing = snoozePing;
 
-                // Web Worker for background intervals (optimized 2.5s for fast response without server starvation)
-                try {
-                    var blob = new Blob([
-                        "setInterval(function() { postMessage('tick'); }, 2500);"
-                    ], { type: "text/javascript" });
-                    var worker = new Worker(URL.createObjectURL(blob));
-                    worker.onmessage = function(e) {
+                // Start reliable real-time polling
+                window.pollIncomingDispatchRequests();
+                setInterval(function() {
+                    window.pollIncomingDispatchRequests();
+                }, 2000);
+
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden) {
                         window.pollIncomingDispatchRequests();
-                    };
+                    }
+                });
+                window.addEventListener('focus', function() {
                     window.pollIncomingDispatchRequests();
-                } catch (err) {
-                    setInterval(window.pollIncomingDispatchRequests, 2500);
-                    window.pollIncomingDispatchRequests();
-                }
+                });
             });
         </script>
     }
@@ -2715,11 +2901,6 @@
                     
                     <h4 class="text-white font-weight-bold mb-2" id="broadcastModalTitle" style="font-family: 'Outfit';">Live Announcement</h4>
                     <p class="text-muted small mb-4" id="broadcastModalMessage" style="font-size: 0.88rem; line-height: 1.5; color: #cbd5e1 !important;">Notification details...</p>
-                    
-                    <div class="d-flex align-items-center justify-content-between p-2.5 rounded bg-black bg-opacity-30 border border-secondary border-opacity-20 mb-4">
-                        <span class="small text-muted"><i class="fa-regular fa-clock me-1"></i> Broadcast Date:</span>
-                        <span class="small text-warning font-weight-bold" id="broadcastModalTime">N/A</span>
-                    </div>
 
                     <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnDismissBroadcastModal" data-bs-dismiss="modal" style="font-size: 0.92rem;">
                         <i class="fa-solid fa-check"></i> <span>Got It, Don't Show Again</span>
@@ -2837,81 +3018,83 @@
          📲 PWA NATIVE MOBILE APP INSTALLATION BANNER & PROMPT
          ========================================================================= -->
     <style>
-        .pwa-install-banner {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 24px);
-            max-width: 460px;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1.5px solid rgba(255, 107, 0, 0.5);
-            border-radius: 16px;
-            z-index: 105000;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 107, 0, 0.25);
-            animation: pwaSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .pwa-top-install-banner {
+            width: 100%;
+            background: linear-gradient(135deg, #111827 0%, #1c1917 50%, #0f172a 100%);
+            border-bottom: 1.5px solid rgba(255, 107, 0, 0.45);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 1035;
+            animation: pwaSlideDown 0.35s ease-out forwards;
         }
 
-        @@keyframes pwaSlideUp {
-            from { opacity: 0; transform: translate(-50%, 40px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
+        @@keyframes pwaSlideDown {
+            from { opacity: 0; transform: translateY(-100%); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .pwa-install-banner .pulse-ring {
+        .pwa-top-install-banner .pulse-ring {
             box-shadow: 0 0 0 0 rgba(255, 107, 0, 0.7);
             animation: pwaPulseRing 2s infinite cubic-bezier(0.66, 0, 0, 1);
         }
 
         @@keyframes pwaPulseRing {
-            to { box-shadow: 0 0 0 10px rgba(255, 107, 0, 0); }
+            to { box-shadow: 0 0 0 8px rgba(255, 107, 0, 0); }
         }
     </style>
 
-    <div id="pwaInstallBanner" class="pwa-install-banner" style="display: none;">
-        <div class="d-flex align-items-center justify-content-between p-2.5 p-sm-3">
-            <div class="d-flex align-items-center gap-2.5 flex-grow-1 overflow-hidden me-2">
-                <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi App" class="rounded-3 shadow-sm flex-shrink-0 pulse-ring" style="width: 44px; height: 44px; object-fit: cover; border: 1.5px solid #ff6b00;" />
-                <div class="overflow-hidden text-start">
-                    <div class="d-flex align-items-center gap-1.5">
-                        <strong class="text-white font-weight-bold text-truncate" style="font-size: 0.92rem;">RaahSathi App</strong>
-                        <span class="badge bg-warning text-dark font-weight-extrabold py-0.5 px-1.5" style="font-size: 0.65rem; border-radius: 4px;">FAST</span>
-                    </div>
-                    <span class="text-muted text-truncate d-block small" style="font-size: 0.76rem;">⚡ 14-Min Roadside Help • 24×7 SOS</span>
+    <!-- 📲 Universal App Install Guide Modal (Android, Chrome, PC, Mac) -->
+    <div class="modal fade" id="pwaUniversalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-dark text-white border-warning" style="border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.8);">
+                <div class="modal-header border-secondary border-opacity-30 pb-2">
+                    <h6 class="modal-title text-warning font-weight-bold"><i class="fa-solid fa-mobile-screen-button me-2"></i> Install RaahSathi App</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </div>
-            <div class="d-flex align-items-center gap-1.5 flex-shrink-0">
-                <button type="button" class="btn btn-warning btn-sm font-weight-bold px-3 py-1.5 shadow d-inline-flex align-items-center gap-1.5 text-dark" id="btnPwaInstall" onclick="triggerPwaInstall()" style="border-radius: 20px; font-size: 0.82rem;">
-                    <i class="fa-solid fa-download"></i> <span>Install</span>
-                </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm text-muted rounded-circle p-1 border-0" onclick="dismissPwaBanner()" title="Close" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-xmark" style="font-size: 0.85rem;"></i>
-                </button>
+                <div class="modal-body text-center p-3">
+                    <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi" class="rounded-3 shadow mb-2" style="width: 56px; height: 56px; border: 2px solid #ff6b00;" />
+                    <h6 class="text-white font-weight-bold mb-1">Get RaahSathi on your Phone</h6>
+                    <p class="text-muted extra-small mb-3">Install our light &amp; fast app for instant 14-min emergency roadside assistance:</p>
+                    
+                    <div class="text-start bg-secondary bg-opacity-10 p-2.5 rounded-3 border border-secondary border-opacity-20 small mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1 font-weight-bold">1</span>
+                            <span>Tap your browser menu (<i class="fa-solid fa-ellipsis-vertical text-warning mx-1"></i> or <strong>Share</strong>)</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1 font-weight-bold">2</span>
+                            <span>Select <strong>"Install app"</strong> or <strong>"Add to Home Screen"</strong></span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-warning w-100 font-weight-extrabold text-dark py-2.5 shadow" onclick="triggerPwaPromptDirect()" style="border-radius: 12px; background: #f59e0b; border: none;">
+                        <i class="fa-solid fa-download me-1.5"></i> Tap to Install Now
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- iOS Safari "Add to Home Screen" Instructions Modal -->
+    <!-- 🍎 iOS Safari "Add to Home Screen" Instructions Modal -->
     <div class="modal fade" id="iosPwaInstallModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content bg-dark text-white border-warning" style="border-radius: 16px;">
+            <div class="modal-content bg-dark text-white border-warning" style="border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.8);">
                 <div class="modal-header border-secondary border-opacity-30 pb-2">
                     <h6 class="modal-title text-warning font-weight-bold"><i class="fa-brands fa-apple me-2"></i> Install on iPhone / iPad</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center p-3">
                     <img src="~/images/icon-192.png?v=9" asp-append-version="true" alt="RaahSathi" class="rounded-3 shadow mb-2" style="width: 56px; height: 56px; border: 2px solid #ff6b00;" />
-                    <h6 class="text-white font-weight-bold mb-1">Install RaahSathi</h6>
+                    <h6 class="text-white font-weight-bold mb-1">Install RaahSathi on iOS</h6>
                     <p class="text-muted extra-small mb-3">Add to your home screen for instant 1-tap emergency assistance:</p>
                     <div class="text-start bg-secondary bg-opacity-10 p-2.5 rounded-3 border border-secondary border-opacity-20 small">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1">1</span>
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1 font-weight-bold">1</span>
                             <span>Tap the <strong>Share</strong> button <i class="fa-solid fa-arrow-up-from-bracket text-warning ms-1"></i> in Safari toolbar</span>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1">2</span>
-                            <span>Scroll down & tap <strong>"Add to Home Screen"</strong> <i class="fa-regular fa-square-plus text-warning ms-1"></i></span>
+                            <span class="badge bg-warning text-dark rounded-circle px-2 py-1 font-weight-bold">2</span>
+                            <span>Scroll down &amp; tap <strong>"Add to Home Screen"</strong> <i class="fa-regular fa-square-plus text-warning ms-1"></i></span>
                         </div>
                     </div>
                 </div>
@@ -2922,12 +3105,141 @@
         </div>
     </div>
 
+    @if (activeRole == "Guest")
+    {
+        <!-- 🌐 Compact First-Time / Guest Language Selection Modal -->
+        <div class="modal fade" id="firstTimeLanguageModal" tabindex="-1" aria-labelledby="firstTimeLanguageModalLabel" aria-hidden="true" data-bs-backdrop="static" style="z-index: 1080;">
+            <div class="modal-dialog modal-dialog-centered" style="max-width: 390px; width: 92%;">
+                <div class="modal-content bg-dark text-white border-warning shadow-lg" style="border-radius: 18px; box-shadow: 0 16px 45px rgba(0,0,0,0.9); border: 1.5px solid rgba(255, 107, 0, 0.5); background: linear-gradient(145deg, #18191c, #0e0f13);">
+                    <div class="modal-header border-secondary border-opacity-25 py-2.5 px-3.5">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="p-1.5 rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="fa-solid fa-language fa-sm"></i>
+                            </div>
+                            <div>
+                                <h6 class="modal-title text-white font-weight-bold mb-0" id="firstTimeLanguageModalLabel" style="font-size: 0.95rem;">
+                                    Select Language / भाषा चुनें
+                                </h6>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" onclick="dismissFirstTimeLanguageModal()" aria-label="Close" style="font-size: 0.75rem;"></button>
+                    </div>
+                    <div class="modal-body p-3.5">
+                        <p class="text-muted extra-small mb-2.5">Choose your preferred language for instant roadside assistance:</p>
+                        
+                        <!-- Language Selection Dropdown -->
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <span class="input-group-text bg-secondary bg-opacity-25 border-secondary text-warning">
+                                    <i class="fa-solid fa-globe"></i>
+                                </span>
+                                <select id="firstTimeLangSelect" class="form-select bg-dark text-white border-secondary font-weight-bold" style="font-size: 0.92rem; border-radius: 0 8px 8px 0; cursor: pointer;">
+                                    <option value="en" selected>🇬🇧 English (Default)</option>
+                                    <option value="hi">🇮🇳 Hindi (हिंदी)</option>
+                                    <option value="mr">🇮🇳 Marathi (मराठी)</option>
+                                    <option value="gu">🇮🇳 Gujarati (ગુજરાતી)</option>
+                                    <option value="pa">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</option>
+                                    <option value="bn">🇮🇳 Bengali (বাংলা)</option>
+                                    <option value="ta">🇮🇳 Tamil (தமிழ்)</option>
+                                    <option value="te">🇮🇳 Telugu (తెలుగు)</option>
+                                    <option value="kn">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+                                    <option value="ml">🇮🇳 Malayalam (മലയാളം)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Button -->
+                        <button type="button" class="btn btn-warning w-100 font-weight-bold text-dark py-2 shadow-sm d-flex align-items-center justify-content-center gap-1.5" onclick="submitFirstTimeLanguage()" style="border-radius: 10px; font-size: 0.9rem; background: #ff6b00; border: none;">
+                            <span>Continue / आगे बढ़ें</span>
+                            <i class="fa-solid fa-arrow-right-long"></i>
+                        </button>
+                    </div>
+                    <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 justify-content-center">
+                        <span class="text-muted extra-small" style="font-size: 0.73rem;">You can change language anytime from top navbar</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guest / Non-Logged In Language Popup Script -->
+        <script>
+            (function() {
+                function checkFirstTimeLanguagePrompt() {
+                    var path = (window.location.pathname || '').toLowerCase();
+                    var isHomePage = path === '/' || path === '' || path === '/home' || path === '/home/' || path === '/home/index' || path === '/index';
+                    
+                    if (!isHomePage) return;
+
+                    var hasChosenInSession = sessionStorage.getItem('raahsathi_guest_lang_chosen');
+                    if (!hasChosenInSession) {
+                        var modalEl = document.getElementById('firstTimeLanguageModal');
+                        if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                            var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+                            modal.show();
+                        }
+                    } else {
+                        if (typeof window.pollPushNotifications === 'function') {
+                            window.pollPushNotifications();
+                        }
+                    }
+                }
+
+                window.submitFirstTimeLanguage = function() {
+                    var selectEl = document.getElementById('firstTimeLangSelect');
+                    var langCode = selectEl ? selectEl.value : 'en';
+                    
+                    sessionStorage.setItem('raahsathi_guest_lang_chosen', 'true');
+                    var modalEl = document.getElementById('firstTimeLanguageModal');
+                    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                        var m = bootstrap.Modal.getInstance(modalEl);
+                        if (m) m.hide();
+                    }
+                    if (typeof changeLanguage === 'function') {
+                        changeLanguage(langCode);
+                    }
+                    setTimeout(function() {
+                        if (typeof window.pollPushNotifications === 'function') {
+                            window.pollPushNotifications();
+                        }
+                    }, 400);
+                };
+
+                window.dismissFirstTimeLanguageModal = function() {
+                    sessionStorage.setItem('raahsathi_guest_lang_chosen', 'true');
+                    var modalEl = document.getElementById('firstTimeLanguageModal');
+                    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                        var m = bootstrap.Modal.getInstance(modalEl);
+                        if (m) m.hide();
+                    }
+                    setTimeout(function() {
+                        if (typeof window.pollPushNotifications === 'function') {
+                            window.pollPushNotifications();
+                        }
+                    }, 400);
+                };
+
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                    setTimeout(checkFirstTimeLanguagePrompt, 400);
+                } else {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        setTimeout(checkFirstTimeLanguagePrompt, 400);
+                    });
+                }
+            })();
+        </script>
+    }
+
     <!-- PWA Installation Engine & Service Worker Registration -->
     <script>
         (function() {
             var deferredPrompt = null;
             var isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+            function isAppInstalled() {
+                var isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                var isStorageInstalled = localStorage.getItem('raah_pwa_installed') === 'true';
+                return isStandaloneMode || isStorageInstalled;
+            }
 
             // 1. Register Service Worker
             if ('serviceWorker' in navigator) {
@@ -2947,67 +3259,122 @@
                 e.preventDefault();
                 deferredPrompt = e;
                 window.pwaDeferredPrompt = e;
-                
-                // Check if dismissed recently (within 5 days)
-                var dismissedAt = localStorage.getItem('raah_pwa_dismissed');
-                var fiveDays = 5 * 24 * 60 * 60 * 1000;
-                if (!dismissedAt || (Date.now() - parseInt(dismissedAt)) > fiveDays) {
-                    showPwaBanner();
-                }
+                checkAndShowBanner();
             });
 
             function showPwaBanner() {
-                if (isStandalone) return;
+                if (isAppInstalled()) return;
                 var banner = document.getElementById('pwaInstallBanner');
                 if (banner) {
                     banner.style.display = 'block';
                 }
             }
 
+            function checkAndShowBanner() {
+                // If user has already installed the app, do NOT show the banner
+                if (isAppInstalled()) {
+                    var banner = document.getElementById('pwaInstallBanner');
+                    if (banner) banner.style.display = 'none';
+                    var heroBtn = document.getElementById('heroPwaInstallBtn');
+                    if (heroBtn) heroBtn.style.display = 'none';
+                    return;
+                }
+
+                // If user clicked close/dismiss, hide for 4 to 5 hours (4 hours = 4 * 60 * 60 * 1000 ms)
+                var dismissedAt = localStorage.getItem('raah_pwa_dismissed');
+                var fourHours = 4 * 60 * 60 * 1000;
+                if (!dismissedAt || (Date.now() - parseInt(dismissedAt, 10)) > fourHours) {
+                    showPwaBanner();
+                }
+            }
+
+            // Auto-display banner check on page load
+            window.addEventListener('load', function() {
+                setTimeout(checkAndShowBanner, 1200);
+            });
+
             window.dismissPwaBanner = function() {
                 var banner = document.getElementById('pwaInstallBanner');
                 if (banner) {
                     banner.style.display = 'none';
                 }
+                // Hide for 4-5 hours
                 localStorage.setItem('raah_pwa_dismissed', Date.now().toString());
             };
 
+            window.markAppAsInstalled = function() {
+                localStorage.setItem('raah_pwa_installed', 'true');
+                var banner = document.getElementById('pwaInstallBanner');
+                if (banner) {
+                    banner.style.display = 'none';
+                }
+                var heroBtn = document.getElementById('heroPwaInstallBtn');
+                if (heroBtn) {
+                    heroBtn.style.display = 'none';
+                }
+            };
+
+            window.triggerPwaPromptDirect = function() {
+                var promptEvent = deferredPrompt || window.pwaDeferredPrompt;
+                if (promptEvent) {
+                    promptEvent.prompt();
+                    promptEvent.userChoice.then(function (choiceResult) {
+                        if (choiceResult.outcome === 'accepted') {
+                            window.markAppAsInstalled();
+                        }
+                        deferredPrompt = null;
+                        window.pwaDeferredPrompt = null;
+                    });
+                } else {
+                    var uModal = document.getElementById('pwaUniversalModal');
+                    if (uModal && window.bootstrap) {
+                        var m = bootstrap.Modal.getInstance(uModal);
+                        if (m) m.hide();
+                    }
+                    alert('📲 To install:\n1. Tap your browser menu (⋮)\n2. Select "Install App" or "Add to Home screen"');
+                }
+            };
+
             window.triggerPwaInstall = function() {
+                if (isAppInstalled()) {
+                    alert('✅ RaahSathi App is already installed on your device!');
+                    return;
+                }
+
                 var promptEvent = deferredPrompt || window.pwaDeferredPrompt;
                 if (promptEvent) {
                     promptEvent.prompt();
                     promptEvent.userChoice.then(function (choiceResult) {
                         if (choiceResult.outcome === 'accepted') {
                             console.log('User accepted RaahSathi PWA installation');
-                            window.dismissPwaBanner();
+                            window.markAppAsInstalled();
                         } else {
                             console.log('User dismissed RaahSathi PWA installation');
                         }
                         deferredPrompt = null;
                         window.pwaDeferredPrompt = null;
                     });
-                } else if (isIos && !isStandalone) {
+                } else if (isIos) {
                     var modalEl = document.getElementById('iosPwaInstallModal');
                     if (modalEl && window.bootstrap) {
                         var modal = new bootstrap.Modal(modalEl);
                         modal.show();
                     }
                 } else {
-                    if (isStandalone) {
-                        alert('✅ RaahSathi is already installed and running as an app!');
+                    var universalModalEl = document.getElementById('pwaUniversalModal');
+                    if (universalModalEl && window.bootstrap) {
+                        var uModal = new bootstrap.Modal(universalModalEl);
+                        uModal.show();
                     } else {
                         alert('📲 To install RaahSathi App on your device:\n\n1. Tap your browser menu (⋮ or Share)\n2. Select "Install App" or "Add to Home screen"');
                     }
                 }
             };
 
-            // 3. Track App Installed
+            // 3. Track App Installed Event
             window.addEventListener('appinstalled', function () {
                 console.log('🎉 RaahSathi PWA was successfully installed on device!');
-                window.dismissPwaBanner();
-                if (window.alert) {
-                    window.alert('🎉 RaahSathi App has been installed on your device!');
-                }
+                window.markAppAsInstalled();
             });
         })();
     </script>

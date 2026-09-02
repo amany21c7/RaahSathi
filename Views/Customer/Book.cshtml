@@ -15,22 +15,56 @@
     var preSelectedVehicle = ViewBag.PreSelectedVehicle as RaahSathi.Models.Vehicle;
 }
 
+<style>
+    .prob-card {
+        background: #0f172a !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        user-select: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .prob-card:hover {
+        background: #1e293b !important;
+        border-color: rgba(245, 158, 11, 0.6) !important;
+        transform: translateY(-2px);
+    }
+    .prob-card.active-prob-card {
+        background: linear-gradient(135deg, #020617 0%, #0a1128 100%) !important;
+        border: 2px solid #f59e0b !important;
+        box-shadow: 0 0 18px rgba(245, 158, 11, 0.4), inset 0 0 14px rgba(245, 158, 11, 0.12) !important;
+        transform: scale(1.01);
+    }
+    .prob-card.active-prob-card .prob-title {
+        color: #fbbf24 !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.2px;
+    }
+    .prob-card.active-prob-card .prob-icon {
+        color: #fbbf24 !important;
+        filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
+    }
+    .prob-card.active-prob-card .prob-price {
+        color: #34d399 !important;
+        font-weight: 800 !important;
+    }
+</style>
+
 <!-- Top Live Status Banner -->
 <div class="row mb-3">
     <div class="col-12">
-        <div class="p-3 rounded-3 border border-warning border-opacity-40 d-flex flex-column flex-md-row align-items-center justify-content-between gap-2 shadow" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.98));">
-            <div class="d-flex align-items-center">
-                <div class="rounded-circle bg-success bg-opacity-20 p-2 me-3 d-flex align-items-center justify-content-center" style="width:42px; height:42px;">
-                    <i class="fa-solid fa-location-crosshairs text-success fa-lg animate-pulse"></i>
+        <div class="p-3 px-3.5 rounded-3 border border-warning border-opacity-50 d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 shadow-lg" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98));">
+            <div class="d-flex align-items-center overflow-hidden">
+                <div class="rounded-circle bg-success bg-opacity-20 p-2 me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px; height:44px;">
+                    <i class="fa-solid fa-location-crosshairs text-success fa-xl animate-pulse"></i>
                 </div>
-                <div>
-                    <h6 class="text-white font-weight-bold mb-0">Auto GPS Location Detection Active</h6>
-                    <span class="text-muted small" id="detectedLocationText">Detecting your breakdown location via browser GPS...</span>
+                <div class="overflow-hidden">
+                    <h5 class="text-white font-weight-bold mb-0" style="font-size:1.02rem; letter-spacing: -0.2px;">Auto GPS Location Detection Active</h5>
+                    <span class="text-muted small d-block" id="detectedLocationText" style="font-size:0.82rem; margin-top: 2px;">Detecting your breakdown location via browser GPS...</span>
                 </div>
             </div>
-            <div id="nearbyBadgeContainer">
-                <span class="badge bg-warning text-dark font-weight-bold px-3 py-2" style="font-size:0.85rem;" id="nearbyMechanicsBadge">
-                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Checking Nearby Mechanics &amp; EV Specialists...
+            <div id="nearbyBadgeContainer" class="flex-shrink-0">
+                <span class="badge bg-warning text-dark font-weight-bold px-3.5 py-2 shadow-sm" style="font-size:0.85rem;" id="nearbyMechanicsBadge">
+                    <i class="fa-solid fa-bolt me-1 text-dark"></i> Checking Nearby Mechanics...
                 </span>
             </div>
         </div>
@@ -72,11 +106,26 @@
     <!-- Right Column: 30-Second Ultra-Fast Booking Form (Expanded 7-Col for High Visibility) -->
     <div class="col-lg-7">
         <div class="glass-card">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h4 class="text-white font-weight-bold mb-0">
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2 pb-2 border-bottom border-secondary border-opacity-30">
+                <h4 class="text-white font-weight-bold mb-0 d-flex align-items-center">
                     <i class="fa-solid fa-bolt text-warning me-2 animate-pulse"></i> Instant Request
                 </h4>
-                <span class="badge bg-danger text-white px-2.5 py-1 font-weight-bold small">EXPRESS DISPATCH</span>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if (vehicles.Count > 0)
+                    {
+                        <div class="d-flex align-items-center gap-2 p-1.5 px-2.5 rounded-3 border border-warning border-opacity-40 shadow-sm" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));">
+                            <i class="fa-solid fa-car text-warning fs-6"></i>
+                            <span class="text-white font-weight-bold small text-nowrap" style="font-size:0.8rem;">Vehicle:</span>
+                            <select class="form-select form-select-sm glass-input text-white font-weight-bold py-1 px-2 border-secondary" id="topRegisteredVehicleSelect" onchange="onTopVehicleChange(this)" style="min-width: 170px; max-width: 250px; font-size:0.82rem; height: 34px; line-height: 1.4; background-color: rgba(15, 23, 42, 0.8);">
+                                @foreach (var v in vehicles)
+                                {
+                                    <option value="@v.Id" class="bg-dark text-white" data-model="@v.Model" data-reg="@v.RegistrationNumber" data-type="@v.VehicleType" selected="@(preSelectedVehicle?.Id == v.Id ? "selected" : null)">@v.Model (@v.RegistrationNumber)</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <span class="badge bg-danger text-white px-2.5 py-2 font-weight-bold small shadow-sm">EXPRESS DISPATCH</span>
+                </div>
             </div>
 
             <!-- Step 1: Vehicle Category Selection -->
@@ -203,36 +252,36 @@
                 </div>
             </div>
 
-            <!-- Step 2: Issue / Problem Category Selection (Dynamic Dropdown & Quick Cards) -->
+            <!-- Step 2: Issue / Problem Category Selection (Multi-Select Allowed) -->
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center font-weight-bold" style="width:20px; height:20px; font-size:0.7rem;">2</span>
-                    <label class="form-label text-white small font-weight-bold mb-0" id="problemSectionLabel">Breakdown Problem &amp; Approximate Rate</label>
+                    <label class="form-label text-white small font-weight-bold mb-0" id="problemSectionLabel">Select Vehicle Problems <span class="badge bg-warning bg-opacity-20 text-warning border border-warning ms-1" style="font-size:0.65rem;">Multi-Select Allowed</span></label>
                 </div>
-                <span class="badge bg-secondary text-warning" id="probCountBadge" style="font-size:0.72rem;">Select Problem</span>
+                <span class="badge bg-secondary text-warning" id="probCountBadge" style="font-size:0.72rem;">0 Selected</span>
             </div>
 
             <!-- Dynamic Problem Selector Dropdown with Approximate Basic Rate -->
             <div class="mb-2">
-                <select id="problemTypeSelect" class="form-select glass-input text-warning font-weight-bold border-secondary py-2" onchange="onProblemDropdownChange(this.value)">
+                <select id="problemTypeSelect" class="form-select glass-input text-warning font-weight-bold border-secondary py-2" onchange="onProblemDropdownAdd(this.value)">
                     <!-- Dynamically populated per vehicle selection -->
                 </select>
             </div>
 
             <!-- Quick Filter & Problem Cards Grid -->
             <div class="mb-3">
-                <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mt-3 mb-2.5">
+                <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mt-2 mb-2">
                     <span class="text-white-50 small font-weight-medium">
-                        <i class="fa-solid fa-calculator text-warning me-1"></i> Quick Selection &amp; Approximate Charges:
+                        <i class="fa-solid fa-hand-pointer text-warning me-1"></i> Select Problem with Approximate charges:
                     </span>
                     <div class="input-group input-group-sm" style="max-width: 220px;">
                         <span class="input-group-text bg-dark border-secondary text-warning py-1"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" id="problemSearchFilter" class="form-control bg-dark text-white border-secondary py-1" style="font-size:0.75rem;" placeholder="Search problem..." oninput="filterProblemCards(this.value)">
+                        <input type="text" id="problemSearchFilter" class="form-control bg-dark text-white border-secondary py-1" style="font-size:0.75rem;" placeholder="Search problems..." oninput="filterProblemCards(this.value)">
                     </div>
                 </div>
 
                 <div id="dynamicProblemCardsGrid" class="row g-2 custom-scroll" style="max-height: 285px; overflow-y: auto; padding-right: 2px;">
-                    <!-- Dynamically generated problem cards with exact ₹Min - ₹Max rates -->
+                    <!-- Dynamically generated problem cards with checkboxes -->
                 </div>
             </div>
 
@@ -704,8 +753,8 @@
                 if (res && res.success) {
                     var rawDist = (res.count > 0 && res.topMechanics && res.topMechanics.length > 0) ? res.topMechanics[0].distance : 3.2;
                     currentPatrolDistance = (rawDist > 30.0 || rawDist <= 0.05) ? 3.2 : rawDist;
-                    var displayEta = (res.minEta && res.minEta <= 25) ? res.minEta : 25;
-                    $('#nearbyMechanicsBadge').html(`<i class="fa-solid fa-bolt me-1 text-dark"></i> ${res.count} Verified Mechanics Nearby • Avg ETA ${displayEta} mins`);
+                    var displayEta = (res.minEta && res.minEta <= 25) ? res.minEta : 10;
+                    $('#nearbyMechanicsBadge').html(`<i class="fa-solid fa-bolt me-1 text-dark"></i> ${res.count} Mechanics Nearby • Avg ETA ${displayEta} mins`);
                     $('#distanceText').text(currentPatrolDistance.toFixed(1) + " km");
                     updatePricing();
                 }
@@ -743,6 +792,70 @@
             return 'fa-screwdriver-wrench text-warning';
         }
 
+        // Multi-Select Problems State
+        var selectedProblems = []; // Array of { name: string, min: number, max: number }
+
+        window.toggleProblemSelection = function(probName, minVal, maxVal) {
+            var existingIndex = selectedProblems.findIndex(p => p.name.toLowerCase() === probName.toLowerCase());
+            if (existingIndex >= 0) {
+                selectedProblems.splice(existingIndex, 1);
+            } else {
+                selectedProblems.push({ name: probName, min: minVal || 150, max: maxVal || 800 });
+            }
+            renderSelectedProblemsUI();
+            updatePricing();
+        };
+
+        window.removeSelectedProblem = function(probName) {
+            selectedProblems = selectedProblems.filter(p => p.name.toLowerCase() !== probName.toLowerCase());
+            renderSelectedProblemsUI();
+            updatePricing();
+        };
+
+        window.clearAllSelectedProblems = function() {
+            selectedProblems = [];
+            renderSelectedProblemsUI();
+            updatePricing();
+        };
+
+        window.onProblemDropdownAdd = function(probName) {
+            if (!probName) return;
+            var found = allProblemTypesList.find(p => p.name.toLowerCase() === probName.toLowerCase());
+            var minVal = found ? found.min : 150;
+            var maxVal = found ? found.max : 800;
+            var existingIndex = selectedProblems.findIndex(p => p.name.toLowerCase() === probName.toLowerCase());
+            if (existingIndex < 0) {
+                selectedProblems.push({ name: probName, min: minVal, max: maxVal });
+            }
+            renderSelectedProblemsUI();
+            updatePricing();
+        };
+
+        function renderSelectedProblemsUI() {
+            // Update Selected Count Badge & Dropdown summary
+            if (selectedProblems.length > 0) {
+                $('#probCountBadge').html(`<i class="fa-solid fa-circle-check me-1"></i> ${selectedProblems.length} Selected`).removeClass('bg-secondary text-warning').addClass('bg-warning text-dark font-weight-bold');
+                $('#problemTypeSelect option:first').text(`✅ ${selectedProblems.length} Problem(s) Selected (+ Add More)`);
+            } else {
+                $('#probCountBadge').text('0 Selected').removeClass('bg-warning text-dark font-weight-bold').addClass('bg-secondary text-warning');
+                $('#problemTypeSelect option:first').text('+ Select or Add Vehicle Problem');
+            }
+
+            // Sync visual cards in grid
+            $('.prob-card').each(function() {
+                var cName = $(this).attr('data-prob-name');
+                var isSelected = selectedProblems.some(p => p.name.toLowerCase() === (cName || '').toLowerCase());
+                if (isSelected) {
+                    $(this).addClass('active-prob-card');
+                } else {
+                    $(this).removeClass('active-prob-card');
+                }
+            });
+
+            // Reset dropdown selection to placeholder
+            $('#problemTypeSelect').val('');
+        }
+
         // Populate Dynamic Dropdown & Cards for chosen vehicle category
         function loadProblemsForCategory(category) {
             var filtered = allProblemTypesList.filter(function(p) {
@@ -761,65 +874,35 @@
             }
 
             // Populate Dropdown with default placeholder
-            var selectHtml = '<option value="" disabled selected>Select Vehicle Problem</option>';
+            var selectHtml = '<option value="" disabled selected>+ Select or Add Vehicle Problem</option>';
             filtered.forEach(function(p, idx) {
                 selectHtml += `<option value="${p.name}" data-min="${p.min}" data-max="${p.max}">${p.name} (₹${p.min} - ₹${p.max})</option>`;
             });
             $('#problemTypeSelect').html(selectHtml);
 
-            // Populate Dynamic Cards Grid (no problem card pre-selected by default)
+            // Populate Dynamic Cards Grid with Multi-Select toggles (Clean card-only selection)
             var cardsHtml = '';
             filtered.forEach(function(p, idx) {
                 var iconClass = getProblemIcon(p.name);
+                var isSelected = selectedProblems.some(sp => sp.name.toLowerCase() === p.name.toLowerCase());
                 cardsHtml += `
-                    <div class="col-6 prob-card-col" data-problem-name="${p.name.toLowerCase()}">
-                        <div class="prob-card p-2.5 rounded-3 border border-secondary cursor-pointer d-flex align-items-center justify-content-between h-100" 
-                             onclick="setProblemType('${p.name.replace(/'/g, "\\'")}', this)" 
-                             data-min="${p.min}" data-max="${p.max}">
-                            <div class="d-flex align-items-center">
-                                <i class="fa-solid ${iconClass} fa-lg me-2"></i>
-                                <div>
-                                    <div class="text-white font-weight-bold small mb-0 line-clamp-1" title="${p.name}">${p.name}</div>
-                                    <span class="text-warning font-weight-bold" style="font-size:0.7rem;">₹${p.min} - ₹${p.max}</span>
-                                </div>
+                    <div class="col-6 col-md-6 prob-card-col" data-problem-name="${p.name.toLowerCase()}">
+                        <div class="prob-card p-2.5 rounded-3 ${isSelected ? 'active-prob-card' : ''} cursor-pointer d-flex align-items-center h-100 position-relative" 
+                             onclick="toggleProblemSelection('${p.name.replace(/'/g, "\\'")}', ${p.min}, ${p.max})" 
+                             data-prob-name="${p.name}" data-min="${p.min}" data-max="${p.max}">
+                            <i class="fa-solid ${iconClass} prob-icon fa-lg me-2.5 text-warning flex-shrink-0"></i>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="text-white font-weight-bold small mb-0 line-clamp-1 prob-title" title="${p.name}">${p.name}</div>
+                                <span class="prob-price text-warning font-weight-bold" style="font-size:0.72rem;">₹${p.min} - ₹${p.max}</span>
                             </div>
                         </div>
                     </div>
                 `;
             });
             $('#dynamicProblemCardsGrid').html(cardsHtml);
-            $('#probCountBadge').text(filtered.length + ' Problems Loaded');
-
-            // Do not pre-select any problem by default
-            selectedProblemType = '';
-            $('#problemTypeSelect').val('');
-
+            renderSelectedProblemsUI();
             updatePricing();
         }
-
-        window.onProblemDropdownChange = function(probName) {
-            selectedProblemType = probName || '';
-            // Highlight matching card in grid
-            $('.prob-card').removeClass('active-prob-card border-warning').addClass('border-secondary');
-            if (probName) {
-                var matchingCard = $(`#dynamicProblemCardsGrid .prob-card-col`).filter(function() {
-                    return $(this).attr('data-problem-name') === probName.toLowerCase();
-                }).find('.prob-card');
-                
-                if (matchingCard.length > 0) {
-                    matchingCard.addClass('active-prob-card border-warning').removeClass('border-secondary');
-                }
-            }
-            updatePricing();
-        };
-
-        window.setProblemType = function(prob, el) {
-            selectedProblemType = prob;
-            $('#problemTypeSelect').val(prob);
-            $('.prob-card').removeClass('active-prob-card border-warning').addClass('border-secondary');
-            $(el).addClass('active-prob-card border-warning').removeClass('border-secondary');
-            updatePricing();
-        };
 
         window.filterProblemCards = function(query) {
             var q = (query || '').toLowerCase().trim();
@@ -835,6 +918,11 @@
 
         // Selection Handlers for Vehicle Types
         window.setVehicleType = function(type) {
+            if (selectedVehicleType !== type) {
+                // Clear previous vehicle category problem selections
+                selectedProblems = [];
+                $('#problemSearchFilter').val('');
+            }
             selectedVehicleType = type;
             $('.v-pill').removeClass('active-v-pill border-warning').addClass('border-secondary');
             $(`#vPill-${type.replace(' ', '')}`).addClass('active-v-pill border-warning').removeClass('border-secondary');
@@ -910,6 +998,51 @@
             }
         };
 
+        window.onTopVehicleChange = function(selectEl) {
+            var selectedOption = $(selectEl).find('option:selected');
+            var vId = $(selectEl).val();
+            var model = selectedOption.data('model');
+            var reg = selectedOption.data('reg');
+            var type = selectedOption.data('type');
+
+            if (vId) {
+                preSelectedVehicleId = parseInt(vId);
+            }
+            if (model) {
+                $('#vehicleNameModelInput').val(model);
+            }
+            if (reg) {
+                $('#vehicleRegNumberInput').val(reg);
+            }
+            if (type) {
+                setVehicleType(type);
+            }
+        };
+
+        window.submitDirectQuickRequest = function() {
+            var topSelect = $('#topRegisteredVehicleSelect');
+            if (topSelect.length > 0 && topSelect.val()) {
+                onTopVehicleChange(topSelect[0]);
+            }
+
+            // If no problem is chosen yet, auto-select default problem so instant request works smoothly
+            if (selectedProblems.length === 0) {
+                var firstCard = $('#dynamicProblemCardsGrid .prob-card').first();
+                if (firstCard.length > 0) {
+                    var pName = firstCard.attr('data-prob-name');
+                    var pMin = parseFloat(firstCard.attr('data-min')) || 150;
+                    var pMax = parseFloat(firstCard.attr('data-max')) || 800;
+                    toggleProblemSelection(pName, pMin, pMax);
+                } else {
+                    selectedProblems.push({ name: "General Diagnostic & Breakdown Repair", min: 150, max: 800 });
+                    renderSelectedProblemsUI();
+                    updatePricing();
+                }
+            }
+
+            $('#btnRequestDispatch').click();
+        };
+
         window.previewProblemPhoto = function(input) {
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
@@ -943,38 +1076,35 @@
             $('#baseFeeText').text('₹' + visitingCharge.toFixed(2));
             $('#distanceText').text(dist.toFixed(1) + " km");
 
-            // Look up exact min & max service charge from current selection or allProblemTypesList
+            // Look up sum of min & max service charge across all selected problems
             var serviceMin = 0;
             var serviceMax = 0;
             
-            var selectedOpt = $('#problemTypeSelect option:selected');
-            if (selectedOpt.length > 0 && selectedOpt.data('min')) {
-                serviceMin = parseFloat(selectedOpt.data('min')) || 0;
-                serviceMax = parseFloat(selectedOpt.data('max')) || 0;
-            } else if (selectedProblemType) {
-                var found = allProblemTypesList.find(function(p) {
-                    return p.name.toLowerCase() === (selectedProblemType || '').toLowerCase();
+            if (selectedProblems.length > 0) {
+                selectedProblems.forEach(function(p) {
+                    serviceMin += (p.min || 0);
+                    serviceMax += (p.max || 0);
                 });
-                if (found) {
-                    serviceMin = found.min;
-                    serviceMax = found.max;
-                }
             }
 
             if (serviceMin > 0 || serviceMax > 0) {
-                $('#serviceRangeText').text('₹' + serviceMin.toLocaleString() + ' - ₹' + serviceMax.toLocaleString());
+                var issueCountText = selectedProblems.length > 1 ? ` (${selectedProblems.length} Problems)` : '';
+                $('#serviceRangeText').text('₹' + serviceMin.toLocaleString() + ' - ₹' + serviceMax.toLocaleString() + issueCountText);
                 var totalMin = visitingCharge + serviceMin;
                 var totalMax = visitingCharge + serviceMax;
                 $('#totalEstimateText').text('₹' + totalMin.toFixed(0) + ' - ₹' + totalMax.toFixed(0));
             } else {
-                $('#serviceRangeText').text('Select problem above');
+                $('#serviceRangeText').text('Select 1 or more problems above');
                 $('#totalEstimateText').text('₹' + visitingCharge.toFixed(0) + ' + Repair');
             }
         }
 
-        // Initialize with default vehicle type
+        // Initialize with default vehicle type or pre-selected registered vehicle
         $(document).ready(function() {
             setVehicleType(selectedVehicleType || 'Car');
+            if ($('#topRegisteredVehicleSelect').length > 0 && $('#topRegisteredVehicleSelect').val()) {
+                onTopVehicleChange($('#topRegisteredVehicleSelect')[0]);
+            }
         });
 
         customerMarker.on('dragend', function() {
@@ -1008,9 +1138,9 @@
                 return;
             }
 
-            if (!selectedProblemType) {
-                alert("Please select your Vehicle Problem from the dropdown or click a problem card.");
-                $('#problemTypeSelect').focus();
+            if (selectedProblems.length === 0) {
+                alert("Please select at least 1 Vehicle Problem from the cards or dropdown.");
+                $('#problemSearchFilter').focus();
                 return;
             }
 
@@ -1078,9 +1208,9 @@
                 return;
             }
 
-            if (!selectedProblemType) {
-                alert("Please select your Vehicle Problem from the dropdown or click a problem card.");
-                $('#problemTypeSelect').focus();
+            if (selectedProblems.length === 0) {
+                alert("Please select at least 1 Vehicle Problem from the cards or dropdown.");
+                $('#problemSearchFilter').focus();
                 return;
             }
 
@@ -1088,15 +1218,19 @@
             var dispatchModal = new bootstrap.Modal(document.getElementById('dispatchModal'));
             dispatchModal.show();
 
+            var problemTypeJoined = selectedProblems.map(function(p) { return p.name; }).join(', ');
+            var selectedProblemsJsonStr = JSON.stringify(selectedProblems);
+
             var fuelType = $('input[name="fuelTypeRadio"]:checked').val() || (selectedVehicleType === 'E-Rickshaw' ? 'Electric' : 'Petrol');
             var batteryType = $('input[name="batteryTypeRadio"]:checked').val() || "Don't Know";
-            var isEmergencyCharging = selectedProblemType.indexOf('Emergency EV Charging') >= 0;
+            var isEmergencyCharging = problemTypeJoined.indexOf('Emergency EV Charging') >= 0;
 
             var formData = new FormData();
             formData.append("vehicleType", selectedVehicleType);
             formData.append("vehicleNameModel", vehicleNameModel);
             formData.append("registrationNumber", registrationNumber);
-            formData.append("problemType", selectedProblemType);
+            formData.append("problemType", problemTypeJoined);
+            formData.append("selectedProblemsJson", selectedProblemsJsonStr);
             formData.append("problemDescription", problemDescription);
             formData.append("fuelType", fuelType);
             formData.append("batteryType", batteryType);
@@ -1122,16 +1256,27 @@
                 processData: false,
                 contentType: false,
                 success: function(res) {
-                    if (res.success) {
+                    if (res && res.success) {
                         simulateParallelDispatch(res.jobId, res.hasPreferred, res.preferredName);
                     } else {
-                        alert("Error: " + res.message);
-                        bootstrap.Modal.getInstance(document.getElementById('dispatchModal')).hide();
+                        var errMsg = (res && res.message) ? res.message : "Unable to process dispatch request.";
+                        alert("Dispatch Issue: " + errMsg);
+                        var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
+                        if (dModal) dModal.hide();
                     }
                 },
-                error: function() {
-                    alert("Error submitting request. Please try again.");
-                    bootstrap.Modal.getInstance(document.getElementById('dispatchModal')).hide();
+                error: function(xhr, status, error) {
+                    var msg = "Error submitting request. ";
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg += xhr.responseJSON.message;
+                    } else if (xhr.responseText && xhr.responseText.length < 300) {
+                        msg += xhr.responseText;
+                    } else {
+                        msg += "Status: " + status + " (" + error + "). Please check your network and try again.";
+                    }
+                    alert(msg);
+                    var dModal = bootstrap.Modal.getInstance(document.getElementById('dispatchModal'));
+                    if (dModal) dModal.hide();
                 }
             });
         }

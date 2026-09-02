@@ -95,24 +95,31 @@
                             <label class="form-label text-light">Email Address <span class="text-muted">(Optional)</span></label>
                             <input type="email" name="Email" class="form-control glass-input" placeholder="e.g. mechanic@example.com">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-light">Date of Birth</label>
-                            <input type="date" name="DateOfBirth" class="form-control glass-input" required>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-light small font-weight-bold">Email Address <span class="text-muted">(Optional)</span></label>
+                            <input type="email" name="Email" class="form-control glass-input" value="@(profile?.Email)" placeholder="e.g. mechanic@example.com">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-light">Gender</label>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label text-light small font-weight-bold">Date of Birth <span class="text-danger">*</span></label>
+                            <input type="date" name="DateOfBirth" class="form-control glass-input" value="@(profile?.DateOfBirth != null ? profile.DateOfBirth.Value.ToString("yyyy-MM-dd") : "")" required>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label text-light small font-weight-bold">Gender <span class="text-danger">*</span></label>
                             <select name="Gender" class="form-select glass-input" required>
                                 <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
+                                <option value="Male" selected="@(profile?.Gender == "Male")">Male</option>
+                                <option value="Female" selected="@(profile?.Gender == "Female")">Female</option>
+                                <option value="Other" selected="@(profile?.Gender == "Other")">Other</option>
                             </select>
                         </div>
                         
-                        <div class="col-md-12">
-                            <label class="form-label text-light">Profile Photo (Portrait / Face Closeup)</label>
-                            <input type="file" name="ProfilePhoto" class="form-control glass-input" accept="image/*" required>
-                            <span class="text-muted small">Upload a clear photo of your face.</span>
+                        <div class="col-12 mb-3">
+                            <label class="form-label text-light small font-weight-bold">Profile Photo (Portrait / Face Closeup) <span class="text-danger">*</span></label>
+                            <input type="file" name="ProfilePhoto" class="form-control glass-input previewable-upload" data-preview="#previewProfilePhoto" accept="image/*" @(hasPhoto ? "" : "required")>
+                            <span class="text-muted d-block mt-1" style="font-size:0.75rem;">Upload a clear photo of your face.</span>
+                            <div id="previewProfilePhoto" class="mt-2 @(hasPhoto ? "" : "d-none")">
+                                <img src="@(hasPhoto && profile != null ? profile.ProfilePhotoUrl : "")" class="doc-preview-thumb" style="max-width: 140px; height: 110px; object-fit: cover;" alt="Profile Preview" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -192,8 +199,8 @@
                         <div class="col-md-4">
                             <label class="form-label text-light">Certified Mechanic?</label>
                             <select name="IsCertified" class="form-select glass-input" required>
-                                <option value="false">No (Self-taught / Experienced)</option>
-                                <option value="true">Yes (I have professional certifications)</option>
+                                <option value="false">Self Experienced</option>
+                                <option value="true">Certified with certificate</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -412,6 +419,20 @@
             }
         }
     }
+
+    // Instant image preview and file size validation (Max 5MB)
+    const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+    $(document).on('change', 'input[type="file"]', function() {
+        const input = this;
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                var sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert('⚠️ File size bohot badi hai (' + sizeMb + ' MB). Maximum 5 MB ki photo ya document upload karein.');
+                $(input).val('');
+            }
+        }
+    });
 
     $('#btnNext').click(function() {
         // Run standard HTML5 validity validation on inputs of the active step container

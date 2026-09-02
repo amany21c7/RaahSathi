@@ -7,6 +7,7 @@
     <DebugType>portable</DebugType>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <UseAppHost>false</UseAppHost>
+    <AssemblyName>RaahSathi.Web</AssemblyName>
     <DefaultItemExcludes>src\**;$(DefaultItemExcludes)</DefaultItemExcludes>
   </PropertyGroup>
 

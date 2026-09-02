@@ -23,92 +23,92 @@
 </div>
 
 <!-- Top Real-Time KPI Summary Cards -->
-<div class="row g-3 mb-4">
+<div class="row g-2 g-sm-3 mb-4">
     <!-- Total Customers -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="kpi-stat-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Total Customers</span>
-                <div class="rounded-circle p-1.5 bg-primary bg-opacity-15 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                    <i class="fa-solid fa-users fs-6"></i>
+                <span class="kpi-stat-title">Total Customers</span>
+                <div class="kpi-stat-icon bg-primary bg-opacity-15 text-primary">
+                    <i class="fa-solid fa-users"></i>
                 </div>
             </div>
-            <h3 class="text-white font-weight-bold mb-0" id="kpiTotalCustomers">@totalCust.ToString("N0")</h3>
-            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-database me-1 text-primary"></i> Registered Database</small>
+            <h3 class="kpi-stat-value text-white" id="kpiTotalCustomers">@totalCust.ToString("N0")</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-database me-1 text-primary"></i> Registered</small>
         </div>
     </div>
 
     <!-- Active Customers -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="kpi-stat-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Active</span>
-                <div class="rounded-circle p-1.5 bg-success bg-opacity-15 text-success d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                    <i class="fa-solid fa-circle-check fs-6"></i>
+                <span class="kpi-stat-title">Active</span>
+                <div class="kpi-stat-icon bg-success bg-opacity-15 text-success">
+                    <i class="fa-solid fa-circle-check"></i>
                 </div>
             </div>
-            <h3 class="text-success font-weight-bold mb-0" id="kpiActiveCustomers">@activeCust.ToString("N0")</h3>
-            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-bolt me-1 text-success"></i> Verified &amp; Active</small>
+            <h3 class="kpi-stat-value text-success" id="kpiActiveCustomers">@activeCust.ToString("N0")</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-bolt me-1 text-success"></i> Active Users</small>
         </div>
     </div>
 
     <!-- Pending Verification -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="kpi-stat-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Pending Verification</span>
-                <div class="rounded-circle p-1.5 bg-warning bg-opacity-15 text-warning d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                    <i class="fa-solid fa-clock-rotate-left fs-6"></i>
+                <span class="kpi-stat-title">Pending</span>
+                <div class="kpi-stat-icon bg-warning bg-opacity-15 text-warning">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
                 </div>
             </div>
-            <h3 class="text-warning font-weight-bold mb-0" id="kpiPendingCustomers">@pendingCust.ToString("N0")</h3>
-            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i> Profile setup pending</small>
+            <h3 class="kpi-stat-value text-warning" id="kpiPendingCustomers">@pendingCust.ToString("N0")</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-triangle-exclamation me-1 text-warning"></i> Pending Setup</small>
         </div>
     </div>
 
     <!-- Blocked -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="kpi-stat-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Blocked</span>
-                <div class="rounded-circle p-1.5 bg-danger bg-opacity-15 text-danger d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                    <i class="fa-solid fa-user-slash fs-6"></i>
+                <span class="kpi-stat-title">Blocked</span>
+                <div class="kpi-stat-icon bg-danger bg-opacity-15 text-danger">
+                    <i class="fa-solid fa-user-slash"></i>
                 </div>
             </div>
-            <h3 class="text-danger font-weight-bold mb-0" id="kpiBlockedCustomers">@blockedCust.ToString("N0")</h3>
-            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-ban me-1 text-danger"></i> Restricted access</small>
+            <h3 class="kpi-stat-value text-danger" id="kpiBlockedCustomers">@blockedCust.ToString("N0")</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-ban me-1 text-danger"></i> Restricted</small>
         </div>
     </div>
 
     <!-- New Today -->
     <div class="col-6 col-md-4 col-xl">
-        <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-40 shadow-sm position-relative overflow-hidden h-100" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));">
+        <div class="kpi-stat-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="text-muted text-uppercase font-weight-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">New Today</span>
-                <div class="rounded-circle p-1.5 bg-info bg-opacity-15 text-info d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                    <i class="fa-solid fa-calendar-plus fs-6"></i>
+                <span class="kpi-stat-title">New Today</span>
+                <div class="kpi-stat-icon bg-info bg-opacity-15 text-info">
+                    <i class="fa-solid fa-calendar-plus"></i>
                 </div>
             </div>
-            <h3 class="text-info font-weight-bold mb-0" id="kpiNewTodayCustomers">@newTodayCust.ToString("N0")</h3>
-            <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-sparkles me-1 text-info"></i> Joined Today</small>
+            <h3 class="kpi-stat-value text-info" id="kpiNewTodayCustomers">@newTodayCust.ToString("N0")</h3>
+            <small class="kpi-stat-subtitle"><i class="fa-solid fa-sparkles me-1 text-info"></i> Joined Today</small>
         </div>
     </div>
 </div>
 
-<!-- Compact Single-Row Filter Bar (No Scrollbar, Inline Icon Buttons) -->
+<!-- Compact Responsive Filter Bar -->
 <div class="card bg-dark border-secondary shadow-sm mb-3">
-    <div class="card-body p-2">
-        <div class="d-flex align-items-center flex-nowrap gap-2 w-100">
+    <div class="card-body p-2.5">
+        <div class="mob-filter-bar">
             <!-- Search Text -->
-            <div class="input-group input-group-sm flex-shrink-0" style="width: 130px;">
-                <span class="input-group-text bg-black bg-opacity-50 border-secondary text-muted px-2" style="height: 32px;"><i class="fa-solid fa-magnifying-glass" style="font-size: 0.72rem;"></i></span>
-                <input type="text" id="custSearchFilter" class="form-control bg-dark text-white border-secondary px-2" placeholder="ID, Name, Phone..." style="height: 32px; font-size: 0.75rem;" oninput="applyCustomerFilters()">
+            <div class="input-group input-group-sm mob-filter-item">
+                <span class="input-group-text bg-black bg-opacity-50 border-secondary text-muted px-2" style="height: 34px;"><i class="fa-solid fa-magnifying-glass" style="font-size: 0.72rem;"></i></span>
+                <input type="text" id="custSearchFilter" class="form-control bg-dark text-white border-secondary px-2" placeholder="ID, Name, Phone..." style="height: 34px; font-size: 0.8rem;" oninput="applyCustomerFilters()">
             </div>
 
             <!-- Status Filter -->
-            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px;">
-                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-circle-dot text-warning me-1"></i>Status:</span>
-                <select id="filterStatus" class="form-select form-select-sm bg-transparent border-0 text-white p-0" style="width: 88px; outline: none; font-size: 0.73rem;" onchange="applyCustomerFilters()">
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary mob-filter-item-half" style="height: 34px;">
+                <span class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-dot text-warning me-1"></i>Status:</span>
+                <select id="filterStatus" class="form-select form-select-sm bg-transparent border-0 text-white p-0 flex-grow-1" style="outline: none; font-size: 0.75rem;" onchange="applyCustomerFilters()">
                     <option value="All" class="bg-dark text-white">All Statuses</option>
                     <option value="Active" class="bg-dark text-white">Active</option>
                     <option value="Pending" class="bg-dark text-white">Pending</option>
@@ -117,9 +117,9 @@
             </div>
 
             <!-- City Filter -->
-            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px;">
-                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-location-dot text-info me-1"></i>City:</span>
-                <select id="filterCity" class="form-select form-select-sm bg-transparent border-0 text-white p-0" style="width: 80px; outline: none; font-size: 0.73rem;" onchange="applyCustomerFilters()">
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary mob-filter-item-half" style="height: 34px;">
+                <span class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-location-dot text-info me-1"></i>City:</span>
+                <select id="filterCity" class="form-select form-select-sm bg-transparent border-0 text-white p-0 flex-grow-1" style="outline: none; font-size: 0.75rem;" onchange="applyCustomerFilters()">
                     <option value="All" class="bg-dark text-white">All Cities</option>
                     <option value="Delhi NCR" class="bg-dark text-white">Delhi NCR</option>
                     <option value="Noida" class="bg-dark text-white">Noida</option>
@@ -137,20 +137,20 @@
             </div>
 
             <!-- Two Separate Date Pickers: From & To -->
-            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px; cursor: pointer;" onclick="document.getElementById('filterFromDate').showPicker?.() || document.getElementById('filterFromDate').focus();">
-                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-calendar-days text-warning me-1"></i>From:</span>
-                <input type="date" id="filterFromDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0" style="width: 90px; outline: none; font-size: 0.73rem; color-scheme: dark; cursor: pointer;" onchange="applyCustomerFilters()">
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary mob-filter-item-half" style="height: 34px; cursor: pointer;" onclick="document.getElementById('filterFromDate').showPicker?.() || document.getElementById('filterFromDate').focus();">
+                <span class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-calendar-days text-warning me-1"></i>From:</span>
+                <input type="date" id="filterFromDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0 flex-grow-1" style="outline: none; font-size: 0.75rem; color-scheme: dark; cursor: pointer;" onchange="applyCustomerFilters()">
             </div>
 
-            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px; cursor: pointer;" onclick="document.getElementById('filterToDate').showPicker?.() || document.getElementById('filterToDate').focus();">
-                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-calendar-days text-warning me-1"></i>To:</span>
-                <input type="date" id="filterToDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0" style="width: 90px; outline: none; font-size: 0.73rem; color-scheme: dark; cursor: pointer;" onchange="applyCustomerFilters()">
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary mob-filter-item-half" style="height: 34px; cursor: pointer;" onclick="document.getElementById('filterToDate').showPicker?.() || document.getElementById('filterToDate').focus();">
+                <span class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-calendar-days text-warning me-1"></i>To:</span>
+                <input type="date" id="filterToDate" class="form-control form-control-sm bg-transparent border-0 text-white p-0 flex-grow-1" style="outline: none; font-size: 0.75rem; color-scheme: dark; cursor: pointer;" onchange="applyCustomerFilters()">
             </div>
 
             <!-- Vehicle Type Filter -->
-            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary flex-shrink-0" style="height: 32px;">
-                <span class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-car text-warning me-1"></i>Vehicle:</span>
-                <select id="filterVehicleType" class="form-select form-select-sm bg-transparent border-0 text-white p-0" style="width: 80px; outline: none; font-size: 0.73rem;" onchange="applyCustomerFilters()">
+            <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-40 px-2 py-1 rounded border border-secondary mob-filter-item-half" style="height: 34px;">
+                <span class="text-muted" style="font-size: 0.72rem;"><i class="fa-solid fa-car text-warning me-1"></i>Vehicle:</span>
+                <select id="filterVehicleType" class="form-select form-select-sm bg-transparent border-0 text-white p-0 flex-grow-1" style="outline: none; font-size: 0.75rem;" onchange="applyCustomerFilters()">
                     <option value="All" class="bg-dark text-white">All Types</option>
                     <option value="Car" class="bg-dark text-white">Car</option>
                     <option value="2-Wheeler" class="bg-dark text-white">2-Wheeler</option>
@@ -160,12 +160,12 @@
                 </select>
             </div>
 
-            <!-- Search & Reset Icon Buttons Inline -->
-            <div class="d-flex align-items-center gap-1.5 ms-auto flex-shrink-0">
-                <button type="button" class="btn btn-warning btn-sm p-0 text-dark font-weight-bold d-inline-flex align-items-center justify-content-center" onclick="applyCustomerFilters()" title="Search / Apply Filter" style="height: 32px; width: 32px; font-size: 0.78rem;">
-                    <i class="fa-solid fa-magnifying-glass"></i>
+            <!-- Search & Reset Buttons -->
+            <div class="d-flex align-items-center gap-1.5 ms-auto">
+                <button type="button" class="btn btn-warning btn-sm text-dark font-weight-bold d-inline-flex align-items-center justify-content-center px-3" onclick="applyCustomerFilters()" title="Search / Apply Filter" style="height: 34px; font-size: 0.78rem;">
+                    <i class="fa-solid fa-magnifying-glass me-1"></i> Search
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm p-0 text-light border-secondary shadow-sm d-inline-flex align-items-center justify-content-center" onclick="resetCustomerFilters()" title="Reset All Filters" style="height: 32px; width: 32px; font-size: 0.78rem;">
+                <button type="button" class="btn btn-outline-secondary btn-sm text-light border-secondary shadow-sm d-inline-flex align-items-center justify-content-center px-2.5" onclick="resetCustomerFilters()" title="Reset All Filters" style="height: 34px; font-size: 0.78rem;">
                     <i class="fa-solid fa-arrow-rotate-left"></i>
                 </button>
             </div>

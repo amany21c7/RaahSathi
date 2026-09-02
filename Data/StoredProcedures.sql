@@ -297,3 +297,127 @@ BEGIN
     END CATCH
 END;
 GO
+
+-- 9. Get System API Gateway Settings
+CREATE OR ALTER PROCEDURE dbo.sp_GetSystemApiSettings
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Auto-seed default row if table is empty
+    IF NOT EXISTS (SELECT 1 FROM dbo.SystemApiSettings)
+    BEGIN
+        INSERT INTO dbo.SystemApiSettings (SmsApiKey, WhatsAppBusinessNumber, GoogleMapsApiKey, SmtpSenderEmail, UpdatedAt)
+        VALUES ('F2SMS_LIVE_SEC_882190012', '+91 9891819236', 'AIzaSyA88921_RS_MAPS_KEY', 'support.raahsathi@gmail.com', GETUTCDATE());
+    END
+
+    SELECT TOP 1 Id, SmsApiKey, WhatsAppBusinessNumber, GoogleMapsApiKey, SmtpSenderEmail, UpdatedAt
+    FROM dbo.SystemApiSettings
+    ORDER BY Id ASC;
+END;
+GO
+
+-- 10. Save or Update System API Gateway Settings
+CREATE OR ALTER PROCEDURE dbo.sp_SaveOrUpdateSystemApiSettings
+    @SmsApiKey NVARCHAR(500) = '',
+    @WhatsAppBusinessNumber NVARCHAR(100) = '',
+    @GoogleMapsApiKey NVARCHAR(500) = '',
+    @SmtpSenderEmail NVARCHAR(255) = ''
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF EXISTS (SELECT 1 FROM dbo.SystemApiSettings WITH (UPDLOCK, HOLDLOCK))
+        BEGIN
+            UPDATE TOP (1) dbo.SystemApiSettings
+            SET SmsApiKey = @SmsApiKey,
+                WhatsAppBusinessNumber = @WhatsAppBusinessNumber,
+                GoogleMapsApiKey = @GoogleMapsApiKey,
+                SmtpSenderEmail = @SmtpSenderEmail,
+                UpdatedAt = GETUTCDATE();
+        END
+        ELSE
+        BEGIN
+            INSERT INTO dbo.SystemApiSettings (SmsApiKey, WhatsAppBusinessNumber, GoogleMapsApiKey, SmtpSenderEmail, UpdatedAt)
+            VALUES (@SmsApiKey, @WhatsAppBusinessNumber, @GoogleMapsApiKey, @SmtpSenderEmail, GETUTCDATE());
+        END
+
+        COMMIT TRANSACTION;
+        SELECT 1 AS Success, 'System API settings saved successfully.' AS Message;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message;
+    END CATCH
+END;
+GO
+
+-- 11. Get RaahSathi Contact & Helpline Details
+CREATE OR ALTER PROCEDURE dbo.sp_GetSystemContactSettings
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Auto-seed default row if table is empty
+    IF NOT EXISTS (SELECT 1 FROM dbo.SystemContactSettings)
+    BEGIN
+        INSERT INTO dbo.SystemContactSettings (HelplineNumber, TollFreeNumber, EmergencySupportNumber, WhatsAppNumber, SupportEmail, BillingEmail, PartnerHelplineNumber, OfficeAddress, UpdatedAt)
+        VALUES ('+91 9891819236', '1800-102-7224', '+91 9536838103', '+91 9891819236', 'support.raahsathi@gmail.com', 'billing@raahsathi.in', '+91 9891819236', 'Tower B, DLF Cyber City, Sector 24, Gurugram, Haryana - 122002', GETUTCDATE());
+    END
+
+    SELECT TOP 1 Id, HelplineNumber, TollFreeNumber, EmergencySupportNumber, WhatsAppNumber, SupportEmail, BillingEmail, PartnerHelplineNumber, OfficeAddress, UpdatedAt
+    FROM dbo.SystemContactSettings
+    ORDER BY Id ASC;
+END;
+GO
+
+-- 12. Save or Update RaahSathi Contact & Helpline Details
+CREATE OR ALTER PROCEDURE dbo.sp_SaveOrUpdateSystemContactSettings
+    @HelplineNumber NVARCHAR(100) = '',
+    @TollFreeNumber NVARCHAR(100) = '',
+    @EmergencySupportNumber NVARCHAR(100) = '',
+    @WhatsAppNumber NVARCHAR(100) = '',
+    @SupportEmail NVARCHAR(255) = '',
+    @BillingEmail NVARCHAR(255) = '',
+    @PartnerHelplineNumber NVARCHAR(100) = '',
+    @OfficeAddress NVARCHAR(500) = ''
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF EXISTS (SELECT 1 FROM dbo.SystemContactSettings WITH (UPDLOCK, HOLDLOCK))
+        BEGIN
+            UPDATE TOP (1) dbo.SystemContactSettings
+            SET HelplineNumber = @HelplineNumber,
+                TollFreeNumber = @TollFreeNumber,
+                EmergencySupportNumber = @EmergencySupportNumber,
+                WhatsAppNumber = @WhatsAppNumber,
+                SupportEmail = @SupportEmail,
+                BillingEmail = @BillingEmail,
+                PartnerHelplineNumber = @PartnerHelplineNumber,
+                OfficeAddress = @OfficeAddress,
+                UpdatedAt = GETUTCDATE();
+        END
+        ELSE
+        BEGIN
+            INSERT INTO dbo.SystemContactSettings (HelplineNumber, TollFreeNumber, EmergencySupportNumber, WhatsAppNumber, SupportEmail, BillingEmail, PartnerHelplineNumber, OfficeAddress, UpdatedAt)
+            VALUES (@HelplineNumber, @TollFreeNumber, @EmergencySupportNumber, @WhatsAppNumber, @SupportEmail, @BillingEmail, @PartnerHelplineNumber, @OfficeAddress, GETUTCDATE());
+        END
+
+        COMMIT TRANSACTION;
+        SELECT 1 AS Success, 'RaahSathi contact and helpline details saved successfully.' AS Message;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message;
+    END CATCH
+END;
+GO

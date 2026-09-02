@@ -71,22 +71,22 @@
     
     <!-- Tab 1: Escrow Transactions -->
     <div class="tab-pane fade show active glass-tab-content" id="escrow-panel" role="tabpanel">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
             <h5 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-vault text-warning me-2"></i> Escrow Transactions</h5>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <div class="d-flex align-items-center bg-dark bg-opacity-40 p-1 rounded-3 border border-secondary" style="height: 38px;">
+            <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-md-auto">
+                <div class="d-flex align-items-center bg-dark bg-opacity-40 p-1 rounded-3 border border-secondary flex-grow-1" style="height: 38px; min-width: 160px;">
                     <i class="fa-solid fa-magnifying-glass text-muted ms-2 me-1.5" style="font-size: 0.85rem;"></i>
-                    <input type="text" id="searchEscrow" class="form-control form-control-sm bg-transparent text-white border-0 shadow-none ps-0" placeholder="Search Job ID, name..." style="width: 200px;" onkeyup="applyCalendarFilter()">
+                    <input type="text" id="searchEscrow" class="form-control form-control-sm bg-transparent text-white border-0 shadow-none ps-0" placeholder="Search Job ID, name..." style="min-width: 120px;" onkeyup="applyCalendarFilter()">
                 </div>
-                <div class="d-flex align-items-center gap-1.5 bg-dark bg-opacity-40 p-1.5 rounded-3 border border-secondary">
+                <div class="d-flex align-items-center gap-1.5 bg-dark bg-opacity-40 p-1.5 rounded-3 border border-secondary flex-wrap">
                     <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">From:</label>
-                    <input type="date" id="filterStartDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="applyCalendarFilter()">
+                    <input type="date" id="filterStartDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 130px;" onchange="applyCalendarFilter()">
                     
                     <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">To:</label>
-                    <input type="date" id="filterEndDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="applyCalendarFilter()">
+                    <input type="date" id="filterEndDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 130px;" onchange="applyCalendarFilter()">
                 </div>
-                <button class="btn btn-outline-secondary btn-sm font-weight-bold" onclick="resetCalendarFilter()">
-                    <i class="fa-solid fa-rotate-left"></i> Reset
+                <button class="btn btn-outline-secondary btn-sm font-weight-bold px-3 py-1.5" onclick="resetCalendarFilter()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
                 </button>
             </div>
         </div>
@@ -287,13 +287,13 @@
 
     <!-- Tab 3: City-Wise Mechanics Directory -->
     <div class="tab-pane fade glass-tab-content" id="mechanics-panel" role="tabpanel">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
             <h5 class="text-white font-weight-bold mb-0"><i class="fa-solid fa-map-location-dot text-info me-2"></i> City-Wise Mechanics Directory</h5>
             
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <div class="d-flex align-items-center gap-2 me-2">
+            <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-md-auto">
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
                     <label class="text-muted small font-weight-bold mb-0 text-nowrap">Filter City:</label>
-                    <select id="selFilterCity" class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 180px;" onchange="filterMechanicsByCityAndDate()">
+                    <select id="selFilterCity" class="form-select form-select-sm bg-dark text-white border-secondary flex-grow-1" style="min-width: 140px;" onchange="filterMechanicsByCityAndDate()">
                         <option value="All">All Cities</option>
                         @foreach (var city in cities)
                         {
@@ -301,15 +301,15 @@
                         }
                     </select>
                 </div>
-                <div class="d-flex align-items-center gap-1.5 bg-dark bg-opacity-40 p-1.5 rounded-3 border border-secondary">
+                <div class="d-flex align-items-center gap-1.5 bg-dark bg-opacity-40 p-1.5 rounded-3 border border-secondary flex-wrap">
                     <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">From:</label>
-                    <input type="date" id="filterMechanicsStartDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="filterMechanicsByCityAndDate()">
+                    <input type="date" id="filterMechanicsStartDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 130px;" onchange="filterMechanicsByCityAndDate()">
                     
                     <label class="text-muted small font-weight-bold mb-0 text-nowrap px-1">To:</label>
-                    <input type="date" id="filterMechanicsEndDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 140px;" onchange="filterMechanicsByCityAndDate()">
+                    <input type="date" id="filterMechanicsEndDate" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 130px;" onchange="filterMechanicsByCityAndDate()">
                 </div>
-                <button class="btn btn-outline-secondary btn-sm font-weight-bold" onclick="resetMechanicsCalendarFilter()">
-                    <i class="fa-solid fa-rotate-left"></i> Reset
+                <button class="btn btn-outline-secondary btn-sm font-weight-bold px-3 py-1.5" onclick="resetMechanicsCalendarFilter()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
                 </button>
             </div>
         </div>

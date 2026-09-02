@@ -35,12 +35,13 @@ namespace RaahSathi.Services
             return defaultValue;
         }
 
-        public PaymentCommissionCalculationResult CalculateTieredCommissionAndNetEarnings(double totalBillAmount, double partsAmount = 0)
+        public PaymentCommissionCalculationResult CalculateTieredCommissionAndNetEarnings(double totalBillAmount, double partsAmount = 0, double customRepairAmount = 0)
         {
             double rate1 = GetSettingDouble("CommissionPhase1", 8) / 100.0;
             double rate2 = GetSettingDouble("CommissionPhase2", 10) / 100.0;
             double rate3 = GetSettingDouble("CommissionPhase3", 12) / 100.0;
             double rateParts = GetSettingDouble("CommissionParts", 5) / 100.0;
+            double rateCustomRepair = GetSettingDouble("CommissionCustomRepair", 0) / 100.0;
 
             double serviceAmount = totalBillAmount - partsAmount;
             if (serviceAmount < 0) serviceAmount = 0;
@@ -48,24 +49,28 @@ namespace RaahSathi.Services
             double serviceCommRate = 0.08;
             double serviceCommission = 0;
 
-            if (serviceAmount < 1000)
+            if (totalBillAmount < 1000)
             {
                 serviceCommRate = rate1;
-                serviceCommission = serviceAmount * rate1;
+                serviceCommission = totalBillAmount * rate1;
             }
-            else if (serviceAmount <= 3000)
+            else if (totalBillAmount <= 3000)
             {
                 serviceCommRate = rate2;
-                serviceCommission = serviceAmount * rate2;
+                serviceCommission = totalBillAmount * rate2;
             }
             else
             {
                 serviceCommRate = rate3;
-                serviceCommission = serviceAmount * rate3;
+                serviceCommission = totalBillAmount * rate3;
             }
 
             double partsCommission = partsAmount * rateParts;
-            double totalCommission = Math.Round(serviceCommission + partsCommission, 2);
+            double customRepairCommission = (customRepairAmount > 0 && rateCustomRepair > 0)
+                ? (customRepairAmount * rateCustomRepair)
+                : 0;
+
+            double totalCommission = Math.Round(serviceCommission + partsCommission + customRepairCommission, 2);
             double mechanicNetEarning = Math.Round(totalBillAmount - totalCommission, 2);
 
             double effectiveRate = totalBillAmount > 0 ? (totalCommission / totalBillAmount) : serviceCommRate;
@@ -95,7 +100,8 @@ namespace RaahSathi.Services
             double baseEst = job.VisitingCharge + job.ServiceChargeMin;
             double finalBill = job.FinalBillAmount > baseEst ? job.FinalBillAmount : baseEst;
             double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
-            var commCalc = CalculateTieredCommissionAndNetEarnings(finalBill, partsAmt);
+            double customAmt = (job.CustomEstimateApproved == true) ? job.CustomEstimateAmount : 0;
+            var commCalc = CalculateTieredCommissionAndNetEarnings(finalBill, partsAmt, customAmt);
 
             bool isCash = payId.StartsWith("pay_cash_", StringComparison.OrdinalIgnoreCase);
             double actualMechanicEarning = isCash ? -commCalc.AdminCommissionAmount : commCalc.MechanicNetEarningAmount;
@@ -165,7 +171,8 @@ namespace RaahSathi.Services
             double baseEstBill = job.VisitingCharge + job.ServiceChargeMin;
             double totalBill = job.FinalBillAmount > baseEstBill ? job.FinalBillAmount : baseEstBill;
             double partsAmt = (job.PartsApproved == true) ? job.PartsEstimateAmount : 0;
-            var commCalc = CalculateTieredCommissionAndNetEarnings(totalBill, partsAmt);
+            double customAmt = (job.CustomEstimateApproved == true) ? job.CustomEstimateAmount : 0;
+            var commCalc = CalculateTieredCommissionAndNetEarnings(totalBill, partsAmt, customAmt);
 
             double adminCommission = payment != null && payment.AdminCommissionAmount > 0 
                 ? payment.AdminCommissionAmount 

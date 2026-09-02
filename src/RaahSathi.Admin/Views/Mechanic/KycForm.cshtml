@@ -192,8 +192,8 @@
                         <div class="col-md-4">
                             <label class="form-label text-light">Certified Mechanic?</label>
                             <select name="IsCertified" class="form-select glass-input" required>
-                                <option value="false">No (Self-taught / Experienced)</option>
-                                <option value="true">Yes (I have professional certifications)</option>
+                                <option value="false">Self Experienced</option>
+                                <option value="true">Certified with certificate</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -412,6 +412,20 @@
             }
         }
     }
+
+    // Instant image preview and file size validation (Max 5MB)
+    const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+    $(document).on('change', 'input[type="file"]', function() {
+        const input = this;
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                var sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert('⚠️ File size bohot badi hai (' + sizeMb + ' MB). Maximum 5 MB ki photo ya document upload karein.');
+                $(input).val('');
+            }
+        }
+    });
 
     $('#btnNext').click(function() {
         // Run standard HTML5 validity validation on inputs of the active step container

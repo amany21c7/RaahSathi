@@ -557,6 +557,10 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [CmsBanners] ADD [ExpiresAt] datetime2 NULL;
                 END;
 
+                -- Cleanup any invalid local paths or quoted strings in CmsBanners
+                DELETE FROM [CmsBanners] WHERE [ImageUrl] LIKE '%C:%' OR [ImageUrl] LIKE '%Downloads%' OR [ImageUrl] LIKE '%' + CHAR(34) + '%';
+
+
                 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[PushNotificationLogs]') AND type in (N'U'))
                 BEGIN
                     CREATE TABLE [PushNotificationLogs] (
@@ -605,6 +609,32 @@ using (var scope = app.Services.CreateScope())
                     );
                 END;
 
+                -- Mechanic Monthly Subscriptions
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[MechanicSubscriptions]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [MechanicSubscriptions] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [MechanicId] int NOT NULL,
+                        [Amount] float NOT NULL DEFAULT 0.0,
+                        [StartDate] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [EndDate] datetime2 NOT NULL DEFAULT DATEADD(day, 30, GETUTCDATE()),
+                        [PaymentStatus] nvarchar(50) NOT NULL DEFAULT 'Success',
+                        [RazorpayPaymentId] nvarchar(100) NULL,
+                        [RazorpayOrderId] nvarchar(100) NULL,
+                        [Notes] nvarchar(500) NULL,
+                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = 'SubscriptionValidTill')
+                    ALTER TABLE [MechanicProfiles] ADD [SubscriptionValidTill] DATETIME2 NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = 'SubscriptionAmountPaid')
+                    ALTER TABLE [MechanicProfiles] ADD [SubscriptionAmountPaid] FLOAT NOT NULL DEFAULT 0.0;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = 'SubscriptionLastPaidAt')
+                    ALTER TABLE [MechanicProfiles] ADD [SubscriptionLastPaidAt] DATETIME2 NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = 'SubscriptionStatus')
+                    ALTER TABLE [MechanicProfiles] ADD [SubscriptionStatus] NVARCHAR(50) NOT NULL DEFAULT 'Trial';
+
                 -- Stored Procedure: rs_payments_process_escrow
                 IF OBJECT_ID(N'[dbo].[rs_payments_process_escrow]', N'P') IS NOT NULL
                     DROP PROCEDURE [dbo].[rs_payments_process_escrow];
@@ -639,44 +669,48 @@ using (var scope = app.Services.CreateScope())
                         SET @BaseEst = ISNULL(@VisitingCharge, 0) + ISNULL(@ServiceMin, 0);
                         IF @FinalBill < @BaseEst SET @FinalBill = @BaseEst;
 
-                        DECLARE @Phase1 FLOAT = 8.0, @Phase2 FLOAT = 10.0, @Phase3 FLOAT = 12.0, @PartsComm FLOAT = 5.0;
+                        DECLARE @Phase1 FLOAT = 8.0, @Phase2 FLOAT = 10.0, @Phase3 FLOAT = 12.0, @PartsComm FLOAT = 5.0, @CustomComm FLOAT = 0.0;
                         
                         SELECT @Phase1 = TRY_CAST(SettingValue AS FLOAT) FROM dbo.AdminSystemSettings WHERE SettingKey = 'CommissionPhase1';
                         SELECT @Phase2 = TRY_CAST(SettingValue AS FLOAT) FROM dbo.AdminSystemSettings WHERE SettingKey = 'CommissionPhase2';
                         SELECT @Phase3 = TRY_CAST(SettingValue AS FLOAT) FROM dbo.AdminSystemSettings WHERE SettingKey = 'CommissionPhase3';
                         SELECT @PartsComm = TRY_CAST(SettingValue AS FLOAT) FROM dbo.AdminSystemSettings WHERE SettingKey = 'CommissionParts';
+                        SELECT @CustomComm = TRY_CAST(SettingValue AS FLOAT) FROM dbo.AdminSystemSettings WHERE SettingKey = 'CommissionCustomRepair';
 
                         SET @Phase1 = ISNULL(@Phase1, 8.0) / 100.0;
                         SET @Phase2 = ISNULL(@Phase2, 10.0) / 100.0;
                         SET @Phase3 = ISNULL(@Phase3, 12.0) / 100.0;
                         SET @PartsComm = ISNULL(@PartsComm, 5.0) / 100.0;
+                        SET @CustomComm = ISNULL(@CustomComm, 0.0) / 100.0;
 
                         DECLARE @PartsAmt FLOAT = 0.0, @PartsApproved BIT = 0;
                         SELECT @PartsAmt = ISNULL(PartsEstimateAmount, 0), @PartsApproved = PartsApproved FROM dbo.Jobs WHERE Id = @JobId;
                         IF @PartsApproved IS NULL OR @PartsApproved = 0 SET @PartsAmt = 0.0;
 
-                        DECLARE @ServiceAmt FLOAT = @FinalBill - @PartsAmt;
-                        IF @ServiceAmt < 0 SET @ServiceAmt = 0.0;
+                        DECLARE @CustomAmt FLOAT = 0.0, @CustomApproved BIT = 0;
+                        SELECT @CustomAmt = ISNULL(CustomEstimateAmount, 0), @CustomApproved = CustomEstimateApproved FROM dbo.Jobs WHERE Id = @JobId;
+                        IF @CustomApproved IS NULL OR @CustomApproved = 0 SET @CustomAmt = 0.0;
 
                         DECLARE @ServiceComm FLOAT = 0.0, @ServiceRate FLOAT = 0.08;
-                        IF @ServiceAmt < 1000
+                        IF @FinalBill < 1000
                         BEGIN
                             SET @ServiceRate = @Phase1;
-                            SET @ServiceComm = @ServiceAmt * @Phase1;
+                            SET @ServiceComm = @FinalBill * @Phase1;
                         END
-                        ELSE IF @ServiceAmt <= 3000
+                        ELSE IF @FinalBill <= 3000
                         BEGIN
                             SET @ServiceRate = @Phase2;
-                            SET @ServiceComm = @ServiceAmt * @Phase2;
+                            SET @ServiceComm = @FinalBill * @Phase2;
                         END
                         ELSE
                         BEGIN
                             SET @ServiceRate = @Phase3;
-                            SET @ServiceComm = @ServiceAmt * @Phase3;
+                            SET @ServiceComm = @FinalBill * @Phase3;
                         END
 
                         DECLARE @PartsCommAmt FLOAT = @PartsAmt * @PartsComm;
-                        DECLARE @AdminCommission FLOAT = ROUND(@ServiceComm + @PartsCommAmt, 2);
+                        DECLARE @CustomCommAmt FLOAT = CASE WHEN @CustomAmt > 0 AND @CustomComm > 0 THEN (@CustomAmt * @CustomComm) ELSE 0.0 END;
+                        DECLARE @AdminCommission FLOAT = ROUND(@ServiceComm + @PartsCommAmt + @CustomCommAmt, 2);
                         DECLARE @MechanicEarning FLOAT = ROUND(@FinalBill - @AdminCommission, 2);
                         DECLARE @CommRate FLOAT = CASE WHEN @FinalBill > 0 THEN ROUND(@AdminCommission / @FinalBill, 4) ELSE @ServiceRate END;
 

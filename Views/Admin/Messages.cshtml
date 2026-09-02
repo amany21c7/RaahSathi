@@ -41,43 +41,45 @@
     }
 </style>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-2 py-sm-4 px-1 px-sm-3">
     <!-- Header & Navigation -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom border-secondary">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 mb-sm-4 pb-3 border-bottom border-secondary gap-2">
         <div>
-            <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2">ADMIN NOC</span>
-            <h2 class="text-white font-weight-bold mb-0" style="font-family: 'Outfit', sans-serif;">
-                <i class="fa-solid fa-headset text-warning me-2"></i> Support & Complaint Center
-            </h2>
+            <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-1.5">ADMIN NOC</span>
+            <h3 class="text-white font-weight-bold mb-0 fs-5 fs-sm-4" style="font-family: 'Outfit', sans-serif;">
+                <i class="fa-solid fa-headset text-warning me-1.5"></i> Support &amp; Complaint Center
+            </h3>
             <p class="text-muted small mb-0">Manage customer/partner support tickets, track user complaints, and issue warning alerts.</p>
         </div>
-        <div class="mt-3 mt-md-0 d-flex gap-2">
-            <a href="/Admin/Dashboard" class="btn btn-outline-light btn-sm px-3">
+        <div class="d-flex gap-2">
+            <a href="/Admin/Dashboard" class="btn btn-outline-light btn-sm px-3 font-weight-bold">
                 <i class="fa-solid fa-gauge me-1"></i> Dashboard
             </a>
-            <a href="/Admin/ManagePricing" class="btn btn-outline-warning btn-sm px-3">
+            <a href="/Admin/ManagePricing" class="btn btn-outline-warning btn-sm px-3 font-weight-bold">
                 <i class="fa-solid fa-indian-rupee-sign me-1"></i> Pricing Rules
             </a>
         </div>
     </div>
 
-    <!-- Tab Selection Navigation -->
-    <ul class="nav nav-pills mb-4 gap-2" id="supportTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active btn-tab-pill text-white px-4" id="enquiries-tab" data-bs-toggle="pill" data-bs-target="#enquiries-panel" type="button" role="tab">
-                <i class="fa-solid fa-envelope me-1.5 text-warning"></i> Support Enquiries
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link btn-tab-pill text-white position-relative px-4" id="complaints-tab" data-bs-toggle="pill" data-bs-target="#complaints-panel" type="button" role="tab">
-                <i class="fa-solid fa-triangle-exclamation text-danger me-1.5"></i> Job Complaints & Warnings
-                @if (complaints.Any(c => c.Status == "Pending"))
-                {
-                    <span class="badge bg-danger rounded-pill ms-1 font-weight-bold" style="font-size: 0.75rem;">@complaints.Count(c => c.Status == "Pending")</span>
-                }
-            </button>
-        </li>
-    </ul>
+    <!-- Tab Selection Navigation (Scrollable on Mobile) -->
+    <div class="overflow-auto pb-1 mb-3">
+        <ul class="nav nav-pills flex-nowrap text-nowrap gap-2" id="supportTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active btn-tab-pill text-white px-3 px-sm-4 py-2" id="enquiries-tab" data-bs-toggle="pill" data-bs-target="#enquiries-panel" type="button" role="tab" style="font-size: 0.85rem;">
+                    <i class="fa-solid fa-envelope me-1.5 text-warning"></i> Support Enquiries
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link btn-tab-pill text-white position-relative px-3 px-sm-4 py-2" id="complaints-tab" data-bs-toggle="pill" data-bs-target="#complaints-panel" type="button" role="tab" style="font-size: 0.85rem;">
+                    <i class="fa-solid fa-triangle-exclamation text-danger me-1.5"></i> Job Complaints &amp; Warnings
+                    @if (complaints.Any(c => c.Status == "Pending"))
+                    {
+                        <span class="badge bg-danger rounded-pill ms-1 font-weight-bold" style="font-size: 0.7rem;">@complaints.Count(c => c.Status == "Pending")</span>
+                    }
+                </button>
+            </li>
+        </ul>
+    </div>
 
     <!-- Tab Contents -->
     <div class="tab-content" id="supportTabsContent">
@@ -85,48 +87,52 @@
         <!-- PANEL 1: SUPPORT ENQUIRIES -->
         <div class="tab-pane fade show active" id="enquiries-panel" role="tabpanel" aria-labelledby="enquiries-tab">
             <!-- Summary Stat Cards -->
-            <div class="row g-3 mb-4">
+            <div class="row g-2 g-sm-3 mb-3">
                 <div class="col-6 col-md-3">
                     <a href="/Admin/Messages?statusFilter=All" class="text-decoration-none">
-                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "All" ? "border-warning bg-dark bg-opacity-60" : "")">
-                            <div class="text-muted small">Total Messages</div>
-                            <h3 class="text-white font-weight-bold mb-0 mt-1">@totalCount</h3>
+                        <div class="kpi-stat-card @(currentFilter == "All" ? "border-warning bg-dark bg-opacity-60" : "")">
+                            <span class="kpi-stat-title">Total Messages</span>
+                            <h3 class="kpi-stat-value text-white">@totalCount</h3>
+                            <small class="kpi-stat-subtitle"><i class="fa-solid fa-inbox me-1 text-primary"></i> All Inbox</small>
                         </div>
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
                     <a href="/Admin/Messages?statusFilter=Pending" class="text-decoration-none">
-                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "Pending" ? "border-warning bg-dark bg-opacity-60" : "")">
-                            <div class="text-warning small font-weight-bold"><i class="fa-solid fa-clock me-1"></i> Pending Follow-up</div>
-                            <h3 class="text-warning font-weight-bold mb-0 mt-1">@pendingCount</h3>
+                        <div class="kpi-stat-card @(currentFilter == "Pending" ? "border-warning bg-dark bg-opacity-60" : "")">
+                            <span class="kpi-stat-title text-warning">Pending</span>
+                            <h3 class="kpi-stat-value text-warning">@pendingCount</h3>
+                            <small class="kpi-stat-subtitle"><i class="fa-solid fa-clock me-1 text-warning"></i> Follow-up</small>
                         </div>
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
                     <a href="/Admin/Messages?statusFilter=Contacted" class="text-decoration-none">
-                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "Contacted" ? "border-info bg-dark bg-opacity-60" : "")">
-                            <div class="text-info small font-weight-bold"><i class="fa-solid fa-phone me-1"></i> Contacted</div>
-                            <h3 class="text-info font-weight-bold mb-0 mt-1">@contactedCount</h3>
+                        <div class="kpi-stat-card @(currentFilter == "Contacted" ? "border-info bg-dark bg-opacity-60" : "")">
+                            <span class="kpi-stat-title text-info">Contacted</span>
+                            <h3 class="kpi-stat-value text-info">@contactedCount</h3>
+                            <small class="kpi-stat-subtitle"><i class="fa-solid fa-phone me-1 text-info"></i> In Progress</small>
                         </div>
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
                     <a href="/Admin/Messages?statusFilter=Resolved" class="text-decoration-none">
-                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "Resolved" ? "border-success bg-dark bg-opacity-60" : "")">
-                            <div class="text-success small font-weight-bold"><i class="fa-solid fa-circle-check me-1"></i> Resolved</div>
-                            <h3 class="text-success font-weight-bold mb-0 mt-1">@resolvedCount</h3>
+                        <div class="kpi-stat-card @(currentFilter == "Resolved" ? "border-success bg-dark bg-opacity-60" : "")">
+                            <span class="kpi-stat-title text-success">Resolved</span>
+                            <h3 class="kpi-stat-value text-success">@resolvedCount</h3>
+                            <small class="kpi-stat-subtitle"><i class="fa-solid fa-circle-check me-1 text-success"></i> Closed</small>
                         </div>
                     </a>
                 </div>
             </div>
 
-            <!-- Filter Buttons Toolbar -->
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <div class="btn-group" role="group">
-                    <a href="/Admin/Messages?statusFilter=All" class="btn btn-sm @(currentFilter == "All" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">All (@totalCount)</a>
-                    <a href="/Admin/Messages?statusFilter=Pending" class="btn btn-sm @(currentFilter == "Pending" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Pending (@pendingCount)</a>
-                    <a href="/Admin/Messages?statusFilter=Contacted" class="btn btn-sm @(currentFilter == "Contacted" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Contacted (@contactedCount)</a>
-                    <a href="/Admin/Messages?statusFilter=Resolved" class="btn btn-sm @(currentFilter == "Resolved" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Resolved (@resolvedCount)</a>
+            <!-- Filter Buttons Toolbar (Scrollable) -->
+            <div class="overflow-auto pb-1 mb-3">
+                <div class="btn-group text-nowrap" role="group">
+                    <a href="/Admin/Messages?statusFilter=All" class="btn btn-sm py-1.5 @(currentFilter == "All" ? "btn-warning font-weight-bold text-dark" : "btn-outline-secondary text-light")">All (@totalCount)</a>
+                    <a href="/Admin/Messages?statusFilter=Pending" class="btn btn-sm py-1.5 @(currentFilter == "Pending" ? "btn-warning font-weight-bold text-dark" : "btn-outline-secondary text-light")">Pending (@pendingCount)</a>
+                    <a href="/Admin/Messages?statusFilter=Contacted" class="btn btn-sm py-1.5 @(currentFilter == "Contacted" ? "btn-warning font-weight-bold text-dark" : "btn-outline-secondary text-light")">Contacted (@contactedCount)</a>
+                    <a href="/Admin/Messages?statusFilter=Resolved" class="btn btn-sm py-1.5 @(currentFilter == "Resolved" ? "btn-warning font-weight-bold text-dark" : "btn-outline-secondary text-light")">Resolved (@resolvedCount)</a>
                 </div>
             </div>
 

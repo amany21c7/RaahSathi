@@ -15,6 +15,7 @@ using RaahSathi.Services;
 
 namespace RaahSathi.Controllers
 {
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth-policy")]
     public class AuthController : Controller
     {
         private readonly ApplicationDbContext _dbContext;

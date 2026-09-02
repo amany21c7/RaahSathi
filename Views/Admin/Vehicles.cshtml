@@ -116,45 +116,50 @@
 </div>
 
 <!-- Search & Vehicle Type / Date Range Filters Bar -->
-<div class="row g-2 mb-3 align-items-end">
-    <div class="col-md-3 col-lg-3">
-        <label class="form-label text-muted small font-weight-bold mb-1">Search ID, Name, Reg No, Problem</label>
-        <div class="input-group shadow-sm">
-            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-            <input type="text" id="vehSearchFilter" class="form-control bg-dark text-white border-secondary" placeholder="Search ID, Model, Issue...">
+<div class="card bg-dark border-secondary shadow-sm mb-3">
+    <div class="card-body p-2.5">
+        <div class="mob-filter-bar">
+            <div class="mob-filter-item">
+                <label class="form-label text-muted small font-weight-bold mb-1" style="font-size:0.75rem;">Search</label>
+                <div class="input-group input-group-sm shadow-sm">
+                    <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="vehSearchFilter" class="form-control bg-dark text-white border-secondary small" placeholder="ID, Model, Reg...">
+                </div>
+            </div>
+            <div class="mob-filter-item">
+                <label class="form-label text-muted small font-weight-bold mb-1" style="font-size:0.75rem;">Category</label>
+                <div class="input-group input-group-sm shadow-sm">
+                    <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-car"></i></span>
+                    <select id="vehTypeFilter" class="form-select bg-dark text-white border-secondary small">
+                        <option value="">All Categories</option>
+                        @foreach (var type in allTypes)
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="mob-filter-item-half">
+                <label class="form-label text-muted small font-weight-bold mb-1" style="font-size:0.75rem;">From Date</label>
+                <div class="input-group input-group-sm shadow-sm">
+                    <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-calendar-alt"></i></span>
+                    <input type="date" id="fromDateFilter" class="form-control bg-dark text-white border-secondary small">
+                </div>
+            </div>
+            <div class="mob-filter-item-half">
+                <label class="form-label text-muted small font-weight-bold mb-1" style="font-size:0.75rem;">To Date</label>
+                <div class="input-group input-group-sm shadow-sm">
+                    <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-calendar-alt"></i></span>
+                    <input type="date" id="toDateFilter" class="form-control bg-dark text-white border-secondary small">
+                </div>
+            </div>
+            <div class="mob-filter-item" style="flex: 0 0 auto; min-width: 80px;">
+                <label class="form-label d-none d-sm-block mb-1" style="font-size:0.75rem;">&nbsp;</label>
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100 border-secondary text-muted font-weight-bold py-1.5 shadow-sm" onclick="clearAllFilters()">
+                    <i class="fa-solid fa-arrow-rotate-left me-1"></i> Reset
+                </button>
+            </div>
         </div>
-    </div>
-    <div class="col-md-3 col-lg-2">
-        <label class="form-label text-muted small font-weight-bold mb-1">Vehicle Type</label>
-        <div class="input-group shadow-sm">
-            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-car"></i></span>
-            <select id="vehTypeFilter" class="form-select bg-dark text-white border-secondary">
-                <option value="">All Vehicle Types</option>
-                @foreach (var type in allTypes)
-                {
-                    <option value="@type">@type</option>
-                }
-            </select>
-        </div>
-    </div>
-    <div class="col-md-2 col-lg-2">
-        <label class="form-label text-muted small font-weight-bold mb-1">From Date</label>
-        <div class="input-group shadow-sm">
-            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-calendar-alt"></i></span>
-            <input type="date" id="fromDateFilter" class="form-control bg-dark text-white border-secondary">
-        </div>
-    </div>
-    <div class="col-md-2 col-lg-2">
-        <label class="form-label text-muted small font-weight-bold mb-1">To Date</label>
-        <div class="input-group shadow-sm">
-            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-calendar-alt"></i></span>
-            <input type="date" id="toDateFilter" class="form-control bg-dark text-white border-secondary">
-        </div>
-    </div>
-    <div class="col-md-2 col-lg-1">
-        <button type="button" class="btn btn-outline-secondary w-100 border-secondary text-muted font-weight-bold py-2 shadow-sm" onclick="clearAllFilters()">
-            <i class="fa-solid fa-arrow-rotate-left me-1"></i> Reset
-        </button>
     </div>
 </div>
 

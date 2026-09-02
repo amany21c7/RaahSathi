@@ -1,28 +1,39 @@
 @using RaahSathi.Models
+@using RaahSathi.Services
 @{
-    ViewData["Title"] = "API Integration";
+    ViewData["Title"] = "API & Contact Settings";
     var settings = ViewBag.Settings as List<AdminSystemSetting> ?? new List<AdminSystemSetting>();
+    var apiSettings = ViewBag.ApiSettings as SystemApiSetting;
+    var contactSettings = ViewBag.ContactSettings as SystemContactSetting;
     
-    var smsApiKeySetting = settings.FirstOrDefault(s => s.SettingKey == "SmsApiKey")?.SettingValue ?? "F2SMS_LIVE_SEC_882190012";
-    var whatsappNoSetting = settings.FirstOrDefault(s => s.SettingKey == "WhatsAppNo")?.SettingValue ?? "+91 9876543210";
-    var googleMapsKeySetting = settings.FirstOrDefault(s => s.SettingKey == "GoogleMapsKey")?.SettingValue ?? "AIzaSyA88921_RS_MAPS_KEY";
-    var emailSenderSetting = settings.FirstOrDefault(s => s.SettingKey == "EmailSender")?.SettingValue ?? "support@raahsathi.com";
+    // API Gateway Keys
+    var smsApiKeySetting = apiSettings?.SmsApiKey ?? settings.FirstOrDefault(s => s.SettingKey == "SmsApiKey")?.SettingValue ?? "F2SMS_LIVE_SEC_882190012";
+    var whatsappNoSetting = apiSettings?.WhatsAppBusinessNumber ?? settings.FirstOrDefault(s => s.SettingKey == "WhatsAppNo")?.SettingValue ?? ContactInfoHelper.WhatsAppNumber;
+    var googleMapsKeySetting = apiSettings?.GoogleMapsApiKey ?? settings.FirstOrDefault(s => s.SettingKey == "GoogleMapsKey")?.SettingValue ?? "AIzaSyA88921_RS_MAPS_KEY";
+    var emailSenderSetting = apiSettings?.SmtpSenderEmail ?? settings.FirstOrDefault(s => s.SettingKey == "EmailSender")?.SettingValue ?? ContactInfoHelper.SupportEmail;
+
+    // RaahSathi Core Public Contact Details
+    var helplineNumberSetting = contactSettings?.HelplineNumber ?? settings.FirstOrDefault(s => s.SettingKey == "HelplineNumber")?.SettingValue ?? ContactInfoHelper.HelplineNumber;
+    var whatsAppNumberSetting = contactSettings?.WhatsAppNumber ?? settings.FirstOrDefault(s => s.SettingKey == "WhatsAppNumber")?.SettingValue ?? ContactInfoHelper.WhatsAppNumber;
+    var supportEmailSetting = contactSettings?.SupportEmail ?? settings.FirstOrDefault(s => s.SettingKey == "SupportEmail")?.SettingValue ?? ContactInfoHelper.SupportEmail;
+    var officeAddressSetting = contactSettings?.OfficeAddress ?? settings.FirstOrDefault(s => s.SettingKey == "OfficeAddress")?.SettingValue ?? ContactInfoHelper.OfficeAddress;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-key text-warning me-2"></i> API Integration</h4>
-        <p class="text-muted small mb-0">Configure SMS, Email, WhatsApp, Google Maps, OTP, and Payment Gateway credentials for live system integration.</p>
+        <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-sliders text-warning me-2"></i> System API &amp; Contact Integration</h4>
+        <p class="text-muted small mb-0">Configure live SMS/WhatsApp gateways, system SMTP, and manage official RaahSathi public contact details.</p>
     </div>
 </div>
 
-<form action="/Admin/SaveSystemSettings" method="POST">
-    <div class="row g-4">
-        <!-- API Gateway Credentials -->
-        <div class="col-lg-12">
+<div class="row g-4">
+    <!-- 1. API Gateway Credentials Panel -->
+    <div class="col-lg-12">
+        <form action="/Admin/SaveApiSettings" method="POST">
             <div class="card bg-dark border-secondary shadow-sm">
-                <div class="card-header border-secondary bg-transparent py-3">
-                    <h5 class="text-info mb-0"><i class="fa-solid fa-key me-2"></i> SMS, WhatsApp & Map API Keys</h5>
+                <div class="card-header border-secondary bg-transparent py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="text-info mb-0"><i class="fa-solid fa-key me-2"></i> SMS, WhatsApp &amp; Map API Keys</h5>
+                    <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-40"><i class="fa-solid fa-server me-1"></i> API Gateway SP</span>
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3">
@@ -32,7 +43,7 @@
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-muted small font-weight-bold">WhatsApp Business API Phone</label>
-                            <input type="text" name="whatsappNo" class="form-control glass-input text-white" value="@whatsappNoSetting" placeholder="Enter WhatsApp phone number...">
+                            <input type="text" name="whatsappNo" class="form-control glass-input text-white" value="@whatsappNoSetting" placeholder="+91 9891819236">
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-muted small font-weight-bold">Google Maps JavaScript API Key</label>
@@ -40,17 +51,79 @@
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-muted small font-weight-bold">System SMTP Sender Email Address</label>
-                            <input type="email" name="emailSender" class="form-control glass-input text-white" value="@emailSenderSetting" placeholder="e.g. support@raahsathi.com">
+                            <input type="email" name="emailSender" class="form-control glass-input text-white" value="@emailSenderSetting" placeholder="support.raahsathi@gmail.com">
                         </div>
                     </div>
                 </div>
+                <div class="card-footer border-secondary bg-transparent py-3 text-end">
+                    <button type="submit" class="btn btn-info text-dark font-weight-bold px-4 py-2 shadow-sm">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Save API Keys
+                    </button>
+                </div>
             </div>
-        </div>
+        </form>
     </div>
 
-    <div class="mt-4 text-end">
-        <button type="submit" class="btn btn-warning text-dark font-weight-bold px-5 py-2.5 shadow">
-            <i class="fa-solid fa-floppy-disk me-1"></i> Save All System Settings
-        </button>
+    <!-- 2. RaahSathi Core Public Contact Details Panel -->
+    <div class="col-lg-12">
+        <form action="/Admin/SaveContactSettings" method="POST">
+            <div class="card bg-dark border-secondary shadow-sm">
+                <div class="card-header border-secondary bg-transparent py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="text-warning mb-0"><i class="fa-solid fa-headset me-2"></i> RaahSathi Contact &amp; Helpline Details</h5>
+                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40"><i class="fa-solid fa-arrows-rotate me-1"></i> Global Live Sync</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="p-3 bg-warning bg-opacity-10 border border-warning border-opacity-30 rounded-3 mb-4 d-flex align-items-center gap-3">
+                        <i class="fa-solid fa-shield-halved text-warning fs-4"></i>
+                        <div>
+                            <strong class="text-white d-block" style="font-size: 0.95rem;">Universal Platform Live Synchronization</strong>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- 1. 24x7 Helpline / Calling Number -->
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">
+                                <i class="fa-solid fa-phone-volume text-warning me-1"></i> 24×7 Calling Helpline
+                            </label>
+                            <input type="text" name="helplineNumber" class="form-control glass-input text-white font-weight-bold" value="@helplineNumberSetting" placeholder="+91 9891819236">
+                            <span class="text-muted text-xs d-block mt-1">Main phone on Call Now buttons &amp; Header</span>
+                        </div>
+
+                        <!-- 2. WhatsApp Support Number -->
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">
+                                <i class="fa-brands fa-whatsapp text-success me-1"></i> WhatsApp Support Number
+                            </label>
+                            <input type="text" name="whatsAppNumber" class="form-control glass-input text-white" value="@whatsAppNumberSetting" placeholder="+91 9891819236">
+                            <span class="text-muted text-xs d-block mt-1">Direct WhatsApp chat &amp; live location link</span>
+                        </div>
+
+                        <!-- 3. Customer Support Email -->
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">
+                                <i class="fa-solid fa-envelope text-info me-1"></i> Customer Support Email
+                            </label>
+                            <input type="email" name="supportEmail" class="form-control glass-input text-white" value="@supportEmailSetting" placeholder="support.raahsathi@gmail.com">
+                            <span class="text-muted text-xs d-block mt-1">Official public support inbox</span>
+                        </div>
+
+                        <!-- 4. Corporate Head Office Address -->
+                        <div class="col-12 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">
+                                <i class="fa-solid fa-location-dot text-danger me-1"></i> Corporate Head Office Address
+                            </label>
+                            <input type="text" name="officeAddress" class="form-control glass-input text-white" value="@officeAddressSetting" placeholder="Tower B, DLF Cyber City, Sector 24, Gurugram, Haryana - 122002">
+                            <span class="text-muted text-xs d-block mt-1">Head office address displayed on Contact Us page &amp; Footer</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer border-secondary bg-transparent py-3 text-end">
+                    <button type="submit" class="btn btn-warning text-dark font-weight-bold px-5 py-2.5 shadow">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Save Contact Details
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
-</form>
+</div>
