@@ -348,11 +348,11 @@
             </div>
 
             <div class="d-grid gap-2">
-                <button type="button" class="btn btn-warning font-weight-bold text-dark shadow d-flex align-items-center justify-content-center gap-2 py-2.5" data-bs-toggle="modal" data-bs-target="#customerReferralModal" onclick="openCustomerReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
+                <button type="button" class="btn btn-warning font-weight-bold text-dark shadow d-flex align-items-center justify-content-center gap-2 py-2" data-bs-toggle="modal" data-bs-target="#customerReferralModal" onclick="openCustomerReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
                     <i class="fa-solid fa-gift fs-5 animate-bounce"></i> 
-                    <div class="text-start">
-                        <div class="fw-bold" style="font-size: 0.9rem; line-height: 1.1;">Refer &amp; Earn ₹100</div>
-                        <small class="text-dark opacity-75" style="font-size: 0.72rem;">Wallet: ₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0") | @(refSummary?.PendingReferralCount ?? 0) Pending</small>
+                    <div class="text-center">
+                        <div class="fw-bold" style="font-size: 0.88rem; line-height: 1.2;">Refer &amp; Earn ₹100</div>
+                        <small class="text-dark opacity-85 fw-semibold d-block" style="font-size: 0.72rem;">Wallet: ₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0") | @(refSummary?.PendingReferralCount ?? 0) Pending</small>
                     </div>
                 </button>
                 <a href="/Customer/Book" class="btn btn-outline-warning font-weight-bold shadow-sm">

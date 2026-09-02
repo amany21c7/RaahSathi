@@ -46,6 +46,7 @@ namespace RaahSathi.Data
         public DbSet<ReferralProgramSetting> ReferralProgramSettings { get; set; }
         public DbSet<ReferralTransaction> ReferralTransactions { get; set; }
         public DbSet<ReferralWithdrawalRequest> ReferralWithdrawalRequests { get; set; }
+        public DbSet<MechanicSubscription> MechanicSubscriptions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

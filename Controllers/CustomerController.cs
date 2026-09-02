@@ -456,7 +456,7 @@ namespace RaahSathi.Controllers
 
             return Json(new {
                 success = true,
-                count = Math.Max(1, count),
+                count = count,
                 minEta = minEta,
                 topMechanics = ranked.Take(3).Select(m => new {
                     name = m.Mechanic.Name,

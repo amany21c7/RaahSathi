@@ -17,19 +17,19 @@
 <!-- Top Live Status Banner -->
 <div class="row mb-3">
     <div class="col-12">
-        <div class="p-3 rounded-3 border border-warning border-opacity-40 d-flex flex-column flex-md-row align-items-center justify-content-between gap-2 shadow" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.98));">
-            <div class="d-flex align-items-center">
-                <div class="rounded-circle bg-success bg-opacity-20 p-2 me-3 d-flex align-items-center justify-content-center" style="width:42px; height:42px;">
-                    <i class="fa-solid fa-location-crosshairs text-success fa-lg animate-pulse"></i>
+        <div class="p-3 px-3.5 rounded-3 border border-warning border-opacity-50 d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 shadow-lg" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98));">
+            <div class="d-flex align-items-center overflow-hidden">
+                <div class="rounded-circle bg-success bg-opacity-20 p-2 me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px; height:44px;">
+                    <i class="fa-solid fa-location-crosshairs text-success fa-xl animate-pulse"></i>
                 </div>
-                <div>
-                    <h6 class="text-white font-weight-bold mb-0">Auto GPS Location Detection Active</h6>
-                    <span class="text-muted small" id="detectedLocationText">Detecting your breakdown location via browser GPS...</span>
+                <div class="overflow-hidden">
+                    <h5 class="text-white font-weight-bold mb-0" style="font-size:1.02rem; letter-spacing: -0.2px;">Auto GPS Location Detection Active</h5>
+                    <span class="text-muted small d-block" id="detectedLocationText" style="font-size:0.82rem; margin-top: 2px;">Detecting your breakdown location via browser GPS...</span>
                 </div>
             </div>
-            <div id="nearbyBadgeContainer">
-                <span class="badge bg-warning text-dark font-weight-bold px-3 py-2" style="font-size:0.85rem;" id="nearbyMechanicsBadge">
-                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Checking Nearby Mechanics &amp; EV Specialists...
+            <div id="nearbyBadgeContainer" class="flex-shrink-0">
+                <span class="badge bg-warning text-dark font-weight-bold px-3.5 py-2 shadow-sm" style="font-size:0.85rem;" id="nearbyMechanicsBadge">
+                    <i class="fa-solid fa-bolt me-1 text-dark"></i> Checking Nearby Mechanics...
                 </span>
             </div>
         </div>
@@ -71,11 +71,26 @@
     <!-- Right Column: 30-Second Ultra-Fast Booking Form (Expanded 7-Col for High Visibility) -->
     <div class="col-lg-7">
         <div class="glass-card">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h4 class="text-white font-weight-bold mb-0">
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2 pb-2 border-bottom border-secondary border-opacity-30">
+                <h4 class="text-white font-weight-bold mb-0 d-flex align-items-center">
                     <i class="fa-solid fa-bolt text-warning me-2 animate-pulse"></i> Instant Request
                 </h4>
-                <span class="badge bg-danger text-white px-2.5 py-1 font-weight-bold small">EXPRESS DISPATCH</span>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if (vehicles.Count > 0)
+                    {
+                        <div class="d-flex align-items-center gap-2 p-1.5 px-2.5 rounded-3 border border-warning border-opacity-40 shadow-sm" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));">
+                            <i class="fa-solid fa-car text-warning fs-6"></i>
+                            <span class="text-white font-weight-bold small text-nowrap" style="font-size:0.8rem;">Vehicle:</span>
+                            <select class="form-select form-select-sm glass-input text-white font-weight-bold py-1 px-2 border-secondary" id="topRegisteredVehicleSelect" onchange="onTopVehicleChange(this)" style="min-width: 170px; max-width: 250px; font-size:0.82rem; height: 34px; line-height: 1.4; background-color: rgba(15, 23, 42, 0.8);">
+                                @foreach (var v in vehicles)
+                                {
+                                    <option value="@v.Id" class="bg-dark text-white" data-model="@v.Model" data-reg="@v.RegistrationNumber" data-type="@v.VehicleType" selected="@(preSelectedVehicle?.Id == v.Id ? "selected" : null)">@v.Model (@v.RegistrationNumber)</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    <span class="badge bg-danger text-white px-2.5 py-2 font-weight-bold small shadow-sm">EXPRESS DISPATCH</span>
+                </div>
             </div>
 
             <!-- Step 1: Vehicle Category Selection -->
@@ -925,8 +940,8 @@
                 if (res && res.success) {
                     var rawDist = (res.count > 0 && res.topMechanics && res.topMechanics.length > 0) ? res.topMechanics[0].distance : 3.2;
                     currentPatrolDistance = (rawDist > 30.0 || rawDist <= 0.05) ? 3.2 : rawDist;
-                    var displayEta = (res.minEta && res.minEta <= 25) ? res.minEta : 25;
-                    $('#nearbyMechanicsBadge').html(`<i class="fa-solid fa-bolt me-1 text-dark"></i> ${res.count} Verified Mechanics Nearby • Avg ETA ${displayEta} mins`);
+                    var displayEta = (res.minEta && res.minEta <= 25) ? res.minEta : 10;
+                    $('#nearbyMechanicsBadge').html(`<i class="fa-solid fa-bolt me-1 text-dark"></i> ${res.count} Mechanics Nearby • Avg ETA ${displayEta} mins`);
                     $('#distanceText').text(currentPatrolDistance.toFixed(1) + " km");
                     updatePricing();
                 }
@@ -1015,6 +1030,35 @@
             if (type) {
                 setVehicleType(type);
             }
+        };
+
+        window.onTopVehicleChange = function(selectEl) {
+            var selectedOption = $(selectEl).find('option:selected');
+            var vId = $(selectEl).val();
+            var model = selectedOption.data('model');
+            var reg = selectedOption.data('reg');
+            var type = selectedOption.data('type');
+
+            if (vId) {
+                preSelectedVehicleId = parseInt(vId);
+            }
+            if (model) {
+                $('#vehicleNameModelInput').val(model);
+            }
+            if (reg) {
+                $('#vehicleRegNumberInput').val(reg);
+            }
+            if (type) {
+                setVehicleType(type);
+            }
+        };
+
+        window.submitDirectQuickRequest = function() {
+            var topSelect = $('#topRegisteredVehicleSelect');
+            if (topSelect.length > 0 && topSelect.val()) {
+                onTopVehicleChange(topSelect[0]);
+            }
+            $('#btnRequestDispatch').click();
         };
 
         window.previewProblemPhoto = function(input) {
@@ -1328,6 +1372,9 @@
             <text>
             setVehicleType("@preSelectedVehicle.VehicleType");
             </text>
+        }
+        if ($('#topRegisteredVehicleSelect').length > 0 && $('#topRegisteredVehicleSelect').val()) {
+            onTopVehicleChange($('#topRegisteredVehicleSelect')[0]);
         }
     });
 </script>

@@ -14,6 +14,18 @@
     var refSummary = ViewBag.ReferralSummary as RaahSathi.Services.ReferralDashboardSummaryDto;
     var refSettings = ViewBag.ReferralSettings as ReferralProgramSetting ?? refSummary?.Settings ?? new ReferralProgramSetting();
 
+    // Mechanic VIP Subscription Evaluation
+    var isSubMaster = ViewBag.SubscriptionMasterEnabled as bool? ?? false;
+    var subStatus = ViewBag.SubscriptionStatus as string ?? "Disabled";
+    var isSubRequired = ViewBag.IsSubscriptionRequired as bool? ?? false;
+    var monthlyFee = (double)(ViewBag.MonthlySubscriptionFee ?? 499.0);
+    var subValidTill = ViewBag.SubscriptionValidTill as DateTime?;
+    var remainingTrialDays = ViewBag.RemainingTrialDays as int? ?? 0;
+    var totalCompletedJobs = ViewBag.TotalCompletedJobs as int? ?? 0;
+    var daysSinceJoined = ViewBag.DaysSinceJoined as int? ?? 0;
+    var trialDaysConfig = ViewBag.SubscriptionTrialDays as int? ?? 30;
+    var minJobsConfig = ViewBag.SubscriptionMinJobs as int? ?? 2;
+
     var now = DateTime.UtcNow;
     var mechanicBanners = _dbContext.CmsBanners
         .Where(b => b.IsActive 
@@ -240,6 +252,36 @@
         </div>
     }
 
+    <!-- ⚡ High-Impact Fast Subscription Enforcement Alert Banner (Only shown when subscription is Due) -->
+    @if (isSubRequired)
+    {
+        <div class="alert alert-warning bg-dark border-warning text-light p-3 p-md-4 mb-4 rounded-3 shadow-lg position-relative overflow-hidden" style="border-left: 5px solid #F59E0B !important; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(18, 31, 53, 0.95) 100%);">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="p-3 rounded-circle bg-warning bg-opacity-20 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 52px; height: 52px;">
+                        <i class="fa-solid fa-bolt-lightning fa-2x animate-pulse text-warning"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <span class="badge bg-warning text-dark font-weight-bold px-2.5 py-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">FAST MEMBERSHIP REQUIRED</span>
+                            <span class="text-white-50 extra-small">Platform Age: @daysSinceJoined Days &bull; Completed Jobs: @totalCompletedJobs</span>
+                        </div>
+                        <h5 class="text-white font-weight-bold mb-1" style="font-family: 'Outfit';">
+                            🚀 Unlock Fast Breakdown Orders &amp; Direct Siren Leads in Your Area!
+                        </h5>
+                        <p class="text-muted small mb-0" style="font-size: 0.84rem; color: #cbd5e1 !important;">
+                            Your <strong>@trialDaysConfig-day free trial</strong> and <strong>@totalCompletedJobs initial jobs</strong> are completed. Activate Fast Membership to continue receiving live roadside breakdown leads — <span class="text-warning font-weight-bold">Recover the full ₹@monthlyFee.ToString("N0") fee in just 1 job!</span>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-warning text-dark font-weight-bold px-4 py-2.5 rounded-pill shadow-lg flex-shrink-0 d-inline-flex align-items-center justify-content-center gap-2" onclick="openSubscriptionModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); font-size: 0.92rem;">
+                    <i class="fa-solid fa-bolt-lightning"></i>
+                    <span>Unlock Fast Orders &bull; ₹@monthlyFee.ToString("N0")/mo</span>
+                </button>
+            </div>
+        </div>
+    }
+
     <!-- 🟢 TOP STATS HEADER & GO ONLINE CONTROLLER -->
     <div class="glass-card mb-4 p-3 p-md-4 border-warning border-opacity-30" id="mechMainOverviewCard">
         <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-3 border-bottom border-secondary border-opacity-40 pb-3">
@@ -254,6 +296,12 @@
                                 <i class="fa-solid fa-circle me-1" style="font-size:0.6rem;"></i> @(profile.IsOnline ? "🟢 ONLINE" : "⚪ OFFLINE")
                             </span>
                             <span class="text-muted small">| <i class="fa-solid fa-shield-halved text-warning me-1"></i> KYC: <b>@profile.KycStatus</b></span>
+                            @if (subStatus == "Active" && subValidTill.HasValue)
+                            {
+                                <span class="badge bg-warning text-dark font-weight-bold px-2.5 py-1 rounded-pill" title="VIP Subscription Active till @subValidTill.Value.ToString("dd MMM yyyy")">
+                                    <i class="fa-solid fa-crown text-dark me-1"></i> VIP PRO (@((int)Math.Max(0, (subValidTill.Value - DateTime.UtcNow).TotalDays))d)
+                                </span>
+                            }
                         </div>
                     </div>
                 </div>
@@ -2204,7 +2252,12 @@
         } catch(e) {}
 
         $.post('/Mechanic/ToggleOnline', function(res) {
-            if (res.success) {
+            if (res && res.subscriptionRequired) {
+                updateOnlineUI(false);
+                openSubscriptionModal();
+                return;
+            }
+            if (res && res.success) {
                 updateOnlineUI(res.isOnline);
                 if (res.isOnline) {
                     if (typeof window.unlockSirenAudio === 'function') {
@@ -4114,6 +4167,214 @@
             }
         });
     };
+
+    window.openSubscriptionModal = function() {
+        var subModalEl = document.getElementById('mechanicSubscriptionModal');
+        if (subModalEl) {
+            if (subModalEl.parentNode !== document.body) {
+                document.body.appendChild(subModalEl);
+            }
+            var subModal = bootstrap.Modal.getOrCreateInstance(subModalEl);
+            subModal.show();
+        }
+    };
+
+    window.processMechanicSubscription = function(mode) {
+        var upiRef = $('#txtUpiRefNumber').val() || '';
+        var $btn = mode === 'UPI' ? $('#btnConfirmUpiSub') : $('#btnConfirmCardSub');
+        var origHtml = $btn.html();
+        
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Activating Fast Membership...');
+
+        $.post('/Mechanic/ProcessSubscriptionPayment', { paymentMethod: mode, upiRef: upiRef }, function(res) {
+            if (res && res.success) {
+                var subModalEl = document.getElementById('mechanicSubscriptionModal');
+                if (subModalEl) {
+                    var subModal = bootstrap.Modal.getInstance(subModalEl);
+                    if (subModal) subModal.hide();
+                }
+                alert(res.message);
+                window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
+            } else {
+                $btn.prop('disabled', false).html(origHtml);
+                alert(res?.message || 'Subscription payment processing failed.');
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).html(origHtml);
+            alert('Server error occurred during subscription processing.');
+        });
+    };
 </script>
+
+<!-- ⚡ Fast Pro Partner Subscription Modal -->
+<div class="modal fade" id="mechanicSubscriptionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-white border-warning shadow-2xl" style="border-radius: 20px; overflow: hidden; background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);">
+            
+            <!-- Modal Header with Glowing Crown -->
+            <div class="modal-header border-secondary border-opacity-30 p-4 pb-3" style="background: linear-gradient(180deg, rgba(245, 158, 11, 0.18) 0%, rgba(15, 23, 42, 0) 100%);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center shadow-lg" style="width: 48px; height: 48px; font-size: 1.4rem;">
+                        ⚡
+                    </div>
+                    <div>
+                        <span class="badge bg-warning text-dark font-weight-bold px-2.5 py-0.5 mb-1" style="font-size: 0.72rem; letter-spacing: 0.8px;">OFFICIAL MEMBERSHIP PROGRAM</span>
+                        <h4 class="text-white font-weight-bold mb-0" style="font-family: 'Outfit'; letter-spacing: 0.2px;">
+                            RaahSathi Fast Partner Membership
+                        </h4>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4 pt-2">
+                <!-- Compelling Hook Headline Banner -->
+                <div class="p-3 rounded-3 mb-3 border border-warning border-opacity-40 text-center" style="background: rgba(245, 158, 11, 0.1);">
+                    <h6 class="text-warning font-weight-bold mb-1" style="font-size: 1.05rem;">
+                        🔥 "Recover the full month fee in just 1 breakdown repair! All earnings for the next 30 days are 100% your direct profit"
+                    </h6>
+                    <p class="text-muted extra-small mb-0" style="color: #cbd5e1 !important;">
+                        RaahSathi Fast Partners earn ₹25,000 to ₹60,000+ every month with continuous live emergency orders and guaranteed safety.
+                    </p>
+                </div>
+
+                <!-- 4 High-Value Irresistible Benefits Grid -->
+                <div class="row g-2.5 mb-3">
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary border-opacity-40 h-100 d-flex align-items-start gap-2.5">
+                            <div class="text-warning fs-4 flex-shrink-0 mt-0.5">
+                                <i class="fa-solid fa-tower-broadcast"></i>
+                            </div>
+                            <div>
+                                <strong class="text-white d-block" style="font-size: 0.88rem;">100% Direct Emergency Leads</strong>
+                                <span class="text-muted extra-small" style="font-size: 0.75rem;">Instant siren calls for Car, Bike, and EV breakdowns within a 10 KM radius dispatched directly to your device.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary border-opacity-40 h-100 d-flex align-items-start gap-2.5">
+                            <div class="text-success fs-4 flex-shrink-0 mt-0.5">
+                                <i class="fa-solid fa-coins"></i>
+                            </div>
+                            <div>
+                                <strong class="text-white d-block" style="font-size: 0.88rem;">100% Value Recovery (Zero Risk)</strong>
+                                <span class="text-muted extra-small" style="font-size: 0.75rem;">Recover your ₹@monthlyFee.ToString("N0") fee in your very first job, then enjoy 100% profit for the rest of the 30 days!</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary border-opacity-40 h-100 d-flex align-items-start gap-2.5">
+                            <div class="text-info fs-4 flex-shrink-0 mt-0.5">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <div>
+                                <strong class="text-white d-block" style="font-size: 0.88rem;">Verified Fast Partner Badge</strong>
+                                <span class="text-muted extra-small" style="font-size: 0.75rem;">Get the verified 5-star partner badge on the platform so customers choose you first.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary border-opacity-40 h-100 d-flex align-items-start gap-2.5">
+                            <div class="text-primary fs-4 flex-shrink-0 mt-0.5">
+                                <i class="fa-solid fa-headset"></i>
+                            </div>
+                            <div>
+                                <strong class="text-white d-block" style="font-size: 0.88rem;">24/7 Dedicated Support &amp; Payouts</strong>
+                                <span class="text-muted extra-small" style="font-size: 0.75rem;">Instant wallet settlements, dedicated helpline, and zero commission deduction guarantee.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price Box & Payment Options -->
+                <div class="p-3.5 rounded-3 bg-black bg-opacity-60 border border-warning border-opacity-50">
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 border-bottom border-secondary border-opacity-30 pb-3 mb-3">
+                        <div>
+                            <span class="text-muted extra-small d-block text-uppercase font-weight-bold">Plan Validity: 30 Days (1 Month)</span>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <span class="text-muted text-decoration-line-through fs-5">₹999</span>
+                                <h2 class="text-warning font-weight-bold mb-0" style="font-family: 'Outfit';">₹@monthlyFee.ToString("N0")</h2>
+                                <span class="badge bg-success text-dark font-weight-bold px-2 py-1" style="font-size: 0.7rem;">50% DISCOUNT ACTIVE</span>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.75rem;">(Sirf ₹@((monthlyFee / 30.0).ToString("N1")) pratidin — Ek chai se bhi sasta!)</small>
+                        </div>
+                        <div class="text-sm-end">
+                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40 px-3 py-1.5 font-weight-bold" style="font-size: 0.75rem;">
+                                <i class="fa-solid fa-bolt me-1"></i> Instant Live Activation
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Mode Tabs -->
+                    <ul class="nav nav-pills nav-fill mb-3 gap-2" id="pills-sub-tab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-2 small font-weight-bold btn-outline-warning" id="sub-upi-tab" data-bs-toggle="pill" data-bs-target="#sub-upi-pane" type="button" role="tab">
+                                <i class="fa-solid fa-qrcode me-1"></i> UPI QR Scan / GooglePay / PhonePe
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 small font-weight-bold btn-outline-warning" id="sub-card-tab" data-bs-toggle="pill" data-bs-target="#sub-card-pane" type="button" role="tab">
+                                <i class="fa-solid fa-credit-card me-1"></i> Debit/Credit Cards &amp; NetBanking
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="pills-sub-tabContent">
+                        <!-- Tab 1: UPI & QR Scanner -->
+                        <div class="tab-pane fade show active text-center" id="sub-upi-pane" role="tabpanel">
+                            <div class="d-flex flex-column align-items-center justify-content-center p-3 bg-dark rounded-3 border border-secondary border-opacity-30">
+                                <div class="p-2 bg-white rounded-3 shadow-sm mb-2" style="display: inline-block;">
+                                    <!-- Dynamic SVG QR Pattern -->
+                                    <svg class="qr-svg" width="130" height="130" viewBox="0 0 100 100" fill="#0f172a">
+                                        <path d="M0 0h30v30H0zm5 5h20v20H5zM10 10h10v10H10zM70 0h30v30H70zm5 5h20v20H75zM80 10h10v10H80zM0 70h30v30H0zm5 5h20v20H5zM10 80h10v10H10zM40 10h10v10H40zm10 10h10v10H50zm10-10h10v10H60zm-20 20h10v10H40zm20 0h10v10H60zm10 10h10v10H70zm-30 0h10v10H40zm-10 10h10v10H30zm30 0h10v10H60zm20 0h10v10H80zm-40 10h10v10H40zm30 0h10v10H70zm10 10h10v10H80zm-40 0h10v10H40zm10 10h10v10H50zm10-10h10v10H60z"/>
+                                    </svg>
+                                </div>
+                                <span class="text-muted extra-small d-block mb-1">Scan via any UPI App (PhonePe / GPay / Paytm)</span>
+                                <div class="badge bg-secondary bg-opacity-40 text-light px-3 py-1 font-monospace mb-2" style="font-size: 0.78rem;">
+                                    UPI ID: raahsathi.pay@icici
+                                </div>
+                                <div class="w-100" style="max-width: 320px;">
+                                    <input type="text" id="txtUpiRefNumber" class="form-control form-control-sm bg-dark text-white border-secondary mb-2 text-center" placeholder="Enter UPI Transaction / UTR No. (Optional)">
+                                    <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 rounded-pill shadow-lg d-flex align-items-center justify-content-center gap-2" id="btnConfirmUpiSub" onclick="processMechanicSubscription('UPI')">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        <span>Pay ₹@monthlyFee.ToString("N0") &amp; Go Online Live</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Cards & NetBanking -->
+                        <div class="tab-pane fade text-center" id="sub-card-pane" role="tabpanel">
+                            <div class="p-3 bg-dark rounded-3 border border-secondary border-opacity-30">
+                                <div class="d-flex justify-content-center gap-3 fs-3 text-warning mb-2">
+                                    <i class="fa-brands fa-cc-visa"></i>
+                                    <i class="fa-brands fa-cc-mastercard"></i>
+                                    <i class="fa-solid fa-credit-card"></i>
+                                    <i class="fa-solid fa-building-columns"></i>
+                                </div>
+                                <p class="text-muted small mb-3">100% Encrypted &amp; Secure 256-Bit Razorpay Payment Vault</p>
+                                <button type="button" class="btn btn-warning text-dark font-weight-bold px-5 py-2.5 rounded-pill shadow-lg d-inline-flex align-items-center justify-content-center gap-2" id="btnConfirmCardSub" onclick="processMechanicSubscription('Card')">
+                                    <i class="fa-solid fa-lock"></i>
+                                    <span>Pay ₹@monthlyFee.ToString("N0") via Gateway</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-secondary border-opacity-30 bg-black bg-opacity-40 justify-content-between p-3">
+                <div class="d-flex align-items-center gap-1.5 text-muted extra-small">
+                    <i class="fa-solid fa-lock text-success"></i>
+                    <span>Secure RaahSathi Escrow Guarantee</span>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 

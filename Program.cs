@@ -1014,6 +1014,32 @@ using (var scope = app.Services.CreateScope())
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Jobs]') AND name = 'ProblemCancelledAt')
                     ALTER TABLE [Jobs] ADD [ProblemCancelledAt] DATETIME2 NULL;
 
+                -- Mechanic Monthly Subscriptions
+                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[MechanicSubscriptions]') AND type in (N'U'))
+                BEGIN
+                    CREATE TABLE [MechanicSubscriptions] (
+                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [MechanicId] int NOT NULL,
+                        [Amount] float NOT NULL DEFAULT 0.0,
+                        [StartDate] datetime2 NOT NULL DEFAULT GETUTCDATE(),
+                        [EndDate] datetime2 NOT NULL DEFAULT DATEADD(day, 30, GETUTCDATE()),
+                        [PaymentStatus] nvarchar(50) NOT NULL DEFAULT 'Success',
+                        [RazorpayPaymentId] nvarchar(100) NULL,
+                        [RazorpayOrderId] nvarchar(100) NULL,
+                        [Notes] nvarchar(500) NULL,
+                        [CreatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE()
+                    );
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = 'SubscriptionValidTill')
+                    ALTER TABLE [MechanicProfiles] ADD [SubscriptionValidTill] DATETIME2 NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = 'SubscriptionAmountPaid')
+                    ALTER TABLE [MechanicProfiles] ADD [SubscriptionAmountPaid] FLOAT NOT NULL DEFAULT 0.0;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = 'SubscriptionLastPaidAt')
+                    ALTER TABLE [MechanicProfiles] ADD [SubscriptionLastPaidAt] DATETIME2 NULL;
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[MechanicProfiles]') AND name = 'SubscriptionStatus')
+                    ALTER TABLE [MechanicProfiles] ADD [SubscriptionStatus] NVARCHAR(50) NOT NULL DEFAULT 'Trial';
+
                 -- Stored Procedure: rs_payments_process_escrow
                 IF OBJECT_ID(N'[dbo].[rs_payments_process_escrow]', N'P') IS NOT NULL
                     DROP PROCEDURE [dbo].[rs_payments_process_escrow];

@@ -6,7 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <DebugType>portable</DebugType>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <UseAppHost>true</UseAppHost>
+    <UseAppHost>false</UseAppHost>
+    <AssemblyName>RaahSathi.Web</AssemblyName>
     <DefaultItemExcludes>src\**;$(DefaultItemExcludes)</DefaultItemExcludes>
   </PropertyGroup>
 

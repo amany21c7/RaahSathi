@@ -69,6 +69,61 @@ namespace RaahSathi.Services
                 .Where(m => m.IsOnline && m.KycStatus == "Approved")
                 .ToListAsync();
 
+            // Strict Fast Subscription Enforcement: Exclude and auto-offline mechanics whose subscription is due
+            bool isSubscriptionMasterEnabled = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionEnabled"))?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+            if (isSubscriptionMasterEnabled && onlineMechanics.Count > 0)
+            {
+                int trialDays = 30;
+                var trialSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionFreeTrialDays");
+                if (trialSetting != null && int.TryParse(trialSetting.SettingValue, out int tVal)) trialDays = tVal;
+
+                int minJobs = 2;
+                var minJobsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionMinJobsRequired");
+                if (minJobsSetting != null && int.TryParse(minJobsSetting.SettingValue, out int jVal)) minJobs = jVal;
+
+                var completedJobCounts = await _dbContext.Jobs
+                    .Where(j => j.Status == "Completed" && j.MechanicId != null)
+                    .GroupBy(j => j.MechanicId!.Value)
+                    .Select(g => new { MechanicId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.MechanicId, x => x.Count);
+
+                var now = DateTime.UtcNow;
+                var validMechanics = new List<MechanicProfile>();
+                bool anyTurnedOffline = false;
+
+                foreach (var m in onlineMechanics)
+                {
+                    if (m.User == null) continue;
+                    int daysSinceJoined = (int)Math.Max(0, (now - m.User.CreatedAt).TotalDays);
+                    int completedJobs = completedJobCounts.ContainsKey(m.UserId) ? completedJobCounts[m.UserId] : 0;
+
+                    if (daysSinceJoined >= trialDays && completedJobs >= minJobs)
+                    {
+                        if (m.SubscriptionValidTill.HasValue && m.SubscriptionValidTill.Value > now)
+                        {
+                            validMechanics.Add(m);
+                        }
+                        else
+                        {
+                            // Subscription due: Auto-kick offline and exclude from receiving jobs
+                            m.IsOnline = false;
+                            anyTurnedOffline = true;
+                        }
+                    }
+                    else
+                    {
+                        validMechanics.Add(m);
+                    }
+                }
+
+                if (anyTurnedOffline)
+                {
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                onlineMechanics = validMechanics;
+            }
+
             // Fetch active job counts per mechanic to penalize busy mechanics
             var activeJobsPerMechanic = await _dbContext.Jobs
                 .Where(j => j.MechanicId != null && (j.Status == "Assigned" || j.Status == "Accepted" || j.Status == "In Progress"))

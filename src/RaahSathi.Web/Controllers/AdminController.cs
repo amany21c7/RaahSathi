@@ -2841,18 +2841,225 @@ namespace RaahSathi.Controllers
             return defaultValue;
         }
 
-        private async Task<int> GetSettingIntAsync(string key, int defaultValue)
+        private async Task<string> GetSettingStringAsync(string key, string defaultValue)
         {
             try
             {
                 var setting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
-                if (setting != null && int.TryParse(setting.SettingValue, out int val))
+                if (setting != null && !string.IsNullOrWhiteSpace(setting.SettingValue))
                 {
-                    return val;
+                    return setting.SettingValue.Trim();
                 }
             }
             catch { }
             return defaultValue;
+        }
+
+        public async Task<IActionResult> Subscriptions(int page = 1, int pageSize = 100, string status = "all", string city = "all")
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            if (page < 1) page = 1;
+            if (pageSize < 10) pageSize = 100;
+            if (pageSize > 500) pageSize = 500;
+            if (string.IsNullOrWhiteSpace(status)) status = "all";
+            if (string.IsNullOrWhiteSpace(city)) city = "all";
+
+            bool isMasterEnabled = (await GetSettingStringAsync("SubscriptionEnabled", "false")).Equals("true", StringComparison.OrdinalIgnoreCase);
+            double monthlyFee = await GetSettingDoubleAsync("MonthlySubscriptionFee", 499);
+            int freeTrialDays = (int)await GetSettingDoubleAsync("SubscriptionFreeTrialDays", 30);
+            int minJobsRequired = (int)await GetSettingDoubleAsync("SubscriptionMinJobsRequired", 2);
+
+            var mechanics = await _dbContext.MechanicProfiles
+                .Include(m => m.User)
+                .OrderByDescending(m => m.UserId)
+                .ToListAsync();
+
+            var allCompletedJobs = await _dbContext.Jobs
+                .Where(j => j.Status == "Completed" && j.MechanicId != null)
+                .GroupBy(j => j.MechanicId!.Value)
+                .Select(g => new { MechanicId = g.Key, CompletedCount = g.Count() })
+                .ToDictionaryAsync(g => g.MechanicId, g => g.CompletedCount);
+
+            var recentSubscriptions = await _dbContext.MechanicSubscriptions
+                .Include(s => s.Mechanic)
+                .OrderByDescending(s => s.CreatedAt)
+                .Take(50)
+                .ToListAsync();
+
+            // Extract all distinct cities with counts
+            var cityGroups = mechanics
+                .Select(m => string.IsNullOrWhiteSpace(m.City) ? "Noida" : m.City.Trim())
+                .GroupBy(c => c, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new CityCountDto { CityName = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .ThenBy(x => x.CityName)
+                .ToList();
+
+            var allMechDtos = new List<MechanicSubscriptionStatusDto>();
+
+            foreach (var m in mechanics)
+            {
+                DateTime registeredDate = m.User?.CreatedAt ?? DateTime.UtcNow;
+                int daysJoined = (int)Math.Max(0, (DateTime.UtcNow - registeredDate).TotalDays);
+                int jobsDone = allCompletedJobs.ContainsKey(m.UserId) ? allCompletedJobs[m.UserId] : m.TotalJobs;
+                
+                string mechStatus = "Trial";
+                bool isRequired = false;
+                int remainingTrial = Math.Max(0, freeTrialDays - daysJoined);
+
+                if (m.SubscriptionValidTill.HasValue && m.SubscriptionValidTill.Value > DateTime.UtcNow)
+                {
+                    mechStatus = "Active";
+                    isRequired = false;
+                }
+                else if (daysJoined < freeTrialDays)
+                {
+                    mechStatus = "Trial";
+                    isRequired = false;
+                }
+                else if (jobsDone < minJobsRequired)
+                {
+                    mechStatus = "Exempt";
+                    isRequired = false;
+                }
+                else
+                {
+                    mechStatus = "Due";
+                    isRequired = isMasterEnabled;
+                }
+
+                allMechDtos.Add(new MechanicSubscriptionStatusDto
+                {
+                    MechanicId = m.UserId,
+                    MechanicName = m.User?.Name ?? $"Mechanic #{m.UserId}",
+                    PhoneNumber = m.User?.PhoneNumber ?? "N/A",
+                    ShopName = m.ShopName ?? "",
+                    City = string.IsNullOrWhiteSpace(m.City) ? "Noida" : m.City.Trim(),
+                    RegisteredAt = registeredDate,
+                    DaysSinceJoined = daysJoined,
+                    CompletedJobsCount = jobsDone,
+                    Status = mechStatus,
+                    IsSubscriptionRequired = isRequired,
+                    ValidTill = m.SubscriptionValidTill,
+                    AmountPaidTotal = m.SubscriptionAmountPaid,
+                    RemainingTrialDays = remainingTrial,
+                    LastPaymentDate = m.SubscriptionLastPaidAt
+                });
+            }
+
+            // 1. Filter by City first (for both KPI metrics and grid)
+            var cityFilteredMechs = allMechDtos;
+            if (!city.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                cityFilteredMechs = allMechDtos
+                    .Where(x => x.City.Equals(city, StringComparison.OrdinalIgnoreCase) || x.City.Contains(city, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            // 2. Calculate KPI summary metrics specifically for the selected city
+            int totalCityMechanics = cityFilteredMechs.Count;
+            int activeCount = cityFilteredMechs.Count(x => x.Status == "Active");
+            int trialCount = cityFilteredMechs.Count(x => x.Status == "Trial");
+            int dueCount = cityFilteredMechs.Count(x => x.Status == "Due");
+            int exemptCount = cityFilteredMechs.Count(x => x.Status == "Exempt");
+            double totalRevenue = cityFilteredMechs.Sum(x => x.AmountPaidTotal);
+
+            // 3. Apply Status filter for table view
+            var statusFilteredList = cityFilteredMechs;
+            if (!status.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                statusFilteredList = cityFilteredMechs.Where(x => x.Status.Equals(status, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            int totalFiltered = statusFilteredList.Count;
+            int totalPages = pageSize > 0 ? (int)Math.Ceiling((double)totalFiltered / pageSize) : 1;
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var pagedMechanics = statusFilteredList
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var vm = new AdminSubscriptionsPageViewModel
+            {
+                IsMasterEnabled = isMasterEnabled,
+                MonthlyFee = monthlyFee,
+                FreeTrialDays = freeTrialDays,
+                MinJobsRequired = minJobsRequired,
+                TotalMechanics = totalCityMechanics,
+                ActiveSubscribersCount = activeCount,
+                FreeTrialCount = trialCount,
+                DueCount = dueCount,
+                ExemptCount = exemptCount,
+                TotalSubscriptionRevenue = totalRevenue,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalRecords = totalFiltered,
+                StatusFilter = status.ToLowerInvariant(),
+                SelectedCity = city,
+                AvailableCities = cityGroups,
+                Mechanics = pagedMechanics,
+                RecentTransactions = recentSubscriptions
+            };
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveSubscriptionSettings(bool isMasterEnabled, double monthlyFee, int freeTrialDays, int minJobsRequired)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            await SaveOrUpdateSettingAsync("SubscriptionEnabled", isMasterEnabled ? "true" : "false", "Subscription");
+            await SaveOrUpdateSettingAsync("MonthlySubscriptionFee", monthlyFee.ToString(System.Globalization.CultureInfo.InvariantCulture), "Subscription");
+            await SaveOrUpdateSettingAsync("SubscriptionFreeTrialDays", freeTrialDays.ToString(), "Subscription");
+            await SaveOrUpdateSettingAsync("SubscriptionMinJobsRequired", minJobsRequired.ToString(), "Subscription");
+
+            await LogAdminActionAsync("SUBSCRIPTION_RULES", $"Updated subscription rules: MasterEnabled={isMasterEnabled}, Fee=₹{monthlyFee}, TrialDays={freeTrialDays}, MinJobs={minJobsRequired}");
+
+            TempData["Success"] = "Mechanic subscription rules and pricing updated successfully!";
+            return RedirectToAction("Subscriptions");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GrantMechanicSubscription(int mechanicId, int daysToAdd, string? notes)
+        {
+            if (!IsAdmin()) return RedirectToAction("Login", "Auth");
+
+            var mech = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(m => m.UserId == mechanicId);
+            if (mech == null)
+            {
+                TempData["Error"] = "Mechanic not found.";
+                return RedirectToAction("Subscriptions");
+            }
+
+            DateTime currentExpiry = (mech.SubscriptionValidTill.HasValue && mech.SubscriptionValidTill.Value > DateTime.UtcNow) 
+                ? mech.SubscriptionValidTill.Value 
+                : DateTime.UtcNow;
+
+            mech.SubscriptionValidTill = currentExpiry.AddDays(daysToAdd > 0 ? daysToAdd : 30);
+            mech.SubscriptionStatus = "Active";
+            mech.SubscriptionLastPaidAt = DateTime.UtcNow;
+
+            var subRecord = new MechanicSubscription
+            {
+                MechanicId = mechanicId,
+                Amount = 0.0,
+                StartDate = currentExpiry,
+                EndDate = mech.SubscriptionValidTill.Value,
+                PaymentStatus = "ManualGrant",
+                Notes = string.IsNullOrWhiteSpace(notes) ? $"Admin granted +{daysToAdd} days" : notes.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.MechanicSubscriptions.Add(subRecord);
+            await _dbContext.SaveChangesAsync();
+
+            await LogAdminActionAsync("SUBSCRIPTION_GRANT", $"Granted +{daysToAdd} days subscription to Mechanic #{mechanicId}. Valid till: {mech.SubscriptionValidTill.Value:dd MMM yyyy}");
+
+            TempData["Success"] = $"Successfully granted +{daysToAdd} days subscription to mechanic!";
+            return RedirectToAction("Subscriptions");
         }
 
         [HttpGet("/Admin/GlobalSearch")]

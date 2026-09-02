@@ -364,15 +364,12 @@
             <!-- Quick Action Cards Grid -->
             <div class="d-grid gap-2">
                 <!-- Refer & Earn Golden Card -->
-                <button type="button" class="btn btn-warning w-100 font-weight-bold text-dark shadow d-flex align-items-center justify-content-between p-2.5 rounded-3" data-bs-toggle="modal" data-bs-target="#customerReferralModal" onclick="openCustomerReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); border: none;">
-                    <div class="d-flex align-items-center gap-2.5">
-                        <i class="fa-solid fa-gift fs-5 animate-bounce"></i>
-                        <div class="text-start">
-                            <div class="fw-bold" style="font-size: 0.88rem; line-height: 1.1;">Refer &amp; Earn ₹100</div>
-                            <small class="text-dark opacity-80" style="font-size: 0.7rem;">Wallet: ₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0") | @(refSummary?.PendingReferralCount ?? 0) Pending</small>
-                        </div>
+                <button type="button" class="btn btn-warning w-100 font-weight-bold text-dark shadow d-flex align-items-center justify-content-center gap-2.5 p-2 rounded-3" data-bs-toggle="modal" data-bs-target="#customerReferralModal" onclick="openCustomerReferralModal()" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); border: none;">
+                    <i class="fa-solid fa-gift fs-5 animate-bounce"></i>
+                    <div class="text-center">
+                        <div class="fw-bold" style="font-size: 0.88rem; line-height: 1.2;">Refer &amp; Earn ₹100</div>
+                        <small class="text-dark opacity-85 fw-semibold d-block" style="font-size: 0.72rem;">Wallet: ₹@(refSummary?.ReferralWalletBalance.ToString("N0") ?? "0") | @(refSummary?.PendingReferralCount ?? 0) Pending</small>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-dark small"></i>
                 </button>
 
                 <!-- Emergency Assistance -->

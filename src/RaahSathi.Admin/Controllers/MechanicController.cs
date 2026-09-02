@@ -366,6 +366,82 @@ namespace RaahSathi.Controllers
             ViewBag.ReferralSummary = referralSummary;
             ViewBag.ReferralSettings = await _referralService.GetSettingsAsync();
 
+            // Subscription Evaluation
+            bool isSubscriptionMasterEnabled = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionEnabled"))?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+            double monthlySubFee = 499;
+            var feeSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "MonthlySubscriptionFee");
+            if (feeSetting != null && double.TryParse(feeSetting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double fVal))
+                monthlySubFee = fVal;
+
+            int trialDays = 30;
+            var trialSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionFreeTrialDays");
+            if (trialSetting != null && int.TryParse(trialSetting.SettingValue, out int tVal))
+                trialDays = tVal;
+
+            int minJobs = 2;
+            var minJobsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionMinJobsRequired");
+            if (minJobsSetting != null && int.TryParse(minJobsSetting.SettingValue, out int jVal))
+                minJobs = jVal;
+
+            DateTime regDate = user.CreatedAt;
+            int daysSinceJoined = (int)Math.Max(0, (DateTime.UtcNow - regDate).TotalDays);
+            int totalCompletedJobs = await _dbContext.Jobs.CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed");
+
+            string subStatus = "Trial";
+            bool isSubRequired = false;
+            int remainingTrialDays = Math.Max(0, trialDays - daysSinceJoined);
+
+            if (!isSubscriptionMasterEnabled)
+            {
+                subStatus = "Disabled";
+                isSubRequired = false;
+            }
+            else
+            {
+                if (daysSinceJoined < trialDays)
+                {
+                    subStatus = "Trial";
+                    isSubRequired = false;
+                }
+                else if (totalCompletedJobs < minJobs)
+                {
+                    subStatus = "Exempt";
+                    isSubRequired = false;
+                }
+                else
+                {
+                    // Joined >= 30 days AND Completed >= 2 jobs
+                    if (profile.SubscriptionValidTill.HasValue && profile.SubscriptionValidTill.Value > DateTime.UtcNow)
+                    {
+                        subStatus = "Active";
+                        isSubRequired = false;
+                    }
+                    else
+                    {
+                        subStatus = "Due";
+                        isSubRequired = true;
+
+                        // Strict Enforcement: Auto-kick offline if subscription is due
+                        if (profile.IsOnline)
+                        {
+                            profile.IsOnline = false;
+                            await _dbContext.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+
+            ViewBag.SubscriptionMasterEnabled = isSubscriptionMasterEnabled;
+            ViewBag.SubscriptionStatus = subStatus;
+            ViewBag.IsSubscriptionRequired = isSubRequired;
+            ViewBag.MonthlySubscriptionFee = monthlySubFee;
+            ViewBag.SubscriptionValidTill = profile.SubscriptionValidTill;
+            ViewBag.RemainingTrialDays = remainingTrialDays;
+            ViewBag.TotalCompletedJobs = totalCompletedJobs;
+            ViewBag.DaysSinceJoined = daysSinceJoined;
+            ViewBag.SubscriptionTrialDays = trialDays;
+            ViewBag.SubscriptionMinJobs = minJobs;
+
             return View();
         }
 
@@ -589,12 +665,103 @@ namespace RaahSathi.Controllers
             var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile != null)
             {
+                // If attempting to turn Online, check subscription eligibility
+                if (!profile.IsOnline)
+                {
+                    bool isMasterEnabled = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionEnabled"))?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+                    if (isMasterEnabled)
+                    {
+                        int trialDays = 30;
+                        var trialSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionFreeTrialDays");
+                        if (trialSetting != null && int.TryParse(trialSetting.SettingValue, out int tVal)) trialDays = tVal;
+
+                        int minJobs = 2;
+                        var minJobsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "SubscriptionMinJobsRequired");
+                        if (minJobsSetting != null && int.TryParse(minJobsSetting.SettingValue, out int jVal)) minJobs = jVal;
+
+                        double monthlyFee = 499;
+                        var feeSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "MonthlySubscriptionFee");
+                        if (feeSetting != null && double.TryParse(feeSetting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double fVal)) monthlyFee = fVal;
+
+                        DateTime regDate = user.CreatedAt;
+                        int daysSinceJoined = (int)Math.Max(0, (DateTime.UtcNow - regDate).TotalDays);
+                        int completedJobsCount = await _dbContext.Jobs.CountAsync(j => j.MechanicId == user.Id && j.Status == "Completed");
+
+                        // If >= trialDays AND completed >= minJobs -> Subscription mandatory
+                        if (daysSinceJoined >= trialDays && completedJobsCount >= minJobs)
+                        {
+                            if (!profile.SubscriptionValidTill.HasValue || profile.SubscriptionValidTill.Value <= DateTime.UtcNow)
+                            {
+                                profile.IsOnline = false;
+                                await _dbContext.SaveChangesAsync();
+                                return Json(new { 
+                                    success = false, 
+                                    subscriptionRequired = true, 
+                                    monthlyFee = monthlyFee, 
+                                    message = "Fast Monthly Subscription required to go online and receive live breakdown orders." 
+                                });
+                            }
+                        }
+                    }
+                }
+
                 profile.IsOnline = !profile.IsOnline;
                 await _dbContext.SaveChangesAsync();
                 return Json(new { success = true, isOnline = profile.IsOnline });
             }
 
             return Json(new { success = false });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ProcessSubscriptionPayment(string? paymentMethod, string? upiRef)
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Json(new { success = false, message = "Not authenticated." });
+
+            var profile = await _dbContext.MechanicProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (profile == null) return Json(new { success = false, message = "Profile not found." });
+
+            double monthlyFee = 499;
+            var feeSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "MonthlySubscriptionFee");
+            if (feeSetting != null && double.TryParse(feeSetting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double fVal))
+                monthlyFee = fVal;
+
+            DateTime currentExpiry = (profile.SubscriptionValidTill.HasValue && profile.SubscriptionValidTill.Value > DateTime.UtcNow)
+                ? profile.SubscriptionValidTill.Value
+                : DateTime.UtcNow;
+
+            profile.SubscriptionValidTill = currentExpiry.AddDays(30);
+            profile.SubscriptionAmountPaid += monthlyFee;
+            profile.SubscriptionLastPaidAt = DateTime.UtcNow;
+            profile.SubscriptionStatus = "Active";
+            profile.IsOnline = true; // Automatically turn online upon successful payment
+
+            string rzpPayId = "pay_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+            string rzpOrdId = "order_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+
+            var subRecord = new MechanicSubscription
+            {
+                MechanicId = user.Id,
+                Amount = monthlyFee,
+                StartDate = currentExpiry,
+                EndDate = profile.SubscriptionValidTill.Value,
+                PaymentStatus = "Success",
+                RazorpayPaymentId = rzpPayId,
+                RazorpayOrderId = rzpOrdId,
+                Notes = $"Monthly subscription paid via {paymentMethod ?? "Online Gateway"} (Ref: {upiRef ?? rzpPayId})",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.MechanicSubscriptions.Add(subRecord);
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { 
+                success = true, 
+                message = "🎉 Badhaai ho! Aapka VIP Monthly Subscription safaltapoorvak activate ho gaya hai. Aap ab LIVE ONLINE hain aur VIP leads receive karne ke liye ready hain!", 
+                validTill = profile.SubscriptionValidTill.Value.ToString("dd MMM yyyy"),
+                isOnline = true
+            });
         }
 
         [HttpPost]

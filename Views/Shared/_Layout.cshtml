@@ -778,6 +778,9 @@
                         <a href="/Admin/Pricing" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Pricing", StringComparison.OrdinalIgnoreCase) == true || Context.Request.Path.Value?.StartsWith("/Admin/ManagePricing", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                             <i class="fa-solid fa-tags"></i> Pricing
                         </a>
+                        <a href="/Admin/Subscriptions" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Subscriptions", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
+                            <i class="fa-solid fa-crown text-warning"></i> Subscriptions
+                        </a>
                         <a href="/Admin/Services" class="noc-middle-item @(Context.Request.Path.Value?.StartsWith("/Admin/Services", StringComparison.OrdinalIgnoreCase) == true ? "active" : "")">
                             <i class="fa-solid fa-screwdriver-wrench"></i> Services
                         </a>
