@@ -431,6 +431,49 @@ namespace RaahSathi.Controllers
                 }
             }
 
+            // Connected Active Admin Account & Payment Gateway Settings for Subscription Fee Collection
+            string adminUpiId = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminUpiId"))?.SettingValue ?? "";
+            string adminHolderName = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountHolderName"))?.SettingValue ?? "";
+            string adminBankName = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminBankName"))?.SettingValue ?? "";
+            string adminAccNo = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountNumber"))?.SettingValue ?? "";
+            string adminIfsc = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminIfscCode"))?.SettingValue ?? "";
+
+            // Fallback: If not mirrored in AdminSystemSettings, fetch active account from AdminAccountsJson
+            if (string.IsNullOrEmpty(adminUpiId) && string.IsNullOrEmpty(adminAccNo))
+            {
+                var accountsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountsJson");
+                if (accountsSetting != null && !string.IsNullOrEmpty(accountsSetting.SettingValue))
+                {
+                    try
+                    {
+                        var accList = System.Text.Json.JsonSerializer.Deserialize<List<AdminAccountModel>>(accountsSetting.SettingValue);
+                        var activeAcc = accList?.FirstOrDefault(a => a.IsActive) ?? accList?.FirstOrDefault();
+                        if (activeAcc != null)
+                        {
+                            adminUpiId = activeAcc.UpiId ?? "";
+                            adminHolderName = activeAcc.HolderName ?? "";
+                            adminBankName = activeAcc.BankName ?? "";
+                            adminAccNo = activeAcc.AccountNumber ?? "";
+                            adminIfsc = activeAcc.IfscCode ?? "";
+                        }
+                    }
+                    catch {}
+                }
+            }
+
+            string razorpayKeyId = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "RazorpayKeyId"))?.SettingValue ?? "";
+            string razorpayMode = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "RazorpayMode"))?.SettingValue ?? "Test";
+            bool isGatewayEnabled = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "PaymentGatewayEnabled"))?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? (!string.IsNullOrEmpty(razorpayKeyId));
+
+            ViewBag.AdminUpiId = !string.IsNullOrEmpty(adminUpiId) ? adminUpiId : "raahsathi@upi";
+            ViewBag.AdminAccountHolderName = !string.IsNullOrEmpty(adminHolderName) ? adminHolderName : "RaahSathi Services India";
+            ViewBag.AdminBankName = adminBankName;
+            ViewBag.AdminAccountNumber = adminAccNo;
+            ViewBag.AdminIfscCode = adminIfsc;
+            ViewBag.RazorpayKeyId = razorpayKeyId;
+            ViewBag.RazorpayMode = razorpayMode;
+            ViewBag.IsGatewayEnabled = isGatewayEnabled && !string.IsNullOrEmpty(razorpayKeyId);
+
             ViewBag.SubscriptionMasterEnabled = isSubscriptionMasterEnabled;
             ViewBag.SubscriptionStatus = subStatus;
             ViewBag.IsSubscriptionRequired = isSubRequired;
@@ -713,8 +756,72 @@ namespace RaahSathi.Controllers
             return Json(new { success = false });
         }
 
+        [HttpGet("/Mechanic/GetSubscriptionPaymentDetails")]
+        public async Task<IActionResult> GetSubscriptionPaymentDetails()
+        {
+            var user = await GetActiveMechanicUserAsync();
+            if (user == null) return Unauthorized();
+
+            double monthlyFee = 499;
+            var feeSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "MonthlySubscriptionFee");
+            if (feeSetting != null && double.TryParse(feeSetting.SettingValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double fVal))
+                monthlyFee = fVal;
+
+            string adminUpiId = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminUpiId"))?.SettingValue ?? "";
+            string adminHolderName = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountHolderName"))?.SettingValue ?? "";
+            string adminBankName = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminBankName"))?.SettingValue ?? "";
+            string adminAccNo = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountNumber"))?.SettingValue ?? "";
+            string adminIfsc = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminIfscCode"))?.SettingValue ?? "";
+
+            if (string.IsNullOrEmpty(adminUpiId) && string.IsNullOrEmpty(adminAccNo))
+            {
+                var accountsSetting = await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "AdminAccountsJson");
+                if (accountsSetting != null && !string.IsNullOrEmpty(accountsSetting.SettingValue))
+                {
+                    try
+                    {
+                        var accList = System.Text.Json.JsonSerializer.Deserialize<List<AdminAccountModel>>(accountsSetting.SettingValue);
+                        var activeAcc = accList?.FirstOrDefault(a => a.IsActive) ?? accList?.FirstOrDefault();
+                        if (activeAcc != null)
+                        {
+                            adminUpiId = activeAcc.UpiId ?? "";
+                            adminHolderName = activeAcc.HolderName ?? "";
+                            adminBankName = activeAcc.BankName ?? "";
+                            adminAccNo = activeAcc.AccountNumber ?? "";
+                            adminIfsc = activeAcc.IfscCode ?? "";
+                        }
+                    }
+                    catch {}
+                }
+            }
+
+            string razorpayKeyId = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "RazorpayKeyId"))?.SettingValue ?? "";
+            string razorpayMode = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "RazorpayMode"))?.SettingValue ?? "Test";
+            bool isGatewayEnabled = (await _dbContext.AdminSystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "PaymentGatewayEnabled"))?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? (!string.IsNullOrEmpty(razorpayKeyId));
+
+            return Json(new {
+                success = true,
+                monthlyFee = monthlyFee,
+                adminUpiId = !string.IsNullOrEmpty(adminUpiId) ? adminUpiId : "raahsathi@upi",
+                adminHolderName = !string.IsNullOrEmpty(adminHolderName) ? adminHolderName : "RaahSathi Services India",
+                adminBankName = adminBankName,
+                adminAccountNumber = adminAccNo,
+                adminIfscCode = adminIfsc,
+                razorpayKeyId = razorpayKeyId,
+                razorpayMode = razorpayMode,
+                isGatewayEnabled = isGatewayEnabled && !string.IsNullOrEmpty(razorpayKeyId),
+                userName = user.Name,
+                userPhone = user.PhoneNumber
+            });
+        }
+
         [HttpPost]
-        public async Task<IActionResult> ProcessSubscriptionPayment(string? paymentMethod, string? upiRef)
+        public async Task<IActionResult> ProcessSubscriptionPayment(
+            string? paymentMethod, 
+            string? upiRef, 
+            string? rzpPaymentId = null, 
+            string? rzpOrderId = null, 
+            string? rzpSignature = null)
         {
             var user = await GetActiveMechanicUserAsync();
             if (user == null) return Json(new { success = false, message = "Not authenticated." });
@@ -737,8 +844,13 @@ namespace RaahSathi.Controllers
             profile.SubscriptionStatus = "Active";
             profile.IsOnline = true; // Automatically turn online upon successful payment
 
-            string rzpPayId = "pay_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12);
-            string rzpOrdId = "order_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+            string finalPayId = !string.IsNullOrEmpty(rzpPaymentId)
+                ? rzpPaymentId
+                : (!string.IsNullOrEmpty(upiRef) ? upiRef : ("pay_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12)));
+
+            string finalOrdId = !string.IsNullOrEmpty(rzpOrderId)
+                ? rzpOrderId
+                : ("order_sub_" + Guid.NewGuid().ToString("N").Substring(0, 12));
 
             var subRecord = new MechanicSubscription
             {
@@ -747,9 +859,9 @@ namespace RaahSathi.Controllers
                 StartDate = currentExpiry,
                 EndDate = profile.SubscriptionValidTill.Value,
                 PaymentStatus = "Success",
-                RazorpayPaymentId = rzpPayId,
-                RazorpayOrderId = rzpOrdId,
-                Notes = $"Monthly subscription paid via {paymentMethod ?? "Online Gateway"} (Ref: {upiRef ?? rzpPayId})",
+                RazorpayPaymentId = finalPayId,
+                RazorpayOrderId = finalOrdId,
+                Notes = $"Monthly Fast subscription activated via {paymentMethod ?? "Gateway"} (Ref: {finalPayId})",
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -758,7 +870,7 @@ namespace RaahSathi.Controllers
 
             return Json(new { 
                 success = true, 
-                message = "🎉 Badhaai ho! Aapka VIP Monthly Subscription safaltapoorvak activate ho gaya hai. Aap ab LIVE ONLINE hain aur VIP leads receive karne ke liye ready hain!", 
+                message = "🎉 Badhaai ho! Aapka Fast Monthly Subscription safaltapoorvak activate ho gaya hai. Aap ab LIVE ONLINE hain aur emergency breakdown orders receive karne ke liye ready hain!", 
                 validTill = profile.SubscriptionValidTill.Value.ToString("dd MMM yyyy"),
                 isOnline = true
             });
