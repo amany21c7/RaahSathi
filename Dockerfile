@@ -22,4 +22,4 @@ ENV DOTNET_EnableDiagnostics=0
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "RaahSathi.dll"]
+ENTRYPOINT ["sh", "-c", "if [ -f RaahSathi.Web.dll ]; then exec dotnet RaahSathi.Web.dll; else exec dotnet RaahSathi.dll; fi"]
