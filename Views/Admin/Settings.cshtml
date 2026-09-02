@@ -12,6 +12,42 @@
     var googleMapsKeySetting = apiSettings?.GoogleMapsApiKey ?? settings.FirstOrDefault(s => s.SettingKey == "GoogleMapsKey")?.SettingValue ?? "AIzaSyA88921_RS_MAPS_KEY";
     var emailSenderSetting = apiSettings?.SmtpSenderEmail ?? settings.FirstOrDefault(s => s.SettingKey == "EmailSender")?.SettingValue ?? ContactInfoHelper.SupportEmail;
 
+    // Payment Gateway Credentials
+    var razorpayKeyId = settings.FirstOrDefault(s => s.SettingKey == "RazorpayKeyId")?.SettingValue ?? "";
+    var razorpayKeySecret = settings.FirstOrDefault(s => s.SettingKey == "RazorpayKeySecret")?.SettingValue ?? "";
+    var razorpayMode = settings.FirstOrDefault(s => s.SettingKey == "RazorpayMode")?.SettingValue ?? "Test";
+    var isGatewayEnabled = settings.FirstOrDefault(s => s.SettingKey == "PaymentGatewayEnabled")?.SettingValue?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? (!string.IsNullOrEmpty(razorpayKeyId));
+
+    // Connected Active Bank & UPI Account (from Admin Accounts)
+    var activeUpiId = settings.FirstOrDefault(s => s.SettingKey == "AdminUpiId")?.SettingValue ?? "";
+    var activeHolder = settings.FirstOrDefault(s => s.SettingKey == "AdminAccountHolderName")?.SettingValue ?? "";
+    var activeBank = settings.FirstOrDefault(s => s.SettingKey == "AdminBankName")?.SettingValue ?? "";
+    var activeAccNo = settings.FirstOrDefault(s => s.SettingKey == "AdminAccountNumber")?.SettingValue ?? "";
+    var activeIfsc = settings.FirstOrDefault(s => s.SettingKey == "AdminIfscCode")?.SettingValue ?? "";
+
+    // Fallback: If not mirrored in AdminSystemSettings, check AdminAccountsJson
+    if (string.IsNullOrEmpty(activeUpiId) && string.IsNullOrEmpty(activeAccNo))
+    {
+        var accountsSetting = settings.FirstOrDefault(s => s.SettingKey == "AdminAccountsJson");
+        if (accountsSetting != null && !string.IsNullOrEmpty(accountsSetting.SettingValue))
+        {
+            try
+            {
+                var accList = System.Text.Json.JsonSerializer.Deserialize<List<RaahSathi.Controllers.AdminAccountModel>>(accountsSetting.SettingValue);
+                var activeAcc = accList?.FirstOrDefault(a => a.IsActive) ?? accList?.FirstOrDefault();
+                if (activeAcc != null)
+                {
+                    activeUpiId = activeAcc.UpiId ?? "";
+                    activeHolder = activeAcc.HolderName ?? "";
+                    activeBank = activeAcc.BankName ?? "";
+                    activeAccNo = activeAcc.AccountNumber ?? "";
+                    activeIfsc = activeAcc.IfscCode ?? "";
+                }
+            }
+            catch {}
+        }
+    }
+
     // RaahSathi Core Public Contact Details
     var helplineNumberSetting = contactSettings?.HelplineNumber ?? settings.FirstOrDefault(s => s.SettingKey == "HelplineNumber")?.SettingValue ?? ContactInfoHelper.HelplineNumber;
     var whatsAppNumberSetting = contactSettings?.WhatsAppNumber ?? settings.FirstOrDefault(s => s.SettingKey == "WhatsAppNumber")?.SettingValue ?? ContactInfoHelper.WhatsAppNumber;
@@ -22,7 +58,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="text-white font-weight-bold mb-1"><i class="fa-solid fa-sliders text-warning me-2"></i> System API &amp; Contact Integration</h4>
-        <p class="text-muted small mb-0">Configure live SMS/WhatsApp gateways, system SMTP, and manage official RaahSathi public contact details.</p>
+        <p class="text-muted small mb-0">Configure live SMS/WhatsApp gateways, system SMTP, Razorpay payment gateway, and manage official RaahSathi public contact details.</p>
     </div>
 </div>
 
@@ -52,6 +88,83 @@
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-muted small font-weight-bold">System SMTP Sender Email Address</label>
                             <input type="email" name="emailSender" class="form-control glass-input text-white" value="@emailSenderSetting" placeholder="support.raahsathi@gmail.com">
+                        </div>
+
+                        <!-- 💳 Payment Gateway API Credentials (Razorpay) -->
+                        <div class="col-12 mt-3 pt-3 border-top border-secondary border-opacity-40">
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <h6 class="text-warning font-weight-bold mb-0">
+                                    <i class="fa-solid fa-credit-card me-2"></i> Payment Gateway API Credentials (Razorpay)
+                                </h6>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="chkPaymentGatewayEnabled" name="paymentGatewayEnabled" value="true" @(isGatewayEnabled ? "checked" : "") style="cursor: pointer;">
+                                        <label class="form-check-label text-white small font-weight-bold" for="chkPaymentGatewayEnabled">
+                                            Gateway Active
+                                        </label>
+                                    </div>
+                                    <span class="badge @(razorpayMode == "Live" ? "bg-success" : "bg-warning text-dark") px-2.5 py-1 font-weight-bold" style="font-size: 0.72rem;">
+                                        Mode: @razorpayMode
+                                    </span>
+                                </div>
+                            </div>
+                            <p class="text-muted extra-small mb-3">
+                                Directly receives Fast Membership subscriptions &amp; customer payments via UPI, GooglePay, PhonePe, Cards &amp; NetBanking.
+                            </p>
+                        </div>
+
+                        <div class="col-md-5 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">Razorpay Key ID</label>
+                            <input type="text" name="razorpayKeyId" class="form-control glass-input text-white" value="@razorpayKeyId" placeholder="rzp_live_xxxxxxxx or rzp_test_xxxxxxxx">
+                        </div>
+                        <div class="col-md-5 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">Razorpay Key Secret</label>
+                            <div class="input-group">
+                                <input type="password" id="txtRazorpaySecret" name="razorpayKeySecret" class="form-control glass-input text-white border-end-0" value="@razorpayKeySecret" placeholder="Enter Razorpay Key Secret...">
+                                <button class="btn btn-outline-secondary text-muted border-start-0" type="button" onclick="toggleSecretVisibility('txtRazorpaySecret', this)" style="border-color: rgba(255,255,255,0.15);">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label class="form-label text-muted small font-weight-bold">Environment</label>
+                            <select name="razorpayMode" class="form-select glass-input text-white">
+                                <!option value="Test" @(razorpayMode != "Live" ? "selected" : "")>Test / Sandbox</!option>
+                                <!option value="Live" @(razorpayMode == "Live" ? "selected" : "")>Live / Production</!option>
+                            </select>
+                        </div>
+
+                        <!-- 🏦 Connected Active Admin Settlement Account (Auto-Synced from Treasury) -->
+                        <div class="col-12 mt-3 pt-3 border-top border-secondary border-opacity-40">
+                            <div class="p-3 rounded-3 bg-black bg-opacity-40 border border-secondary border-opacity-40 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="p-2.5 rounded-circle bg-warning bg-opacity-20 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                                        <i class="fa-solid fa-building-columns fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <strong class="text-white" style="font-size: 0.92rem;">Connected Settlement Bank &amp; UPI Account</strong>
+                                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-40 font-weight-bold" style="font-size: 0.72rem;">
+                                                <i class="fa-solid fa-circle-check me-1"></i> Live Synced from Admin Accounts
+                                            </span>
+                                        </div>
+                                        <div class="text-light small mt-1">
+                                            <b>Holder:</b> <span class="text-warning font-weight-bold">@(string.IsNullOrEmpty(activeHolder) ? "Aman yadav" : activeHolder)</span>
+                                            &bull; <b>UPI ID:</b> <span class="badge bg-secondary bg-opacity-50 text-white font-monospace">@(string.IsNullOrEmpty(activeUpiId) ? "raahsathi@upi" : activeUpiId)</span>
+                                            @if (!string.IsNullOrEmpty(activeBank))
+                                            {
+                                                <span> &bull; <b>Bank:</b> @activeBank (A/C: @(activeAccNo?.Length > 4 ? "••••••" + activeAccNo.Substring(activeAccNo.Length - 4) : activeAccNo))</span>
+                                            }
+                                        </div>
+                                        <small class="text-muted d-block mt-0.5" style="font-size: 0.74rem;">
+                                            Mechanics and customers scanning the direct UPI QR or transferring via IMPS will send payments directly to this active account.
+                                        </small>
+                                    </div>
+                                </div>
+                                <a href="/Admin/Account" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1.5 font-weight-bold flex-shrink-0">
+                                    <i class="fa-solid fa-gear me-1"></i> Manage Bank Accounts
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -127,3 +240,24 @@
         </form>
     </div>
 </div>
+
+<script>
+    function toggleSecretVisibility(inputId, btn) {
+        var input = document.getElementById(inputId);
+        if (!input) return;
+        var icon = btn.querySelector('i');
+        if (input.type === "password") {
+            input.type = "text";
+            if (icon) {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        } else {
+            input.type = "password";
+            if (icon) {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    }
+</script>

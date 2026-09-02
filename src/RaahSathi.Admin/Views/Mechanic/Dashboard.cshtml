@@ -26,6 +26,16 @@
     var trialDaysConfig = ViewBag.SubscriptionTrialDays as int? ?? 30;
     var minJobsConfig = ViewBag.SubscriptionMinJobs as int? ?? 2;
 
+    // Connected Active Bank & Payment Gateway Credentials for Subscriptions
+    var adminUpiId = ViewBag.AdminUpiId as string ?? "raahsathi@upi";
+    var adminHolderName = ViewBag.AdminAccountHolderName as string ?? "RaahSathi Services India";
+    var adminBankName = ViewBag.AdminBankName as string ?? "";
+    var adminAccNo = ViewBag.AdminAccountNumber as string ?? "";
+    var adminIfsc = ViewBag.AdminIfscCode as string ?? "";
+    var razorpayKeyId = ViewBag.RazorpayKeyId as string ?? "";
+    var razorpayMode = ViewBag.RazorpayMode as string ?? "Test";
+    var isGatewayEnabled = ViewBag.IsGatewayEnabled as bool? ?? false;
+
     var now = DateTime.UtcNow;
     var mechanicBanners = _dbContext.CmsBanners
         .Where(b => b.IsActive 
@@ -4179,14 +4189,111 @@
         }
     };
 
-    window.processMechanicSubscription = function(mode) {
-        var upiRef = $('#txtUpiRefNumber').val() || '';
-        var $btn = mode === 'UPI' ? $('#btnConfirmUpiSub') : $('#btnConfirmCardSub');
-        var origHtml = $btn.html();
-        
-        $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Activating Fast Membership...');
+    window.copyTextToClipboard = function(text, btn) {
+        if (!text) return;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(function() {
+                showCopyFeedback(btn);
+            }).catch(function() {
+                fallbackCopy(text, btn);
+            });
+        } else {
+            fallbackCopy(text, btn);
+        }
+    };
 
-        $.post('/Mechanic/ProcessSubscriptionPayment', { paymentMethod: mode, upiRef: upiRef }, function(res) {
+    function fallbackCopy(text, btn) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showCopyFeedback(btn);
+        } catch (err) {}
+        textArea.remove();
+    }
+
+    function showCopyFeedback(btn) {
+        if (!btn) return;
+        var origHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> Copied!';
+        setTimeout(function() {
+            btn.innerHTML = origHtml;
+        }, 2200);
+    }
+
+    window.payViaRazorpay = function() {
+        var key = '@razorpayKeyId';
+        if (!key) {
+            alert('Online Payment Gateway is being configured by administration. Please use the Direct UPI QR or Bank Settlement tab.');
+            return;
+        }
+        if (typeof Razorpay === 'undefined') {
+            alert('Payment gateway library is loading. Please check your internet connection.');
+            return;
+        }
+
+        var options = {
+            key: key,
+            amount: Math.round(@monthlyFee * 100),
+            currency: 'INR',
+            name: 'RaahSathi',
+            description: 'Fast Partner 30-Day Official Membership',
+            handler: function (response) {
+                submitSubscriptionPayment('Razorpay Online Gateway', '', response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature, $('#btnConfirmRzpSub'));
+            },
+            prefill: {
+                name: '@(user.Name ?? "")',
+                contact: '@(user.PhoneNumber ?? "")'
+            },
+            notes: {
+                mechanic_id: '@user.Id',
+                plan: 'Fast_Partner_Monthly'
+            },
+            theme: {
+                color: '#F59E0B'
+            }
+        };
+
+        var rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+            alert('Payment could not be processed: ' + (response.error.description || 'Cancelled by user'));
+        });
+        rzp.open();
+    };
+
+    window.processMechanicSubscription = function(mode) {
+        var refNo = '';
+        var $btn = null;
+        if (mode === 'UPI') {
+            refNo = $('#txtUpiRefNumber').val() || '';
+            $btn = $('#btnConfirmUpiSub');
+        } else if (mode === 'Bank') {
+            refNo = $('#txtBankRefNumber').val() || '';
+            $btn = $('#btnConfirmBankSub');
+        } else {
+            $btn = $('#btnConfirmRzpSub');
+        }
+
+        submitSubscriptionPayment(mode, refNo, '', '', '', $btn);
+    };
+
+    function submitSubscriptionPayment(mode, upiRef, rzpPayId, rzpOrdId, rzpSig, $btn) {
+        var origHtml = $btn ? $btn.html() : '';
+        if ($btn) $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Activating Fast Membership...');
+
+        $.post('/Mechanic/ProcessSubscriptionPayment', { 
+            paymentMethod: mode, 
+            upiRef: upiRef,
+            rzpPaymentId: rzpPayId,
+            rzpOrderId: rzpOrdId,
+            rzpSignature: rzpSig
+        }, function(res) {
             if (res && res.success) {
                 var subModalEl = document.getElementById('mechanicSubscriptionModal');
                 if (subModalEl) {
@@ -4196,15 +4303,22 @@
                 alert(res.message);
                 window.location.replace('/Mechanic/Dashboard?t=' + Date.now());
             } else {
-                $btn.prop('disabled', false).html(origHtml);
+                if ($btn) $btn.prop('disabled', false).html(origHtml);
                 alert(res?.message || 'Subscription payment processing failed.');
             }
         }).fail(function() {
-            $btn.prop('disabled', false).html(origHtml);
+            if ($btn) $btn.prop('disabled', false).html(origHtml);
             alert('Server error occurred during subscription processing.');
         });
-    };
+    }
 </script>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+@{
+    var upiPaymentUri = $"upi://pay?pa={Uri.EscapeDataString(adminUpiId)}&pn={Uri.EscapeDataString(adminHolderName)}&am={monthlyFee:F2}&cu=INR&tn={Uri.EscapeDataString("RaahSathi Fast Membership")}";
+    var qrCodeUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={Uri.EscapeDataString(upiPaymentUri)}";
+}
 
 <!-- ⚡ Fast Pro Partner Subscription Modal -->
 <div class="modal fade" id="mechanicSubscriptionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
@@ -4311,55 +4425,131 @@
                     <!-- Payment Mode Tabs -->
                     <ul class="nav nav-pills nav-fill mb-3 gap-2" id="pills-sub-tab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active py-2 small font-weight-bold btn-outline-warning" id="sub-upi-tab" data-bs-toggle="pill" data-bs-target="#sub-upi-pane" type="button" role="tab">
-                                <i class="fa-solid fa-qrcode me-1"></i> UPI QR Scan / GooglePay / PhonePe
+                            <button class="nav-link active py-2 small font-weight-bold btn-outline-warning" id="sub-gateway-tab" data-bs-toggle="pill" data-bs-target="#sub-gateway-pane" type="button" role="tab">
+                                <i class="fa-solid fa-bolt text-warning me-1"></i> Instant Online Pay (Razorpay)
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link py-2 small font-weight-bold btn-outline-warning" id="sub-card-tab" data-bs-toggle="pill" data-bs-target="#sub-card-pane" type="button" role="tab">
-                                <i class="fa-solid fa-credit-card me-1"></i> Debit/Credit Cards &amp; NetBanking
+                            <button class="nav-link py-2 small font-weight-bold btn-outline-warning" id="sub-upi-tab" data-bs-toggle="pill" data-bs-target="#sub-upi-pane" type="button" role="tab">
+                                <i class="fa-solid fa-qrcode me-1"></i> Direct UPI QR
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 small font-weight-bold btn-outline-warning" id="sub-bank-tab" data-bs-toggle="pill" data-bs-target="#sub-bank-pane" type="button" role="tab">
+                                <i class="fa-solid fa-building-columns me-1"></i> Bank Transfer
                             </button>
                         </li>
                     </ul>
 
                     <div class="tab-content" id="pills-sub-tabContent">
-                        <!-- Tab 1: UPI & QR Scanner -->
-                        <div class="tab-pane fade show active text-center" id="sub-upi-pane" role="tabpanel">
+                        <!-- Tab 1: Razorpay Instant Online Pay -->
+                        <div class="tab-pane fade show active text-center" id="sub-gateway-pane" role="tabpanel">
+                            <div class="p-3.5 bg-dark rounded-3 border border-secondary border-opacity-30">
+                                <div class="d-flex justify-content-center gap-3 fs-3 text-warning mb-2">
+                                    <i class="fa-brands fa-cc-visa" title="Visa"></i>
+                                    <i class="fa-brands fa-cc-mastercard" title="Mastercard"></i>
+                                    <i class="fa-solid fa-credit-card" title="RuPay / Cards"></i>
+                                    <i class="fa-solid fa-building-columns" title="NetBanking"></i>
+                                    <i class="fa-brands fa-google-pay" title="Google Pay"></i>
+                                </div>
+                                <p class="text-muted small mb-2">Instant online activation via Cards, UPI Apps, QR &amp; NetBanking</p>
+                                
+                                @if (isGatewayEnabled && !string.IsNullOrEmpty(razorpayKeyId))
+                                {
+                                    <div class="mb-3">
+                                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40 px-2.5 py-1">
+                                            <i class="fa-solid fa-shield-check me-1"></i> 256-Bit Encrypted Secure Razorpay Vault
+                                        </span>
+                                    </div>
+                                    <button type="button" class="btn btn-warning text-dark font-weight-bold px-5 py-2.5 rounded-pill shadow-lg d-inline-flex align-items-center justify-content-center gap-2" id="btnConfirmRzpSub" onclick="payViaRazorpay()">
+                                        <i class="fa-solid fa-bolt"></i>
+                                        <span>Pay ₹@monthlyFee.ToString("N0") via Instant Gateway</span>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <div class="p-2.5 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-30 text-start d-flex align-items-center gap-2.5 mb-3">
+                                        <i class="fa-solid fa-circle-info text-warning fs-5 flex-shrink-0"></i>
+                                        <span class="text-white extra-small">
+                                            Online Gateway API key is being finalized by admin. Please use the <b>Direct UPI QR</b> or <b>Bank Transfer</b> tab for instant live activation!
+                                        </span>
+                                    </div>
+                                    <button type="button" class="btn btn-warning text-dark font-weight-bold px-4 py-2 rounded-pill shadow" onclick="$('#sub-upi-tab').click();">
+                                        <i class="fa-solid fa-qrcode me-1"></i> Switch to Direct UPI QR Scan
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Direct UPI & QR Scanner (Connected to Admin Active Account) -->
+                        <div class="tab-pane fade text-center" id="sub-upi-pane" role="tabpanel">
                             <div class="d-flex flex-column align-items-center justify-content-center p-3 bg-dark rounded-3 border border-secondary border-opacity-30">
                                 <div class="p-2 bg-white rounded-3 shadow-sm mb-2" style="display: inline-block;">
-                                    <!-- Dynamic SVG QR Pattern -->
-                                    <svg class="qr-svg" width="130" height="130" viewBox="0 0 100 100" fill="#0f172a">
-                                        <path d="M0 0h30v30H0zm5 5h20v20H5zM10 10h10v10H10zM70 0h30v30H70zm5 5h20v20H75zM80 10h10v10H80zM0 70h30v30H0zm5 5h20v20H5zM10 80h10v10H10zM40 10h10v10H40zm10 10h10v10H50zm10-10h10v10H60zm-20 20h10v10H40zm20 0h10v10H60zm10 10h10v10H70zm-30 0h10v10H40zm-10 10h10v10H30zm30 0h10v10H60zm20 0h10v10H80zm-40 10h10v10H40zm30 0h10v10H70zm10 10h10v10H80zm-40 0h10v10H40zm10 10h10v10H50zm10-10h10v10H60z"/>
-                                    </svg>
+                                    <img src="@qrCodeUrl" alt="Scan to Pay UPI" style="width: 150px; height: 150px; display: block;" class="rounded-2" />
                                 </div>
-                                <span class="text-muted extra-small d-block mb-1">Scan via any UPI App (PhonePe / GPay / Paytm)</span>
-                                <div class="badge bg-secondary bg-opacity-40 text-light px-3 py-1 font-monospace mb-2" style="font-size: 0.78rem;">
-                                    UPI ID: raahsathi.pay@icici
+                                <span class="text-muted extra-small d-block mb-1">Scan via GooglePay, PhonePe, Paytm or BHIM</span>
+                                
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-2 flex-wrap">
+                                    <div class="badge bg-secondary bg-opacity-40 text-light px-3 py-1.5 font-monospace" style="font-size: 0.82rem;">
+                                        UPI ID: <span class="text-warning font-weight-bold">@adminUpiId</span>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-warning btn-xs py-1 px-2.5 rounded-pill" onclick="copyTextToClipboard('@adminUpiId', this)" title="Copy UPI ID">
+                                        <i class="fa-solid fa-copy me-1"></i> Copy UPI ID
+                                    </button>
                                 </div>
-                                <div class="w-100" style="max-width: 320px;">
-                                    <input type="text" id="txtUpiRefNumber" class="form-control form-control-sm bg-dark text-white border-secondary mb-2 text-center" placeholder="Enter UPI Transaction / UTR No. (Optional)">
+                                <small class="text-muted extra-small d-block mb-2">Payee: <strong class="text-white">@adminHolderName</strong></small>
+
+                                <div class="w-100" style="max-width: 330px;">
+                                    <input type="text" id="txtUpiRefNumber" class="form-control form-control-sm bg-dark text-white border-secondary mb-2 text-center" placeholder="Enter UPI 12-Digit UTR / Ref No. (Optional)">
                                     <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 rounded-pill shadow-lg d-flex align-items-center justify-content-center gap-2" id="btnConfirmUpiSub" onclick="processMechanicSubscription('UPI')">
                                         <i class="fa-solid fa-circle-check"></i>
-                                        <span>Pay ₹@monthlyFee.ToString("N0") &amp; Go Online Live</span>
+                                        <span>Confirm Payment &amp; Go Online Live</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Tab 2: Cards & NetBanking -->
-                        <div class="tab-pane fade text-center" id="sub-card-pane" role="tabpanel">
-                            <div class="p-3 bg-dark rounded-3 border border-secondary border-opacity-30">
-                                <div class="d-flex justify-content-center gap-3 fs-3 text-warning mb-2">
-                                    <i class="fa-brands fa-cc-visa"></i>
-                                    <i class="fa-brands fa-cc-mastercard"></i>
-                                    <i class="fa-solid fa-credit-card"></i>
-                                    <i class="fa-solid fa-building-columns"></i>
+                        <!-- Tab 3: Bank Settlement (IMPS / NEFT) -->
+                        <div class="tab-pane fade" id="sub-bank-pane" role="tabpanel">
+                            <div class="p-3.5 bg-dark rounded-3 border border-secondary border-opacity-30">
+                                <div class="p-3 bg-black bg-opacity-50 rounded-3 border border-secondary border-opacity-30 mb-3">
+                                    <div class="row g-2 text-start">
+                                        <div class="col-sm-6">
+                                            <span class="text-muted extra-small d-block">Account Holder Name</span>
+                                            <strong class="text-white small">@(string.IsNullOrEmpty(adminHolderName) ? "RaahSathi Services India" : adminHolderName)</strong>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted extra-small d-block">Bank Name</span>
+                                            <strong class="text-white small">@(string.IsNullOrEmpty(adminBankName) ? "State Bank of India" : adminBankName)</strong>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted extra-small d-block">Account Number</span>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <strong class="text-warning font-monospace small">@(string.IsNullOrEmpty(adminAccNo) ? "503002918239" : adminAccNo)</strong>
+                                                <button type="button" class="btn btn-link p-0 text-warning" onclick="copyTextToClipboard('@adminAccNo', this)" title="Copy Account No">
+                                                    <i class="fa-solid fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="text-muted extra-small d-block">IFSC Code</span>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <strong class="text-warning font-monospace small">@(string.IsNullOrEmpty(adminIfsc) ? "SBIN0001092" : adminIfsc)</strong>
+                                                <button type="button" class="btn btn-link p-0 text-warning" onclick="copyTextToClipboard('@adminIfsc', this)" title="Copy IFSC">
+                                                    <i class="fa-solid fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <p class="text-muted small mb-3">100% Encrypted &amp; Secure 256-Bit Razorpay Payment Vault</p>
-                                <button type="button" class="btn btn-warning text-dark font-weight-bold px-5 py-2.5 rounded-pill shadow-lg d-inline-flex align-items-center justify-content-center gap-2" id="btnConfirmCardSub" onclick="processMechanicSubscription('Card')">
-                                    <i class="fa-solid fa-lock"></i>
-                                    <span>Pay ₹@monthlyFee.ToString("N0") via Gateway</span>
-                                </button>
+
+                                <div class="w-100 mx-auto" style="max-width: 330px;">
+                                    <input type="text" id="txtBankRefNumber" class="form-control form-control-sm bg-dark text-white border-secondary mb-2 text-center" placeholder="Enter IMPS / NEFT Reference UTR">
+                                    <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 rounded-pill shadow-lg d-flex align-items-center justify-content-center gap-2" id="btnConfirmBankSub" onclick="processMechanicSubscription('Bank')">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        <span>Confirm Bank Transfer &amp; Activate</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -4369,7 +4559,7 @@
             <div class="modal-footer border-secondary border-opacity-30 bg-black bg-opacity-40 justify-content-between p-3">
                 <div class="d-flex align-items-center gap-1.5 text-muted extra-small">
                     <i class="fa-solid fa-lock text-success"></i>
-                    <span>Secure RaahSathi Escrow Guarantee</span>
+                    <span>Secure RaahSathi Escrow &amp; 100% Direct Payout Guarantee</span>
                 </div>
                 <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Close</button>
             </div>

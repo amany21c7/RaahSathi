@@ -2388,7 +2388,11 @@ namespace RaahSathi.Controllers
             string smsApiKey, 
             string whatsappNo, 
             string googleMapsKey, 
-            string emailSender)
+            string emailSender,
+            string? razorpayKeyId = null,
+            string? razorpayKeySecret = null,
+            string? razorpayMode = null,
+            string? paymentGatewayEnabled = null)
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
@@ -2425,8 +2429,14 @@ namespace RaahSathi.Controllers
             await SaveOrUpdateSettingAsync("WhatsAppNo", whatsappNo ?? "", "API Gateway");
             await SaveOrUpdateSettingAsync("GoogleMapsKey", googleMapsKey ?? "", "API Gateway");
 
-            await LogAdminActionAsync("API_SETTINGS_UPDATE", "Updated System API Integration & Gateway Keys via SP");
-            TempData["Success"] = "SMS, WhatsApp & Google Maps API credentials saved successfully.";
+            // Save Payment Gateway (Razorpay) Credentials
+            if (razorpayKeyId != null) await SaveOrUpdateSettingAsync("RazorpayKeyId", razorpayKeyId.Trim(), "Payment Gateway");
+            if (razorpayKeySecret != null) await SaveOrUpdateSettingAsync("RazorpayKeySecret", razorpayKeySecret.Trim(), "Payment Gateway");
+            if (razorpayMode != null) await SaveOrUpdateSettingAsync("RazorpayMode", razorpayMode.Trim(), "Payment Gateway");
+            await SaveOrUpdateSettingAsync("PaymentGatewayEnabled", paymentGatewayEnabled == "true" ? "true" : "false", "Payment Gateway");
+
+            await LogAdminActionAsync("API_SETTINGS_UPDATE", "Updated System API Integration & Gateway Keys (SMS, WhatsApp, Maps & Payment Gateway)");
+            TempData["Success"] = "SMS, WhatsApp, Maps & Payment Gateway API credentials saved successfully.";
             return RedirectToAction("Settings");
         }
 
@@ -2509,6 +2519,10 @@ namespace RaahSathi.Controllers
             string? emailSender, 
             string? whatsappNo, 
             string? googleMapsKey,
+            string? razorpayKeyId = null,
+            string? razorpayKeySecret = null,
+            string? razorpayMode = null,
+            string? paymentGatewayEnabled = null,
             string? helplineNumber = null,
             string? tollFreeNumber = null,
             string? emergencySupportNumber = null,
@@ -2525,6 +2539,12 @@ namespace RaahSathi.Controllers
             await SaveOrUpdateSettingAsync("EmailSender", emailSender ?? "", "API Gateway");
             await SaveOrUpdateSettingAsync("WhatsAppNo", (whatsAppNumber ?? whatsappNo) ?? "", "API Gateway");
             await SaveOrUpdateSettingAsync("GoogleMapsKey", googleMapsKey ?? "", "API Gateway");
+
+            // Save Payment Gateway (Razorpay) Credentials
+            if (razorpayKeyId != null) await SaveOrUpdateSettingAsync("RazorpayKeyId", razorpayKeyId.Trim(), "Payment Gateway");
+            if (razorpayKeySecret != null) await SaveOrUpdateSettingAsync("RazorpayKeySecret", razorpayKeySecret.Trim(), "Payment Gateway");
+            if (razorpayMode != null) await SaveOrUpdateSettingAsync("RazorpayMode", razorpayMode.Trim(), "Payment Gateway");
+            if (paymentGatewayEnabled != null) await SaveOrUpdateSettingAsync("PaymentGatewayEnabled", paymentGatewayEnabled == "true" ? "true" : "false", "Payment Gateway");
 
             // RaahSathi Contact & Support Info
             if (!string.IsNullOrEmpty(helplineNumber)) await SaveOrUpdateSettingAsync("HelplineNumber", helplineNumber.Trim(), "Contact Info");
