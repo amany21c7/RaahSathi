@@ -258,62 +258,72 @@
                 </div>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- WhatsApp QR Scanner Modal -->
+   <!-- WhatsApp QR Scanner Modal -->
 <div class="modal fade" id="modalWhatsAppQr" tabindex="-1" aria-labelledby="modalWhatsAppQrLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border-success shadow-lg" style="border-width: 2px;">
-            <div class="modal-header border-secondary bg-transparent py-3">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content text-white shadow-lg" style="background: #111827; border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 16px; overflow: hidden;">
+            <div class="modal-header py-3 px-4" style="background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.08);">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="fa-brands fa-whatsapp text-success fs-4"></i>
-                    <h5 class="modal-title text-white font-weight-bold" id="modalWhatsAppQrLabel">WhatsApp Web QR Gateway</h5>
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 34px; height: 34px; background: rgba(34, 197, 94, 0.15); color: #22c55e;">
+                        <i class="fa-brands fa-whatsapp fs-5"></i>
+                    </span>
+                    <div>
+                        <h6 class="modal-title font-weight-bold text-white mb-0" id="modalWhatsAppQrLabel">Link WhatsApp Gateway</h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">Official OTP Delivery System</small>
+                    </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center p-4">
-                <div id="modalWaStatusBadge" class="badge bg-warning text-dark px-3 py-2 fs-6 mb-3 font-weight-bold">
-                    <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Checking Gateway...
+                <!-- Status Badge (Always Centered) -->
+                <div class="mb-3">
+                    <span id="modalWaStatusBadge" class="badge px-3 py-1.5 font-weight-bold shadow-sm" style="font-size: 0.82rem; border-radius: 20px; background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid #eab308;">
+                        <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Checking Gateway...
+                    </span>
                 </div>
 
-                <!-- Live QR Container -->
-                <div id="modalWaQrContainer" class="p-3 bg-white rounded shadow-lg d-inline-block my-2" style="min-width: 240px; min-height: 240px;">
-                    <img id="modalWaQrImage" src="" alt="WhatsApp QR Code" style="width: 220px; height: 220px; display: none;" />
-                    <div id="modalWaQrPlaceholder" class="d-flex flex-column align-items-center justify-content-center text-dark" style="height: 220px; width: 220px;">
-                        <i class="fa-solid fa-circle-notch fa-spin text-muted fs-2 mb-2"></i>
-                        <span class="text-muted small">Loading QR...</span>
+                <!-- Live QR Container (Clean Centered Square) -->
+                <div id="modalWaQrWrapper" class="d-flex justify-content-center my-2">
+                    <div id="modalWaQrContainer" class="p-3 bg-white rounded-4 shadow" style="width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; position: relative;">
+                        <img id="modalWaQrImage" src="" alt="WhatsApp QR Code" class="d-none rounded-2" style="width: 210px; height: 210px; object-fit: contain;" />
+                        <div id="modalWaQrPlaceholder" class="d-flex flex-column align-items-center justify-content-center text-dark" style="width: 210px; height: 210px;">
+                            <i class="fa-solid fa-circle-notch fa-spin text-muted fs-2 mb-2"></i>
+                            <span class="text-muted small font-weight-bold">Generating QR Code...</span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Instructions -->
-                <div id="modalWaInstructions" class="text-start bg-black p-3 rounded border border-secondary border-opacity-40 my-3">
-                    <h6 class="text-warning font-weight-bold small mb-2"><i class="fa-solid fa-mobile-screen-button me-1"></i> How to Link:</h6>
-                    <ol class="text-light small ps-3 mb-0" style="line-height: 1.7;">
-                        <li>Open <strong>WhatsApp</strong> on your phone.</li>
-                        <li>Tap <strong>Settings</strong> (iOS) or <strong>Three Dots (⋮)</strong> (Android) &gt; <strong>Linked Devices</strong>.</li>
-                        <li>Tap <strong>Link a Device</strong> and point your camera at the QR code above.</li>
+                <div id="modalWaInstructions" class="text-start p-3 rounded-3 mt-3 text-white" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+                    <div class="text-warning font-weight-bold small mb-2 d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-mobile-screen-button"></i> <span>How to link in 3 steps:</span>
+                    </div>
+                    <ol class="small ps-3 mb-0 text-muted" style="line-height: 1.6; font-size: 0.8rem;">
+                        <li>Open <strong class="text-white">WhatsApp</strong> on your phone</li>
+                        <li>Go to <strong class="text-white">Settings</strong> &gt; <strong class="text-white">Linked Devices</strong></li>
+                        <li>Tap <strong class="text-warning">Link a Device</strong> and scan this code</li>
                     </ol>
                 </div>
 
                 <!-- Connected Info -->
-                <div id="modalWaConnectedInfo" class="d-none my-3">
-                    <div class="alert alert-success bg-dark border-success text-white mb-2">
-                        <i class="fa-solid fa-circle-check text-success fs-3 d-block mb-1"></i>
-                        <strong>WhatsApp Gateway Connected!</strong>
-                        <div class="small mt-1 text-light">All OTPs will be delivered directly from this connected phone number.</div>
-                        <div class="fs-5 font-monospace text-warning font-weight-bold mt-2" id="modalWaConnectedPhone">+91 XXXXX XXXXX</div>
+                <div id="modalWaConnectedInfo" class="d-none mt-3">
+                    <div class="p-3 rounded-3 text-center" style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3);">
+                        <i class="fa-solid fa-circle-check text-success fs-2 mb-2 d-block"></i>
+                        <h6 class="text-white font-weight-bold mb-1">WhatsApp Connected Successfully!</h6>
+                        <p class="text-muted small mb-2" style="font-size: 0.78rem;">All registration and verification OTPs are delivered from:</p>
+                        <div class="font-monospace text-warning font-weight-bold fs-5 px-3 py-1.5 rounded-2 d-inline-block" id="modalWaConnectedPhone" style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(234, 179, 8, 0.4);">+91 XXXXX XXXXX</div>
                     </div>
-                    <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="logoutWhatsAppGateway()">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i> Disconnect / Switch Number
+                    <button type="button" class="btn btn-outline-danger btn-sm mt-3 px-3" onclick="logoutWhatsAppGateway()">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Disconnect / Switch Phone
                     </button>
                 </div>
             </div>
-            <div class="modal-footer border-secondary bg-transparent py-2 justify-content-end">
-                <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer py-2.5 px-4 justify-content-end" style="background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.08);">
+                <button type="button" class="btn btn-secondary btn-sm px-4 font-weight-bold" data-bs-dismiss="modal" style="border-radius: 8px;">Close</button>
             </div>
-
         </div>
+    </div>
+</div>
     </div>
 </div>
 
@@ -356,32 +366,32 @@
             const modalConnectedInfo = document.getElementById('modalWaConnectedInfo');
             const modalConnectedPhone = document.getElementById('modalWaConnectedPhone');
 
+            const modalQrWrapper = document.getElementById('modalWaQrWrapper');
+
             if (!data.success || (!data.isOnline && !data.isConnected)) {
                 if (fieldBadge) {
                     fieldBadge.className = 'badge bg-danger text-white font-weight-bold';
                     fieldBadge.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Gateway Offline';
                 }
-                if (btnText) {
-                    btnText.innerHTML = 'Link WhatsApp';
-                }
+                if (btnText) btnText.innerHTML = 'Link WhatsApp';
                 if (fieldHelp) {
                     fieldHelp.innerHTML = '<span class="text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> WhatsApp Gateway service is offline or starting up on server.</span>';
                 }
-                if (lnkDisc) {
-                    lnkDisc.classList.add('d-none');
-                }
+                if (lnkDisc) lnkDisc.classList.add('d-none');
                 if (modalBadge) {
-                    modalBadge.className = 'badge bg-danger text-white px-3 py-2 fs-6';
+                    modalBadge.className = 'badge px-3 py-1.5 font-weight-bold shadow-sm';
+                    modalBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                    modalBadge.style.color = '#ef4444';
+                    modalBadge.style.border = '1px solid #ef4444';
                     modalBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Gateway Offline';
                 }
                 if (modalQrPlaceholder) {
-                    modalQrPlaceholder.style.display = 'flex';
-                    modalQrPlaceholder.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger fs-2 mb-2"></i><span class="text-danger font-weight-bold small">WhatsApp Gateway is currently offline.</span><small class="text-muted mt-1" style="font-size:0.75rem;">' + (data.message || 'Starting background service...') + '</small>';
+                    modalQrPlaceholder.classList.remove('d-none');
+                    modalQrPlaceholder.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger fs-2 mb-2"></i><span class="text-danger font-weight-bold small">Gateway is currently offline.</span><small class="text-muted mt-1" style="font-size:0.75rem;">' + (data.message || 'Starting background service...') + '</small>';
                 }
-                if (modalQrImage) modalQrImage.style.display = 'none';
+                if (modalQrImage) modalQrImage.classList.add('d-none');
                 return;
             }
-
 
             if (data.isConnected) {
                 var cleanPhone = data.connectedPhone || '';
@@ -391,29 +401,24 @@
                     fieldBadge.className = 'badge bg-success text-dark font-weight-bold';
                     fieldBadge.innerHTML = '<i class="fa-solid fa-circle-check text-dark me-1"></i> Connected';
                 }
-                if (btnText) {
-                    btnText.innerHTML = '🟢 Linked';
-                }
+                if (btnText) btnText.innerHTML = '🟢 Linked';
                 if (fieldHelp) {
                     fieldHelp.innerHTML = '<span class="text-success"><i class="fa-solid fa-circle-check me-1"></i> Active: OTPs are being sent via ' + formatted + '</span>';
                 }
-                if (lnkDisc) {
-                    lnkDisc.classList.remove('d-none');
-                }
+                if (lnkDisc) lnkDisc.classList.remove('d-none');
                 if (phoneInput && (!phoneInput.value || phoneInput.value.trim() === '')) {
                     phoneInput.value = formatted;
                 }
 
                 // Modal Updates
                 if (modalBadge) {
-                    modalBadge.className = 'badge bg-success text-dark px-3 py-2 fs-6 font-weight-bold';
+                    modalBadge.className = 'badge px-3 py-1.5 font-weight-bold shadow-sm';
+                    modalBadge.style.background = 'rgba(34, 197, 94, 0.2)';
+                    modalBadge.style.color = '#22c55e';
+                    modalBadge.style.border = '1px solid #22c55e';
                     modalBadge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> Active &amp; Connected';
                 }
-                if (modalQrImage) modalQrImage.style.display = 'none';
-                if (modalQrPlaceholder) {
-                    modalQrPlaceholder.innerHTML = '<i class="fa-solid fa-circle-check text-success fs-1 mb-2"></i><span class="text-success font-weight-bold">WhatsApp Connected</span>';
-                    modalQrPlaceholder.style.display = 'flex';
-                }
+                if (modalQrWrapper) modalQrWrapper.classList.add('d-none');
                 if (modalInstructions) modalInstructions.classList.add('d-none');
                 if (modalConnectedInfo) modalConnectedInfo.classList.remove('d-none');
                 if (modalConnectedPhone) modalConnectedPhone.innerText = formatted;
@@ -423,26 +428,28 @@
                     fieldBadge.className = 'badge bg-warning text-dark font-weight-bold';
                     fieldBadge.innerHTML = '<i class="fa-solid fa-qrcode me-1"></i> Ready to Scan';
                 }
-                if (btnText) {
-                    btnText.innerHTML = 'Scan QR';
-                }
+                if (btnText) btnText.innerHTML = 'Scan QR';
                 if (fieldHelp) {
                     fieldHelp.innerHTML = 'Click "Scan QR" to connect your WhatsApp number.';
                 }
-                if (lnkDisc) {
-                    lnkDisc.classList.add('d-none');
-                }
+                if (lnkDisc) lnkDisc.classList.add('d-none');
 
                 // Modal Updates
                 if (modalBadge) {
-                    modalBadge.className = 'badge bg-warning text-dark px-3 py-2 fs-6 font-weight-bold';
-                    modalBadge.innerHTML = '<i class="fa-solid fa-qrcode me-1"></i> Ready to Scan';
+                    modalBadge.className = 'badge px-3 py-1.5 font-weight-bold shadow-sm';
+                    modalBadge.style.background = 'rgba(234, 179, 8, 0.2)';
+                    modalBadge.style.color = '#facc15';
+                    modalBadge.style.border = '1px solid #eab308';
+                    modalBadge.innerHTML = '<i class="fa-solid fa-qrcode me-1"></i> Ready to Scan with Phone';
                 }
+                if (modalQrWrapper) modalQrWrapper.classList.remove('d-none');
                 if (modalQrImage) {
                     modalQrImage.src = data.qrDataUrl;
-                    modalQrImage.style.display = 'block';
+                    modalQrImage.classList.remove('d-none');
                 }
-                if (modalQrPlaceholder) modalQrPlaceholder.style.display = 'none';
+                if (modalQrPlaceholder) {
+                    modalQrPlaceholder.classList.add('d-none');
+                }
                 if (modalInstructions) modalInstructions.classList.remove('d-none');
                 if (modalConnectedInfo) modalConnectedInfo.classList.add('d-none');
 
@@ -451,21 +458,24 @@
                     fieldBadge.className = 'badge bg-secondary text-white';
                     fieldBadge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Initializing...';
                 }
-                if (btnText) {
-                    btnText.innerHTML = 'Link WhatsApp';
-                }
+                if (btnText) btnText.innerHTML = 'Link WhatsApp';
                 if (modalBadge) {
-                    modalBadge.className = 'badge bg-secondary text-white px-3 py-2 fs-6';
-                    modalBadge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Initializing Gateway...';
+                    modalBadge.className = 'badge px-3 py-1.5 font-weight-bold shadow-sm';
+                    modalBadge.style.background = 'rgba(148, 163, 184, 0.2)';
+                    modalBadge.style.color = '#94a3b8';
+                    modalBadge.style.border = '1px solid #64748b';
+                    modalBadge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Generating QR...';
                 }
+                if (modalQrWrapper) modalQrWrapper.classList.remove('d-none');
                 if (modalQrPlaceholder) {
-                    modalQrPlaceholder.style.display = 'flex';
-                    modalQrPlaceholder.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-muted fs-2 mb-2"></i><span class="text-muted small">Loading QR...</span>';
+                    modalQrPlaceholder.classList.remove('d-none');
+                    modalQrPlaceholder.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-muted fs-2 mb-2"></i><span class="text-muted small font-weight-bold">Generating QR Code...</span>';
                 }
-                if (modalQrImage) modalQrImage.style.display = 'none';
+                if (modalQrImage) modalQrImage.classList.add('d-none');
                 if (modalInstructions) modalInstructions.classList.remove('d-none');
                 if (modalConnectedInfo) modalConnectedInfo.classList.add('d-none');
             }
+
         } catch (err) {
             const fieldBadge = document.getElementById('waFieldStatusBadge');
             if (fieldBadge) {
