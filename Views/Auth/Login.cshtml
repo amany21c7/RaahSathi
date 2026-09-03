@@ -370,11 +370,12 @@
                         <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-1 small">
                             <i class="fa-solid fa-check-circle me-1"></i> OTP Sent to <span id="lblSentAdminPhone"></span>
                         </span>
+                        <div id="devOtpBannerAdminForgot" class="alert alert-info py-2 px-3 mt-2 small d-none font-monospace"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label text-muted small font-weight-bold">Enter 4-Digit OTP <span class="text-warning">(Use 1234)</span></label>
-                        <input type="text" class="form-control glass-input text-white text-center font-weight-bold" id="adminForgotOtpCode" placeholder="••••" maxlength="4" style="letter-spacing: 12px; font-size: 1.3rem;">
+                        <label class="form-label text-muted small font-weight-bold">Enter 6-Digit OTP</label>
+                        <input type="text" class="form-control glass-input text-white text-center font-monospace font-weight-bold" id="adminForgotOtpCode" placeholder="••••••" maxlength="6" style="letter-spacing: 12px; font-size: 1.4rem;" autocomplete="one-time-code">
                     </div>
 
                     <div class="mb-3">
@@ -397,6 +398,7 @@
                         </a>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -540,7 +542,13 @@ $(document).ready(function() {
             $('#btnAdminSendForgotOtp').html('Send Reset OTP <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
             if (res.success) {
                 $('#lblSentAdminPhone').text('+91 ' + adminForgotPhone);
+                if (res.devOtp) {
+                    $('#devOtpBannerAdminForgot').removeClass('d-none').html('🔑 <b>Dev Test OTP:</b> ' + res.devOtp + ' <small class="d-block text-muted">Scan QR in Admin Settings for WhatsApp delivery.</small>');
+                } else {
+                    $('#devOtpBannerAdminForgot').addClass('d-none');
+                }
                 showAdminModalPanel('adminPanelForgotReset', 'Admin OTP Verification');
+                $('#adminForgotOtpCode').val('').focus();
             } else {
                 alert('⚠️ ' + res.message);
                 $('#adminModalError').removeClass('d-none').text(res.message);
@@ -554,14 +562,9 @@ $(document).ready(function() {
         var password = $('#adminForgotNewPassword').val().trim();
         var confirm = $('#adminForgotConfirmPassword').val().trim();
 
-        if (otp.length !== 4) {
-            alert('⚠️ Please enter 4-digit OTP code.');
-            $('#adminModalError').removeClass('d-none').text('Please enter 4-digit OTP code.');
-            return;
-        }
-        if (otp !== "1234") {
-            alert('⚠️ Invalid OTP code. Use 1234 for testing.');
-            $('#adminModalError').removeClass('d-none').text('Invalid OTP code. Use 1234 for testing.');
+        if (otp.length !== 6) {
+            alert('⚠️ Please enter the 6-digit OTP code.');
+            $('#adminModalError').removeClass('d-none').text('Please enter the 6-digit OTP code.');
             return;
         }
         if (password.length < 4) {
@@ -576,22 +579,35 @@ $(document).ready(function() {
         }
 
         $('#adminModalError').addClass('d-none');
-        $(this).html('<i class="fa-solid fa-circle-notch fa-spin"></i> Resetting Password...').prop('disabled', true);
+        var btn = $(this);
+        btn.html('<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying OTP &amp; Resetting...').prop('disabled', true);
 
-        $.post('/Auth/ResetPassword', {
-            phoneNumber: adminForgotPhone,
-            role: 'Admin',
-            password: password
-        }, function(res) {
-            if (res.success) {
-                window.location.href = res.redirect;
-            } else {
-                alert('⚠️ ' + res.message);
-                $('#adminModalError').removeClass('d-none').text(res.message);
-                $('#btnAdminCompleteReset').html('Reset Password & Login <i class="fa-solid fa-circle-check ms-1"></i>').prop('disabled', false);
+        // Step 1: Verify OTP with backend
+        $.post('/Auth/VerifyOtpForForgotPassword', { phoneNumber: adminForgotPhone, otp: otp }, function(vRes) {
+            if (!vRes.success) {
+                alert('⚠️ ' + vRes.message);
+                $('#adminModalError').removeClass('d-none').text(vRes.message);
+                btn.html('Reset Password &amp; Login <i class="fa-solid fa-circle-check ms-1"></i>').prop('disabled', false);
+                return;
             }
+
+            // Step 2: Reset Password
+            $.post('/Auth/ResetPassword', {
+                phoneNumber: adminForgotPhone,
+                role: 'Admin',
+                password: password
+            }, function(res) {
+                if (res.success) {
+                    window.location.href = res.redirect;
+                } else {
+                    alert('⚠️ ' + res.message);
+                    $('#adminModalError').removeClass('d-none').text(res.message);
+                    btn.html('Reset Password &amp; Login <i class="fa-solid fa-circle-check ms-1"></i>').prop('disabled', false);
+                }
+            });
         });
     });
+
     // Switch Panels
     function showPanel(panelId, title, iconClass, subtitle) {
         var activeRole = $('input[name="loginRole"]:checked').val() || 

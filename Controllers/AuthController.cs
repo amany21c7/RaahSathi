@@ -243,23 +243,36 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
             }
 
-            // Find user by phone number and role first, or fallback to phone across any role
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
-            if (user == null)
+            // Find user by phone number and role
+            RaahSathi.Models.User? user;
+            if (role == "Admin")
             {
-                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == "Admin");
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Access Denied: This mobile number is not authorized as an Administrator." });
+                }
+            }
+            else
+            {
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
+                if (user == null)
+                {
+                    user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
+                }
+
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Mobile number is not registered. Please click 'Create Account' to sign up." });
+                }
+
+                // Verify role matching
+                if (!string.IsNullOrEmpty(role) && user.Role != role && user.Role != "Admin")
+                {
+                    return Json(new { success = false, message = $"This phone number is registered as a {user.Role}. Please select the {user.Role} option to log in." });
+                }
             }
 
-            if (user == null)
-            {
-                return Json(new { success = false, message = "Mobile number is not registered. Please click 'Create Account' to sign up." });
-            }
-
-            // Verify role matching
-            if (!string.IsNullOrEmpty(role) && user.Role != role && user.Role != "Admin")
-            {
-                return Json(new { success = false, message = $"This phone number is registered as a {user.Role}. Please select the {user.Role} option to log in." });
-            }
 
             // Check if user has no password set (created via Guest Booking or quick OTP flow)
             if (string.IsNullOrWhiteSpace(user.Password) || user.Password == "OTP_USER_123")
@@ -407,15 +420,27 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
             }
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && (string.IsNullOrEmpty(role) || u.Role == role));
-            if (user == null)
+            RaahSathi.Models.User? user;
+            if (role == "Admin")
             {
-                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == "Admin");
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Access Denied: This mobile number is not registered as an Administrator." });
+                }
             }
-
-            if (user == null)
+            else
             {
-                return Json(new { success = false, message = "Mobile number is not registered in the system." });
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && (string.IsNullOrEmpty(role) || u.Role == role));
+                if (user == null)
+                {
+                    user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
+                }
+
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Mobile number is not registered in the system." });
+                }
             }
 
             var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, "ForgotPassword");
@@ -446,16 +471,29 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "WhatsApp number verification is required. Please verify your OTP first." });
             }
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && (string.IsNullOrEmpty(role) || u.Role == role));
-            if (user == null)
+            RaahSathi.Models.User? user;
+            if (role == "Admin")
             {
-                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == "Admin");
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Access Denied: Not an authorized Administrator account." });
+                }
+            }
+            else
+            {
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && (string.IsNullOrEmpty(role) || u.Role == role));
+                if (user == null)
+                {
+                    user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
+                }
+
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "User not found." });
+                }
             }
 
-            if (user == null)
-            {
-                return Json(new { success = false, message = "User not found." });
-            }
 
             user.Password = PasswordHasher.HashPassword(password);
             await _dbContext.SaveChangesAsync();
