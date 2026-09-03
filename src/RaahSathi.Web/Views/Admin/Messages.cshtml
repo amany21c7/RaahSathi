@@ -1,5 +1,6 @@
 @model IEnumerable<RaahSathi.Models.ContactMessage>
 @using RaahSathi.Models
+@using System.Text.Encodings.Web
 @{
     ViewData["Title"] = "Analytics & Support Center - Admin Console";
     string currentFilter = ViewBag.StatusFilter as string ?? "All";
@@ -39,45 +40,60 @@
         border-radius: 12px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     }
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    .quick-chip {
+        font-size: 0.75rem;
+        transition: all 0.15s ease;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+    .quick-chip:hover {
+        background: #ff6b00 !important;
+        border-color: #ff6b00 !important;
+        color: #fff !important;
+    }
 </style>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-2 py-sm-4 px-1 px-sm-3">
     <!-- Header & Navigation -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom border-secondary">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 mb-sm-4 pb-3 border-bottom border-secondary gap-2">
         <div>
-            <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-2">ADMIN NOC</span>
-            <h2 class="text-white font-weight-bold mb-0" style="font-family: 'Outfit', sans-serif;">
-                <i class="fa-solid fa-headset text-warning me-2"></i> Support & Complaint Center
-            </h2>
+            <span class="badge bg-warning text-dark font-weight-bold px-3 py-1 mb-1.5">ADMIN NOC</span>
+            <h3 class="text-white font-weight-bold mb-0 fs-5 fs-sm-4" style="font-family: 'Outfit', sans-serif;">
+                <i class="fa-solid fa-headset text-warning me-1.5"></i> Support &amp; Complaint Center
+            </h3>
             <p class="text-muted small mb-0">Manage customer/partner support tickets, track user complaints, and issue warning alerts.</p>
         </div>
-        <div class="mt-3 mt-md-0 d-flex gap-2">
-            <a href="/Admin/Dashboard" class="btn btn-outline-light btn-sm px-3">
+        <div class="d-flex gap-2">
+            <a href="/Admin/Dashboard" class="btn btn-outline-light btn-sm px-3 font-weight-bold">
                 <i class="fa-solid fa-gauge me-1"></i> Dashboard
             </a>
-            <a href="/Admin/ManagePricing" class="btn btn-outline-warning btn-sm px-3">
+            <a href="/Admin/ManagePricing" class="btn btn-outline-warning btn-sm px-3 font-weight-bold">
                 <i class="fa-solid fa-indian-rupee-sign me-1"></i> Pricing Rules
             </a>
         </div>
     </div>
 
-    <!-- Tab Selection Navigation -->
-    <ul class="nav nav-pills mb-4 gap-2" id="supportTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active btn-tab-pill text-white px-4" id="enquiries-tab" data-bs-toggle="pill" data-bs-target="#enquiries-panel" type="button" role="tab">
-                <i class="fa-solid fa-envelope me-1.5 text-warning"></i> Support Enquiries
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link btn-tab-pill text-white position-relative px-4" id="complaints-tab" data-bs-toggle="pill" data-bs-target="#complaints-panel" type="button" role="tab">
-                <i class="fa-solid fa-triangle-exclamation text-danger me-1.5"></i> Job Complaints & Warnings
-                @if (complaints.Any(c => c.Status == "Pending"))
-                {
-                    <span class="badge bg-danger rounded-pill ms-1 font-weight-bold" style="font-size: 0.75rem;">@complaints.Count(c => c.Status == "Pending")</span>
-                }
-            </button>
-        </li>
-    </ul>
+    <!-- Tab Selection Navigation (Scrollable on Mobile) -->
+    <div class="overflow-auto pb-1 mb-3">
+        <ul class="nav nav-pills flex-nowrap text-nowrap gap-2" id="supportTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active btn-tab-pill text-white px-3 px-sm-4 py-2" id="enquiries-tab" data-bs-toggle="pill" data-bs-target="#enquiries-panel" type="button" role="tab" style="font-size: 0.85rem;">
+                    <i class="fa-solid fa-envelope me-1.5 text-warning"></i> Support Enquiries
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link btn-tab-pill text-white position-relative px-3 px-sm-4 py-2" id="complaints-tab" data-bs-toggle="pill" data-bs-target="#complaints-panel" type="button" role="tab" style="font-size: 0.85rem;">
+                    <i class="fa-solid fa-triangle-exclamation text-danger me-1.5"></i> Job Complaints &amp; Warnings
+                    @if (complaints.Any(c => c.Status == "Pending"))
+                    {
+                        <span class="badge bg-danger rounded-pill ms-1 font-weight-bold" style="font-size: 0.7rem;">@complaints.Count(c => c.Status == "Pending")</span>
+                    }
+                </button>
+            </li>
+        </ul>
+    </div>
 
     <!-- Tab Contents -->
     <div class="tab-content" id="supportTabsContent">
@@ -85,48 +101,52 @@
         <!-- PANEL 1: SUPPORT ENQUIRIES -->
         <div class="tab-pane fade show active" id="enquiries-panel" role="tabpanel" aria-labelledby="enquiries-tab">
             <!-- Summary Stat Cards -->
-            <div class="row g-3 mb-4">
+            <div class="row g-2 g-sm-3 mb-3">
                 <div class="col-6 col-md-3">
                     <a href="/Admin/Messages?statusFilter=All" class="text-decoration-none">
-                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "All" ? "border-warning bg-dark bg-opacity-60" : "")">
-                            <div class="text-muted small">Total Messages</div>
-                            <h3 class="text-white font-weight-bold mb-0 mt-1">@totalCount</h3>
+                        <div class="kpi-stat-card @(currentFilter == "All" ? "border-warning bg-dark bg-opacity-60" : "")">
+                            <span class="kpi-stat-title">Total Messages</span>
+                            <h3 class="kpi-stat-value text-white">@totalCount</h3>
+                            <small class="kpi-stat-subtitle"><i class="fa-solid fa-inbox me-1 text-primary"></i> All Inbox</small>
                         </div>
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
                     <a href="/Admin/Messages?statusFilter=Pending" class="text-decoration-none">
-                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "Pending" ? "border-warning bg-dark bg-opacity-60" : "")">
-                            <div class="text-warning small font-weight-bold"><i class="fa-solid fa-clock me-1"></i> Pending Follow-up</div>
-                            <h3 class="text-warning font-weight-bold mb-0 mt-1">@pendingCount</h3>
+                        <div class="kpi-stat-card @(currentFilter == "Pending" ? "border-warning bg-dark bg-opacity-60" : "")">
+                            <span class="kpi-stat-title text-warning">Pending</span>
+                            <h3 class="kpi-stat-value text-warning">@pendingCount</h3>
+                            <small class="kpi-stat-subtitle"><i class="fa-solid fa-clock me-1 text-warning"></i> Follow-up</small>
                         </div>
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
                     <a href="/Admin/Messages?statusFilter=Contacted" class="text-decoration-none">
-                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "Contacted" ? "border-info bg-dark bg-opacity-60" : "")">
-                            <div class="text-info small font-weight-bold"><i class="fa-solid fa-phone me-1"></i> Contacted</div>
-                            <h3 class="text-info font-weight-bold mb-0 mt-1">@contactedCount</h3>
+                        <div class="kpi-stat-card @(currentFilter == "Contacted" ? "border-info bg-dark bg-opacity-60" : "")">
+                            <span class="kpi-stat-title text-info">Contacted</span>
+                            <h3 class="kpi-stat-value text-info">@contactedCount</h3>
+                            <small class="kpi-stat-subtitle"><i class="fa-solid fa-phone me-1 text-info"></i> In Progress</small>
                         </div>
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
                     <a href="/Admin/Messages?statusFilter=Resolved" class="text-decoration-none">
-                        <div class="glass-card p-3 text-center hover-lift @(currentFilter == "Resolved" ? "border-success bg-dark bg-opacity-60" : "")">
-                            <div class="text-success small font-weight-bold"><i class="fa-solid fa-circle-check me-1"></i> Resolved</div>
-                            <h3 class="text-success font-weight-bold mb-0 mt-1">@resolvedCount</h3>
+                        <div class="kpi-stat-card @(currentFilter == "Resolved" ? "border-success bg-dark bg-opacity-60" : "")">
+                            <span class="kpi-stat-title text-success">Resolved</span>
+                            <h3 class="kpi-stat-value text-success">@resolvedCount</h3>
+                            <small class="kpi-stat-subtitle"><i class="fa-solid fa-circle-check me-1 text-success"></i> Closed</small>
                         </div>
                     </a>
                 </div>
             </div>
 
-            <!-- Filter Buttons Toolbar -->
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <div class="btn-group" role="group">
-                    <a href="/Admin/Messages?statusFilter=All" class="btn btn-sm @(currentFilter == "All" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">All (@totalCount)</a>
-                    <a href="/Admin/Messages?statusFilter=Pending" class="btn btn-sm @(currentFilter == "Pending" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Pending (@pendingCount)</a>
-                    <a href="/Admin/Messages?statusFilter=Contacted" class="btn btn-sm @(currentFilter == "Contacted" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Contacted (@contactedCount)</a>
-                    <a href="/Admin/Messages?statusFilter=Resolved" class="btn btn-sm @(currentFilter == "Resolved" ? "btn-warning font-weight-bold" : "btn-outline-secondary text-light")">Resolved (@resolvedCount)</a>
+            <!-- Filter Buttons Toolbar (Scrollable) -->
+            <div class="overflow-auto pb-1 mb-3">
+                <div class="btn-group text-nowrap" role="group">
+                    <a href="/Admin/Messages?statusFilter=All" class="btn btn-sm py-1.5 @(currentFilter == "All" ? "btn-warning font-weight-bold text-dark" : "btn-outline-secondary text-light")">All (@totalCount)</a>
+                    <a href="/Admin/Messages?statusFilter=Pending" class="btn btn-sm py-1.5 @(currentFilter == "Pending" ? "btn-warning font-weight-bold text-dark" : "btn-outline-secondary text-light")">Pending (@pendingCount)</a>
+                    <a href="/Admin/Messages?statusFilter=Contacted" class="btn btn-sm py-1.5 @(currentFilter == "Contacted" ? "btn-warning font-weight-bold text-dark" : "btn-outline-secondary text-light")">Contacted (@contactedCount)</a>
+                    <a href="/Admin/Messages?statusFilter=Resolved" class="btn btn-sm py-1.5 @(currentFilter == "Resolved" ? "btn-warning font-weight-bold text-dark" : "btn-outline-secondary text-light")">Resolved (@resolvedCount)</a>
                 </div>
             </div>
 
@@ -161,25 +181,25 @@
                                     if (cleanPhone.Length == 10) cleanPhone = "91" + cleanPhone;
 
                                     <tr class="border-bottom border-secondary border-opacity-30">
-                                        <td>
+                                        <td class="cursor-pointer" onclick="triggerRowModal(@msg.Id)">
                                             <div class="font-weight-bold text-white">#MSG-@msg.Id</div>
                                             <div class="text-muted extra-small" style="font-size: 0.75rem;">
                                                 @msg.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy hh:mm tt")
                                             </div>
                                         </td>
-                                        <td>
+                                        <td class="cursor-pointer" onclick="triggerRowModal(@msg.Id)">
                                             <div class="font-weight-bold text-white">@msg.FullName</div>
                                             <div class="small text-warning">
                                                 <i class="fa-solid fa-phone me-1"></i> @msg.Phone
                                             </div>
                                             @if (!string.IsNullOrEmpty(msg.Email))
                                             {
-                                                <div class="small text-muted">
+                                                <div class="small text-muted text-truncate" style="max-width: 190px;" title="@msg.Email">
                                                     <i class="fa-solid fa-envelope me-1"></i> @msg.Email
                                                 </div>
                                             }
                                         </td>
-                                        <td>
+                                        <td class="cursor-pointer" onclick="triggerRowModal(@msg.Id)">
                                             <span class="badge bg-dark border border-warning text-warning mb-1">
                                                 @msg.Subject
                                             </span>
@@ -197,22 +217,39 @@
                                                 </span>
                                             }
                                         </td>
-                                        <td>
-                                            <div class="text-light text-truncate" style="max-width: 250px;" title="@msg.Message">
-                                                @msg.Message
+                                        <td class="cursor-pointer" onclick="triggerRowModal(@msg.Id)" style="max-width: 280px;">
+                                            <div class="text-light" style="font-size: 0.88rem; line-height: 1.45;">
+                                                @if ((msg.Message ?? "").Length > 85)
+                                                {
+                                                    <span>@(msg.Message?.Substring(0, 85))...</span>
+                                                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 ms-1" style="font-size: 0.7rem;">
+                                                        <i class="fa-solid fa-expand me-0.5"></i> Read More
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@(msg.Message ?? "")</span>
+                                                }
                                             </div>
                                             @if (!string.IsNullOrEmpty(msg.PhotoUrl))
                                             {
-                                                <div class="mt-2">
-                                                    <a href="@msg.PhotoUrl" target="_blank">
-                                                        <img src="@msg.PhotoUrl" style="max-height: 48px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;" alt="Screenshot" />
-                                                    </a>
+                                                <div class="mt-1.5 d-flex align-items-center gap-1">
+                                                    <img src="@msg.PhotoUrl" style="height: 34px; width: 34px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);" alt="Attachment" />
+                                                    <span class="badge bg-secondary text-light extra-small" style="font-size: 0.68rem;"><i class="fa-solid fa-paperclip me-1"></i>Attachment</span>
                                                 </div>
                                             }
-                                            @if (!string.IsNullOrEmpty(msg.AdminNotes))
+                                            @if (!string.IsNullOrEmpty(msg.AdminReply))
                                             {
-                                                <div class="small text-info mt-1">
-                                                    <i class="fa-solid fa-sticky-note me-1"></i> Note: @msg.AdminNotes
+                                                <div class="mt-1">
+                                                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30" style="font-size: 0.72rem;">
+                                                        <i class="fa-solid fa-circle-check me-1"></i>Replied
+                                                    </span>
+                                                </div>
+                                            }
+                                            else if (!string.IsNullOrEmpty(msg.AdminNotes))
+                                            {
+                                                <div class="small text-info mt-1" style="font-size: 0.74rem;">
+                                                    <i class="fa-solid fa-sticky-note me-1"></i>Note: @msg.AdminNotes
                                                 </div>
                                             }
                                         </td>
@@ -231,7 +268,7 @@
                                             }
                                         </td>
                                         <td class="text-end">
-                                            <div class="d-flex justify-content-end gap-1">
+                                            <div class="d-flex justify-content-end align-items-center gap-1">
                                                 <!-- Call Button -->
                                                 <a href="tel:@msg.Phone" class="btn btn-outline-warning btn-sm" title="Call Customer">
                                                     <i class="fa-solid fa-phone"></i>
@@ -242,17 +279,18 @@
                                                     <i class="fa-brands fa-whatsapp"></i>
                                                 </a>
 
-                                                <!-- Email Button -->
+                                                <!-- Email Button (Clean subject, no clutter) -->
                                                 @if (!string.IsNullOrEmpty(msg.Email))
                                                 {
-                                                    <a href="mailto:@msg.Email?subject=Re:%20RaahSathi%20Inquiry%20-%20@Uri.EscapeDataString(msg.Subject)" class="btn btn-outline-info btn-sm" title="Send Email">
+                                                    <a href="mailto:@msg.Email?subject=@Uri.EscapeDataString("RaahSathi Support: " + msg.Subject)" class="btn btn-outline-info btn-sm" title="Send Email">
                                                         <i class="fa-solid fa-envelope"></i>
                                                     </a>
                                                 }
 
-                                                <!-- Action / Manage Modal Trigger -->
-                                                <button type="button" class="btn btn-primary btn-sm px-2 font-weight-bold" onclick="openManageModal(@msg.Id, '@msg.FullName', '@msg.Phone', '@msg.Email', '@Uri.EscapeDataString(msg.Subject)', '@Uri.EscapeDataString(msg.Message)', '@msg.Status', '@Uri.EscapeDataString(msg.AdminNotes ?? "")', '@msg.PhotoUrl')">
-                                                    <i class="fa-solid fa-pen-to-square me-1"></i> Manage
+                                                <!-- Action: View & Reply Modal Trigger -->
+                                                <button type="button" id="btnReplyRow-@msg.Id" class="btn btn-warning btn-sm px-2 px-md-3 font-weight-bold shadow-sm d-flex align-items-center gap-1"
+                                                        onclick="openEnquiryModal(@msg.Id, '@JavaScriptEncoder.Default.Encode(msg.FullName)', '@JavaScriptEncoder.Default.Encode(msg.Phone)', '@JavaScriptEncoder.Default.Encode(msg.Email ?? "")', '@Uri.EscapeDataString(msg.Subject ?? "")', '@Uri.EscapeDataString(msg.Message ?? "")', '@msg.Status', '@Uri.EscapeDataString(msg.AdminNotes ?? "")', '@(msg.PhotoUrl ?? "")', '@msg.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy hh:mm tt")', '@(msg.UserRole ?? "Guest")', '@Uri.EscapeDataString(msg.AdminReply ?? "")', '@(msg.RepliedAt.HasValue ? msg.RepliedAt.Value.ToLocalTime().ToString("MMM dd, yyyy hh:mm tt") : "")', '@Uri.EscapeDataString(msg.ReplySubject ?? "")')">
+                                                    <i class="fa-solid fa-reply"></i> Reply
                                                 </button>
                                             </div>
                                         </td>
@@ -424,51 +462,183 @@
     </div>
 </div>
 
-<!-- MODAL: MANAGE SUPPORT ENQUIRY -->
-<div class="modal fade" id="manageModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border-secondary text-white">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title font-weight-bold" id="modalTitle"><i class="fa-solid fa-headset me-2 text-warning"></i> Manage Message</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<!-- MODAL: VIEW FULL ENQUIRY & DIRECT REPLY -->
+<div class="modal fade" id="enquiryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark border-secondary text-white shadow-lg">
+            <!-- Modal Header -->
+            <div class="modal-header border-secondary py-3" style="background: rgba(15, 23, 42, 0.75);">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="badge bg-warning text-dark font-weight-bold px-2 py-1 fs-6">
+                        #MSG-<span id="modalMsgIdDisplay">0</span>
+                    </div>
+                    <h5 class="modal-title font-weight-bold mb-0 text-white" style="font-family: 'Outfit', sans-serif;">
+                        Enquiry Details &amp; Reply
+                    </h5>
+                    <span id="modalStatusBadge" class="badge ms-1"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+
+            <!-- Modal Body -->
+            <div class="modal-body p-3 p-md-4">
                 <input type="hidden" id="modalMsgId" />
-                
-                <div class="p-3 bg-secondary bg-opacity-20 rounded mb-3 border border-secondary">
-                    <div class="d-flex justify-content-between mb-1">
-                        <strong class="text-warning" id="modalName"></strong>
-                        <span class="small text-muted" id="modalPhone"></span>
-                    </div>
-                    <div class="small text-info mb-2" id="modalSubject"></div>
-                    <div class="p-2 bg-dark rounded text-light small mb-2" id="modalMessageText" style="max-height: 120px; overflow-y: auto;"></div>
-                    <div id="modalPhotoContainer" class="text-center d-none">
-                        <span class="text-muted small d-block mb-1">Attached Photo:</span>
-                        <a id="modalPhotoLink" href="" target="_blank">
-                            <img id="modalPhotoImg" src="" style="max-width: 100%; max-height: 150px; border-radius: 8px; border: 1px solid var(--border-color);" />
-                        </a>
+
+                <!-- Customer Details Bar -->
+                <div class="p-3 rounded mb-3 border border-secondary border-opacity-40" style="background: rgba(30, 41, 59, 0.5);">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-12 col-md-5">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="fa-solid fa-circle-user text-warning fs-5"></i>
+                                <strong class="text-white fs-6" id="modalName">Customer Name</strong>
+                                <span class="badge" id="modalRoleBadge">Role</span>
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.78rem;">
+                                <i class="fa-regular fa-clock me-1"></i> Received: <span id="modalCreatedAt" class="text-light"></span>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-7">
+                            <div class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a id="modalCallBtn" href="tel:" class="btn btn-outline-warning btn-sm">
+                                        <i class="fa-solid fa-phone me-1"></i> <span id="modalPhone"></span>
+                                    </a>
+                                    <a id="modalWhatsAppBtn" href="#" target="_blank" class="btn btn-outline-success btn-sm" title="Chat on WhatsApp">
+                                        <i class="fa-brands fa-whatsapp"></i>
+                                    </a>
+                                </div>
+                                <div id="modalEmailContainer">
+                                    <a id="modalEmailBtn" href="mailto:" class="btn btn-outline-info btn-sm">
+                                        <i class="fa-solid fa-envelope me-1"></i> <span id="modalEmail"></span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Full Inquiry Message Container -->
                 <div class="mb-3">
-                    <label class="form-label text-muted small">Update Status</label>
-                    <select id="modalStatus" class="form-select bg-dark text-white border-secondary">
-                        <option value="Pending">Pending (Needs Attention)</option>
-                        <option value="Contacted">Contacted (Customer Called/Messaged)</option>
-                        <option value="Resolved">Resolved (Completed / Closed)</option>
-                    </select>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label text-warning font-weight-bold small mb-0">
+                            <i class="fa-solid fa-circle-question me-1"></i> Inquiry Subject: <span id="modalSubject" class="text-white"></span>
+                        </label>
+                        <span class="text-muted extra-small" style="font-size: 0.72rem;">Full un-truncated text</span>
+                    </div>
+                    <div class="p-3 rounded border border-secondary border-opacity-30 text-light bg-black bg-opacity-40" 
+                         id="modalFullMessage" 
+                         style="font-size: 0.92rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-height: 190px; overflow-y: auto;">
+                    </div>
+
+                    <!-- Photo Attachment (if any) -->
+                    <div id="modalPhotoContainer" class="p-2 rounded border border-secondary border-opacity-25 bg-dark d-none mt-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-muted small"><i class="fa-solid fa-paperclip text-warning me-1"></i> Attached Screenshot / Image:</span>
+                            <a id="modalPhotoLink" href="" target="_blank" class="btn btn-xs btn-outline-warning py-0 px-2" style="font-size: 0.75rem;">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Open Full View
+                            </a>
+                        </div>
+                        <div class="text-center mt-2">
+                            <a id="modalPhotoImgLink" href="" target="_blank">
+                                <img id="modalPhotoImg" src="" style="max-height: 160px; max-width: 100%; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15);" alt="Inquiry Attachment" />
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Admin Notes / Follow-up Record</label>
-                    <textarea id="modalNotes" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Add private notes on conversation details..."></textarea>
+                <!-- Previous Reply Card (Shows if already replied) -->
+                <div id="modalPreviousReplyBox" class="p-3 rounded mb-3 border border-success border-opacity-40 bg-success bg-opacity-10 d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong class="text-success small"><i class="fa-solid fa-reply-all me-1"></i> Previously Sent Reply:</strong>
+                        <span class="text-muted extra-small" id="modalRepliedAt"></span>
+                    </div>
+                    <div class="text-light small" id="modalPreviousReplyText" style="white-space: pre-wrap; word-break: break-word; line-height: 1.5;"></div>
                 </div>
+
+                <!-- Admin Response Section -->
+                <div class="p-3 rounded border border-warning border-opacity-30" style="background: rgba(255, 107, 0, 0.05);">
+                    <h6 class="text-warning font-weight-bold mb-2">
+                        <i class="fa-solid fa-reply me-1"></i> Reply to Customer
+                    </h6>
+
+                    <!-- Quick Reply Chips -->
+                    <div class="mb-2.5">
+                        <span class="text-muted extra-small d-block mb-1" style="font-size: 0.72rem;">QUICK RESPONSE TEMPLATES (Click to insert):</span>
+                        <div class="d-flex flex-wrap gap-1.5">
+                            <button type="button" class="btn btn-xs btn-outline-secondary text-light py-0.5 px-2 rounded-pill quick-chip" onclick="insertQuickReply(1)">
+                                ⚡ Reviewing Request
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary text-light py-0.5 px-2 rounded-pill quick-chip" onclick="insertQuickReply(2)">
+                                🚗 Mechanic Dispatched
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary text-light py-0.5 px-2 rounded-pill quick-chip" onclick="insertQuickReply(3)">
+                                📞 Calling You Shortly
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary text-light py-0.5 px-2 rounded-pill quick-chip" onclick="insertQuickReply(4)">
+                                ✅ Issue Resolved
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-2.5">
+                        <label class="form-label text-muted small mb-1">Email Subject (Clean &amp; Professional)</label>
+                        <input type="text" id="modalReplySubject" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="RaahSathi Support: Roadside Breakdown Help" />
+                    </div>
+
+                    <div class="mb-2.5">
+                        <label class="form-label text-muted small mb-1">Reply Message Content</label>
+                        <textarea id="modalReplyMessage" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Type your response to the customer..."></textarea>
+                    </div>
+
+                    <div class="row g-2 align-items-center">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-muted small mb-1">Update Status To</label>
+                            <select id="modalReplyStatus" class="form-select form-select-sm bg-dark text-white border-secondary">
+                                <option value="Resolved" selected>Resolved (Query Answered &amp; Closed)</option>
+                                <option value="Contacted">Contacted (Follow-up In Progress)</option>
+                                <option value="Pending">Pending (Needs Further Attention)</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 pt-md-3">
+                            <div class="form-check form-switch" id="modalSendEmailCheckContainer">
+                                <input class="form-check-input" type="checkbox" id="modalSendEmailCheck" checked>
+                                <label class="form-check-label text-light small" for="modalSendEmailCheck">
+                                    <i class="fa-solid fa-paper-plane text-info me-1"></i> Send Copy to Customer's Email
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accordion for Internal Admin Notes only -->
+                <div class="accordion mt-2" id="adminNotesAccordion">
+                    <div class="accordion-item bg-transparent border-0">
+                        <h2 class="accordion-header" id="headingNotes">
+                            <button class="accordion-button collapsed py-2 px-2 bg-transparent text-muted small" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNotes" aria-expanded="false" aria-controls="collapseNotes">
+                                <i class="fa-solid fa-sticky-note me-1.5 text-info"></i> Private Internal Admin Notes (Optional)
+                            </button>
+                        </h2>
+                        <div id="collapseNotes" class="accordion-collapse collapse" data-bs-parent="#adminNotesAccordion">
+                            <div class="accordion-body pt-1 pb-2 px-1">
+                                <textarea id="modalAdminNotes" class="form-control form-control-sm bg-dark text-white border-secondary" rows="2" placeholder="Private notes visible only to admins..."></textarea>
+                                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="saveAdminNotesOnly()">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Internal Notes Only
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
-            <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning font-weight-bold" onclick="saveMessageStatus()">
-                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Changes
-                </button>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer border-secondary py-2 justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-warning font-weight-bold px-4" id="btnSendReply" onclick="submitEnquiryReply()">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Send Reply
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -521,40 +691,179 @@
 
 @section Scripts {
 <script>
-    function openManageModal(id, name, phone, email, subject, message, status, notes, photoUrl) {
-        $('#modalMsgId').val(id);
-        $('#modalName').text(name);
-        $('#modalPhone').text(phone + (email ? ' | ' + email : ''));
-        $('#modalSubject').text('Subject: ' + decodeURIComponent(subject));
-        $('#modalMessageText').text(decodeURIComponent(message));
-        $('#modalStatus').val(status);
-        $('#modalNotes').val(decodeURIComponent(notes));
+    var currentEnquiryData = {};
 
+    function triggerRowModal(id) {
+        $('#btnReplyRow-' + id).click();
+    }
+
+    function openEnquiryModal(id, name, phone, email, subject, message, status, notes, photoUrl, createdAt, userRole, reply, repliedAt, replySubject) {
+        currentEnquiryData = {
+            id: id,
+            name: name,
+            phone: phone,
+            email: email,
+            subject: decodeURIComponent(subject || ""),
+            message: decodeURIComponent(message || ""),
+            status: status || "Pending",
+            notes: decodeURIComponent(notes || ""),
+            photoUrl: photoUrl || "",
+            createdAt: createdAt || "",
+            userRole: userRole || "Guest",
+            reply: decodeURIComponent(reply || ""),
+            repliedAt: repliedAt || "",
+            replySubject: decodeURIComponent(replySubject || "")
+        };
+
+        $('#modalMsgId').val(id);
+        $('#modalMsgIdDisplay').text(id);
+        $('#modalName').text(name);
+        $('#modalPhone').text(phone);
+        $('#modalCallBtn').attr('href', 'tel:' + phone);
+
+        var cleanPhone = phone.replace(/\s+/g, '').replace(/-/g, '').replace(/\+/g, '');
+        if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+        $('#modalWhatsAppBtn').attr('href', 'https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent('Hello ' + name + ', this is RaahSathi Support regarding your inquiry: ' + currentEnquiryData.subject));
+
+        if (email && email.indexOf('@@') > -1) {
+            $('#modalEmail').text(email);
+            $('#modalEmailBtn').attr('href', 'mailto:' + email + '?subject=' + encodeURIComponent('RaahSathi Support: ' + currentEnquiryData.subject));
+            $('#modalEmailContainer').removeClass('d-none');
+            $('#modalSendEmailCheckContainer').removeClass('d-none');
+            $('#modalSendEmailCheck').prop('checked', true);
+        } else {
+            $('#modalEmailContainer').addClass('d-none');
+            $('#modalSendEmailCheckContainer').addClass('d-none');
+            $('#modalSendEmailCheck').prop('checked', false);
+        }
+
+        $('#modalCreatedAt').text(createdAt);
+        
+        // Role badge
+        var roleBadge = $('#modalRoleBadge');
+        roleBadge.text(userRole || 'Guest');
+        roleBadge.removeClass('bg-danger bg-info bg-success bg-secondary text-dark text-white');
+        if (userRole === 'Admin') roleBadge.addClass('bg-danger text-white');
+        else if (userRole === 'Mechanic') roleBadge.addClass('bg-info text-dark');
+        else if (userRole === 'Customer') roleBadge.addClass('bg-success text-white');
+        else roleBadge.addClass('bg-secondary text-light');
+
+        // Status badge
+        var statusBadge = $('#modalStatusBadge');
+        statusBadge.text(status);
+        statusBadge.removeClass('bg-warning bg-info bg-success text-dark text-white');
+        if (status === 'Pending') statusBadge.addClass('bg-warning text-dark');
+        else if (status === 'Contacted') statusBadge.addClass('bg-info text-dark');
+        else statusBadge.addClass('bg-success text-white');
+
+        $('#modalSubject').text(currentEnquiryData.subject);
+        $('#modalFullMessage').text(currentEnquiryData.message);
+
+        // Photo Attachment
         if (photoUrl) {
             $('#modalPhotoImg').attr('src', photoUrl);
             $('#modalPhotoLink').attr('href', photoUrl);
+            $('#modalPhotoImgLink').attr('href', photoUrl);
             $('#modalPhotoContainer').removeClass('d-none');
         } else {
             $('#modalPhotoContainer').addClass('d-none');
         }
 
-        var modal = new bootstrap.Modal(document.getElementById('manageModal'));
+        // Previous reply box
+        if (currentEnquiryData.reply) {
+            $('#modalPreviousReplyText').text(currentEnquiryData.reply);
+            $('#modalRepliedAt').text(repliedAt ? 'Replied: ' + repliedAt : '');
+            $('#modalPreviousReplyBox').removeClass('d-none');
+        } else {
+            $('#modalPreviousReplyBox').addClass('d-none');
+        }
+
+        // Prefill clean reply subject
+        var defaultSubject = currentEnquiryData.replySubject || ('RaahSathi Support: ' + currentEnquiryData.subject);
+        $('#modalReplySubject').val(defaultSubject);
+        $('#modalReplyMessage').val('');
+        $('#modalReplyStatus').val(status === 'Pending' ? 'Resolved' : status);
+        $('#modalAdminNotes').val(currentEnquiryData.notes);
+
+        var modal = new bootstrap.Modal(document.getElementById('enquiryModal'));
         modal.show();
     }
 
-    function saveMessageStatus() {
+    // Backwards-compatible alias for any legacy triggers
+    function openManageModal(id, name, phone, email, subject, message, status, notes, photoUrl) {
+        openEnquiryModal(id, name, phone, email, subject, message, status, notes, photoUrl, '', 'Guest', '', '', '');
+    }
+
+    function insertQuickReply(type) {
+        var name = currentEnquiryData.name || 'Customer';
+        var text = '';
+        if (type === 1) {
+            text = "Namaste " + name + " ji,\n\nHumne aapki enquiry receive kar li hai aur hamari support team is par review kar rahi hai. Hum jald hi aapse contact karenge.\n\nRegards,\nRaahSathi Support Team";
+        } else if (type === 2) {
+            text = "Namaste " + name + " ji,\n\nRoadside assistance ke liye verified mechanic ko aapki location par assign kar diya gaya hai. Mechanic jald hi aapke paas pahunch jayega.\n\nEmergency Helpline: +91 9891819236\nRaahSathi Operations Team";
+        } else if (type === 3) {
+            text = "Namaste " + name + " ji,\n\nAapki inquiry ke sambandh me hamara support executive aapke registered number par agle 10-15 minute me call karega. Kripya phone active rakhein.\n\nRaahSathi Desk";
+        } else if (type === 4) {
+            text = "Namaste " + name + " ji,\n\nAapki query/problem ko successfully resolve kar diya gaya hai. RaahSathi ko choose karne ke liye dhanyawad. Kisi anya sahayata ke liye aap kabhi bhi humse sampark kar sakte hain.\n\nWarm regards,\nRaahSathi Team";
+        }
+        $('#modalReplyMessage').val(text);
+    }
+
+    function submitEnquiryReply() {
         var id = $('#modalMsgId').val();
-        var status = $('#modalStatus').val();
-        var notes = $('#modalNotes').val();
+        var reply = $('#modalReplyMessage').val();
+        var subject = $('#modalReplySubject').val();
+        var status = $('#modalReplyStatus').val();
+        var sendEmail = $('#modalSendEmailCheck').is(':checked');
+        var notes = $('#modalAdminNotes').val();
+
+        if (!reply || !reply.trim()) {
+            alert('Please enter your reply message content before sending.');
+            $('#modalReplyMessage').focus();
+            return;
+        }
+
+        var btn = $('#btnSendReply');
+        var originalHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Sending...');
+
+        $.post('/Admin/SendEnquiryReply', {
+            id: id,
+            replyMessage: reply,
+            replySubject: subject,
+            status: status,
+            sendEmail: sendEmail
+        }, function(res) {
+            if (res && res.success) {
+                if (notes && notes !== currentEnquiryData.notes) {
+                    $.post('/Admin/UpdateMessageStatus', { id: id, status: status, adminNotes: notes });
+                }
+                alert(res.message || 'Reply sent successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + (res.message || 'Failed to send reply'));
+                btn.prop('disabled', false).html(originalHtml);
+            }
+        }).fail(function() {
+            alert('Failed to send reply. Please check server connection and try again.');
+            btn.prop('disabled', false).html(originalHtml);
+        });
+    }
+
+    function saveAdminNotesOnly() {
+        var id = $('#modalMsgId').val();
+        var status = $('#modalReplyStatus').val();
+        var notes = $('#modalAdminNotes').val();
 
         $.post('/Admin/UpdateMessageStatus', { id: id, status: status, adminNotes: notes }, function(res) {
             if (res && res.success) {
+                alert('Internal notes updated successfully.');
                 location.reload();
             } else {
-                alert('Error updating status: ' + (res.message || 'Unknown error'));
+                alert('Error: ' + (res.message || 'Failed to update'));
             }
         }).fail(function() {
-            alert('Failed to update status. Please try again.');
+            alert('Failed to update notes.');
         });
     }
 

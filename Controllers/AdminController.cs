@@ -1,9 +1,13 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Net;
+using System.Net.Mail;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using RaahSathi.Data;
 using RaahSathi.Models;
 using RaahSathi.Services;
@@ -791,6 +795,106 @@ namespace RaahSathi.Controllers
 
             await _dbContext.SaveChangesAsync();
             return Json(new { success = true, message = "Message status updated successfully." });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendEnquiryReply(int id, string replyMessage, string? replySubject, string status = "Resolved", bool sendEmail = true)
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
+
+            if (string.IsNullOrWhiteSpace(replyMessage))
+            {
+                return Json(new { success = false, message = "Reply message content cannot be empty." });
+            }
+
+            var msg = await _dbContext.ContactMessages.FindAsync(id);
+            if (msg == null) return Json(new { success = false, message = "Enquiry message not found." });
+
+            string finalSubject = string.IsNullOrWhiteSpace(replySubject) ? $"RaahSathi Support: {msg.Subject}" : replySubject.Trim();
+
+            msg.AdminReply = replyMessage.Trim();
+            msg.ReplySubject = finalSubject;
+            msg.RepliedAt = DateTime.UtcNow;
+            msg.ContactedAt = DateTime.UtcNow;
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                msg.Status = status;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            bool emailSent = false;
+            string emailNote = "";
+
+            if (sendEmail && !string.IsNullOrWhiteSpace(msg.Email) && msg.Email.Contains("@"))
+            {
+                try
+                {
+                    var configuration = HttpContext.RequestServices.GetService<IConfiguration>();
+                    using var mail = new MailMessage();
+                    mail.From = new MailAddress("support.raahsathi@gmail.com", "RaahSathi Support");
+                    mail.To.Add(msg.Email.Trim());
+                    mail.Subject = finalSubject;
+                    mail.IsBodyHtml = true;
+
+                    string safeReplyHtml = System.Net.WebUtility.HtmlEncode(replyMessage).Replace("\n", "<br/>");
+
+                    mail.Body = $@"
+                        <div style='font-family: Arial, sans-serif; max-width: 620px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;'>
+                            <div style='background: linear-gradient(135deg, #ff6b00 0%, #d97706 100%); padding: 20px; border-radius: 8px; text-align: center; color: #ffffff;'>
+                                <h2 style='margin: 0; font-size: 22px; font-weight: 700;'>RaahSathi Customer Support</h2>
+                                <p style='margin: 6px 0 0 0; font-size: 13px; opacity: 0.95;'>24x7 Emergency Roadside Assistance &amp; Helpdesk</p>
+                            </div>
+                            <div style='padding: 24px 8px 16px 8px;'>
+                                <p style='font-size: 15px; color: #0f172a; margin: 0 0 16px 0;'>Dear <strong>{System.Net.WebUtility.HtmlEncode(msg.FullName)}</strong>,</p>
+                                <p style='font-size: 14px; color: #334155; margin: 0 0 16px 0;'>Thank you for reaching out to RaahSathi Support. Here is our response regarding your inquiry:</p>
+                                
+                                <div style='padding: 16px 20px; background-color: #f8fafc; border-left: 4px solid #ff6b00; border-radius: 6px; margin-bottom: 20px;'>
+                                    <div style='font-size: 14px; color: #1e293b; line-height: 1.6;'>{safeReplyHtml}</div>
+                                </div>
+
+                                <div style='background-color: #f1f5f9; border-radius: 8px; padding: 14px 18px; margin-top: 20px; font-size: 13px;'>
+                                    <div style='font-weight: 700; color: #475569; margin-bottom: 6px;'>Your Inquiry Reference:</div>
+                                    <table style='width: 100%; font-size: 12px; color: #64748b;'>
+                                        <tr><td style='width: 30%; padding: 3px 0;'><strong>Ticket ID:</strong></td><td>#MSG-{msg.Id}</td></tr>
+                                        <tr><td style='padding: 3px 0;'><strong>Subject:</strong></td><td>{System.Net.WebUtility.HtmlEncode(msg.Subject)}</td></tr>
+                                        <tr><td style='padding: 3px 0;'><strong>Submitted:</strong></td><td>{msg.CreatedAt.AddHours(5.5):dd MMM yyyy, hh:mm tt} (IST)</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div style='border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; color: #94a3b8; font-size: 12px;'>
+                                <p style='margin: 0 0 4px 0;'>Need immediate emergency roadside help? Call our 24x7 Helpline: <strong style='color: #ff6b00;'>+91 9891819236</strong></p>
+                                <p style='margin: 0;'>RaahSathi &bull; Aapka Har Safar Ka Sathi</p>
+                            </div>
+                        </div>";
+
+                    using var client = new SmtpClient("smtp.gmail.com", 587);
+                    client.EnableSsl = true;
+                    client.UseDefaultCredentials = false;
+
+                    var smtpPass = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? configuration?["Smtp:Password"];
+                    var smtpUser = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? configuration?["Smtp:Username"] ?? "support.raahsathi@gmail.com";
+                    if (!string.IsNullOrWhiteSpace(smtpPass))
+                    {
+                        client.Credentials = new NetworkCredential(smtpUser, smtpPass);
+                    }
+
+                    await client.SendMailAsync(mail);
+                    emailSent = true;
+                }
+                catch (Exception ex)
+                {
+                    emailNote = $" (Note: Email dispatch skipped/offline: {ex.Message})";
+                }
+            }
+
+            return Json(new { 
+                success = true, 
+                message = emailSent ? "Reply sent and delivered to customer's email successfully!" : $"Reply saved successfully!{emailNote}",
+                repliedAt = msg.RepliedAt?.AddHours(5.5).ToString("MMM dd, yyyy hh:mm tt"),
+                reply = msg.AdminReply,
+                status = msg.Status
+            });
         }
 
         [HttpPost]

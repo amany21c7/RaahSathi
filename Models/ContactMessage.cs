@@ -16,5 +16,8 @@ namespace RaahSathi.Models
         public DateTime? ContactedAt { get; set; }
         public string PhotoUrl { get; set; } = string.Empty;
         public string UserRole { get; set; } = "Guest";
+        public string? AdminReply { get; set; }
+        public DateTime? RepliedAt { get; set; }
+        public string? ReplySubject { get; set; }
     }
 }

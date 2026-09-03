@@ -709,6 +709,21 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE [ContactMessages] ADD [UserRole] nvarchar(50) NOT NULL DEFAULT 'Guest';
                 END;
 
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[ContactMessages]') AND name = N'AdminReply')
+                BEGIN
+                    ALTER TABLE [ContactMessages] ADD [AdminReply] nvarchar(max) NULL;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[ContactMessages]') AND name = N'RepliedAt')
+                BEGIN
+                    ALTER TABLE [ContactMessages] ADD [RepliedAt] datetime2 NULL;
+                END;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[ContactMessages]') AND name = N'ReplySubject')
+                BEGIN
+                    ALTER TABLE [ContactMessages] ADD [ReplySubject] nvarchar(250) NULL;
+                END;
+
                  IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[JobChatMessages]') AND type in (N'U'))
                 BEGIN
                     CREATE TABLE [JobChatMessages] (
