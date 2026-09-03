@@ -36,8 +36,9 @@ namespace RaahSathi.Services
             _config = config;
             _logger = logger;
 
-            string baseUrl = _config["WhatsAppGateway:BaseUrl"] ?? "http://localhost:5005";
+            string baseUrl = _config["WhatsAppGateway:BaseUrl"] ?? "http://127.0.0.1:5005";
             if (!baseUrl.EndsWith("/")) baseUrl += "/";
+
             _httpClient.BaseAddress = new Uri(baseUrl);
             _httpClient.Timeout = TimeSpan.FromSeconds(8);
         }
