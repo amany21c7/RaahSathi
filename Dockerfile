@@ -26,12 +26,14 @@ COPY --from=node-build /app/whatsapp-gateway ./whatsapp-gateway
 COPY --from=dotnet-build /app/publish .
 
 # Render environment and stability configurations
+ENV PORT=8080
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_USE_POLLING_FILE_WATCHER=true
 ENV DOTNET_EnableDiagnostics=0
 
 EXPOSE 8080
+
 
 # Start whatsapp-gateway in background on port 5005, then start .NET app in foreground on port 8080
 ENTRYPOINT ["sh", "-c", "node /app/whatsapp-gateway/server.js & if [ -f RaahSathi.Web.dll ]; then exec dotnet RaahSathi.Web.dll; else exec dotnet RaahSathi.dll; fi"]

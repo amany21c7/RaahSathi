@@ -15,12 +15,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.WA_GATEWAY_PORT || 5005;
-
+const PORT = 5005;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
 
 const AUTH_FOLDER = path.join(__dirname, 'auth_session');
 if (!fs.existsSync(AUTH_FOLDER)) {
@@ -193,9 +192,10 @@ app.post('/logout', async (req, res) => {
   res.json({ success: true, message: 'WhatsApp session cleared. Scan new QR code.' });
 });
 
-// Start Express server and initialize WhatsApp
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[WhatsApp Gateway] Server running on http://0.0.0.0:${PORT}`);
+// Start Express server ONLY on local loopback 127.0.0.1 so external Render router ignores it
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`[WhatsApp Gateway] Internal microservice running on http://127.0.0.1:${PORT}`);
   initWhatsApp();
 });
+
 
