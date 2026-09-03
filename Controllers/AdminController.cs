@@ -2148,15 +2148,18 @@ namespace RaahSathi.Controllers
         {
             if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
             var (isConnected, qrDataUrl, connectedPhone, message) = await _whatsAppOtpService.GetGatewayStatusAsync();
+            bool isOnline = isConnected || !string.IsNullOrEmpty(qrDataUrl);
             return Json(new
             {
                 success = true,
+                isOnline,
                 isConnected,
                 qrDataUrl,
                 connectedPhone,
                 message
             });
         }
+
 
         [HttpPost]
         public async Task<IActionResult> LogoutWhatsAppGateway()

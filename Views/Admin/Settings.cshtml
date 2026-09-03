@@ -358,17 +358,32 @@
             const modalConnectedInfo = document.getElementById('modalWaConnectedInfo');
             const modalConnectedPhone = document.getElementById('modalWaConnectedPhone');
 
-            if (!data.success) {
+            if (!data.success || (!data.isOnline && !data.isConnected)) {
                 if (fieldBadge) {
-                    fieldBadge.className = 'badge bg-danger text-white';
-                    fieldBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Gateway Error';
+                    fieldBadge.className = 'badge bg-danger text-white font-weight-bold';
+                    fieldBadge.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Gateway Offline';
+                }
+                if (btnText) {
+                    btnText.innerHTML = 'Link WhatsApp';
+                }
+                if (fieldHelp) {
+                    fieldHelp.innerHTML = '<span class="text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> WhatsApp Gateway service is offline or starting up on server.</span>';
+                }
+                if (lnkDisc) {
+                    lnkDisc.classList.add('d-none');
                 }
                 if (modalBadge) {
                     modalBadge.className = 'badge bg-danger text-white px-3 py-2 fs-6';
-                    modalBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Gateway Error';
+                    modalBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Gateway Offline';
                 }
+                if (modalQrPlaceholder) {
+                    modalQrPlaceholder.style.display = 'flex';
+                    modalQrPlaceholder.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger fs-2 mb-2"></i><span class="text-danger font-weight-bold small">WhatsApp Gateway is currently offline.</span><small class="text-muted mt-1" style="font-size:0.75rem;">' + (data.message || 'Starting background service...') + '</small>';
+                }
+                if (modalQrImage) modalQrImage.style.display = 'none';
                 return;
             }
+
 
             if (data.isConnected) {
                 var cleanPhone = data.connectedPhone || '';

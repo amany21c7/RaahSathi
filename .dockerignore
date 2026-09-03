@@ -11,3 +11,6 @@ rahi.db
 *.db-journal
 *.db-shm
 *.db-wal
+whatsapp-gateway/node_modules/
+whatsapp-gateway/auth_session/
+
