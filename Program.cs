@@ -35,6 +35,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
+builder.Services.AddHttpClient<IWhatsAppOtpService, WhatsAppOtpService>();
 builder.Services.AddHttpContextAccessor();
 
 // Persist Data Protection Encryption Keys to Database (logins survive deployments and restarts)

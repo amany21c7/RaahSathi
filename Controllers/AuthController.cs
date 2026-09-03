@@ -22,13 +22,20 @@ namespace RaahSathi.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IAuthService _authService;
         private readonly IReferralService _referralService;
+        private readonly IWhatsAppOtpService _whatsAppOtpService;
 
-        public AuthController(ApplicationDbContext dbContext, IWebHostEnvironment env, IAuthService authService, IReferralService referralService)
+        public AuthController(
+            ApplicationDbContext dbContext,
+            IWebHostEnvironment env,
+            IAuthService authService,
+            IReferralService referralService,
+            IWhatsAppOtpService whatsAppOtpService)
         {
             _dbContext = dbContext;
             _env = env;
             _authService = authService;
             _referralService = referralService;
+            _whatsAppOtpService = whatsAppOtpService;
         }
 
         private async Task SetUserCookies(User user)
@@ -165,7 +172,7 @@ namespace RaahSathi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendOtp(string phoneNumber, string role, string? name, string? referralCode)
+        public async Task<IActionResult> SendOtp(string phoneNumber, string role)
         {
             string cleanPhone = CleanPhoneNumber(phoneNumber);
             if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
@@ -173,76 +180,43 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
             }
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
-            
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && (string.IsNullOrEmpty(role) || u.Role == role));
             if (user == null)
             {
-                // New user registration flow
-                if (string.IsNullOrEmpty(name))
-                {
-                    // Prompt UI to ask for name
-                    return Json(new { success = true, isNewUser = true });
-                }
-
-                user = new User
-                {
-                    Name = name.Trim(),
-                    PhoneNumber = cleanPhone,
-                    Role = role,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _dbContext.Users.Add(user);
-                await _dbContext.SaveChangesAsync();
-
-                // Generate their unique referral code
-                await _referralService.EnsureUserReferralCodeAsync(user.Id);
-
-                // If referred by someone, register referral
-                if (!string.IsNullOrWhiteSpace(referralCode))
-                {
-                    await _referralService.RegisterReferralSignupAsync(user.Id, referralCode);
-                }
-
-                // If mechanic, create empty profile
-                if (role == "Mechanic")
-                {
-                    _dbContext.MechanicProfiles.Add(new MechanicProfile
-                    {
-                        UserId = user.Id,
-                        Rating = 5.0,
-                        TotalJobs = 0,
-                        KycStatus = "Incomplete"
-                    });
-                    await _dbContext.SaveChangesAsync();
-                }
+                return Json(new { success = false, message = "Mobile number is not registered. Please register first." });
             }
 
-            // In real app, send SMS here. We simulate OTP "1234"
-            return Json(new { success = true, isNewUser = false, message = "OTP sent to " + cleanPhone });
+            var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, "Login");
+            return Json(new { success = otpResult.Success, message = otpResult.Message, devOtp = otpResult.DevOtp });
         }
 
         [HttpPost]
         public async Task<IActionResult> VerifyOtp(string phoneNumber, string role, string otp)
         {
             string cleanPhone = CleanPhoneNumber(phoneNumber);
-
-            // Dummy OTP restriction for non-development environments
-            if (!_env.IsDevelopment() && otp == "1234")
+            if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
             {
-                return Json(new { success = false, message = "OTP verification is restricted to development environments." });
+                return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
             }
 
-            if (otp != "1234")
+            var verifyResult = _whatsAppOtpService.VerifyOtp(cleanPhone, otp);
+            if (!verifyResult.Success)
             {
-                return Json(new { success = false, message = "Invalid OTP code. Please use 1234 for testing." });
+                return Json(new { success = false, message = verifyResult.Message });
             }
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && (string.IsNullOrEmpty(role) || u.Role == role));
+            if (user == null)
+            {
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone));
+            }
+
             if (user == null)
             {
                 return Json(new { success = false, message = "User account not found." });
             }
 
+            _whatsAppOtpService.ClearPhoneVerification(cleanPhone);
             await SetUserCookies(user);
 
             string redirectUrl = user.Role == "Customer" ? "/Customer/Dashboard" 
@@ -251,6 +225,7 @@ namespace RaahSathi.Controllers
 
             return Json(new { success = true, redirect = redirectUrl });
         }
+
 
         [HttpPost]
         public async Task<IActionResult> PasswordLogin(string phoneNumber, string password, string? role)
@@ -329,19 +304,35 @@ namespace RaahSathi.Controllers
                 {
                     return Json(new { success = false, message = "Mobile number is already registered. Please login with your password or use 'Forgot Password?'." });
                 }
-
-                // If user exists but has no password set (created via guest booking), allow OTP registration to set password!
-                return Json(new { success = true, message = "OTP sent to " + cleanPhone });
             }
 
-            // Simulate OTP
-            return Json(new { success = true, message = "OTP sent to " + cleanPhone });
+            var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, "Registration");
+            return Json(new { success = otpResult.Success, message = otpResult.Message, devOtp = otpResult.DevOtp });
+        }
+
+        [HttpPost]
+        public IActionResult VerifyOtpForRegistration(string phoneNumber, string otp)
+        {
+            string cleanPhone = CleanPhoneNumber(phoneNumber);
+            if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
+            {
+                return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
+            }
+
+            var verifyResult = _whatsAppOtpService.VerifyOtp(cleanPhone, otp);
+            return Json(new { success = verifyResult.Success, message = verifyResult.Message });
         }
 
         [HttpPost]
         public async Task<IActionResult> CompleteRegistration(string name, string phoneNumber, string role, string password, string? referralCode)
         {
             string cleanPhone = CleanPhoneNumber(phoneNumber);
+
+            if (!_whatsAppOtpService.IsPhoneVerified(cleanPhone))
+            {
+                return Json(new { success = false, message = "WhatsApp number verification is required. Please verify your OTP first." });
+            }
+
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && u.Role == role);
             
             if (user != null)
@@ -397,6 +388,7 @@ namespace RaahSathi.Controllers
                 }
             }
 
+            _whatsAppOtpService.ClearPhoneVerification(cleanPhone);
             await SetUserCookies(user);
 
             string redirectUrl = user.Role == "Customer" ? "/Customer/Dashboard" 
@@ -426,7 +418,21 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "Mobile number is not registered in the system." });
             }
 
-            return Json(new { success = true, message = "OTP sent to " + cleanPhone });
+            var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, "ForgotPassword");
+            return Json(new { success = otpResult.Success, message = otpResult.Message, devOtp = otpResult.DevOtp });
+        }
+
+        [HttpPost]
+        public IActionResult VerifyOtpForForgotPassword(string phoneNumber, string otp)
+        {
+            string cleanPhone = CleanPhoneNumber(phoneNumber);
+            if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
+            {
+                return Json(new { success = false, message = "Please enter a valid 10-digit mobile number." });
+            }
+
+            var verifyResult = _whatsAppOtpService.VerifyOtp(cleanPhone, otp);
+            return Json(new { success = verifyResult.Success, message = verifyResult.Message });
         }
 
         [HttpPost]
@@ -434,6 +440,11 @@ namespace RaahSathi.Controllers
         {
             string cleanPhone = CleanPhoneNumber(phoneNumber);
             password = password.Trim();
+
+            if (!_whatsAppOtpService.IsPhoneVerified(cleanPhone))
+            {
+                return Json(new { success = false, message = "WhatsApp number verification is required. Please verify your OTP first." });
+            }
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => (u.PhoneNumber == cleanPhone || u.PhoneNumber.EndsWith(cleanPhone)) && (string.IsNullOrEmpty(role) || u.Role == role));
             if (user == null)
@@ -449,6 +460,8 @@ namespace RaahSathi.Controllers
             user.Password = PasswordHasher.HashPassword(password);
             await _dbContext.SaveChangesAsync();
 
+            _whatsAppOtpService.ClearPhoneVerification(cleanPhone);
+
             // Auto-login after password reset
             await SetUserCookies(user);
 
@@ -460,6 +473,7 @@ namespace RaahSathi.Controllers
         }
 
         public async Task<IActionResult> Logout(string? role)
+
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 

@@ -18,5 +18,7 @@ rahi.db
 ## OS / IDE generated files
 .DS_Store
 Thumbs.db
-scratch/
-
+## Node & WhatsApp Gateway
+**/node_modules/
+**/auth_session/
+node_modules/

@@ -66,8 +66,9 @@
     <!-- 1. API Gateway Credentials Panel -->
     <div class="col-lg-12">
         <form action="/Admin/SaveApiSettings" method="POST">
+
             <div class="card bg-dark border-secondary shadow-sm">
-                <div class="card-header border-secondary bg-transparent py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header border-secondary bg-transparent py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="text-info mb-0"><i class="fa-solid fa-key me-2"></i> SMS, WhatsApp &amp; Map API Keys</h5>
                     <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-40"><i class="fa-solid fa-server me-1"></i> API Gateway SP</span>
                 </div>
@@ -78,9 +79,28 @@
                             <input type="password" name="smsApiKey" class="form-control glass-input text-white" value="@smsApiKeySetting" placeholder="Enter SMS gateway secret key...">
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-muted small font-weight-bold">WhatsApp Business API Phone</label>
-                            <input type="text" name="whatsappNo" class="form-control glass-input text-white" value="@whatsappNoSetting" placeholder="+91 9891819236">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label text-muted small font-weight-bold mb-0">
+                                    <i class="fa-brands fa-whatsapp text-success me-1"></i> WhatsApp Business API Phone
+                                </label>
+                                <span id="waFieldStatusBadge" class="badge bg-secondary text-white" style="font-size: 0.72rem;">
+                                    <i class="fa-solid fa-circle-notch fa-spin"></i> Checking...
+                                </span>
+                            </div>
+                            <div class="input-group">
+                                <input type="text" id="waInputPhoneField" name="whatsappNo" class="form-control glass-input text-white font-weight-bold" value="@whatsappNoSetting" placeholder="+91 9891819236">
+                                <button type="button" class="btn btn-outline-success font-weight-bold px-3 d-flex align-items-center gap-1.5" id="btnOpenWaModal" data-bs-toggle="modal" data-bs-target="#modalWhatsAppQr">
+                                    <i class="fa-solid fa-qrcode"></i> <span id="btnWaModalText">Link WhatsApp</span>
+                                </button>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <small class="text-muted" id="waFieldHelpText">Click 'Link WhatsApp' to scan QR or view live status.</small>
+                                <a href="javascript:void(0)" id="lnkDisconnectWa" class="text-danger small d-none" onclick="logoutWhatsAppGateway()">
+                                    <i class="fa-solid fa-right-from-bracket me-1"></i> Disconnect
+                                </a>
+                            </div>
                         </div>
+
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-muted small font-weight-bold">Google Maps JavaScript API Key</label>
                             <input type="password" name="googleMapsKey" class="form-control glass-input text-white" value="@googleMapsKeySetting" placeholder="Enter Maps Javascript API key...">
@@ -241,6 +261,64 @@
     </div>
 </div>
 
+<!-- WhatsApp QR Scanner Modal -->
+<div class="modal fade" id="modalWhatsAppQr" tabindex="-1" aria-labelledby="modalWhatsAppQrLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-success shadow-lg" style="border-width: 2px;">
+            <div class="modal-header border-secondary bg-transparent py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-success fs-4"></i>
+                    <h5 class="modal-title text-white font-weight-bold" id="modalWhatsAppQrLabel">WhatsApp Web QR Gateway</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div id="modalWaStatusBadge" class="badge bg-warning text-dark px-3 py-2 fs-6 mb-3 font-weight-bold">
+                    <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Checking Gateway...
+                </div>
+
+                <!-- Live QR Container -->
+                <div id="modalWaQrContainer" class="p-3 bg-white rounded shadow-lg d-inline-block my-2" style="min-width: 240px; min-height: 240px;">
+                    <img id="modalWaQrImage" src="" alt="WhatsApp QR Code" style="width: 220px; height: 220px; display: none;" />
+                    <div id="modalWaQrPlaceholder" class="d-flex flex-column align-items-center justify-content-center text-dark" style="height: 220px; width: 220px;">
+                        <i class="fa-solid fa-circle-notch fa-spin text-muted fs-2 mb-2"></i>
+                        <span class="text-muted small">Loading QR...</span>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div id="modalWaInstructions" class="text-start bg-black p-3 rounded border border-secondary border-opacity-40 my-3">
+                    <h6 class="text-warning font-weight-bold small mb-2"><i class="fa-solid fa-mobile-screen-button me-1"></i> How to Link:</h6>
+                    <ol class="text-light small ps-3 mb-0" style="line-height: 1.7;">
+                        <li>Open <strong>WhatsApp</strong> on your phone.</li>
+                        <li>Tap <strong>Settings</strong> (iOS) or <strong>Three Dots (⋮)</strong> (Android) &gt; <strong>Linked Devices</strong>.</li>
+                        <li>Tap <strong>Link a Device</strong> and point your camera at the QR code above.</li>
+                    </ol>
+                </div>
+
+                <!-- Connected Info -->
+                <div id="modalWaConnectedInfo" class="d-none my-3">
+                    <div class="alert alert-success bg-dark border-success text-white mb-2">
+                        <i class="fa-solid fa-circle-check text-success fs-3 d-block mb-1"></i>
+                        <strong>WhatsApp Gateway Connected!</strong>
+                        <div class="small mt-1 text-light">All OTPs will be delivered directly from this connected phone number.</div>
+                        <div class="fs-5 font-monospace text-warning font-weight-bold mt-2" id="modalWaConnectedPhone">+91 XXXXX XXXXX</div>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="logoutWhatsAppGateway()">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Disconnect / Switch Number
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary bg-transparent py-2 justify-content-between">
+                <a href="http://localhost:5005" target="_blank" class="text-muted small text-decoration-none">
+                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Open Gateway Window (localhost:5005)
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     function toggleSecretVisibility(inputId, btn) {
         var input = document.getElementById(inputId);
@@ -260,4 +338,151 @@
             }
         }
     }
+
+    // --- WhatsApp Web QR Gateway Live Polling ---
+    async function checkWhatsAppGatewayStatus() {
+        try {
+            const res = await fetch('/Admin/GetWhatsAppGatewayStatus');
+            const data = await res.json();
+
+            const fieldBadge = document.getElementById('waFieldStatusBadge');
+            const btnText = document.getElementById('btnWaModalText');
+            const fieldHelp = document.getElementById('waFieldHelpText');
+            const lnkDisc = document.getElementById('lnkDisconnectWa');
+            const phoneInput = document.getElementById('waInputPhoneField');
+
+            const modalBadge = document.getElementById('modalWaStatusBadge');
+            const modalQrImage = document.getElementById('modalWaQrImage');
+            const modalQrPlaceholder = document.getElementById('modalWaQrPlaceholder');
+            const modalInstructions = document.getElementById('modalWaInstructions');
+            const modalConnectedInfo = document.getElementById('modalWaConnectedInfo');
+            const modalConnectedPhone = document.getElementById('modalWaConnectedPhone');
+
+            if (!data.success) {
+                if (fieldBadge) {
+                    fieldBadge.className = 'badge bg-danger text-white';
+                    fieldBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Gateway Error';
+                }
+                if (modalBadge) {
+                    modalBadge.className = 'badge bg-danger text-white px-3 py-2 fs-6';
+                    modalBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Gateway Error';
+                }
+                return;
+            }
+
+            if (data.isConnected) {
+                var cleanPhone = data.connectedPhone || '';
+                var formatted = cleanPhone.startsWith('+') ? cleanPhone : ('+' + cleanPhone);
+
+                if (fieldBadge) {
+                    fieldBadge.className = 'badge bg-success text-dark font-weight-bold';
+                    fieldBadge.innerHTML = '<i class="fa-solid fa-circle-check text-dark me-1"></i> Connected';
+                }
+                if (btnText) {
+                    btnText.innerHTML = '🟢 Linked';
+                }
+                if (fieldHelp) {
+                    fieldHelp.innerHTML = '<span class="text-success"><i class="fa-solid fa-circle-check me-1"></i> Active: OTPs are being sent via ' + formatted + '</span>';
+                }
+                if (lnkDisc) {
+                    lnkDisc.classList.remove('d-none');
+                }
+                if (phoneInput && (!phoneInput.value || phoneInput.value.trim() === '')) {
+                    phoneInput.value = formatted;
+                }
+
+                // Modal Updates
+                if (modalBadge) {
+                    modalBadge.className = 'badge bg-success text-dark px-3 py-2 fs-6 font-weight-bold';
+                    modalBadge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> Active &amp; Connected';
+                }
+                if (modalQrImage) modalQrImage.style.display = 'none';
+                if (modalQrPlaceholder) {
+                    modalQrPlaceholder.innerHTML = '<i class="fa-solid fa-circle-check text-success fs-1 mb-2"></i><span class="text-success font-weight-bold">WhatsApp Connected</span>';
+                    modalQrPlaceholder.style.display = 'flex';
+                }
+                if (modalInstructions) modalInstructions.classList.add('d-none');
+                if (modalConnectedInfo) modalConnectedInfo.classList.remove('d-none');
+                if (modalConnectedPhone) modalConnectedPhone.innerText = formatted;
+
+            } else if (data.qrDataUrl) {
+                if (fieldBadge) {
+                    fieldBadge.className = 'badge bg-warning text-dark font-weight-bold';
+                    fieldBadge.innerHTML = '<i class="fa-solid fa-qrcode me-1"></i> Ready to Scan';
+                }
+                if (btnText) {
+                    btnText.innerHTML = 'Scan QR';
+                }
+                if (fieldHelp) {
+                    fieldHelp.innerHTML = 'Click "Scan QR" to connect your WhatsApp number.';
+                }
+                if (lnkDisc) {
+                    lnkDisc.classList.add('d-none');
+                }
+
+                // Modal Updates
+                if (modalBadge) {
+                    modalBadge.className = 'badge bg-warning text-dark px-3 py-2 fs-6 font-weight-bold';
+                    modalBadge.innerHTML = '<i class="fa-solid fa-qrcode me-1"></i> Ready to Scan';
+                }
+                if (modalQrImage) {
+                    modalQrImage.src = data.qrDataUrl;
+                    modalQrImage.style.display = 'block';
+                }
+                if (modalQrPlaceholder) modalQrPlaceholder.style.display = 'none';
+                if (modalInstructions) modalInstructions.classList.remove('d-none');
+                if (modalConnectedInfo) modalConnectedInfo.classList.add('d-none');
+
+            } else {
+                if (fieldBadge) {
+                    fieldBadge.className = 'badge bg-secondary text-white';
+                    fieldBadge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Initializing...';
+                }
+                if (btnText) {
+                    btnText.innerHTML = 'Link WhatsApp';
+                }
+                if (modalBadge) {
+                    modalBadge.className = 'badge bg-secondary text-white px-3 py-2 fs-6';
+                    modalBadge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Initializing Gateway...';
+                }
+                if (modalQrPlaceholder) {
+                    modalQrPlaceholder.style.display = 'flex';
+                    modalQrPlaceholder.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-muted fs-2 mb-2"></i><span class="text-muted small">Loading QR...</span>';
+                }
+                if (modalQrImage) modalQrImage.style.display = 'none';
+                if (modalInstructions) modalInstructions.classList.remove('d-none');
+                if (modalConnectedInfo) modalConnectedInfo.classList.add('d-none');
+            }
+        } catch (err) {
+            const fieldBadge = document.getElementById('waFieldStatusBadge');
+            if (fieldBadge) {
+                fieldBadge.className = 'badge bg-danger text-white';
+                fieldBadge.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Offline';
+            }
+            const modalBadge = document.getElementById('modalWaStatusBadge');
+            if (modalBadge) {
+                modalBadge.className = 'badge bg-danger text-white px-3 py-2 fs-6';
+                modalBadge.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Gateway Offline';
+            }
+        }
+    }
+
+    async function logoutWhatsAppGateway() {
+        if (!confirm('Are you sure you want to disconnect this WhatsApp number? You will need to scan a new QR code.')) return;
+        try {
+            const res = await fetch('/Admin/LogoutWhatsAppGateway', { method: 'POST' });
+            const data = await res.json();
+            alert(data.message || 'Gateway session reset.');
+            checkWhatsAppGatewayStatus();
+        } catch (e) {
+            alert('Failed to disconnect: ' + e.message);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        checkWhatsAppGatewayStatus();
+        setInterval(checkWhatsAppGatewayStatus, 5000);
+    });
 </script>
+
+

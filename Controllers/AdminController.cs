@@ -24,6 +24,7 @@ namespace RaahSathi.Controllers
         private readonly Services.INotificationService _notificationService;
         private readonly Services.IPaymentService _paymentService;
         private readonly Services.IReferralService _referralService;
+        private readonly Services.IWhatsAppOtpService _whatsAppOtpService;
 
         public AdminController(
             ApplicationDbContext dbContext,
@@ -33,7 +34,8 @@ namespace RaahSathi.Controllers
             Services.IUserService userService,
             Services.INotificationService notificationService,
             Services.IPaymentService paymentService,
-            Services.IReferralService referralService)
+            Services.IReferralService referralService,
+            Services.IWhatsAppOtpService whatsAppOtpService)
         {
             _dbContext = dbContext;
             _pricingService = pricingService;
@@ -43,7 +45,9 @@ namespace RaahSathi.Controllers
             _notificationService = notificationService;
             _paymentService = paymentService;
             _referralService = referralService;
+            _whatsAppOtpService = whatsAppOtpService;
         }
+
 
         private bool IsAdmin()
         {
@@ -2139,7 +2143,31 @@ namespace RaahSathi.Controllers
             return View();
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetWhatsAppGatewayStatus()
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
+            var (isConnected, qrDataUrl, connectedPhone, message) = await _whatsAppOtpService.GetGatewayStatusAsync();
+            return Json(new
+            {
+                success = true,
+                isConnected,
+                qrDataUrl,
+                connectedPhone,
+                message
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> LogoutWhatsAppGateway()
+        {
+            if (!IsAdmin()) return Json(new { success = false, message = "Unauthorized" });
+            var (success, message) = await _whatsAppOtpService.LogoutGatewayAsync();
+            return Json(new { success, message });
+        }
+
         public async Task<IActionResult> Referrals()
+
         {
             if (!IsAdmin()) return RedirectToAction("Login", "Auth");
 
