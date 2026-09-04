@@ -2088,8 +2088,13 @@
                                 }
                                 
                                 // Auto popup logic:
-                                // If the notification was already dismissed (in localStorage OR in current session), do NOT popup again!
-                                var isDismissed = dismissedNotifs.includes(nid) || sessionDismissedBroadcastIds.includes(nid);
+                                // If user is NOT authenticated and on homepage, always show the active announcement on refresh (only suppress during same-page background polling)
+                                var isDismissed = false;
+                                if (!isUserAuthenticated && onHome) {
+                                    isDismissed = sessionDismissedBroadcastIds.includes(nid);
+                                } else {
+                                    isDismissed = dismissedNotifs.includes(nid) || sessionDismissedBroadcastIds.includes(nid);
+                                }
                                 var shouldPopup = false;
                                 
                                 if (!isDismissed) {
