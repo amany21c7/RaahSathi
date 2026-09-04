@@ -2018,10 +2018,13 @@
             var isAdminLoggedIn = @(isAdminLoggedIn.ToString().ToLower());
             var currentBroadcastModalId = null;
             var sessionDismissedBroadcastIds = [];
+            window.pendingBroadcastData = null;
+            window.activeBroadcastNotif = null;
+            window.firstTimeLanguageModalHandled = false;
 
             function isHomePageCheck() {
                 var p = (window.location.pathname || '').toLowerCase();
-                return p === '/' || p === '' || p === '/home' || p === '/home/' || p === '/home/index' || p === '/home/index/';
+                return p === '/' || p === '' || p === '/home' || p === '/home/' || p === '/home/index' || p === '/home/index/' || p === '/index';
             }
 
             function markBroadcastNotificationDismissed(id) {
@@ -2029,22 +2032,24 @@
                 var numId = parseInt(id);
                 if (isNaN(numId)) return;
                 
-                // Track in-session dismissal so background poll doesn't reopen it
+                // Track in-session dismissal so background polling (every 45s) doesn't reopen it while user stays on this page view
                 if (!sessionDismissedBroadcastIds.includes(numId)) {
                     sessionDismissedBroadcastIds.push(numId);
                 }
 
-                // Save permanently in localStorage so it NEVER shows again for ANY user (guest or logged-in)
-                try {
-                    var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
-                    if (!Array.isArray(dismissedNotifs)) dismissedNotifs = [];
-                    dismissedNotifs = dismissedNotifs.map(Number);
-                    if (!dismissedNotifs.includes(numId)) {
-                        dismissedNotifs.push(numId);
-                        localStorage.setItem('raahsathi_dismissed_notifs', JSON.stringify(dismissedNotifs));
+                // For authenticated users, save permanently in localStorage so it does not auto popup on every refresh
+                if (isUserAuthenticated) {
+                    try {
+                        var dismissedNotifs = JSON.parse(localStorage.getItem('raahsathi_dismissed_notifs') || '[]');
+                        if (!Array.isArray(dismissedNotifs)) dismissedNotifs = [];
+                        dismissedNotifs = dismissedNotifs.map(Number);
+                        if (!dismissedNotifs.includes(numId)) {
+                            dismissedNotifs.push(numId);
+                            localStorage.setItem('raahsathi_dismissed_notifs', JSON.stringify(dismissedNotifs));
+                        }
+                    } catch(e) {
+                        console.error('Error saving dismissed notif:', e);
                     }
-                } catch(e) {
-                    console.error('Error saving dismissed notif:', e);
                 }
             }
 
@@ -2088,7 +2093,8 @@
                                 }
                                 
                                 // Auto popup logic:
-                                // If user is NOT authenticated and on homepage, always show the active announcement on refresh (only suppress during same-page background polling)
+                                // Non-authenticated user on homepage: ONLY check sessionDismissedBroadcastIds (so on page refresh it pops up again!)
+                                // Authenticated user: check localStorage dismissedNotifs (so it does not annoy logged in users on every refresh)
                                 var isDismissed = false;
                                 if (!isUserAuthenticated && onHome) {
                                     isDismissed = sessionDismissedBroadcastIds.includes(nid);
@@ -2107,7 +2113,6 @@
                                         }
                                     } else {
                                         // For authenticated users (including admin viewing the site):
-                                        // Show if audience is 'All', or role matches, or if on Homepage and audience is Homepage
                                         if (audience.indexOf('all') !== -1 || audience.indexOf('customer') !== -1 || audience.indexOf('mechanic') !== -1 || (onHome && isHomepageOnly) || isAdminLoggedIn) {
                                             shouldPopup = true;
                                         }
@@ -2142,6 +2147,7 @@
                         
                         // Auto popup when loaded if there is an active notification to display
                         if (showPopupNotif) {
+                            window.activeBroadcastNotif = showPopupNotif;
                             showBroadcastModal(showPopupNotif.id, showPopupNotif.title, showPopupNotif.message, showPopupNotif.sentAt);
                         }
                         
@@ -2155,54 +2161,70 @@
                 });
             };
 
-            window.pendingBroadcastData = null;
-
             function isLanguageModalActiveOrPending() {
                 var p = (window.location.pathname || '').toLowerCase();
-                var isHome = p === '/' || p === '' || p === '/home' || p === '/home/' || p === '/home/index' || p === '/index';
+                var isHome = p === '/' || p === '' || p === '/home' || p === '/home/' || p === '/home/index' || p === '/home/index/' || p === '/index';
                 if (!isHome) return false;
 
-                var hasChosenInSession = sessionStorage.getItem('raahsathi_guest_lang_chosen');
-                if (!hasChosenInSession) {
-                    return true; // Language modal prompt is pending on home screen
+                if (isUserAuthenticated) return false;
+
+                // If language was already chosen or modal was already dismissed/handled in session, not pending
+                if (window.firstTimeLanguageModalHandled || sessionStorage.getItem('raahsathi_guest_lang_chosen')) {
+                    return false;
                 }
 
                 var langModalEl = document.getElementById('firstTimeLanguageModal');
-                return langModalEl && (langModalEl.classList.contains('show') || $(langModalEl).is(':visible'));
+                return !!langModalEl;
             }
 
-            function showBroadcastModal(id, title, message, sentAt) {
+            window.showBroadcastModal = function(id, title, message, sentAt) {
                 // If language modal is showing or pending on homepage, store in pendingBroadcastData
                 if (isLanguageModalActiveOrPending()) {
                     window.pendingBroadcastData = { id: id, title: title, message: message, sentAt: sentAt };
                     return;
                 }
 
-                showBroadcastModalDirectly(id, title, message, sentAt);
-            }
+                window.showBroadcastModalDirectly(id, title, message, sentAt);
+            };
 
-            function showBroadcastModalDirectly(id, title, message, sentAt) {
+            window.showBroadcastModalDirectly = function(id, title, message, sentAt) {
                 currentBroadcastModalId = id;
                 $('#broadcastModalTitle').text(title);
                 $('#broadcastModalMessage').text(message);
-                $('#broadcastModalTime').html('<i class="fa-regular fa-clock me-1"></i> ' + sentAt);
+                if (sentAt) {
+                    $('#broadcastModalTime').html('<i class="fa-regular fa-clock me-1"></i> ' + sentAt).removeClass('d-none');
+                } else {
+                    $('#broadcastModalTime').addClass('d-none');
+                }
                 
                 var modalEl = document.getElementById('raahSathiBroadcastModal');
                 if (!modalEl) return;
 
-                // Mark dismissed ONLY when explicitly closed by user (dismiss button or close icon)
-                $('#btnDismissBroadcastModal, #raahSathiBroadcastModal .btn-close').off('click.dismissBroadcast').on('click.dismissBroadcast', function() {
+                // Clean up any lingering backdrop from previous modals to prevent z-index/lockup collisions
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open').css('overflow', '');
+
+                var existingInstance = bootstrap.Modal.getInstance(modalEl);
+                if (existingInstance) {
+                    existingInstance.dispose();
+                }
+
+                // Listen to hide event so ANY close method (button, close X, backdrop click, Escape key) marks it dismissed in session
+                $('#raahSathiBroadcastModal').off('hide.bs.modal.dismissBroadcast').on('hide.bs.modal.dismissBroadcast', function() {
                     if (currentBroadcastModalId) {
                         markBroadcastNotificationDismissed(currentBroadcastModalId);
                     }
                 });
 
-                var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                instance.show();
-            }
+                var newInstance = new bootstrap.Modal(modalEl, {
+                    backdrop: true,
+                    keyboard: true
+                });
+                newInstance.show();
+            };
 
             window.openBroadcastModalDirect = function(id, titleEnc, messageEnc, sentAt) {
-                showBroadcastModalDirectly(id, decodeURIComponent(titleEnc), decodeURIComponent(messageEnc), sentAt);
+                window.showBroadcastModalDirectly(id, decodeURIComponent(titleEnc), decodeURIComponent(messageEnc), sentAt);
             };
 
             // Start polling (lightweight & visibility-aware)
@@ -2934,7 +2956,8 @@
                     </div>
                     
                     <h4 class="text-white font-weight-bold mb-2" id="broadcastModalTitle" style="font-family: 'Outfit';">Live Announcement</h4>
-                    <p class="text-muted small mb-4" id="broadcastModalMessage" style="font-size: 0.88rem; line-height: 1.5; color: #cbd5e1 !important;">Notification details...</p>
+                    <p class="text-muted small mb-2" id="broadcastModalMessage" style="font-size: 0.88rem; line-height: 1.5; color: #cbd5e1 !important;">Notification details...</p>
+                    <div id="broadcastModalTime" class="text-muted extra-small mb-4" style="font-size: 0.72rem; color: #94a3b8 !important;"></div>
 
                     <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnDismissBroadcastModal" data-bs-dismiss="modal" style="font-size: 0.92rem;">
                         <i class="fa-solid fa-check"></i> <span>Got It, Don't Show Again</span>
@@ -3212,6 +3235,7 @@
                             modal.show();
                         }
                     } else {
+                        window.firstTimeLanguageModalHandled = true;
                         if (typeof window.pollPushNotifications === 'function') {
                             window.pollPushNotifications();
                         }
@@ -3219,18 +3243,23 @@
                 }
 
                 function triggerBroadcastFromQueue() {
-                    if (window.pendingBroadcastData) {
-                        var data = window.pendingBroadcastData;
-                        window.pendingBroadcastData = null;
-                        setTimeout(function() {
-                            if (typeof showBroadcastModalDirectly === 'function') {
-                                showBroadcastModalDirectly(data.id, data.title, data.message, data.sentAt);
-                            }
-                        }, 150);
-                    }
+                    window.firstTimeLanguageModalHandled = true;
+                    // Clean up any lingering backdrop artifacts from language modal
+                    $('.modal-backdrop').remove();
+                    $('body').removeClass('modal-open').css('overflow', '');
+
+                    setTimeout(function() {
+                        if (window.pendingBroadcastData && typeof window.showBroadcastModalDirectly === 'function') {
+                            var data = window.pendingBroadcastData;
+                            window.pendingBroadcastData = null;
+                            window.showBroadcastModalDirectly(data.id, data.title, data.message, data.sentAt);
+                        } else if (window.activeBroadcastNotif && typeof window.showBroadcastModal === 'function') {
+                            window.showBroadcastModal(window.activeBroadcastNotif.id, window.activeBroadcastNotif.title, window.activeBroadcastNotif.message, window.activeBroadcastNotif.sentAt);
+                        }
+                    }, 80);
                 }
 
-                // Immediately show queued broadcast notification as soon as language modal finishes closing
+                // Immediately show queued broadcast notification as soon as language modal finishes closing and backdrop is clean
                 $('#firstTimeLanguageModal').off('hidden.bs.modal.triggerBroadcast').on('hidden.bs.modal.triggerBroadcast', function() {
                     triggerBroadcastFromQueue();
                 });
@@ -3239,33 +3268,46 @@
                     var selectEl = document.getElementById('firstTimeLangSelect');
                     var langCode = selectEl ? selectEl.value : 'en';
                     
+                    window.firstTimeLanguageModalHandled = true;
                     sessionStorage.setItem('raahsathi_guest_lang_chosen', 'true');
                     var modalEl = document.getElementById('firstTimeLanguageModal');
                     if (modalEl && window.bootstrap && window.bootstrap.Modal) {
                         var m = bootstrap.Modal.getInstance(modalEl);
-                        if (m) m.hide();
+                        if (m) {
+                            m.hide();
+                        } else {
+                            triggerBroadcastFromQueue();
+                        }
+                    } else {
+                        triggerBroadcastFromQueue();
                     }
-                    triggerBroadcastFromQueue();
+
                     if (typeof changeLanguage === 'function') {
                         changeLanguage(langCode, true);
                     }
                 };
 
                 window.dismissFirstTimeLanguageModal = function() {
+                    window.firstTimeLanguageModalHandled = true;
                     sessionStorage.setItem('raahsathi_guest_lang_chosen', 'true');
                     var modalEl = document.getElementById('firstTimeLanguageModal');
                     if (modalEl && window.bootstrap && window.bootstrap.Modal) {
                         var m = bootstrap.Modal.getInstance(modalEl);
-                        if (m) m.hide();
+                        if (m) {
+                            m.hide();
+                        } else {
+                            triggerBroadcastFromQueue();
+                        }
+                    } else {
+                        triggerBroadcastFromQueue();
                     }
-                    triggerBroadcastFromQueue();
                 };
 
                 if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                    setTimeout(checkFirstTimeLanguagePrompt, 400);
+                    setTimeout(checkFirstTimeLanguagePrompt, 350);
                 } else {
                     document.addEventListener('DOMContentLoaded', function() {
-                        setTimeout(checkFirstTimeLanguagePrompt, 400);
+                        setTimeout(checkFirstTimeLanguagePrompt, 350);
                     });
                 }
             })();
