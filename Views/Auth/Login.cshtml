@@ -111,7 +111,7 @@
             <!-- ------------------------------------------------------------- -->
             <div id="panelRegisterDetails" style="display:none;">
                 <!-- Role Selection -->
-                <div class="mb-4 d-flex justify-content-center gap-2">
+                <div class="mb-3 d-flex justify-content-center gap-2">
                     <input type="radio" class="btn-check" name="registerRole" id="registerRoleCustomer" value="Customer" @(targetRole == "Customer" ? "checked" : "") autocomplete="off">
                     <label class="btn btn-outline-warning rounded-pill px-4" for="registerRoleCustomer">
                         <i class="fa-solid fa-car me-1"></i> Customer
@@ -121,6 +121,13 @@
                     <label class="btn btn-outline-warning rounded-pill px-4" for="registerRoleMechanic">
                         <i class="fa-solid fa-wrench me-1"></i> Mechanic
                     </label>
+                </div>
+
+                <!-- Green WhatsApp OTP Alert Banner (Initially Hidden) -->
+                <div id="regOtpSentBanner" class="text-center mb-3" style="display:none;">
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2 w-100 shadow-sm">
+                        <i class="fa-brands fa-whatsapp fs-5 me-1 text-success align-middle"></i> OTP sent to WhatsApp: <span id="lblSentRegisterPhone" class="fw-bold"></span>
+                    </span>
                 </div>
 
                 <div class="mb-3">
@@ -136,44 +143,31 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="form-label text-muted small">Referral Code <span class="text-warning">(Optional - Get Joining Bonus)</span></label>
-                    <div class="input-group">
+                    <div class="input-group input-group-sm">
                         <span class="input-group-text bg-dark border-secondary text-warning"><i class="fa-solid fa-gift"></i></span>
-                        <input type="text" class="form-control glass-input text-white font-monospace text-uppercase" id="registerReferralCode" value="@(ViewBag.ReferralCode ?? "")" placeholder="">
+                        <input type="text" class="form-control glass-input text-white font-monospace text-uppercase" id="registerReferralCode" value="@(ViewBag.ReferralCode ?? "")" placeholder="" style="height: 38px; font-size: 0.9rem;">
                     </div>
                 </div>
 
-                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3 d-flex align-items-center justify-content-center gap-2" id="btnRegisterSendOtp">
-                    <i class="fa-solid fa-shield-halved me-1"></i> Get OTP Verification
+                <!-- Inline OTP Field (Shown after clicking Get OTP Verification) -->
+                <div id="regOtpGroup" class="mb-3" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label text-muted small mb-0">Enter 6-Digit WhatsApp OTP</label>
+                        <button type="button" id="btnResendRegisterOtp" class="btn btn-link text-decoration-none text-muted small p-0" disabled>
+                            Resend in <span id="timerRegisterOtp">60</span>s
+                        </button>
+                    </div>
+                    <input type="text" class="form-control glass-input text-white text-center font-monospace font-weight-bold" id="registerOtpCode" placeholder="••••••" maxlength="6" style="letter-spacing: 12px; font-size: 1.3rem;" autocomplete="one-time-code">
+                </div>
+
+                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3 d-flex align-items-center justify-content-center gap-2" id="btnRegisterAction">
+                    <i class="fa-solid fa-shield-halved me-1"></i> <span>Get OTP Verification</span>
                 </button>
 
                 <div class="text-center">
                     <a href="#" class="btnBackToLogin text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-arrow-left me-1"></i> Back to Login</a>
-                </div>
-            </div>
-
-            <!-- ------------------------------------------------------------- -->
-            <!-- PANEL 3: REGISTRATION OTP -->
-            <!-- ------------------------------------------------------------- -->
-            <div id="panelRegisterOtp" style="display:none;">
-                <div class="text-center mb-3">
-                    <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2">
-                        <i class="fa-brands fa-whatsapp fs-5 me-1 text-success align-middle"></i> OTP sent to WhatsApp: <span id="lblSentRegisterPhone"></span>
-                    </span>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Enter 6-Digit WhatsApp OTP</label>
-                    <input type="text" class="form-control glass-input text-white text-center font-monospace font-weight-bold" id="registerOtpCode" placeholder="••••••" maxlength="6" style="letter-spacing: 12px; font-size: 1.5rem;" autocomplete="one-time-code">
-                </div>
-                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3" id="btnRegisterVerifyOtp">
-                    Verify OTP &amp; Continue <i class="fa-solid fa-arrow-right ms-1"></i>
-                </button>
-                <div class="d-flex justify-content-between align-items-center">
-                    <a href="#" id="btnBackToRegisterDetails" class="text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-arrow-left me-1"></i> Back</a>
-                    <button type="button" id="btnResendRegisterOtp" class="btn btn-link text-decoration-none text-muted small p-0" disabled>
-                        Resend in <span id="timerRegisterOtp">60</span>s
-                    </button>
                 </div>
             </div>
 
@@ -680,6 +674,7 @@ $(document).ready(function() {
     // Nav Links
     $('#lnkShowRegister').click(function(e) {
         e.preventDefault();
+        resetRegisterFlow();
         showPanel('panelRegisterDetails', 'Register Account', 'fa-user-plus', 'Join RaahSathi roadside assistance network');
     });
 
@@ -690,6 +685,7 @@ $(document).ready(function() {
 
     $('.btnBackToLogin').click(function(e) {
         e.preventDefault();
+        resetRegisterFlow();
         showPanel('panelLogin', 'Welcome to <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span>', 'fa-shield-halved', 'Login with your credentials or register a new account');
     });
 
@@ -798,13 +794,24 @@ $(document).ready(function() {
         });
     });
 
-    // 2. Register - Send WhatsApp OTP
+    // 2. Register - Single Panel (Send OTP & Verify OTP)
     var regPhone = "";
     var regRole = "";
     var regName = "";
     var regReferralCode = "";
+    var regOtpSent = false;
 
-    $('#btnRegisterSendOtp, #btnResendRegisterOtp').click(function() {
+    function resetRegisterFlow() {
+        regOtpSent = false;
+        $('#regOtpSentBanner').hide();
+        $('#regOtpGroup').hide();
+        $('#registerOtpCode').val('');
+        $('#registerPhone, #registerName, #registerReferralCode, input[name="registerRole"]').prop('readonly', false).prop('disabled', false);
+        $('#btnRegisterAction').removeClass('btn-success').addClass('btn-premium-primary')
+            .html('<i class="fa-solid fa-shield-halved me-1"></i> <span>Get OTP Verification</span>').prop('disabled', false);
+    }
+
+    function sendRegistrationOtp(isResend) {
         regRole = $('input[name="registerRole"]:checked').val();
         if (!regRole) {
             alert('⚠️ Please select your account type: Customer or Mechanic!');
@@ -817,53 +824,70 @@ $(document).ready(function() {
 
         if (!regName) {
             alert('Please enter your full name.');
+            $('#registerName').focus();
             return;
         }
         if (regPhone.length < 10) {
             alert('Please enter a valid 10-digit mobile number.');
+            $('#registerPhone').focus();
             return;
         }
 
-        var btn = $(this);
-        btn.html('<i class="fa-solid fa-circle-notch fa-spin"></i> Sending OTP...').prop('disabled', true);
+        var btn = $('#btnRegisterAction');
+        btn.html('<i class="fa-solid fa-circle-notch fa-spin"></i> ' + (isResend ? 'Resending OTP...' : 'Sending OTP...')).prop('disabled', true);
 
         $.post('/Auth/SendOtpForRegistration', { phoneNumber: regPhone, role: regRole, name: regName }, function(res) {
-            btn.html('<i class="fa-solid fa-shield-halved me-1"></i> Get OTP Verification').prop('disabled', false);
             if (res.success) {
+                regOtpSent = true;
                 $('#lblSentRegisterPhone').text('+91 ' + regPhone);
-                showPanel('panelRegisterOtp', 'OTP Verification', 'fa-solid fa-shield-check', 'Enter the 6-digit verification code');
-                $('#registerOtpCode').val('').focus();
+                $('#regOtpSentBanner').slideDown(250);
+                $('#regOtpGroup').slideDown(250);
+                $('#registerOtpCode').focus();
+                
+                // Change button state to Verify OTP & Continue
+                btn.removeClass('btn-premium-primary').addClass('btn-success')
+                    .html('Verify OTP &amp; Continue <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
+
                 startRegTimer(60);
             } else {
                 alert(res.message);
+                if (!regOtpSent) {
+                    btn.html('<i class="fa-solid fa-shield-halved me-1"></i> <span>Get OTP Verification</span>').prop('disabled', false);
+                } else {
+                    btn.html('Verify OTP &amp; Continue <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
+                }
             }
         });
-    });
+    }
 
-    $('#btnBackToRegisterDetails').click(function(e) {
-        e.preventDefault();
-        showPanel('panelRegisterDetails', 'Register Account', 'fa-user-plus', 'Join RaahSathi roadside assistance network');
-    });
+    $('#btnRegisterAction').click(function() {
+        if (!regOtpSent) {
+            sendRegistrationOtp(false);
+        } else {
+            // Verify OTP
+            var otp = $('#registerOtpCode').val().trim();
+            if (otp.length !== 6) {
+                alert('Please enter the 6-digit OTP received on WhatsApp.');
+                $('#registerOtpCode').focus();
+                return;
+            }
 
-    // 3. Register - Verify OTP
-    $('#btnRegisterVerifyOtp').click(function() {
-        var otp = $('#registerOtpCode').val().trim();
-        if (otp.length !== 6) {
-            alert('Please enter the 6-digit OTP received on WhatsApp.');
-            return;
+            var btn = $(this);
+            btn.html('<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...').prop('disabled', true);
+
+            $.post('/Auth/VerifyOtpForRegistration', { phoneNumber: regPhone, otp: otp }, function(res) {
+                btn.html('Verify OTP &amp; Continue <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
+                if (res.success) {
+                    showPanel('panelRegisterPassword', 'Set Password', 'fa-lock', 'Choose a strong password for login');
+                } else {
+                    alert('⚠️ ' + res.message);
+                }
+            });
         }
+    });
 
-        var btn = $(this);
-        btn.html('<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...').prop('disabled', true);
-
-        $.post('/Auth/VerifyOtpForRegistration', { phoneNumber: regPhone, otp: otp }, function(res) {
-            btn.html('Verify OTP &amp; Continue <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
-            if (res.success) {
-                showPanel('panelRegisterPassword', 'Set Password', 'fa-lock', 'Choose a strong password for login');
-            } else {
-                alert('⚠️ ' + res.message);
-            }
-        });
+    $('#btnResendRegisterOtp').click(function() {
+        sendRegistrationOtp(true);
     });
 
     // 4. Register - Complete (Submit Password)
