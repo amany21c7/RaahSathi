@@ -54,7 +54,7 @@ namespace RaahSathi.Services
             return digits;
         }
 
-        public async Task<(bool Success, string Message, string? DevOtp)> SendOtpAsync(string phoneNumber, string purpose)
+        public async Task<(bool Success, string Message, string? DevOtp)> SendOtpAsync(string phoneNumber, string purpose, bool allowEmergencyFallback = false)
         {
             string cleanPhone = NormalizePhone(phoneNumber);
             if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
@@ -93,6 +93,7 @@ namespace RaahSathi.Services
                 "Registration" => "Account Registration",
                 "Login" => "Account Login",
                 "ForgotPassword" => "Password Reset",
+                "AdminForgotPassword" => "Admin Password Recovery",
                 _ => "Verification"
             };
 
@@ -122,24 +123,69 @@ namespace RaahSathi.Services
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogWarning("WhatsApp Gateway responded with status {Status}: {Content}", response.StatusCode, errorContent);
 
-                if (fallbackDevOtp)
+                // Check if the gateway specifically reported that the recipient is not on WhatsApp or bad input
+                string? parsedMessage = null;
+                bool isNonWhatsApp = false;
+                try
                 {
-                    // Fallback to dev OTP if gateway is disconnected/waiting for QR scan
-                    return (true, $"[Gateway not yet scanned] For testing, your WhatsApp OTP is: {otp}. Please scan QR in Admin Settings to enable automatic WhatsApp delivery.", otp);
+                    using var doc = System.Text.Json.JsonDocument.Parse(errorContent);
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("notOnWhatsApp", out var notOnWhatsAppProp) && notOnWhatsAppProp.GetBoolean())
+                    {
+                        isNonWhatsApp = true;
+                    }
+                    if (root.TryGetProperty("message", out var msgProp) && !string.IsNullOrWhiteSpace(msgProp.GetString()))
+                    {
+                        parsedMessage = msgProp.GetString();
+                        if (parsedMessage!.Contains("not registered on WhatsApp", StringComparison.OrdinalIgnoreCase) ||
+                            parsedMessage.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase))
+                        {
+                            isNonWhatsApp = true;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore JSON parse errors
                 }
 
-                return (false, "WhatsApp Gateway is currently waiting for QR scan. Please connect WhatsApp in Admin Settings.", null);
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest || isNonWhatsApp)
+                {
+                    // Clear cached OTP and cooldown so user is not penalized and cannot reuse OTP
+                    _cache.Remove(otpKey);
+                    _cache.Remove(cooldownKey);
+
+                    string userMsg = parsedMessage ?? $"Mobile number +91 {cleanPhone} is not registered on WhatsApp. Please enter a valid WhatsApp-enabled mobile number.";
+                    return (false, userMsg, null);
+                }
+
+                // SECURITY CHECK: Emergency fallback is ONLY allowed for verified Admin password recovery
+                if (allowEmergencyFallback && fallbackDevOtp)
+                {
+                    _logger.LogWarning("Admin Emergency Fallback triggered for +91{Phone} - Gateway status {Status}", cleanPhone, response.StatusCode);
+                    return (true, $"[Admin Emergency Recovery] WhatsApp Gateway is unavailable. System Recovery OTP: {otp}", otp);
+                }
+
+                // Regular users (Customers / Mechanics) NEVER receive on-screen OTP fallback
+                _cache.Remove(otpKey);
+                _cache.Remove(cooldownKey);
+                return (false, "WhatsApp OTP service is currently unavailable. Please ensure WhatsApp Gateway is connected, or try again in a few moments.", null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to communicate with WhatsApp Gateway at {BaseAddress}", _httpClient.BaseAddress);
 
-                if (fallbackDevOtp)
+                // SECURITY CHECK: Emergency fallback is ONLY allowed for verified Admin password recovery
+                if (allowEmergencyFallback && fallbackDevOtp)
                 {
-                    return (true, $"[Gateway Offline] For testing, your WhatsApp OTP is: {otp}. (Start whatsapp-gateway service to send real messages).", otp);
+                    _logger.LogWarning("Admin Emergency Fallback triggered (Gateway Offline) for +91{Phone}", cleanPhone);
+                    return (true, $"[Admin Emergency Recovery] WhatsApp Gateway is offline. System Recovery OTP: {otp}", otp);
                 }
 
-                return (false, "Could not reach WhatsApp Gateway service. Please try again shortly.", null);
+                // Regular users (Customers / Mechanics) NEVER receive on-screen OTP fallback
+                _cache.Remove(otpKey);
+                _cache.Remove(cooldownKey);
+                return (false, "WhatsApp OTP service is currently offline. Please try again shortly.", null);
             }
         }
 

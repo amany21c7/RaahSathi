@@ -186,8 +186,8 @@ namespace RaahSathi.Controllers
                 return Json(new { success = false, message = "Mobile number is not registered. Please register first." });
             }
 
-            var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, "Login");
-            return Json(new { success = otpResult.Success, message = otpResult.Message, devOtp = otpResult.DevOtp });
+            var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, "Login", allowEmergencyFallback: false);
+            return Json(new { success = otpResult.Success, message = otpResult.Message });
         }
 
         [HttpPost]
@@ -319,8 +319,8 @@ namespace RaahSathi.Controllers
                 }
             }
 
-            var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, "Registration");
-            return Json(new { success = otpResult.Success, message = otpResult.Message, devOtp = otpResult.DevOtp });
+            var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, "Registration", allowEmergencyFallback: false);
+            return Json(new { success = otpResult.Success, message = otpResult.Message });
         }
 
         [HttpPost]
@@ -443,8 +443,9 @@ namespace RaahSathi.Controllers
                 }
             }
 
-            var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, "ForgotPassword");
-            return Json(new { success = otpResult.Success, message = otpResult.Message, devOtp = otpResult.DevOtp });
+            bool allowEmergency = (role == "Admin" && user != null && user.Role == "Admin");
+            var otpResult = await _whatsAppOtpService.SendOtpAsync(cleanPhone, allowEmergency ? "AdminForgotPassword" : "ForgotPassword", allowEmergencyFallback: allowEmergency);
+            return Json(new { success = otpResult.Success, message = otpResult.Message, devOtp = allowEmergency ? otpResult.DevOtp : null });
         }
 
         [HttpPost]

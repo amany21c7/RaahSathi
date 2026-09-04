@@ -2147,7 +2147,51 @@
                 });
             };
 
+            var pendingBroadcastData = null;
+
+            function isLanguageModalActiveOrPending() {
+                var p = (window.location.pathname || '').toLowerCase();
+                var isHome = p === '/' || p === '' || p === '/home' || p === '/home/' || p === '/home/index' || p === '/index';
+                if (!isHome) return false;
+
+                var hasChosenInSession = sessionStorage.getItem('raahsathi_guest_lang_chosen');
+                if (!hasChosenInSession) {
+                    return true; // Language modal prompt is pending on home screen
+                }
+
+                var langModalEl = document.getElementById('firstTimeLanguageModal');
+                return langModalEl && (langModalEl.classList.contains('show') || $(langModalEl).is(':visible'));
+            }
+
+            function triggerPendingBroadcastIfReady() {
+                if (pendingBroadcastData && !isLanguageModalActiveOrPending()) {
+                    var data = pendingBroadcastData;
+                    pendingBroadcastData = null;
+                    setTimeout(function() {
+                        showBroadcastModalDirectly(data.id, data.title, data.message, data.sentAt);
+                    }, 500);
+                }
+            }
+
             function showBroadcastModal(id, title, message, sentAt) {
+                // If language modal is showing or pending on homepage, queue broadcast modal cleanly
+                if (isLanguageModalActiveOrPending()) {
+                    pendingBroadcastData = { id: id, title: title, message: message, sentAt: sentAt };
+                    var langModalEl = document.getElementById('firstTimeLanguageModal');
+                    if (langModalEl) {
+                        $(langModalEl).off('hidden.bs.modal.broadcastQueue').one('hidden.bs.modal.broadcastQueue', function() {
+                            setTimeout(function() {
+                                triggerPendingBroadcastIfReady();
+                            }, 500);
+                        });
+                    }
+                    return;
+                }
+
+                showBroadcastModalDirectly(id, title, message, sentAt);
+            }
+
+            function showBroadcastModalDirectly(id, title, message, sentAt) {
                 currentBroadcastModalId = id;
                 $('#broadcastModalTitle').text(title);
                 $('#broadcastModalMessage').text(message);
@@ -2156,32 +2200,10 @@
                 var modalEl = document.getElementById('raahSathiBroadcastModal');
                 if (!modalEl) return;
 
-                // If language modal is currently visible, queue broadcast modal to show as soon as language modal closes
-                var langModalEl = document.getElementById('firstTimeLanguageModal');
-                if (langModalEl && langModalEl.classList.contains('show')) {
-                    $(langModalEl).off('hidden.bs.modal.broadcast').one('hidden.bs.modal.broadcast', function() {
-                        setTimeout(function() {
-                            var instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                            instance.show();
-                        }, 400);
-                    });
-                    return;
-                }
-
-                // Whenever modal is hidden by any action (backdrop click, close button, Got It button, Esc key)
-                $(modalEl).off('hidden.bs.modal').on('hidden.bs.modal', function() {
+                // Mark dismissed ONLY when explicitly closed by user (dismiss button or close icon)
+                $('#btnDismissBroadcastModal, #raahSathiBroadcastModal .btn-close').off('click.dismissBroadcast').on('click.dismissBroadcast', function() {
                     if (currentBroadcastModalId) {
                         markBroadcastNotificationDismissed(currentBroadcastModalId);
-                    }
-                });
-
-                $('#btnDismissBroadcastModal').off('click').on('click', function() {
-                    if (currentBroadcastModalId) {
-                        markBroadcastNotificationDismissed(currentBroadcastModalId);
-                    }
-                    var instance = bootstrap.Modal.getInstance(modalEl);
-                    if (instance) {
-                        instance.hide();
                     }
                 });
 
@@ -2190,10 +2212,10 @@
             }
 
             window.openBroadcastModalDirect = function(id, titleEnc, messageEnc, sentAt) {
-                showBroadcastModal(id, decodeURIComponent(titleEnc), decodeURIComponent(messageEnc), sentAt);
+                showBroadcastModalDirectly(id, decodeURIComponent(titleEnc), decodeURIComponent(messageEnc), sentAt);
             };
 
-            // Start polling if user is NOT an admin
+            // Start polling (lightweight & visibility-aware)
             var isPushPollingInFlight = false;
             var origPushPoll = window.pollPushNotifications;
             
@@ -2206,11 +2228,9 @@
                 setTimeout(function() { isPushPollingInFlight = false; }, 3000);
             };
 
-            if (!isAdminLoggedIn) {
-                window.pollPushNotifications();
-                // Check for new broadcasts every 45 seconds (lightweight & visibility-aware)
-                setInterval(window.pollPushNotifications, 45000);
-            }
+            window.pollPushNotifications();
+            // Check for new broadcasts every 45 seconds
+            setInterval(window.pollPushNotifications, 45000);
 
             // Real-Time Admin Operations Notification fetcher
             var isAdminPollingInFlight = false;
@@ -3222,10 +3242,12 @@
                         changeLanguage(langCode);
                     }
                     setTimeout(function() {
-                        if (typeof window.pollPushNotifications === 'function') {
+                        if (typeof triggerPendingBroadcastIfReady === 'function') {
+                            triggerPendingBroadcastIfReady();
+                        } else if (typeof window.pollPushNotifications === 'function') {
                             window.pollPushNotifications();
                         }
-                    }, 400);
+                    }, 500);
                 };
 
                 window.dismissFirstTimeLanguageModal = function() {
@@ -3236,10 +3258,12 @@
                         if (m) m.hide();
                     }
                     setTimeout(function() {
-                        if (typeof window.pollPushNotifications === 'function') {
+                        if (typeof triggerPendingBroadcastIfReady === 'function') {
+                            triggerPendingBroadcastIfReady();
+                        } else if (typeof window.pollPushNotifications === 'function') {
                             window.pollPushNotifications();
                         }
-                    }, 400);
+                    }, 500);
                 };
 
                 if (document.readyState === 'complete' || document.readyState === 'interactive') {

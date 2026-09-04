@@ -4,7 +4,7 @@ namespace RaahSathi.Services
 {
     public interface IWhatsAppOtpService
     {
-        Task<(bool Success, string Message, string? DevOtp)> SendOtpAsync(string phoneNumber, string purpose);
+        Task<(bool Success, string Message, string? DevOtp)> SendOtpAsync(string phoneNumber, string purpose, bool allowEmergencyFallback = false);
         (bool Success, string Message) VerifyOtp(string phoneNumber, string otp);
         bool IsPhoneVerified(string phoneNumber);
         void ClearPhoneVerification(string phoneNumber);

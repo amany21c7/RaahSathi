@@ -148,10 +148,27 @@ app.post('/send-otp', async (req, res) => {
   }
 
   try {
-    const jid = `${cleanNumber}@s.whatsapp.net`;
+    const targetJid = `${cleanNumber}@s.whatsapp.net`;
+
+    // 1. Verify if phone number is registered on WhatsApp
+    try {
+      const checkResults = await sock.onWhatsApp(targetJid);
+      const isRegistered = Array.isArray(checkResults) && checkResults.length > 0 && checkResults.some(r => r && r.exists);
+      if (!isRegistered) {
+        console.warn(`[WhatsApp Gateway] ⚠️ Number +${cleanNumber} is not registered on WhatsApp.`);
+        return res.status(400).json({
+          success: false,
+          notOnWhatsApp: true,
+          message: `The mobile number +91 ${cleanNumber.slice(-10)} is not registered on WhatsApp. Please use a WhatsApp-enabled mobile number.`
+        });
+      }
+    } catch (checkErr) {
+      console.warn(`[WhatsApp Gateway] onWhatsApp check warning:`, checkErr.message);
+    }
+
     const textMessage = message || `🔐 *RaahSathi Verification Code*\n\nYour OTP is: *${otp}*\n\nValid for 5 minutes. Do not share this code with anyone.\n\n_Roadside Assistance Anywhere, Anytime - RaahSathi_`;
 
-    await sock.sendMessage(jid, { text: textMessage });
+    await sock.sendMessage(targetJid, { text: textMessage });
     console.log(`[WhatsApp Gateway] ✅ OTP successfully sent to +${cleanNumber}`);
 
     return res.json({
@@ -164,6 +181,44 @@ app.post('/send-otp', async (req, res) => {
       success: false,
       message: `Failed to deliver WhatsApp message: ${error.message}`
     });
+  }
+});
+
+// 4. Check if number exists on WhatsApp endpoint
+app.get('/check-number/:phone', async (req, res) => {
+  const { phone } = req.params;
+  if (!phone) {
+    return res.status(400).json({ success: false, message: 'Phone number is required.' });
+  }
+
+  let cleanNumber = String(phone).replace(/\D/g, '');
+  if (cleanNumber.length === 10) {
+    cleanNumber = '91' + cleanNumber;
+  }
+
+  if (!isConnected || !sock) {
+    return res.status(503).json({
+      success: false,
+      message: 'WhatsApp Gateway is not connected.',
+      isConnected: false
+    });
+  }
+
+  try {
+    const targetJid = `${cleanNumber}@s.whatsapp.net`;
+    const checkResults = await sock.onWhatsApp(targetJid);
+    const exists = Array.isArray(checkResults) && checkResults.length > 0 && checkResults.some(r => r && r.exists);
+    return res.json({
+      success: true,
+      exists,
+      phone: cleanNumber,
+      message: exists
+        ? `Number +${cleanNumber} is active on WhatsApp.`
+        : `Number +${cleanNumber} is not registered on WhatsApp.`
+    });
+  } catch (err) {
+    console.error('[WhatsApp Gateway] Error checking number:', err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 });
 

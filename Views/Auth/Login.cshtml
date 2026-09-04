@@ -84,10 +84,7 @@
 
                 <div id="otpLoginStep2" style="display:none;">
                     <div class="text-center mb-3">
-                        <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2">
-                            <i class="fa-brands fa-whatsapp me-1"></i> Code sent to <span id="lblSentLoginPhone"></span>
-                        </span>
-                        <div id="devOtpBannerLogin" class="alert alert-info py-2 px-3 mt-2 small d-none font-monospace"></div>
+                        <!-- WhatsApp OTP message indicator -->
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">Enter 6-Digit WhatsApp OTP</label>
@@ -164,7 +161,6 @@
                     <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2">
                         <i class="fa-brands fa-whatsapp fs-5 me-1 text-success align-middle"></i> OTP sent to WhatsApp: <span id="lblSentRegisterPhone"></span>
                     </span>
-                    <div id="devOtpBannerRegister" class="alert alert-info py-2 px-3 mt-2 small d-none font-monospace"></div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-muted small">Enter 6-Digit WhatsApp OTP</label>
@@ -253,7 +249,6 @@
                     <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2">
                         <i class="fa-brands fa-whatsapp fs-5 me-1 text-success align-middle"></i> OTP sent to WhatsApp: <span id="lblSentForgotPhone"></span>
                     </span>
-                    <div id="devOtpBannerForgot" class="alert alert-info py-2 px-3 mt-2 small d-none font-monospace"></div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-muted small">Enter 6-Digit WhatsApp OTP</label>
@@ -370,7 +365,7 @@
                         <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-1 small">
                             <i class="fa-solid fa-check-circle me-1"></i> OTP Sent to <span id="lblSentAdminPhone"></span>
                         </span>
-                        <div id="devOtpBannerAdminForgot" class="alert alert-info py-2 px-3 mt-2 small d-none font-monospace"></div>
+                        <div id="devOtpBannerAdminForgot" class="alert alert-warning py-2 px-3 mt-2 small d-none font-monospace border-warning"></div>
                     </div>
 
                     <div class="mb-3">
@@ -543,7 +538,7 @@ $(document).ready(function() {
             if (res.success) {
                 $('#lblSentAdminPhone').text('+91 ' + adminForgotPhone);
                 if (res.devOtp) {
-                    $('#devOtpBannerAdminForgot').removeClass('d-none').html('🔑 <b>Dev Test OTP:</b> ' + res.devOtp + ' <small class="d-block text-muted">Scan QR in Admin Settings for WhatsApp delivery.</small>');
+                    $('#devOtpBannerAdminForgot').removeClass('d-none').html('⚠️ <b>Admin Emergency Recovery OTP:</b> ' + res.devOtp + ' <small class="d-block text-muted">WhatsApp gateway is offline. Use this recovery OTP to reset your password.</small>');
                 } else {
                     $('#devOtpBannerAdminForgot').addClass('d-none');
                 }
@@ -768,11 +763,6 @@ $(document).ready(function() {
             btn.html('<i class="fa-brands fa-whatsapp fs-5"></i> Send WhatsApp Login OTP').prop('disabled', false);
             if (res.success) {
                 $('#lblSentLoginPhone').text('+91 ' + otpLoginPhoneVal);
-                if (res.devOtp) {
-                    $('#devOtpBannerLogin').removeClass('d-none').html('🔑 <b>Dev Test OTP:</b> ' + res.devOtp + ' <small class="d-block text-muted">Scan QR in Admin Settings to enable automatic WhatsApp messages.</small>');
-                } else {
-                    $('#devOtpBannerLogin').addClass('d-none');
-                }
                 $('#otpLoginStep1').hide();
                 $('#otpLoginStep2').show();
                 $('#otpLoginCode').val('').focus();
@@ -841,11 +831,6 @@ $(document).ready(function() {
             btn.html('<i class="fa-solid fa-shield-halved me-1"></i> Get OTP Verification').prop('disabled', false);
             if (res.success) {
                 $('#lblSentRegisterPhone').text('+91 ' + regPhone);
-                if (res.devOtp) {
-                    $('#devOtpBannerRegister').removeClass('d-none').html('🔑 <b>Dev Test OTP:</b> ' + res.devOtp + ' <small class="d-block text-muted">Scan QR in Admin Settings to enable automatic WhatsApp delivery.</small>');
-                } else {
-                    $('#devOtpBannerRegister').addClass('d-none');
-                }
                 showPanel('panelRegisterOtp', 'OTP Verification', 'fa-solid fa-shield-check', 'Enter the 6-digit verification code');
                 $('#registerOtpCode').val('').focus();
                 startRegTimer(60);
@@ -938,11 +923,6 @@ $(document).ready(function() {
             btn.html('<i class="fa-brands fa-whatsapp fs-5 text-success"></i> Send WhatsApp Reset OTP').prop('disabled', false);
             if (res.success) {
                 $('#lblSentForgotPhone').text('+91 ' + forgotPhoneNum);
-                if (res.devOtp) {
-                    $('#devOtpBannerForgot').removeClass('d-none').html('🔑 <b>Dev Test OTP:</b> ' + res.devOtp + ' <small class="d-block text-muted">Scan QR in Admin Settings to enable automatic WhatsApp delivery.</small>');
-                } else {
-                    $('#devOtpBannerForgot').addClass('d-none');
-                }
                 showPanel('panelForgotOtp', 'WhatsApp Reset Verification', 'fa-brands fa-whatsapp', 'Verify your WhatsApp identity to reset password');
                 $('#forgotOtpCode').val('').focus();
                 startForgotTimer(60);
