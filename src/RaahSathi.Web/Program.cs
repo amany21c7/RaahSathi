@@ -1067,16 +1067,20 @@ using (var scope = app.Services.CreateScope())
                 Name = "Aman yadav", 
                 PhoneNumber = "9536838103", 
                 Role = "Admin", 
-                Password = PasswordHasher.HashPassword("aman1234") 
+                Password = PasswordHasher.HashPassword("aman1234"),
+                IsBlocked = false
             };
             context.Users.Add(admin);
         }
         else
         {
-            admin.Name = "Aman yadav";
-            admin.PhoneNumber = "9536838103";
             admin.Role = "Admin";
-            admin.Password = PasswordHasher.HashPassword("aman1234");
+            admin.IsBlocked = false;
+            // Only set default password if no password exists yet
+            if (string.IsNullOrEmpty(admin.Password))
+            {
+                admin.Password = PasswordHasher.HashPassword("aman1234");
+            }
         }
         context.SaveChanges();
 
