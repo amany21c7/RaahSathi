@@ -192,11 +192,11 @@
             </div>
 
             <!-- ------------------------------------------------------------- -->
-            <!-- PANEL 5: FORGOT PASSWORD PHONE -->
+            <!-- PANEL 5: FORGOT PASSWORD PHONE & INLINE OTP -->
             <!-- ------------------------------------------------------------- -->
             <div id="panelForgotPhone" style="display:none;">
                 <!-- Role Selection -->
-                <div class="mb-4 d-flex justify-content-center gap-2">
+                <div class="mb-3 d-flex justify-content-center gap-2">
                     <input type="radio" class="btn-check" name="forgotRole" id="forgotRoleCustomer" value="Customer" @(targetRole == "Customer" ? "checked" : "") autocomplete="off">
                     <label class="btn btn-outline-warning rounded-pill px-4" for="forgotRoleCustomer">
                         <i class="fa-solid fa-car me-1"></i> Customer
@@ -208,7 +208,14 @@
                     </label>
                 </div>
 
-                <div class="mb-4">
+                <!-- Green WhatsApp OTP Alert Banner (Initially Hidden) -->
+                <div id="forgotOtpSentBanner" class="text-center mb-3" style="display:none;">
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2 w-100 shadow-sm">
+                        <i class="fa-brands fa-whatsapp fs-5 me-1 text-success align-middle"></i> OTP sent to WhatsApp: <span id="lblSentForgotPhone" class="fw-bold"></span>
+                    </span>
+                </div>
+
+                <div class="mb-3">
                     <label class="form-label text-muted small">10-Digit Mobile Number</label>
                     <div class="input-group">
                         <span class="input-group-text bg-dark border-secondary text-muted">+91</span>
@@ -216,46 +223,23 @@
                     </div>
                 </div>
 
-                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3 d-flex align-items-center justify-content-center gap-2" id="btnForgotSendOtp">
-                    <i class="fa-brands fa-whatsapp fs-5 text-success"></i> Send WhatsApp Reset OTP
-                </button>
-
-                <div class="position-relative my-3 text-center">
-                    <hr class="border-secondary opacity-25">
-                    <span class="position-absolute top-50 start-50 translate-middle bg-dark px-2 text-muted text-xs">OR</span>
+                <!-- Inline OTP Field (Shown after clicking Send WhatsApp Reset OTP) -->
+                <div id="forgotOtpGroup" class="mb-3" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label text-muted small mb-0">Enter 6-Digit WhatsApp OTP</label>
+                        <button type="button" id="btnResendForgotOtp" class="btn btn-link text-decoration-none text-muted small p-0" disabled>
+                            Resend in <span id="timerForgotOtp">60</span>s
+                        </button>
+                    </div>
+                    <input type="text" class="form-control glass-input text-white text-center font-monospace font-weight-bold" id="forgotOtpCode" placeholder="••••••" maxlength="6" style="letter-spacing: 12px; font-size: 1.3rem;" autocomplete="one-time-code">
                 </div>
 
-                <button type="button" class="btn btn-outline-success w-100 py-2 font-weight-bold mb-3 d-flex align-items-center justify-content-center gap-2" id="btnShowOtpLogin">
-                    <i class="fa-brands fa-whatsapp fs-5 text-success"></i> Instant Login with WhatsApp OTP
+                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3 d-flex align-items-center justify-content-center gap-2" id="btnForgotAction">
+                    <i class="fa-brands fa-whatsapp fs-5 text-success"></i> <span>Send WhatsApp Reset OTP</span>
                 </button>
 
                 <div class="text-center">
                     <a href="#" class="btnBackToLogin text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-arrow-left me-1"></i> Back to Login</a>
-                </div>
-            </div>
-
-
-            <!-- ------------------------------------------------------------- -->
-            <!-- PANEL 6: FORGOT PASSWORD OTP -->
-            <!-- ------------------------------------------------------------- -->
-            <div id="panelForgotOtp" style="display:none;">
-                <div class="text-center mb-3">
-                    <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2">
-                        <i class="fa-brands fa-whatsapp fs-5 me-1 text-success align-middle"></i> OTP sent to WhatsApp: <span id="lblSentForgotPhone"></span>
-                    </span>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label text-muted small">Enter 6-Digit WhatsApp OTP</label>
-                    <input type="text" class="form-control glass-input text-white text-center font-monospace font-weight-bold" id="forgotOtpCode" placeholder="••••••" maxlength="6" style="letter-spacing: 12px; font-size: 1.5rem;" autocomplete="one-time-code">
-                </div>
-                <button class="btn btn-premium-primary w-100 py-2 font-weight-bold mb-3" id="btnForgotVerifyOtp">
-                    Verify WhatsApp OTP <i class="fa-solid fa-arrow-right ms-1"></i>
-                </button>
-                <div class="d-flex justify-content-between align-items-center">
-                    <a href="#" id="btnBackToForgotPhone" class="text-warning small font-weight-bold" style="text-decoration:none;"><i class="fa-solid fa-arrow-left me-1"></i> Back</a>
-                    <button type="button" id="btnResendForgotOtp" class="btn btn-link text-decoration-none text-muted small p-0" disabled>
-                        Resend in <span id="timerForgotOtp">60</span>s
-                    </button>
                 </div>
             </div>
 
@@ -680,26 +664,15 @@ $(document).ready(function() {
 
     $('#lnkShowForgot').click(function(e) {
         e.preventDefault();
+        resetForgotFlow();
         showPanel('panelForgotPhone', 'Reset Password', 'fa-key', 'Recover your login credentials securely');
     });
 
     $('.btnBackToLogin').click(function(e) {
         e.preventDefault();
         resetRegisterFlow();
+        resetForgotFlow();
         showPanel('panelLogin', 'Welcome to <span style="color: #ff6b00;">Raah</span><span class="text-white">Sathi</span>', 'fa-shield-halved', 'Login with your credentials or register a new account');
-    });
-
-    $('#btnShowOtpLogin').click(function(e) {
-        e.preventDefault();
-        var currentRole = $('input[name="forgotRole"]:checked').val() || $('input[name="loginRole"]:checked').val() || "Customer";
-        var phone = $('#forgotPhone').val().trim();
-        $('input[name="otpLoginRole"][value="' + currentRole + '"]').prop('checked', true);
-        if (phone) {
-            $('#otpLoginPhone').val(phone);
-        }
-        $('#otpLoginStep1').show();
-        $('#otpLoginStep2').hide();
-        showPanel('panelOtpLogin', 'WhatsApp OTP Login', 'fa-brands fa-whatsapp', 'Instant password-free login via WhatsApp');
     });
 
 
@@ -922,11 +895,22 @@ $(document).ready(function() {
         });
     });
 
-    // 5. Forgot Password - Send WhatsApp OTP
+    // 5. Forgot Password - Single Panel (Send OTP & Verify OTP)
     var forgotPhoneNum = "";
     var forgotRoleVal = "";
+    var forgotOtpSent = false;
 
-    $('#btnForgotSendOtp, #btnResendForgotOtp').click(function() {
+    function resetForgotFlow() {
+        forgotOtpSent = false;
+        $('#forgotOtpSentBanner').hide();
+        $('#forgotOtpGroup').hide();
+        $('#forgotOtpCode').val('');
+        $('#forgotPhone, input[name="forgotRole"]').prop('readonly', false).prop('disabled', false);
+        $('#btnForgotAction').removeClass('btn-success').addClass('btn-premium-primary')
+            .html('<i class="fa-brands fa-whatsapp fs-5 text-success"></i> <span>Send WhatsApp Reset OTP</span>').prop('disabled', false);
+    }
+
+    function sendForgotOtp(isResend) {
         forgotRoleVal = $('input[name="forgotRole"]:checked').val();
         if (!forgotRoleVal) {
             alert('⚠️ Please select your account type: Customer or Mechanic!');
@@ -937,49 +921,66 @@ $(document).ready(function() {
 
         if (forgotPhoneNum.length < 10) {
             alert('Please enter a valid 10-digit mobile number.');
+            $('#forgotPhone').focus();
             return;
         }
 
-        var btn = $(this);
-        btn.html('<i class="fa-solid fa-circle-notch fa-spin"></i> Sending WhatsApp OTP...').prop('disabled', true);
+        var btn = $('#btnForgotAction');
+        btn.html('<i class="fa-solid fa-circle-notch fa-spin"></i> ' + (isResend ? 'Resending WhatsApp OTP...' : 'Sending WhatsApp OTP...')).prop('disabled', true);
 
         $.post('/Auth/SendOtpForForgotPassword', { phoneNumber: forgotPhoneNum, role: forgotRoleVal }, function(res) {
-            btn.html('<i class="fa-brands fa-whatsapp fs-5 text-success"></i> Send WhatsApp Reset OTP').prop('disabled', false);
             if (res.success) {
+                forgotOtpSent = true;
                 $('#lblSentForgotPhone').text('+91 ' + forgotPhoneNum);
-                showPanel('panelForgotOtp', 'WhatsApp Reset Verification', 'fa-brands fa-whatsapp', 'Verify your WhatsApp identity to reset password');
-                $('#forgotOtpCode').val('').focus();
+                $('#forgotOtpSentBanner').slideDown(250);
+                $('#forgotOtpGroup').slideDown(250);
+                $('#forgotOtpCode').focus();
+
+                // Change button state to Verify OTP & Continue
+                btn.removeClass('btn-premium-primary').addClass('btn-success')
+                    .html('Verify OTP &amp; Continue <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
+
                 startForgotTimer(60);
             } else {
                 alert(res.message);
+                if (!forgotOtpSent) {
+                    btn.html('<i class="fa-brands fa-whatsapp fs-5 text-success"></i> <span>Send WhatsApp Reset OTP</span>').prop('disabled', false);
+                } else {
+                    btn.html('Verify OTP &amp; Continue <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
+                }
             }
         });
-    });
+    }
 
-    $('#btnBackToForgotPhone').click(function(e) {
-        e.preventDefault();
-        showPanel('panelForgotPhone', 'Reset Password', 'fa-key', 'Recover your login credentials securely');
-    });
+    $('#btnForgotAction').click(function() {
+        if (!forgotOtpSent) {
+            sendForgotOtp(false);
+        } else {
+            // Verify OTP
+            var otp = $('#forgotOtpCode').val().trim();
+            if (otp.length !== 6) {
+                alert('Please enter the 6-digit WhatsApp OTP.');
+                $('#forgotOtpCode').focus();
+                return;
+            }
 
-    // 6. Forgot Password - Verify WhatsApp OTP
-    $('#btnForgotVerifyOtp').click(function() {
-        var otp = $('#forgotOtpCode').val().trim();
-        if (otp.length !== 6) {
-            alert('Please enter the 6-digit WhatsApp OTP.');
-            return;
+            var btn = $(this);
+            btn.html('<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...').prop('disabled', true);
+
+            $.post('/Auth/VerifyOtpForForgotPassword', { phoneNumber: forgotPhoneNum, otp: otp }, function(res) {
+                btn.html('Verify OTP &amp; Continue <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
+                if (res.success) {
+                    showPanel('panelForgotReset', 'Choose New Password', 'fa-lock', 'Reset your account security keys');
+                    $('#forgotNewPassword').focus();
+                } else {
+                    alert('⚠️ ' + res.message);
+                }
+            });
         }
+    });
 
-        var btn = $(this);
-        btn.html('<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...').prop('disabled', true);
-
-        $.post('/Auth/VerifyOtpForForgotPassword', { phoneNumber: forgotPhoneNum, otp: otp }, function(res) {
-            btn.html('Verify WhatsApp OTP <i class="fa-solid fa-arrow-right ms-1"></i>').prop('disabled', false);
-            if (res.success) {
-                showPanel('panelForgotReset', 'Choose New Password', 'fa-lock', 'Reset your account security keys');
-            } else {
-                alert('⚠️ ' + res.message);
-            }
-        });
+    $('#btnResendForgotOtp').click(function() {
+        sendForgotOtp(true);
     });
 
     // 7. Forgot Password - Complete Reset
