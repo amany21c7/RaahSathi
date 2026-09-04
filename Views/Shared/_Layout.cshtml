@@ -2101,8 +2101,9 @@
                                             shouldPopup = true;
                                         }
                                     } else {
-                                        // For authenticated users: show once until dismissed
-                                        if (audience.indexOf('all') !== -1 || audience.indexOf('customer') !== -1 || audience.indexOf('mechanic') !== -1) {
+                                        // For authenticated users (including admin viewing the site):
+                                        // Show if audience is 'All', or role matches, or if on Homepage and audience is Homepage
+                                        if (audience.indexOf('all') !== -1 || audience.indexOf('customer') !== -1 || audience.indexOf('mechanic') !== -1 || (onHome && isHomepageOnly) || isAdminLoggedIn) {
                                             shouldPopup = true;
                                         }
                                     }
@@ -3212,8 +3213,7 @@
                     }
                 }
 
-                // Immediately show queued broadcast notification as soon as language modal finishes closing
-                $('#firstTimeLanguageModal').off('hidden.bs.modal.triggerBroadcast').on('hidden.bs.modal.triggerBroadcast', function() {
+                function triggerBroadcastFromQueue() {
                     if (window.pendingBroadcastData) {
                         var data = window.pendingBroadcastData;
                         window.pendingBroadcastData = null;
@@ -3221,8 +3221,13 @@
                             if (typeof showBroadcastModalDirectly === 'function') {
                                 showBroadcastModalDirectly(data.id, data.title, data.message, data.sentAt);
                             }
-                        }, 100);
+                        }, 150);
                     }
+                }
+
+                // Immediately show queued broadcast notification as soon as language modal finishes closing
+                $('#firstTimeLanguageModal').off('hidden.bs.modal.triggerBroadcast').on('hidden.bs.modal.triggerBroadcast', function() {
+                    triggerBroadcastFromQueue();
                 });
 
                 window.submitFirstTimeLanguage = function() {
@@ -3235,6 +3240,7 @@
                         var m = bootstrap.Modal.getInstance(modalEl);
                         if (m) m.hide();
                     }
+                    triggerBroadcastFromQueue();
                     if (typeof changeLanguage === 'function') {
                         changeLanguage(langCode, true);
                     }
@@ -3247,6 +3253,7 @@
                         var m = bootstrap.Modal.getInstance(modalEl);
                         if (m) m.hide();
                     }
+                    triggerBroadcastFromQueue();
                 };
 
                 if (document.readyState === 'complete' || document.readyState === 'interactive') {
