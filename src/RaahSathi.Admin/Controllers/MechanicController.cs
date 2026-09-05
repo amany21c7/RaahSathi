@@ -168,6 +168,13 @@ namespace RaahSathi.Controllers
                 .Include(j => j.Vehicle)
                 .FirstOrDefaultAsync(j => j.MechanicId == user.Id && j.Status != "Completed" && j.Status != "Cancelled");
 
+            if (activeJob != null && (activeJob.Status == "Assigned" || activeJob.Status == "Accepted" || activeJob.Status == "Driving"))
+            {
+                if (!activeJob.LastMovementTime.HasValue) activeJob.LastMovementTime = DateTime.UtcNow;
+                if (!activeJob.LastLocationUpdateTime.HasValue) activeJob.LastLocationUpdateTime = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
+
             if (activeJob != null && activeJob.Status == "Arrived")
             {
                 activeJob.Status = "Inspecting";
@@ -929,7 +936,7 @@ namespace RaahSathi.Controllers
             }
 
             job.MechanicId = user.Id;
-            job.Status = "Accepted";
+            job.Status = "Driving";
             
             job.LastMovementTime = DateTime.UtcNow;
             job.LastLocationUpdateTime = DateTime.UtcNow;

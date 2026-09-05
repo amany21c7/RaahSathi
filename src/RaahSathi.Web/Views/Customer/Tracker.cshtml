@@ -435,7 +435,7 @@
             <div class="timeline-progress-wrapper">
                 <div class="timeline-item-col">
                     <div class="timeline-step" id="step-Accepted">1</div>
-                    <div class="timeline-label">Accepted</div>
+                    <div class="timeline-label" id="step-Accepted-label">@(job.Status == "Assigned" || (!string.IsNullOrEmpty(job.DeclinedMechanicIds) && job.DeclinedMechanicIds.Contains("ASSIGNED_BY_ADMIN")) ? "Assigned" : "Accepted")</div>
                 </div>
                 <div class="timeline-item-col">
                     <div class="timeline-step" id="step-Driving">2</div>
@@ -1183,10 +1183,33 @@
             }
 
             // Check inactive seconds for warning display
-            if ((res.status === "Accepted" || res.status === "Driving") && res.inactiveSeconds >= 30) {
-                $('#customer-inactivity-warning').removeClass('d-none');
+            // Strictly hide warning if mechanic has reached spot, is inspecting, or repairing
+            var statusLower = (res.status || "").toLowerCase();
+            var isReachedSpotOrBeyond = statusLower === "inspecting" || statusLower === "arrived" || statusLower === "reached spot" || statusLower === "estimatepending" || statusLower === "repairing" || statusLower === "underrepair" || statusLower === "completed" || statusLower === "cancelled";
+
+            if (isReachedSpotOrBeyond || (res.status !== "Accepted" && res.status !== "Driving")) {
+                $('#customer-inactivity-warning').addClass('d-none');
+            } else if ((res.status === "Accepted" || res.status === "Driving") && res.inactiveSeconds >= 30) {
+                // Also check if mechanic is already at customer location (< 80 meters)
+                var isNearSpot = false;
+                if (res.mechanicLat && res.mechanicLng && typeof customerLat !== 'undefined' && typeof customerLng !== 'undefined') {
+                    var distKm = calculateDistance(customerLat, customerLng, res.mechanicLat, res.mechanicLng);
+                    if (distKm <= 0.08) isNearSpot = true;
+                }
+                if (isNearSpot) {
+                    $('#customer-inactivity-warning').addClass('d-none');
+                } else {
+                    $('#customer-inactivity-warning').removeClass('d-none');
+                }
             } else {
                 $('#customer-inactivity-warning').addClass('d-none');
+            }
+
+            // Update Step 1 label dynamically based on whether assigned by admin or accepted
+            if (res.isAssignedByAdmin) {
+                $('#step-Accepted-label').text('Assigned');
+            } else {
+                $('#step-Accepted-label').text('Accepted');
             }
 
             // Update Timeline steps
@@ -1354,7 +1377,12 @@
     function updateTimelineUI(status) {
         $('.timeline-step').removeClass('active completed');
         
-        if (status === "Accepted") {
+        var sLower = (status || "").toLowerCase();
+        if (sLower === "inspecting" || sLower === "estimatepending" || sLower === "arrived" || sLower === "reached spot" || sLower === "repairing" || sLower === "underrepair" || sLower === "completed") {
+            $('#customer-inactivity-warning').addClass('d-none');
+        }
+
+        if (status === "Accepted" || status === "Assigned") {
             $('#step-Accepted').addClass('active');
         } else if (status === "Driving") {
             $('#step-Accepted').addClass('completed');

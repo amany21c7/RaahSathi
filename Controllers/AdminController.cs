@@ -225,6 +225,14 @@ namespace RaahSathi.Controllers
 
             job.MechanicId = mechanicUserId;
             job.Status = "Assigned";
+            if (string.IsNullOrEmpty(job.DeclinedMechanicIds))
+            {
+                job.DeclinedMechanicIds = "ASSIGNED_BY_ADMIN";
+            }
+            else if (!job.DeclinedMechanicIds.Contains("ASSIGNED_BY_ADMIN"))
+            {
+                job.DeclinedMechanicIds += ",ASSIGNED_BY_ADMIN";
+            }
             await _dbContext.SaveChangesAsync();
 
             try

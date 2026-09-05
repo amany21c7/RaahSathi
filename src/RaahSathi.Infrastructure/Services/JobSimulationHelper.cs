@@ -10,7 +10,7 @@ namespace RaahSathi.Services
     {
         public static async Task SimulateMovementAsync(ApplicationDbContext dbContext, Job job)
         {
-            if (job == null || job.Status != "Driving" || !job.MechanicId.HasValue || job.IsSimulationPaused)
+            if (job == null || (job.Status != "Driving" && job.Status != "Accepted" && job.Status != "Assigned") || !job.MechanicId.HasValue || job.IsSimulationPaused)
             {
                 return;
             }

@@ -572,12 +572,38 @@
                     <span class="text-muted small d-block mb-2 font-weight-bold">Live Breakdown Repair Progress:</span>
                     <div class="d-flex flex-wrap gap-1">
                         @{
+                            bool isAssignedByAdmin = (activeJob.Status == "Assigned") || (!string.IsNullOrEmpty(activeJob.DeclinedMechanicIds) && activeJob.DeclinedMechanicIds.Contains("ASSIGNED_BY_ADMIN"));
+                            string firstStepLabel = isAssignedByAdmin ? "1. Assigned" : "1. Accepted";
                             var stages = new[] { "Accepted", "Driving", "Inspecting", "Repairing", "Completed" };
-                            var stageLabels = new[] { "1. Accepted", "2. Driving", "3. Reached Spot & Start Inspection", "4. Repairing", "5. Completed" };
+                            var stageLabels = new[] { firstStepLabel, "2. Driving", "3. Reached Spot & Start Inspection", "4. Repairing", "5. Completed" };
                             int currentIndex = Array.IndexOf(stages, activeJob.Status);
                             if (currentIndex < 0)
                             {
-                                currentIndex = (activeJob.Status == "Arrived" || activeJob.Status == "EstimatePending") ? 2 : (activeJob.Status == "Driving" ? 1 : 0);
+                                var stLower = (activeJob.Status ?? "").ToLower();
+                                if (stLower == "assigned")
+                                {
+                                    currentIndex = 0;
+                                }
+                                else if (stLower == "arrived" || stLower == "estimatepending" || stLower == "inspecting" || stLower == "reached spot")
+                                {
+                                    currentIndex = 2;
+                                }
+                                else if (stLower == "repairing" || stLower == "underrepair")
+                                {
+                                    currentIndex = 3;
+                                }
+                                else if (stLower == "completed")
+                                {
+                                    currentIndex = 4;
+                                }
+                                else if (stLower == "driving")
+                                {
+                                    currentIndex = 1;
+                                }
+                                else
+                                {
+                                    currentIndex = 0;
+                                }
                             }
                         }
                         @for (int idx = 0; idx < stages.Length; idx++)
@@ -642,16 +668,7 @@
                 <div class="p-3 bg-dark bg-opacity-40 rounded-3 border border-secondary">
                     <h5 class="text-warning mb-3"><i class="fa-solid fa-sliders me-2"></i> Update Repair Progress</h5>
 
-                    @if (activeJob.Status == "Accepted")
-                    {
-                        <div class="alert alert-info bg-dark border-info text-info small mb-3">
-                            <i class="fa-solid fa-car-side me-2"></i> Confirm when you start driving towards the customer.
-                        </div>
-                        <button class="btn btn-premium-primary w-100 py-3 font-weight-bold" onclick="advanceStatus('Driving', this)">
-                            <i class="fa-solid fa-car-side me-2"></i> Start Driving to Location
-                        </button>
-                    }
-                    else if (activeJob.Status == "Driving")
+                    @if (activeJob.Status == "Driving" || activeJob.Status == "Accepted" || activeJob.Status == "Assigned")
                     {
                         <div class="alert alert-info bg-dark border-info text-info small mb-3">
                             <i class="fa-solid fa-location-dot me-2"></i> Reached the customer breakdown spot? Click below to start vehicle inspection.
@@ -688,7 +705,7 @@
                             </div>
                         </div>
                     }
-                    else if (activeJob.Status == "Inspecting" || activeJob.Status == "Arrived")
+                    else if (activeJob.Status == "Inspecting" || activeJob.Status == "Arrived" || activeJob.Status == "EstimatePending" || activeJob.Status == "Reached Spot")
                     {
                         <!-- Custom Estimate Input Section -->
                         <div class="glass-card p-3 border-info border-opacity-30 mb-3">
@@ -856,6 +873,15 @@
                                 </button>
                             }
                         </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info bg-dark border-info text-info small mb-3">
+                            <i class="fa-solid fa-location-dot me-2"></i> Reached the customer breakdown spot? Click below to start vehicle inspection.
+                        </div>
+                        <button class="btn btn-premium-primary w-100 py-3 font-weight-bold" onclick="advanceStatus('Inspecting', this)">
+                            <i class="fa-solid fa-stethoscope me-2"></i> Reached Spot & Start Inspection
+                        </button>
                     }
                 </div>
             </div>
@@ -3051,7 +3077,7 @@
                 }
 
                 // Dynamic UI updates for simulation
-                if (res.status === "Driving") {
+                if (res.status === "Driving" || res.status === "Accepted" || res.status === "Assigned") {
                     if (res.isSimulationPaused) {
                         $('#simStatusText').removeClass('text-success').addClass('text-warning').html('PAUSED (Stopped)');
                         $('#btnToggleSim').html('<i class="fa-solid fa-play me-1"></i> Resume Travel').removeClass('btn-outline-warning').addClass('btn-outline-success');

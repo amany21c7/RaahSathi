@@ -568,7 +568,8 @@ namespace RaahSathi.Controllers
             }
 
             double inactiveSeconds = 0;
-            if ((job.Status == "Accepted" || job.Status == "Driving") && job.LastMovementTime.HasValue)
+            bool isNearCustomer = mechProfile != null && Math.Abs(mechProfile.Latitude - job.CustomerLat) < 0.0008 && Math.Abs(mechProfile.Longitude - job.CustomerLng) < 0.0008;
+            if ((job.Status == "Accepted" || job.Status == "Driving") && !isNearCustomer && job.LastMovementTime.HasValue)
             {
                 inactiveSeconds = (DateTime.UtcNow - job.LastMovementTime.Value).TotalSeconds;
             }
@@ -584,6 +585,7 @@ namespace RaahSathi.Controllers
             {
                 jobId = job.Id,
                 status = job.Status,
+                isAssignedByAdmin = (job.Status == "Assigned") || (!string.IsNullOrEmpty(job.DeclinedMechanicIds) && job.DeclinedMechanicIds.Contains("ASSIGNED_BY_ADMIN")),
                 mechanicId = job.MechanicId,
                 mechanicName = job.Mechanic?.Name ?? "",
                 mechanicPhone = job.Mechanic?.PhoneNumber ?? "",
