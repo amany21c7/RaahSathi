@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <title>RaahSathi Database & Stored Procedures Technical Reference Manual</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 14mm 14mm 16mm 14mm;
+            @bottom-right {
+                content: "Page " counter(page);
+                font-family: 'Inter', sans-serif;
+                font-size: 9pt;
+                color: #64748b;
+            }
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1e293b;
+            line-height: 1.55;
+            font-size: 9.5pt;
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* Top Header Banner */
+        .doc-header {
+            border-bottom: 3px solid #ff6b00;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 26pt;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+        .brand-orange { color: #ff6b00; }
+        .doc-badge {
+            background: #ff6b00;
+            color: #ffffff;
+            font-size: 8.5pt;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        /* Headings */
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 19pt;
+            font-weight: 800;
+            color: #0f172a;
+            margin-top: 26px;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #e2e8f0;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14pt;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 22px;
+            margin-bottom: 10px;
+            padding-bottom: 4px;
+            border-bottom: 1.5px solid #ff6b00;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 11.5pt;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+        h4 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 10pt;
+            font-weight: 700;
+            color: #334155;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        p, ul, ol {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        /* Blockquote Callouts */
+        blockquote {
+            background: #fff7ed;
+            border-left: 4px solid #ff6b00;
+            margin: 12px 0;
+            padding: 10px 14px;
+            border-radius: 0 6px 6px 0;
+            color: #7c2d12;
+            font-size: 9.5pt;
+        }
+        blockquote p {
+            margin: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 16px 0;
+            font-size: 8.5pt;
+            page-break-inside: auto;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        thead {
+            display: table-header-group;
+        }
+        th {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            text-align: left;
+            padding: 7px 9px;
+            border: 1px solid #1e293b;
+            font-size: 8.5pt;
+            letter-spacing: 0.2px;
+        }
+        td {
+            padding: 6px 9px;
+            border: 1px solid #cbd5e1;
+            vertical-align: top;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        tbody tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* Code & Preformatted */
+        code {
+            font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 8pt;
+            border: 1px solid #e2e8f0;
+        }
+        pre {
+            background-color: #090d16;
+            color: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 8pt;
+            line-height: 1.45;
+            margin: 10px 0 14px 0;
+            border: 1px solid #1e293b;
+            page-break-inside: avoid;
+        }
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            border: none;
+            font-size: inherit;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 18px 0;
+        }
+
+        /* Key badges & Links */
+        a {
+            color: #0284c7;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-note {
+            margin-top: 30px;
+            padding-top: 12px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            font-size: 8pt;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-header">
+        <div>
+            <div class="brand-title">Raah<span class="brand-orange">Sathi</span></div>
+            <div style="font-size: 10pt; color: #64748b; font-weight: 500;">Enterprise Roadside Assistance Platform</div>
+        </div>
+        <div style="text-align: right;">
+            <div class="doc-badge">Database Architecture & SP Manual</div>
+            <div style="font-size: 8.5pt; color: #64748b; margin-top: 4px;">DB: Microsoft SQL Server (RaahSathiDb)</div>
+        </div>
+    </div>
+
+    <h1>📚 RaahSathi Database &amp; Stored Procedures Technical Reference Manual</h1>
+<blockquote>
+<p><strong>Complete Database Documentation: Table-by-Table Schema, Business Logic, and Full Stored Procedures Catalog</strong></p>
+<p><em>Generated for RaahSathi Enterprise Platform | Database: Microsoft SQL Server (<code>RaahSathiDb</code>)</em>
+<em>All Stored Procedures standardized to: <code>rs_tablename_action</code></em></p>
+</blockquote>
+<hr>
+<h2>📑 Table of Contents (विषय-सूची)</h2>
+<ol>
+<li><a href="#1-overview--database-architecture">Overview &amp; Database Architecture (आर्किटेक्चर विवरण)</a></li>
+<li><a href="#2-database-tables-catalog">Database Tables Catalog (सभी टेबल्स और उनका विवरण)</a><ul>
+<li><a href="#21-core-identity--user-tables">2.1 Core Identity &amp; User Tables (उपयोगकर्ता और प्रोफाइल)</a><ul>
+<li><a href="#1-users-dbousers">Users (<code>dbo.Users</code>)</a></li>
+<li><a href="#2-mechanicprofiles-dbomechanicprofiles">MechanicProfiles (<code>dbo.MechanicProfiles</code>)</a></li>
+<li><a href="#3-vehicles-dbovehicles">Vehicles (<code>dbo.Vehicles</code>)</a></li>
+</ul>
+</li>
+<li><a href="#22-breakdown--job-booking-management">2.2 Breakdown &amp; Job Booking Management (जॉब और बुकिंग)</a><ul>
+<li><a href="#4-jobs-dbojobs">Jobs (<code>dbo.Jobs</code>)</a></li>
+<li><a href="#5-payments-dbopayments">Payments (<code>dbo.Payments</code>)</a></li>
+<li><a href="#6-jobchatmessages-dbojobchatmessages">JobChatMessages (<code>dbo.JobChatMessages</code>)</a></li>
+</ul>
+</li>
+<li><a href="#23-financial--payout-management">2.3 Financial &amp; Payout Management (वॉलेट और भुगतान)</a><ul>
+<li><a href="#7-mechanicpayoutrequests-dbomechanicpayoutrequests">MechanicPayoutRequests (<code>dbo.MechanicPayoutRequests</code>)</a></li>
+<li><a href="#8-adminwithdrawals-dboadminwithdrawals">AdminWithdrawals (<code>dbo.AdminWithdrawals</code>)</a></li>
+<li><a href="#9-mechanicsubscriptions-dbomechanicsubscriptions">MechanicSubscriptions (<code>dbo.MechanicSubscriptions</code>)</a></li>
+</ul>
+</li>
+<li><a href="#24-referral-program-engine">2.4 Referral Program Engine (रेफरल और रिवॉर्ड्स)</a><ul>
+<li><a href="#10-referralprogramsettings-dboreferralprogramsettings">ReferralProgramSettings (<code>dbo.ReferralProgramSettings</code>)</a></li>
+<li><a href="#11-referraltransactions-dboreferraltransactions">ReferralTransactions (<code>dbo.ReferralTransactions</code>)</a></li>
+<li><a href="#12-referralwithdrawalrequests-dboreferralwithdrawalrequests">ReferralWithdrawalRequests (<code>dbo.ReferralWithdrawalRequests</code>)</a></li>
+</ul>
+</li>
+<li><a href="#25-governance-trust--support">2.5 Governance, Trust &amp; Support (शिकायतें, चेतावनियां और सपोर्ट)</a><ul>
+<li><a href="#13-mechaniccomplaints-dbomechaniccomplaints">MechanicComplaints (<code>dbo.MechanicComplaints</code>)</a></li>
+<li><a href="#14-mechanicwarnings-dbomechanicwarnings">MechanicWarnings (<code>dbo.MechanicWarnings</code>)</a></li>
+<li><a href="#15-contactmessages-dbocontactmessages">ContactMessages (<code>dbo.ContactMessages</code>)</a></li>
+<li><a href="#16-mechanicsupportmessages-dbomechanicsupportmessages">MechanicSupportMessages (<code>dbo.MechanicSupportMessages</code>)</a></li>
+</ul>
+</li>
+<li><a href="#26-pricing--city-operations">2.6 Pricing &amp; City Operations (प्राइसिंग और शहर प्रबंधन)</a><ul>
+<li><a href="#17-pricingrules-dbopricingrules">PricingRules (<code>dbo.PricingRules</code>)</a></li>
+<li><a href="#18-problemtypepricings-dboproblemtypepricings">ProblemTypePricings (<code>dbo.ProblemTypePricings</code>)</a></li>
+<li><a href="#19-cityserviceareas-dbocityserviceareas">CityServiceAreas (<code>dbo.CityServiceAreas</code>)</a></li>
+<li><a href="#20-customservices-dbocustomservices">CustomServices (<code>dbo.CustomServices</code>)</a></li>
+</ul>
+</li>
+<li><a href="#27-cms-notifications--auditing">2.7 CMS, Notifications &amp; Auditing (सिस्टम सेटिंग और लॉग्स)</a><ul>
+<li><a href="#21-cmsbanners-dbocmsbanners">CmsBanners (<code>dbo.CmsBanners</code>)</a></li>
+<li><a href="#22-pushnotificationlogs-dbopushnotificationlogs">PushNotificationLogs (<code>dbo.PushNotificationLogs</code>)</a></li>
+<li><a href="#23-auditlogs-dboauditlogs">AuditLogs (<code>dbo.AuditLogs</code>)</a></li>
+<li><a href="#24-adminsystemsettings-dboadminsystemsettings">AdminSystemSettings (<code>dbo.AdminSystemSettings</code>)</a></li>
+<li><a href="#25-systemapisettings-dbosystemapisettings">SystemApiSettings (<code>dbo.SystemApiSettings</code>)</a></li>
+<li><a href="#26-systemcontactsettings-dbosystemcontactsettings">SystemContactSettings (<code>dbo.SystemContactSettings</code>)</a></li>
+<li><a href="#27-dataprotectionkeys-dbodataprotectionkeys">DataProtectionKeys (<code>dbo.DataProtectionKeys</code>)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#3-stored-procedures-catalog">Stored Procedures Catalog (सभी 100% rs_tablename_action SPs)</a><ul>
+<li><a href="#sp-1-dbors_payments_process_job">SP 1: <code>dbo.rs_payments_process_job</code></a></li>
+<li><a href="#sp-2-dbors_mechanicpayoutrequests_create">SP 2: <code>dbo.rs_mechanicpayoutrequests_create</code></a></li>
+<li><a href="#sp-3-dbors_mechanicpayoutrequests_process">SP 3: <code>dbo.rs_mechanicpayoutrequests_process</code></a></li>
+<li><a href="#sp-4-dbors_users_update_profile">SP 4: <code>dbo.rs_users_update_profile</code></a></li>
+<li><a href="#sp-5-dbors_mechanicprofiles_update_bank_details">SP 5: <code>dbo.rs_mechanicprofiles_update_bank_details</code></a></li>
+<li><a href="#sp-6-dbors_systemapisettings_get">SP 6: <code>dbo.rs_systemapisettings_get</code></a></li>
+<li><a href="#sp-7-dbors_systemapisettings_save_or_update">SP 7: <code>dbo.rs_systemapisettings_save_or_update</code></a></li>
+<li><a href="#sp-8-dbors_systemcontactsettings_get">SP 8: <code>dbo.rs_systemcontactsettings_get</code></a></li>
+<li><a href="#sp-9-dbors_systemcontactsettings_save_or_update">SP 9: <code>dbo.rs_systemcontactsettings_save_or_update</code></a></li>
+<li><a href="#sp-10-dbors_payments_process_escrow">SP 10: <code>dbo.rs_payments_process_escrow</code></a></li>
+<li><a href="#sp-11-dbors_adminwithdrawals_insert">SP 11: <code>dbo.rs_adminwithdrawals_insert</code></a></li>
+<li><a href="#sp-12-dbors_mechanicprofiles_withdraw_wallet">SP 12: <code>dbo.rs_mechanicprofiles_withdraw_wallet</code></a></li>
+</ul>
+</li>
+<li><a href="#4-mermaid-entity-relationship-diagram">Mermaid Entity-Relationship Diagram</a></li>
+<li><a href="#5-summary-table-sps--calling-locations">Summary Table: SPs &amp; Calling Locations</a></li>
+</ol>
+<hr>
+<h1>1. Overview &amp; Database Architecture</h1>
+<p>RaahSathi (राहसाथी) एक 24x7 ऑन-डिमांड रोडसाइड असिस्टेंस और वेहिकल ब्रेकडाउन प्लेटफॉर्म है। </p>
+<ul>
+<li><strong>Primary Database Engine:</strong> Microsoft SQL Server (<code>Server=AmanYadav-PC\SQLEXPRESS;Database=RaahSathiDb;</code>)</li>
+<li><strong>ORM / Data Access:</strong> Entity Framework Core 9.0 + Raw SQL Stored Procedures Execution via Dapper/ADO.NET patterns.</li>
+<li><strong>Naming Rule Enforced:</strong> All platform stored procedures strictly conform to <strong><code>rs_tablename_action</code></strong>.</li>
+<li><strong>Concurrency &amp; Transaction Safety:</strong> Stored Procedures को ACID कम्प्लायंट बनाया गया है, जिसमें <code>UPDLOCK</code>, <code>ROWLOCK</code>, <code>HOLDLOCK</code>, और <code>BEGIN TRANSACTION / COMMIT / ROLLBACK</code> के साथ ऑटोमैटिक रेस-कंडीशन प्रोटेक्शन है।</li>
+<li><strong>Automatic Audit Trail:</strong> <code>ApplicationDbContext.cs</code> में <code>SaveChangesAsync</code> को ओवरराइड किया गया है। जब भी किसी टेबल में डेटा <code>INSERT</code>, <code>UPDATE</code>, या <code>DELETE</code> होता है, तो उसका पुराना और नया मान स्वतः <code>AuditLogs</code> टेबल में कैप्चर हो जाता है।</li>
+</ul>
+<hr>
+<h1>2. Database Tables Catalog</h1>
+<hr>
+<h2>2.1 Core Identity &amp; User Tables</h2>
+<h3>1. Users (<code>dbo.Users</code>)</h3>
+<ul>
+<li><strong>C# Model:</strong> <code>RaahSathi.Models.User</code> (<a href="file:///c:/Users/aky83/RaahSathi/Models/User.cs">User.cs</a>)</li>
+<li><strong>Purpose (क्या सेव होता है):</strong>
+इस टेबल में सिस्टम के सभी रजिस्टर्ड यूज़र्स (Customer, Mechanic, Admin) की कोर डिटेल्स सेव होती हैं। कस्टमर्स के लिए अलग टेबल नहीं है, बल्कि <code>Role = &#39;Customer&#39;</code> के रूप में इसी टेबल में सेव होते हैं।</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">Column Name</th>
+<th align="left">Data Type</th>
+<th align="left">Nullable</th>
+<th align="left">Default</th>
+<th align="left">Description &amp; Business Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>Id</code></td>
+<td align="left"><code>INT</code> (PK, Identity)</td>
+<td align="left">No</td>
+<td align="left">Auto</td>
+<td align="left">यूनिक यूज़र आईडी।</td>
+</tr>
+<tr>
+<td align="left"><code>Name</code></td>
+<td align="left"><code>NVARCHAR(100)</code></td>
+<td align="left">No</td>
+<td align="left">-</td>
+<td align="left">यूज़र का पूरा नाम।</td>
+</tr>
+<tr>
+<td align="left"><code>PhoneNumber</code></td>
+<td align="left"><code>NVARCHAR(20)</code></td>
+<td align="left">No</td>
+<td align="left">-</td>
+<td align="left">यूज़र का 10-अंकीय मोबाइल नंबर (लॉगिन आइडेंटिफ़ायर)।</td>
+</tr>
+<tr>
+<td align="left"><code>Role</code></td>
+<td align="left"><code>NVARCHAR(20)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;Customer&#39;</td>
+<td align="left">यूज़र का मुख्य रोल: <code>&#39;Customer&#39;</code>, <code>&#39;Mechanic&#39;</code>, या <code>&#39;Admin&#39;</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>Password</code></td>
+<td align="left"><code>NVARCHAR(100)</code></td>
+<td align="left">No</td>
+<td align="left">-</td>
+<td align="left">हैशेड पासवर्ड।</td>
+</tr>
+<tr>
+<td align="left"><code>CreatedAt</code></td>
+<td align="left"><code>DATETIME2</code></td>
+<td align="left">No</td>
+<td align="left">UTC Now</td>
+<td align="left">रजिस्ट्रेशन की तारीख और समय।</td>
+</tr>
+<tr>
+<td align="left"><code>IsBlocked</code></td>
+<td align="left"><code>BIT</code></td>
+<td align="left">No</td>
+<td align="left">0 (false)</td>
+<td align="left">1 होने पर यूज़र लॉगिन और बुकिंग से ब्लॉक रहता है।</td>
+</tr>
+<tr>
+<td align="left"><code>AdminRole</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;Super Admin&#39;</td>
+<td align="left">एडमिन का सब-रोल (<code>Super Admin</code>, <code>Finance</code>, <code>Support</code>, <code>Operations</code>, <code>Marketing</code>, <code>Moderator</code>).</td>
+</tr>
+<tr>
+<td align="left"><code>ReferralCode</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">यूज़र का यूनिक रेफरल कोड (दूसरों को इनवाइट करने के लिए)।</td>
+</tr>
+<tr>
+<td align="left"><code>ReferredByCode</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">Yes</td>
+<td align="left">NULL</td>
+<td align="left">जिस व्यक्ति के कोड से साइन-अप किया गया उसका कोड।</td>
+</tr>
+<tr>
+<td align="left"><code>ReferralWalletBalance</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">0.0</td>
+<td align="left">रेफरल रिवार्ड्स से अर्जित कुल वॉलेट बैलेंस (रुपये में)।</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Calculated Property (Not Mapped):</strong><ul>
+<li><code>DisplayId</code>: रोल के अनुसार कस्टम कोड जैसे Customer के लिए <code>RS01C</code>, Mechanic के लिए <code>RS01M</code>, Admin के लिए <code>RS01A</code>.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>2. MechanicProfiles (<code>dbo.MechanicProfiles</code>)</h3>
+<ul>
+<li><strong>C# Model:</strong> <code>RaahSathi.Models.MechanicProfile</code> (<a href="file:///c:/Users/aky83/RaahSathi/Models/MechanicProfile.cs">MechanicProfile.cs</a>)</li>
+<li><strong>Purpose (क्या सेव होता है):</strong>
+मैकेनिक की विस्तृत प्रोफ़ाइल, जीपीएस लाइव लोकेशन, ऑनलाइन स्टेटस, ई-रिक्शा / ऑटो / कार एक्सपर्टीज, केवाईसी (Aadhaar, PAN, DL, Selfie, Shop Photo), बैंक / UPI विवरण, सब्सक्रिप्शन स्टेटस, और <strong>CurrentEarnings (डिजिटल वॉलेट बैलेंस)</strong>।</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">Column Name</th>
+<th align="left">Data Type</th>
+<th align="left">Nullable</th>
+<th align="left">Default</th>
+<th align="left">Description &amp; Business Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>UserId</code></td>
+<td align="left"><code>INT</code> (PK, FK)</td>
+<td align="left">No</td>
+<td align="left">-</td>
+<td align="left"><code>Users.Id</code> से जुड़ा प्राथमिक कुंजी (1-to-1).</td>
+</tr>
+<tr>
+<td align="left"><code>IsOnline</code></td>
+<td align="left"><code>BIT</code></td>
+<td align="left">No</td>
+<td align="left">0 (Offline)</td>
+<td align="left">क्या मैकेनिक अभी ड्यूटी पर ऑनलाइन है और जॉब्स स्वीकार कर सकता है।</td>
+</tr>
+<tr>
+<td align="left"><code>Latitude</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">0.0</td>
+<td align="left">मैकेनिक की लाइव या सिम्युलेटेड जीपीएस लैटिट्यूड।</td>
+</tr>
+<tr>
+<td align="left"><code>Longitude</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">0.0</td>
+<td align="left">मैकेनिक की लाइव या सिम्युलेटेड जीपीएस लॉन्गिट्यूड।</td>
+</tr>
+<tr>
+<td align="left"><code>Rating</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">5.0</td>
+<td align="left">औसत कस्टमर रेटिंग (1.0 से 5.0)।</td>
+</tr>
+<tr>
+<td align="left"><code>TotalJobs</code></td>
+<td align="left"><code>INT</code></td>
+<td align="left">No</td>
+<td align="left">0</td>
+<td align="left">मैकेनिक द्वारा पूरी की गई कुल जॉब्स की संख्या।</td>
+</tr>
+<tr>
+<td align="left"><code>KycStatus</code></td>
+<td align="left"><code>NVARCHAR(20)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;Pending&#39;</td>
+<td align="left">केवाईसी स्थिति: <code>&#39;Pending&#39;</code>, <code>&#39;Approved&#39;</code>, <code>&#39;Rejected&#39;</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>AadhaarNumber</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">12 अंकों का आधार कार्ड नंबर।</td>
+</tr>
+<tr>
+<td align="left"><code>Email</code></td>
+<td align="left"><code>NVARCHAR(100)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">मैकेनिक का ईमेल पता।</td>
+</tr>
+<tr>
+<td align="left"><code>ShopName</code></td>
+<td align="left"><code>NVARCHAR(200)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">गैराज/वर्कशॉप का नाम।</td>
+</tr>
+<tr>
+<td align="left"><code>ShopAddress</code></td>
+<td align="left"><code>NVARCHAR(500)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">दुकान का पता।</td>
+</tr>
+<tr>
+<td align="left"><code>VehicleExpertise</code></td>
+<td align="left"><code>NVARCHAR(1000)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">कॉमा-सेपरेटेड एक्सपर्टीज (Bike, Scooter, Car, E-Rickshaw, Auto-Rickshaw).</td>
+</tr>
+<tr>
+<td align="left"><code>Specialization</code></td>
+<td align="left"><code>NVARCHAR(1000)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">मुख्य विशेषज्ञता (Engine, Electrical, Puncture, Battery, AC, Wiring).</td>
+</tr>
+<tr>
+<td align="left"><code>CurrentEarnings</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">0.0</td>
+<td align="left"><strong>मैकेनिक का डिजिटल वॉलेट बैलेंस</strong> (कमीशन कटने के बाद का शुद्ध पैसा)।</td>
+</tr>
+<tr>
+<td align="left"><code>SubscriptionValidTill</code></td>
+<td align="left"><code>DATETIME2</code></td>
+<td align="left">Yes</td>
+<td align="left">NULL</td>
+<td align="left">30-दिन के मैकेनिक प्लान की समाप्ति तारीख।</td>
+</tr>
+<tr>
+<td align="left"><code>SubscriptionStatus</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;Trial&#39;</td>
+<td align="left">स्थिति: <code>&#39;Trial&#39;</code>, <code>&#39;Active&#39;</code>, <code>&#39;Due&#39;</code>, <code>&#39;Exempt&#39;</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>BankName</code></td>
+<td align="left"><code>NVARCHAR(100)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">बैंक का नाम (e.g., State Bank of India).</td>
+</tr>
+<tr>
+<td align="left"><code>BankAccountNumber</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">बैंक खाता संख्या।</td>
+</tr>
+<tr>
+<td align="left"><code>IfscCode</code></td>
+<td align="left"><code>NVARCHAR(20)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">बैंक IFSC कोड।</td>
+</tr>
+<tr>
+<td align="left"><code>UpiId</code></td>
+<td align="left"><code>NVARCHAR(100)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">यूपीआई आईडी।</td>
+</tr>
+<tr>
+<td align="left"><code>AccountHolderName</code></td>
+<td align="left"><code>NVARCHAR(200)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;&#39;</td>
+<td align="left">बैंक खातेदार का नाम।</td>
+</tr>
+<tr>
+<td align="left"><code>PreferredPayoutMethod</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">&#39;UPI&#39;</td>
+<td align="left">पसंदीदा विथड्रॉल तरीका: <code>&#39;UPI&#39;</code>, <code>&#39;Bank&#39;</code>, <code>&#39;Cash&#39;</code>.</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>3. Vehicles (<code>dbo.Vehicles</code>)</h3>
+<ul>
+<li><strong>C# Model:</strong> <code>RaahSathi.Models.Vehicle</code> (<a href="file:///c:/Users/aky83/RaahSathi/Models/Vehicle.cs">Vehicle.cs</a>)</li>
+<li><strong>Purpose (क्या सेव होता है):</strong>
+कस्टमर द्वारा जोड़े गए वाहनों का डेटा।</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">Column Name</th>
+<th align="left">Data Type</th>
+<th align="left">Nullable</th>
+<th align="left">Description &amp; Business Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>Id</code></td>
+<td align="left"><code>INT</code> (PK)</td>
+<td align="left">No</td>
+<td align="left">यूनिक व्हीकल आईडी।</td>
+</tr>
+<tr>
+<td align="left"><code>UserId</code></td>
+<td align="left"><code>INT</code> (FK)</td>
+<td align="left">No</td>
+<td align="left">गाड़ी के मालिक की यूज़र आईडी (<code>Users.Id</code>).</td>
+</tr>
+<tr>
+<td align="left"><code>VehicleType</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">गाड़ी का प्रकार: <code>&#39;Car&#39;</code>, <code>&#39;2-Wheeler&#39;</code>, <code>&#39;Commercial&#39;</code>, <code>&#39;Heavy&#39;</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>Model</code></td>
+<td align="left"><code>NVARCHAR(100)</code></td>
+<td align="left">No</td>
+<td align="left">मॉडल का नाम (उदा. Maruti Swift, Hero Splendor).</td>
+</tr>
+<tr>
+<td align="left"><code>RegistrationNumber</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">आरटीओ नंबर (उदा. UP16-AB-1234).</td>
+</tr>
+<tr>
+<td align="left"><code>CreatedAt</code></td>
+<td align="left"><code>DATETIME2</code></td>
+<td align="left">No</td>
+<td align="left">व्हीकल ऐड करने का समय।</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2.2 Breakdown &amp; Job Booking Management</h2>
+<h3>4. Jobs (<code>dbo.Jobs</code>)</h3>
+<ul>
+<li><strong>C# Model:</strong> <code>RaahSathi.Models.Job</code> (<a href="file:///c:/Users/aky83/RaahSathi/Models/Job.cs">Job.cs</a>)</li>
+<li><strong>Purpose (क्या सेव होता है):</strong>
+प्लेटफॉर्म का सबसे महत्वपूर्ण टेबल। इसमें रोडसाइड असिस्टेंस की हर रिक्वेस्ट, समस्या का प्रकार, ई-रिक्शा बैटरी स्टेटस, जीपीएस कोऑर्डिनेट्स, विजिटिंग फीस, स्पेयर पार्ट्स अप्रूवल, टोइंग चार्ज, फाइनल बिल, लाइव ट्रैकिंग स्टेटस और रेटिंग सेव होती है।</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">Column Name</th>
+<th align="left">Data Type</th>
+<th align="left">Nullable</th>
+<th align="left">Description &amp; Business Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>Id</code></td>
+<td align="left"><code>INT</code> (PK)</td>
+<td align="left">No</td>
+<td align="left">यूनिक जॉब/बुकिंग आईडी।</td>
+</tr>
+<tr>
+<td align="left"><code>CustomerId</code></td>
+<td align="left"><code>INT</code> (FK)</td>
+<td align="left">No</td>
+<td align="left">ब्रेकडाउन अनुरोधकर्ता कस्टमर की आईडी (<code>Users.Id</code>).</td>
+</tr>
+<tr>
+<td align="left"><code>MechanicId</code></td>
+<td align="left"><code>INT</code> (FK)</td>
+<td align="left">Yes</td>
+<td align="left">असाइन किए गए मैकेनिक की आईडी।</td>
+</tr>
+<tr>
+<td align="left"><code>VehicleId</code></td>
+<td align="left"><code>INT</code> (FK)</td>
+<td align="left">No</td>
+<td align="left">ब्रेकडाउन वाहन की आईडी (<code>Vehicles.Id</code>).</td>
+</tr>
+<tr>
+<td align="left"><code>ProblemType</code></td>
+<td align="left"><code>NVARCHAR(500)</code></td>
+<td align="left">No</td>
+<td align="left">समस्या का प्रकार (Puncture, Battery Dead, Engine, EV Wiring).</td>
+</tr>
+<tr>
+<td align="left"><code>Status</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">वर्तमान स्थिति: <code>&#39;Requested&#39;</code>, <code>&#39;Accepted&#39;</code>, <code>&#39;EnRoute&#39;</code>, <code>&#39;Arrived&#39;</code>, <code>&#39;InInspection&#39;</code>, <code>&#39;UnderRepair&#39;</code>, <code>&#39;Completed&#39;</code>, <code>&#39;Cancelled&#39;</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>Address</code></td>
+<td align="left"><code>NVARCHAR(500)</code></td>
+<td align="left">No</td>
+<td align="left">ब्रेकडाउन स्थल का पूरा पता।</td>
+</tr>
+<tr>
+<td align="left"><code>VisitingCharge</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">मैकेनिक की फिक्स विजिटिंग/इंस्पेक्शन फीस।</td>
+</tr>
+<tr>
+<td align="left"><code>ServiceChargeMin</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">सर्विस चार्ज न्यूनतम अनुमान।</td>
+</tr>
+<tr>
+<td align="left"><code>ServiceChargeMax</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">सर्विस चार्ज अधिकतम अनुमान।</td>
+</tr>
+<tr>
+<td align="left"><code>PartsEstimateAmount</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">स्पेयर पार्ट्स की कुल लागत।</td>
+</tr>
+<tr>
+<td align="left"><code>PartsApproved</code></td>
+<td align="left"><code>BIT</code></td>
+<td align="left">Yes</td>
+<td align="left">क्या कस्टमर ने पार्ट्स की लागत को अनुमति दी।</td>
+</tr>
+<tr>
+<td align="left"><code>TowingNeeded</code></td>
+<td align="left"><code>BIT</code></td>
+<td align="left">No</td>
+<td align="left">क्या गाड़ी को टो करना जरूरी है।</td>
+</tr>
+<tr>
+<td align="left"><code>TowingCharge</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">टोइंग का अतिरिक्त शुल्क।</td>
+</tr>
+<tr>
+<td align="left"><code>FinalBillAmount</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left"><strong>कुल अंतिम बिल</strong> (Visiting + Service + Parts + Towing).</td>
+</tr>
+<tr>
+<td align="left"><code>RatingFromCustomer</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">Yes</td>
+<td align="left">कस्टमर रेटिंग (1 से 5).</td>
+</tr>
+<tr>
+<td align="left"><code>FeedbackFromCustomer</code></td>
+<td align="left"><code>NVARCHAR(MAX)</code></td>
+<td align="left">No</td>
+<td align="left">रिव्यू कमेंट।</td>
+</tr>
+<tr>
+<td align="left"><code>CreatedAt</code></td>
+<td align="left"><code>DATETIME2</code></td>
+<td align="left">No</td>
+<td align="left">जॉब बनने का समय।</td>
+</tr>
+<tr>
+<td align="left"><code>CompletedAt</code></td>
+<td align="left"><code>DATETIME2</code></td>
+<td align="left">Yes</td>
+<td align="left">जॉब पूर्ण होने का समय।</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>5. Payments (<code>dbo.Payments</code>)</h3>
+<ul>
+<li><strong>C# Model:</strong> <code>RaahSathi.Models.Payment</code> (<a href="file:///c:/Users/aky83/RaahSathi/Models/Payment.cs">Payment.cs</a>)</li>
+<li><strong>Purpose (क्या सेव होता है):</strong>
+हर जॉब के एस्क्रो पेमेंट, रेज़रपे आईडी, एडमिन कमीशन और मैकेनिक की शुद्ध कमाई का हिसाब।</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">Column Name</th>
+<th align="left">Data Type</th>
+<th align="left">Nullable</th>
+<th align="left">Description &amp; Business Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>Id</code></td>
+<td align="left"><code>INT</code> (PK)</td>
+<td align="left">No</td>
+<td align="left">पेमेंट रिकॉर्ड आईडी।</td>
+</tr>
+<tr>
+<td align="left"><code>JobId</code></td>
+<td align="left"><code>INT</code> (FK)</td>
+<td align="left">No</td>
+<td align="left">संबंधित जॉब आईडी (<code>Jobs.Id</code>).</td>
+</tr>
+<tr>
+<td align="left"><code>Amount</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">चुकाई गई कुल धनराशि।</td>
+</tr>
+<tr>
+<td align="left"><code>PaymentStatus</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">स्थिति: <code>&#39;Held&#39;</code> (Escrowed), <code>&#39;Released&#39;</code> (to Mechanic), <code>&#39;Refunded&#39;</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>RazorpayPaymentId</code></td>
+<td align="left"><code>NVARCHAR(100)</code></td>
+<td align="left">No</td>
+<td align="left">ऑनलाइन पेमेंट आईडी (उदा. <code>pay_N8s9...</code>) या नकद के लिए <code>pay_cash_...</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>AdminCommissionAmount</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">कंपनी द्वारा काटा गया कमीशन (₹).</td>
+</tr>
+<tr>
+<td align="left"><code>MechanicEarningAmount</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">मैकेनिक के वॉलेट में जमा होने वाली शुद्ध राशि।</td>
+</tr>
+<tr>
+<td align="left"><code>CommissionRateUsed</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">लागू कमीशन दर (उदा. 0.08, 0.10, 0.12).</td>
+</tr>
+<tr>
+<td align="left"><code>CreatedAt</code></td>
+<td align="left"><code>DATETIME2</code></td>
+<td align="left">No</td>
+<td align="left">भुगतान की तारीख।</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>6. JobChatMessages (<code>dbo.JobChatMessages</code>)</h3>
+<ul>
+<li><strong>C# Model:</strong> <code>RaahSathi.Models.JobChatMessage</code> (<a href="file:///c:/Users/aky83/RaahSathi/Models/JobChatMessage.cs">JobChatMessage.cs</a>)</li>
+<li><strong>Purpose (क्या सेव होता है):</strong>
+चालू जॉब के दौरान कस्टमर और मैकेनिक के बीच लाइव इन-ऐप चैट संदेश।</li>
+</ul>
+<hr>
+<h2>2.3 Financial &amp; Payout Management</h2>
+<h3>7. MechanicPayoutRequests (<code>dbo.MechanicPayoutRequests</code>)</h3>
+<ul>
+<li><strong>C# Model:</strong> <code>RaahSathi.Models.MechanicPayoutRequest</code> (<a href="file:///c:/Users/aky83/RaahSathi/Models/MechanicPayoutRequest.cs">MechanicPayoutRequest.cs</a>)</li>
+<li><strong>Purpose (क्या सेव होता है):</strong>
+मैकेनिक द्वारा अपने डिजिटल वॉलेट से बैंक या यूपीआई में पैसे निकालने की विथड्रॉल रिक्वेस्ट।</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">Column Name</th>
+<th align="left">Data Type</th>
+<th align="left">Nullable</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>Id</code></td>
+<td align="left"><code>INT</code> (PK)</td>
+<td align="left">No</td>
+<td align="left">विथड्रॉल रिक्वेस्ट आईडी।</td>
+</tr>
+<tr>
+<td align="left"><code>MechanicId</code></td>
+<td align="left"><code>INT</code> (FK)</td>
+<td align="left">No</td>
+<td align="left">मैकेनिक की यूज़र आईडी (<code>Users.Id</code>).</td>
+</tr>
+<tr>
+<td align="left"><code>Amount</code></td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">No</td>
+<td align="left">निकाली जाने वाली धनराशि (₹ में)।</td>
+</tr>
+<tr>
+<td align="left"><code>PayoutMethod</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">माध्यम: <code>&#39;UPI&#39;</code> या <code>&#39;Bank&#39;</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>AccountHolderName</code>, <code>BankAccountNumber</code>, <code>BankName</code>, <code>IfscCode</code>, <code>UpiId</code></td>
+<td align="left"><code>NVARCHAR</code></td>
+<td align="left">No/Yes</td>
+<td align="left">बैंक/UPI डिटेल्स।</td>
+</tr>
+<tr>
+<td align="left"><code>Status</code></td>
+<td align="left"><code>NVARCHAR(50)</code></td>
+<td align="left">No</td>
+<td align="left">स्थिति: <code>&#39;Pending&#39;</code>, <code>&#39;Approved&#39;</code>, <code>&#39;Rejected&#39;</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>TransactionReference</code></td>
+<td align="left"><code>NVARCHAR(100)</code></td>
+<td align="left">No</td>
+<td align="left">बैंक यूटीआर या पेमेंट रेफरेंस नंबर।</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>8. AdminWithdrawals (<code>dbo.AdminWithdrawals</code>)</h3>
+<ul>
+<li><strong>C# Model:</strong> <code>RaahSathi.Models.AdminWithdrawal</code> (<a href="file:///c:/Users/aky83/RaahSathi/Models/AdminWithdrawal.cs">AdminWithdrawal.cs</a>)</li>
+<li><strong>Purpose:</strong> एडमिन कमीशन वॉल्ट से कंपनी बैंक खाते में निकाली गई राशि का ऑडिट रिकॉर्ड।</li>
+</ul>
+<h3>9. MechanicSubscriptions (<code>dbo.MechanicSubscriptions</code>)</h3>
+<ul>
+<li><strong>C# Model:</strong> <code>RaahSathi.Models.MechanicSubscription</code> (<a href="file:///c:/Users/aky83/RaahSathi/Models/MechanicSubscription.cs">MechanicSubscription.cs</a>)</li>
+<li><strong>Purpose:</strong> मैकेनिक्स के मासिक प्लेटफॉर्म सब्सक्रिप्शन प्लान (उदा. ₹499/माह) के ऑनलाइन पेमेंट्स और वैलिडिटी का रिकॉर्ड।</li>
+</ul>
+<hr>
+<h2>2.4 Referral Program Engine</h2>
+<h3>10. ReferralProgramSettings (<code>dbo.ReferralProgramSettings</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> चारों तरह के रेफरल मोड्स (M2M, M2C, C2C, C2M) के रिवॉर्ड रेट्स और शर्तें।</li>
+</ul>
+<h3>11. ReferralTransactions (<code>dbo.ReferralTransactions</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> हर रेफरल का लाइफ-साइकिल रिकॉर्ड—किसने किसको रेफर किया, कौन सी जॉब पूरी होने पर रिवॉर्ड मिला, और स्टेटस।</li>
+</ul>
+<h3>12. ReferralWithdrawalRequests (<code>dbo.ReferralWithdrawalRequests</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> कस्टमर या मैकेनिक द्वारा अपने <code>ReferralWalletBalance</code> से पैसे निकालने की रिक्वेस्ट।</li>
+</ul>
+<hr>
+<h2>2.5 Governance, Trust &amp; Support</h2>
+<h3>13. MechanicComplaints (<code>dbo.MechanicComplaints</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> कस्टमर द्वारा दर्ज की गई शिकायतें (ओवरचार्जिंग, खराब बर्ताव, लेट अराइवल)।</li>
+</ul>
+<h3>14. MechanicWarnings (<code>dbo.MechanicWarnings</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> एडमिन द्वारा मैकेनिक को भेजी गई आधिकारिक चेतावनियां (Notices, Official Warning, Final Warning)।</li>
+</ul>
+<h3>15. ContactMessages (<code>dbo.ContactMessages</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> वेबसाइट &#39;Contact Us&#39; पेज से भेजी गई पूछताछ और एडमिन का ईमेल रिप्लाई।</li>
+</ul>
+<h3>16. MechanicSupportMessages (<code>dbo.MechanicSupportMessages</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> सपोर्ट टीम द्वारा मैकेनिक के इन-ऐप डैशबोर्ड पर भेजे जाने वाले ब्रॉडकास्ट संदेश।</li>
+</ul>
+<hr>
+<h2>2.6 Pricing &amp; City Operations</h2>
+<h3>17. PricingRules (<code>dbo.PricingRules</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> वाहन श्रेणी (Bike, Car, Commercial, Heavy) और शहर अनुसार बेस विजिट फीस व टोइंग दरें।</li>
+</ul>
+<h3>18. ProblemTypePricings (<code>dbo.ProblemTypePricings</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> हर विशिष्ट समस्या (पंचर, बैटरी जंप, EV मोटर रिपेयर) के लिए न्यूनतम और अधिकतम सर्विस चार्ज।</li>
+</ul>
+<h3>19. CityServiceAreas (<code>dbo.CityServiceAreas</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> ऑपरेशनल शहर, कवरेज रेडियस, और <strong>इमरजेंसी मोड</strong> (भारी बारिश/बाढ़ सर्ज)।</li>
+</ul>
+<h3>20. CustomServices (<code>dbo.CustomServices</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> कस्टम ऑन-डिमांड सर्विसेज (कार वॉश, डीप इंटीरियर क्लीनिंग, एसी गैस रीफिल)।</li>
+</ul>
+<hr>
+<h2>2.7 CMS, Notifications &amp; Auditing</h2>
+<h3>21. CmsBanners (<code>dbo.CmsBanners</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> होमपेज प्रोमोशनल और ऑफर बैनर्स का डेटा।</li>
+</ul>
+<h3>22. PushNotificationLogs (<code>dbo.PushNotificationLogs</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> एडमिन पैनल से भेजे गए ब्रॉडकास्ट पुश नोटिफिकेशन्स का इतिहास।</li>
+</ul>
+<h3>23. AuditLogs (<code>dbo.AuditLogs</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> सिस्टम और एडमिन के हर कार्य (<code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>) का फॉरेंसिक ऑडिट ट्रेल, पुराना व नया मान, IP और ब्राउज़र एजेंट।</li>
+</ul>
+<h3>24. AdminSystemSettings (<code>dbo.AdminSystemSettings</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> प्लेटफॉर्म की ग्लोबल की-वैल्यू सेटिंग्स (कमीशन स्लैब, रेज़रपे कीज़, सर्ज मल्टीप्लायर)।</li>
+</ul>
+<h3>25. SystemApiSettings (<code>dbo.SystemApiSettings</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> SMS API, WhatsApp Business, Google Maps और SMTP सेंडर ईमेल कीज़।</li>
+</ul>
+<h3>26. SystemContactSettings (<code>dbo.SystemContactSettings</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> कंपनी के 24x7 हेल्पलाइन नंबर, टोल-फ्री, इमरजेंसी नंबर और हेड ऑफिस का पता।</li>
+</ul>
+<h3>27. DataProtectionKeys (<code>dbo.DataProtectionKeys</code>)</h3>
+<ul>
+<li><strong>Purpose:</strong> ASP.NET Core कुकी और टोकन एन्क्रिप्शन कीज़।</li>
+</ul>
+<hr>
+<h1>3. Stored Procedures Catalog</h1>
+<p>RaahSathi डेटाबेस में सभी Stored Procedures अब 100% स्टैंडर्ड पैटर्न <strong><code>rs_tablename_action</code></strong> का पालन करते हैं।</p>
+<hr>
+<h3>SP 1: <code>dbo.rs_payments_process_job</code></h3>
+<p><em>(Previously <code>dbo.sp_ProcessJobPayment</code>)</em></p>
+<ul>
+<li><strong>File Location:</strong> <code>Data/StoredProcedures.sql</code></li>
+<li><strong>Parameters:</strong><pre><code class="language-sql">@JobId INT,
+@PaymentId NVARCHAR(100),
+@Amount FLOAT,
+@AdminCommission FLOAT,
+@MechanicEarning FLOAT,
+@CommissionRate FLOAT,
+@PaymentStatus NVARCHAR(50) = &#39;Released&#39;
+</code></pre>
+</li>
+<li><strong>What Happens (क्या काम करता है):</strong><ol>
+<li><strong>Idempotency Guard:</strong> चेक करता है कि क्या पेमेंट पहले ही रिलीज हो चुका है।</li>
+<li><strong>Payment Upsert:</strong> <code>dbo.Payments</code> में रिकॉर्ड बनाता है या अपडेट करता है।</li>
+<li><strong>Atomic Wallet Credit:</strong> मैकेनिक प्रोफाइल पर <code>ROWLOCK</code> लगाकर उसके वॉलेट में शुद्ध कमाई जोड़ता है (<code>CurrentEarnings + @MechanicEarning</code>).</li>
+<li><strong>Job Completion:</strong> जॉब स्टेटस को <code>&#39;Completed&#39;</code> और <code>CompletedAt = GETUTCDATE()</code> पर सेट करता है।</li>
+</ol>
+</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Repository:</strong> <code>PaymentRepository.ExecuteProcessJobPaymentStoredProcedureAsync(...)</code> (<a href="file:///c:/Users/aky83/RaahSathi/Repositories/PaymentRepository.cs">PaymentRepository.cs</a>)</li>
+<li><strong>Service:</strong> <code>PaymentService.ProcessEscrowPaymentForJobAsync(...)</code> (<a href="file:///c:/Users/aky83/RaahSathi/src/RaahSathi.Infrastructure/Services/PaymentService.cs">PaymentService.cs</a>)</li>
+<li><strong>Triggers:</strong> जब कस्टमर ऑनलाइन पेमेंट कम्प्लीट करता है, या मैकेनिक कैश पेमेंट कन्फर्म करता है।</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 2: <code>dbo.rs_mechanicpayoutrequests_create</code></h3>
+<p><em>(Previously <code>dbo.sp_RequestMechanicPayout</code>)</em></p>
+<ul>
+<li><strong>File Location:</strong> <code>Data/StoredProcedures.sql</code></li>
+<li><strong>Parameters:</strong><pre><code class="language-sql">@MechanicId INT,
+@Amount FLOAT,
+@PayoutMethod NVARCHAR(50),
+@AccountHolderName NVARCHAR(200) = NULL,
+@BankAccountNumber NVARCHAR(100) = NULL,
+@BankName NVARCHAR(200) = NULL,
+@IfscCode NVARCHAR(50) = NULL,
+@UpiId NVARCHAR(100) = NULL
+</code></pre>
+</li>
+<li><strong>What Happens (क्या काम करता है):</strong><ol>
+<li><code>MechanicProfiles</code> पर <code>UPDLOCK, ROWLOCK</code> लगाकर वॉलेट बैलेंस चेक करता है।</li>
+<li><strong>Atomic Balance Debit:</strong> मैकेनिक के वॉलेट से राशि तुरंत काट लेता है (<code>CurrentEarnings = CurrentEarnings - @Amount</code>).</li>
+<li><strong>Record Creation:</strong> <code>dbo.MechanicPayoutRequests</code> में &#39;Pending&#39; स्टेटस के साथ विथड्रॉल एंट्री इंसर्ट करता है।</li>
+</ol>
+</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Repository:</strong> <code>WalletRepository.RequestPayoutViaStoredProcedureAsync(...)</code> (<a href="file:///c:/Users/aky83/RaahSathi/Repositories/WalletRepository.cs">WalletRepository.cs</a>)</li>
+<li><strong>Trigger:</strong> जब मैकेनिक अपने वॉलेट से &quot;Withdraw&quot; बटन पर क्लिक करता है।</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 3: <code>dbo.rs_mechanicpayoutrequests_process</code></h3>
+<p><em>(Previously <code>dbo.sp_ProcessMechanicPayout</code>)</em></p>
+<ul>
+<li><strong>File Location:</strong> <code>Data/StoredProcedures.sql</code></li>
+<li><strong>Parameters:</strong><pre><code class="language-sql">@PayoutRequestId INT,
+@AdminAction NVARCHAR(20), -- &#39;Approve&#39; or &#39;Reject&#39;
+@AdminRemarks NVARCHAR(500) = &#39;&#39;,
+@TransactionReference NVARCHAR(100) = &#39;&#39;
+</code></pre>
+</li>
+<li><strong>What Happens (क्या काम करता है):</strong><ol>
+<li>If &#39;Approve&#39;: स्टेटस को <code>&#39;Approved&#39;</code>, UTR रेफरेंस और अप्रूवल समय दर्ज करता है।</li>
+<li>If &#39;Reject&#39;: स्टेटस को <code>&#39;Rejected&#39;</code> करता है और <strong>काटी गई राशि को वापस मैकेनिक के वॉलेट में ऑटोमैटिकली रिफंड कर देता है</strong>:<pre><code class="language-sql">UPDATE dbo.MechanicProfiles WITH (ROWLOCK)
+SET CurrentEarnings = CurrentEarnings + @Amount
+WHERE UserId = @MechanicId;
+</code></pre>
+</li>
+</ol>
+</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Repository:</strong> <code>WalletRepository.ProcessPayoutViaStoredProcedureAsync(...)</code> (<a href="file:///c:/Users/aky83/RaahSathi/Repositories/WalletRepository.cs">WalletRepository.cs</a>)</li>
+<li><strong>Trigger:</strong> जब एडमिन &#39;Payout Management&#39; स्क्रीन पर किसी रिक्वेस्ट को Approve या Reject करता है।</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 4: <code>dbo.rs_users_update_profile</code></h3>
+<p><em>(Previously <code>dbo.sp_UpdateUserProfile</code>)</em></p>
+<ul>
+<li><strong>File Location:</strong> <code>Data/StoredProcedures.sql</code></li>
+<li><strong>Parameters:</strong> <code>@UserId INT</code>, <code>@Name NVARCHAR(100)</code>, <code>@ShopName</code>, <code>@ShopAddress</code>, <code>@City</code>, <code>@VehicleExpertise</code>, <code>@Specialization</code>, <code>@BankName</code>, <code>@BankAccountNumber</code>, <code>@IfscCode</code>, <code>@UpiId</code>, <code>@AccountHolderName</code></li>
+<li><strong>What Happens (क्या काम करता है):</strong>
+एक ही एटॉमिक ट्रांजैक्शन में <code>dbo.Users</code> टेबल में नाम और <code>dbo.MechanicProfiles</code> टेबल में दुकान व बैंक डिटेल्स को अपडेट करता है।</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Repository:</strong> <code>UserRepository.UpdateUserProfileViaStoredProcedureAsync(...)</code> (<a href="file:///c:/Users/aky83/RaahSathi/Repositories/UserRepository.cs">UserRepository.cs</a>)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 5: <code>dbo.rs_mechanicprofiles_update_bank_details</code></h3>
+<p><em>(Previously <code>dbo.sp_UpdateMechanicBankDetails</code>)</em></p>
+<ul>
+<li><strong>File Location:</strong> <code>Data/StoredProcedures.sql</code> &amp; <code>Program.cs</code></li>
+<li><strong>Parameters:</strong> <code>@MechanicId INT</code>, <code>@PreferredPayoutMethod NVARCHAR(50)</code>, <code>@UpiId</code>, <code>@AccountHolderName</code>, <code>@BankName</code>, <code>@BankAccountNumber</code>, <code>@IfscCode</code></li>
+<li><strong>What Happens (क्या काम करता है):</strong>
+मैकेनिक की पसंदीदा भुगतान विधि (<code>UPI</code> या <code>Bank</code>) और बैंक डिटेल्स को <code>MechanicProfiles</code> टेबल में एटॉमिकली सेव करता है।</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Controller:</strong> <code>MechanicController.SaveBankDetails(...)</code> (<a href="file:///c:/Users/aky83/RaahSathi/Controllers/MechanicController.cs">MechanicController.cs</a>)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 6: <code>dbo.rs_systemapisettings_get</code></h3>
+<p><em>(Previously <code>dbo.sp_GetSystemApiSettings</code>)</em></p>
+<ul>
+<li><strong>File Location:</strong> <code>Data/StoredProcedures.sql</code></li>
+<li><strong>Parameters:</strong> None</li>
+<li><strong>What Happens (क्या काम करता है):</strong>
+एसएमएस, व्हाट्सएप बिजनेस, गूगल मैप्स और एसएमटीपी सेटिंग्स को रिटर्न करता है। खाली होने पर डिफ़ॉल्ट ऑटो-सीड करता है।</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Controller:</strong> <code>AdminController.Settings()</code> (<a href="file:///c:/Users/aky83/RaahSathi/Controllers/AdminController.cs">AdminController.cs</a>)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 7: <code>dbo.rs_systemapisettings_save_or_update</code></h3>
+<p><em>(Previously <code>dbo.sp_SaveOrUpdateSystemApiSettings</code>)</em></p>
+<ul>
+<li><strong>File Location:</strong> <code>Data/StoredProcedures.sql</code></li>
+<li><strong>Parameters:</strong> <code>@SmsApiKey</code>, <code>@WhatsAppBusinessNumber</code>, <code>@GoogleMapsApiKey</code>, <code>@SmtpSenderEmail</code></li>
+<li><strong>What Happens (क्या काम करता है):</strong>
+<code>UPDLOCK, HOLDLOCK</code> के साथ API गेटवे कीज़ को सुरक्षित रूप से Upsert करता है।</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Controller:</strong> <code>AdminController.SaveApiSettings(...)</code> (<a href="file:///c:/Users/aky83/RaahSathi/Controllers/AdminController.cs">AdminController.cs</a>)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 8: <code>dbo.rs_systemcontactsettings_get</code></h3>
+<p><em>(Previously <code>dbo.sp_GetSystemContactSettings</code>)</em></p>
+<ul>
+<li><strong>File Location:</strong> <code>Data/StoredProcedures.sql</code></li>
+<li><strong>Parameters:</strong> None</li>
+<li><strong>What Happens (क्या काम करता है):</strong>
+कंपनी के हेल्पलाइन नंबर, टोल-फ्री नंबर, इमरजेंसी रेस्क्यू नंबर और हेड ऑफिस एड्रेस फेच करता है।</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Controller:</strong> <code>AdminController.Settings()</code> (<a href="file:///c:/Users/aky83/RaahSathi/Controllers/AdminController.cs">AdminController.cs</a>)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 9: <code>dbo.rs_systemcontactsettings_save_or_update</code></h3>
+<p><em>(Previously <code>dbo.sp_SaveOrUpdateSystemContactSettings</code>)</em></p>
+<ul>
+<li><strong>File Location:</strong> <code>Data/StoredProcedures.sql</code></li>
+<li><strong>Parameters:</strong> <code>@HelplineNumber</code>, <code>@TollFreeNumber</code>, <code>@EmergencySupportNumber</code>, <code>@WhatsAppNumber</code>, <code>@SupportEmail</code>, <code>@BillingEmail</code>, <code>@PartnerHelplineNumber</code>, <code>@OfficeAddress</code></li>
+<li><strong>What Happens (क्या काम करता है):</strong>
+कस्टमर सपोर्ट और हेल्पलाइन की पूरी जानकारी को <code>SystemContactSettings</code> टेबल में Upsert करता है।</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Controller:</strong> <code>AdminController.SaveContactSettings(...)</code> (<a href="file:///c:/Users/aky83/RaahSathi/Controllers/AdminController.cs">AdminController.cs</a>)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 10: <code>dbo.rs_payments_process_escrow</code></h3>
+<ul>
+<li><strong>File Location:</strong> <code>Program.cs</code></li>
+<li><strong>Parameters:</strong> <code>@JobId INT</code>, <code>@PaymentId NVARCHAR(100)</code></li>
+<li><strong>What Happens (क्या काम करता है):</strong>
+डायनामिक कमीशन स्प्लिट प्रोसीजर: बिल अमाउंट के हिसाब से 8% (&lt;₹1000), 10% (₹1000-₹3000), 12% (&gt;₹3000) कमीशन की गणना करता है। नकद भुगतान (<code>pay_cash_...</code>) होने पर मैकेनिक वॉलेट से कंपनी का कमीशन डेबिट करता है।</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Startup Engine:</strong> <code>Program.cs</code> द्वारा डेटाबेस पर बूट-टाइम पर इंस्टॉल किया जाता है।</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 11: <code>dbo.rs_adminwithdrawals_insert</code></h3>
+<ul>
+<li><strong>File Location:</strong> <code>Program.cs</code></li>
+<li><strong>Parameters:</strong> <code>@Amount FLOAT</code>, <code>@PayoutMethod NVARCHAR(100)</code>, <code>@ReferenceNumber NVARCHAR(100)</code></li>
+<li><strong>What Happens (क्या काम करता है):</strong>
+एडमिन कमीशन वॉल्ट से पैसे विथड्रॉ होने पर <code>dbo.AdminWithdrawals</code> टेबल में एक नई रो एटॉमिकली इंसर्ट करता है।</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><strong>Controller:</strong> <code>AdminController.WithdrawAdminCommission(...)</code> (<a href="file:///c:/Users/aky83/RaahSathi/Controllers/AdminController.cs">AdminController.cs</a>)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3>SP 12: <code>dbo.rs_mechanicprofiles_withdraw_wallet</code></h3>
+<ul>
+<li><strong>File Location:</strong> <code>Program.cs</code></li>
+<li><strong>Parameters:</strong> <code>@MechanicUserId INT</code>, <code>@Amount FLOAT</code></li>
+<li><strong>What Happens (क्या काम करता है):</strong>
+मैकेनिक के वॉलेट से सीधे राशि डेबिट करने का यूटिलिटी प्रोसीजर।</li>
+<li><strong>Where It Is Used (कहाँ यूज़ होता है):</strong><ul>
+<li><code>Program.cs</code> में ऑटो-रजिस्टर होता है; वित्तीय डिडक्शन या पेनल्टी के लिए बैकएंड यूटिलिटी।</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h1>4. Mermaid Entity-Relationship Diagram</h1>
+<pre><code class="language-mermaid">erDiagram
+    Users ||--o| MechanicProfiles : &quot;1-to-1 (UserId)&quot;
+    Users ||--o{ Vehicles : &quot;1-to-Many (UserId)&quot;
+    Users ||--o{ Jobs : &quot;Customer (CustomerId)&quot;
+    Users ||--o{ Jobs : &quot;Mechanic (MechanicId)&quot;
+    Users ||--o{ MechanicPayoutRequests : &quot;Mechanic Payouts&quot;
+    Users ||--o{ ReferralTransactions : &quot;Referrer / Referee&quot;
+    Users ||--o{ ReferralWithdrawalRequests : &quot;User Withdrawals&quot;
+    Vehicles ||--o{ Jobs : &quot;VehicleId&quot;
+    Jobs ||--o| Payments : &quot;Escrow Payment (JobId)&quot;
+    Jobs ||--o{ JobChatMessages : &quot;Job In-App Chat&quot;
+    Jobs ||--o{ MechanicComplaints : &quot;Job Complaints&quot;
+    MechanicComplaints ||--o{ MechanicWarnings : &quot;ComplaintId&quot;
+
+    Users {
+        int Id PK
+        string Name
+        string PhoneNumber
+        string Role
+        string Password
+        string ReferralCode
+        float ReferralWalletBalance
+    }
+
+    MechanicProfiles {
+        int UserId PK, FK
+        bool IsOnline
+        float Latitude
+        float Longitude
+        float CurrentEarnings
+        string KycStatus
+        string VehicleExpertise
+        string UpiId
+        string BankAccountNumber
+    }
+
+    Jobs {
+        int Id PK
+        int CustomerId FK
+        int MechanicId FK
+        int VehicleId FK
+        string Status
+        string ProblemType
+        float FinalBillAmount
+        float VisitingCharge
+    }
+
+    Payments {
+        int Id PK
+        int JobId FK
+        float Amount
+        string PaymentStatus
+        string RazorpayPaymentId
+        float AdminCommissionAmount
+        float MechanicEarningAmount
+    }
+
+    MechanicPayoutRequests {
+        int Id PK
+        int MechanicId FK
+        float Amount
+        string Status
+        string PayoutMethod
+        string TransactionReference
+    }
+</code></pre>
+<hr>
+<h1>5. Summary Table: SPs &amp; Calling Locations</h1>
+<table>
+<thead>
+<tr>
+<th align="left">Stored Procedure Name</th>
+<th align="left">File Where Defined</th>
+<th align="left">Called From (C# Code)</th>
+<th align="left">User Action / Trigger</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>rs_payments_process_job</code></td>
+<td align="left"><code>Data/StoredProcedures.sql</code></td>
+<td align="left"><code>PaymentRepository.cs</code> via <code>PaymentService.cs</code></td>
+<td align="left">कस्टमर ऑनलाइन पेमेंट करे या मैकेनिक कैश कलेक्शन कन्फर्म करे</td>
+</tr>
+<tr>
+<td align="left"><code>rs_mechanicpayoutrequests_create</code></td>
+<td align="left"><code>Data/StoredProcedures.sql</code></td>
+<td align="left"><code>WalletRepository.cs</code> via <code>MechanicController.cs</code></td>
+<td align="left">मैकेनिक अपने वॉलेट से बैंक/UPI में पैसे निकालने की रिक्वेस्ट डाले</td>
+</tr>
+<tr>
+<td align="left"><code>rs_mechanicpayoutrequests_process</code></td>
+<td align="left"><code>Data/StoredProcedures.sql</code></td>
+<td align="left"><code>WalletRepository.cs</code> via <code>AdminController.cs</code></td>
+<td align="left">एडमिन मैकेनिक की विथड्रॉल रिक्वेस्ट Approve या Reject (रिफंड) करे</td>
+</tr>
+<tr>
+<td align="left"><code>rs_users_update_profile</code></td>
+<td align="left"><code>Data/StoredProcedures.sql</code></td>
+<td align="left"><code>UserRepository.cs</code> via <code>MechanicController.cs</code></td>
+<td align="left">मैकेनिक या यूजर प्रोफ़ाइल व दुकान की जानकारी अपडेट करे</td>
+</tr>
+<tr>
+<td align="left"><code>rs_mechanicprofiles_update_bank_details</code></td>
+<td align="left"><code>Data/StoredProcedures.sql</code> &amp; <code>Program.cs</code></td>
+<td align="left"><code>MechanicController.cs</code></td>
+<td align="left">मैकेनिक बैंक व यूपीआई विवरण सेव करे</td>
+</tr>
+<tr>
+<td align="left"><code>rs_systemapisettings_get</code></td>
+<td align="left"><code>Data/StoredProcedures.sql</code></td>
+<td align="left"><code>AdminController.cs</code></td>
+<td align="left">एडमिन &#39;Settings&#39; पेज खोले</td>
+</tr>
+<tr>
+<td align="left"><code>rs_systemapisettings_save_or_update</code></td>
+<td align="left"><code>Data/StoredProcedures.sql</code></td>
+<td align="left"><code>AdminController.cs</code></td>
+<td align="left">एडमिन SMS/WhatsApp/Google Maps API कीज़ सेव करे</td>
+</tr>
+<tr>
+<td align="left"><code>rs_systemcontactsettings_get</code></td>
+<td align="left"><code>Data/StoredProcedures.sql</code></td>
+<td align="left"><code>AdminController.cs</code></td>
+<td align="left">एडमिन सेटिंग्स में कंपनी हेल्पलाइन लोड करे</td>
+</tr>
+<tr>
+<td align="left"><code>rs_systemcontactsettings_save_or_update</code></td>
+<td align="left"><code>Data/StoredProcedures.sql</code></td>
+<td align="left"><code>AdminController.cs</code></td>
+<td align="left">एडमिन 24x7 हेल्पलाइन, टोल-फ्री व ऑफिस एड्रेस सेव करे</td>
+</tr>
+<tr>
+<td align="left"><code>rs_payments_process_escrow</code></td>
+<td align="left"><code>Program.cs</code></td>
+<td align="left">SQL Server Runtime</td>
+<td align="left">ऑटोमेटेड एस्क्रो रिलीज व टियर कमीशन स्प्लिट</td>
+</tr>
+<tr>
+<td align="left"><code>rs_adminwithdrawals_insert</code></td>
+<td align="left"><code>Program.cs</code></td>
+<td align="left"><code>AdminController.cs</code></td>
+<td align="left">एडमिन अपने कमीशन वॉल्ट से पैसे विथड्रॉ करे</td>
+</tr>
+<tr>
+<td align="left"><code>rs_mechanicprofiles_withdraw_wallet</code></td>
+<td align="left"><code>Program.cs</code></td>
+<td align="left">Startup / Direct SQL</td>
+<td align="left">मैकेनिक वॉलेट डायरेक्ट डिडक्शन</td>
+</tr>
+</tbody></table>
+<hr>
+<p><em>दस्तावेज़ पूर्ण हुआ। यह डॉक्यूमेंट RaahSathi के पूरे डेटाबेस आर्किटेक्चर, 27 टेबल्स और 100% rs_tablename_action Stored Procedures का पूर्ण और सटीक विवरण प्रदान करता है।</em></p>
+
+
+
+    <div class="footer-note">
+        RaahSathi Technical Architecture Documentation | Confidential & Enterprise Grade | Generated for System Operations
+    </div>
+</body>
+</html>

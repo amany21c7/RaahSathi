@@ -65,7 +65,7 @@ namespace RaahSathi.Repositories
                 if (_dbContext.Database.IsSqlServer())
                 {
                     await _dbContext.Database.ExecuteSqlRawAsync(
-                        "EXEC dbo.sp_RequestMechanicPayout @MechanicId = {0}, @Amount = {1}, @PayoutMethod = {2}, @AccountHolderName = {3}, @BankAccountNumber = {4}, @BankName = {5}, @IfscCode = {6}, @UpiId = {7}",
+                        "EXEC dbo.rs_mechanicpayoutrequests_create @MechanicId = {0}, @Amount = {1}, @PayoutMethod = {2}, @AccountHolderName = {3}, @BankAccountNumber = {4}, @BankName = {5}, @IfscCode = {6}, @UpiId = {7}",
                         request.MechanicId,
                         request.Amount,
                         string.IsNullOrWhiteSpace(request.PayoutMethod) ? "UPI" : request.PayoutMethod,
@@ -191,7 +191,7 @@ namespace RaahSathi.Repositories
                         : dto.TransactionReference;
 
                     await _dbContext.Database.ExecuteSqlRawAsync(
-                        "EXEC dbo.sp_ProcessMechanicPayout @PayoutRequestId = {0}, @AdminAction = {1}, @AdminRemarks = {2}, @TransactionReference = {3}",
+                        "EXEC dbo.rs_mechanicpayoutrequests_process @PayoutRequestId = {0}, @AdminAction = {1}, @AdminRemarks = {2}, @TransactionReference = {3}",
                         dto.PayoutRequestId,
                         dto.Action,
                         remarks,

@@ -2111,7 +2111,7 @@ namespace RaahSathi.Controllers
             SystemApiSetting? apiSetting = null;
             try
             {
-                apiSetting = await _dbContext.SystemApiSettings.FromSqlRaw("EXEC dbo.sp_GetSystemApiSettings").AsNoTracking().FirstOrDefaultAsync();
+                apiSetting = await _dbContext.SystemApiSettings.FromSqlRaw("EXEC dbo.rs_systemapisettings_get").AsNoTracking().FirstOrDefaultAsync();
             }
             catch { }
             if (apiSetting == null)
@@ -2122,7 +2122,7 @@ namespace RaahSathi.Controllers
             SystemContactSetting? contactSetting = null;
             try
             {
-                contactSetting = await _dbContext.SystemContactSettings.FromSqlRaw("EXEC dbo.sp_GetSystemContactSettings").AsNoTracking().FirstOrDefaultAsync();
+                contactSetting = await _dbContext.SystemContactSettings.FromSqlRaw("EXEC dbo.rs_systemcontactsettings_get").AsNoTracking().FirstOrDefaultAsync();
             }
             catch { }
             if (contactSetting == null)
@@ -2505,7 +2505,7 @@ namespace RaahSathi.Controllers
                 var pEmail = new Microsoft.Data.SqlClient.SqlParameter("@SmtpSenderEmail", emailSender ?? "");
 
                 await _dbContext.Database.ExecuteSqlRawAsync(
-                    "EXEC dbo.sp_SaveOrUpdateSystemApiSettings @SmsApiKey, @WhatsAppBusinessNumber, @GoogleMapsApiKey, @SmtpSenderEmail", 
+                    "EXEC dbo.rs_systemapisettings_save_or_update @SmsApiKey, @WhatsAppBusinessNumber, @GoogleMapsApiKey, @SmtpSenderEmail", 
                     pSms, pWa, pMaps, pEmail);
             }
             catch
@@ -2566,7 +2566,7 @@ namespace RaahSathi.Controllers
                 var pAddr = new Microsoft.Data.SqlClient.SqlParameter("@OfficeAddress", officeAddress ?? "");
 
                 await _dbContext.Database.ExecuteSqlRawAsync(
-                    "EXEC dbo.sp_SaveOrUpdateSystemContactSettings @HelplineNumber, @TollFreeNumber, @EmergencySupportNumber, @WhatsAppNumber, @SupportEmail, @BillingEmail, @PartnerHelplineNumber, @OfficeAddress",
+                    "EXEC dbo.rs_systemcontactsettings_save_or_update @HelplineNumber, @TollFreeNumber, @EmergencySupportNumber, @WhatsAppNumber, @SupportEmail, @BillingEmail, @PartnerHelplineNumber, @OfficeAddress",
                     pHelp, pToll, pEmerg, pWa, pSupEmail, pBillEmail, pPartner, pAddr);
             }
             catch

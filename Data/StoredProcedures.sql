@@ -1,8 +1,21 @@
 -- RaahSathi Enterprise Stored Procedures for SQL Server / SSMS
+-- Standard Naming Convention: rs_tablename_action
 -- Provides atomic, ACID-compliant, concurrency-safe transactions
 
+-- Cleanup legacy sp_* names if they exist
+DROP PROCEDURE IF EXISTS dbo.sp_ProcessJobPayment;
+DROP PROCEDURE IF EXISTS dbo.sp_RequestMechanicPayout;
+DROP PROCEDURE IF EXISTS dbo.sp_ProcessMechanicPayout;
+DROP PROCEDURE IF EXISTS dbo.sp_UpdateUserProfile;
+DROP PROCEDURE IF EXISTS dbo.sp_UpdateMechanicBankDetails;
+DROP PROCEDURE IF EXISTS dbo.sp_GetSystemApiSettings;
+DROP PROCEDURE IF EXISTS dbo.sp_SaveOrUpdateSystemApiSettings;
+DROP PROCEDURE IF EXISTS dbo.sp_GetSystemContactSettings;
+DROP PROCEDURE IF EXISTS dbo.sp_SaveOrUpdateSystemContactSettings;
+GO
+
 -- 1. Atomic Job Payment & Wallet Credit
-CREATE OR ALTER PROCEDURE dbo.sp_ProcessJobPayment
+CREATE OR ALTER PROCEDURE dbo.rs_payments_process_job
     @JobId INT,
     @PaymentId NVARCHAR(100),
     @Amount FLOAT,
@@ -77,7 +90,7 @@ END;
 GO
 
 -- 2. Atomic Mechanic Payout Withdrawal Request
-CREATE OR ALTER PROCEDURE dbo.sp_RequestMechanicPayout
+CREATE OR ALTER PROCEDURE dbo.rs_mechanicpayoutrequests_create
     @MechanicId INT,
     @Amount FLOAT,
     @PayoutMethod NVARCHAR(50),
@@ -135,7 +148,7 @@ END;
 GO
 
 -- 3. Atomic Admin Payout Approval or Rejection (With Automatic Refund)
-CREATE OR ALTER PROCEDURE dbo.sp_ProcessMechanicPayout
+CREATE OR ALTER PROCEDURE dbo.rs_mechanicpayoutrequests_process
     @PayoutRequestId INT,
     @AdminAction NVARCHAR(20), -- 'Approve' or 'Reject'
     @AdminRemarks NVARCHAR(500) = '',
@@ -201,7 +214,7 @@ END;
 GO
 
 -- 4. Atomic User & Mechanic Profile Update
-CREATE OR ALTER PROCEDURE dbo.sp_UpdateUserProfile
+CREATE OR ALTER PROCEDURE dbo.rs_users_update_profile
     @UserId INT,
     @Name NVARCHAR(100),
     @ShopName NVARCHAR(200) = NULL,
@@ -257,7 +270,7 @@ END;
 GO
 
 -- 5. Atomic Mechanic Bank & Payout Details Update
-CREATE OR ALTER PROCEDURE dbo.sp_UpdateMechanicBankDetails
+CREATE OR ALTER PROCEDURE dbo.rs_mechanicprofiles_update_bank_details
     @MechanicId INT,
     @PreferredPayoutMethod NVARCHAR(50),
     @UpiId NVARCHAR(100) = NULL,
@@ -298,8 +311,8 @@ BEGIN
 END;
 GO
 
--- 9. Get System API Gateway Settings
-CREATE OR ALTER PROCEDURE dbo.sp_GetSystemApiSettings
+-- 6. Get System API Gateway Settings
+CREATE OR ALTER PROCEDURE dbo.rs_systemapisettings_get
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -317,8 +330,8 @@ BEGIN
 END;
 GO
 
--- 10. Save or Update System API Gateway Settings
-CREATE OR ALTER PROCEDURE dbo.sp_SaveOrUpdateSystemApiSettings
+-- 7. Save or Update System API Gateway Settings
+CREATE OR ALTER PROCEDURE dbo.rs_systemapisettings_save_or_update
     @SmsApiKey NVARCHAR(500) = '',
     @WhatsAppBusinessNumber NVARCHAR(100) = '',
     @GoogleMapsApiKey NVARCHAR(500) = '',
@@ -356,8 +369,8 @@ BEGIN
 END;
 GO
 
--- 11. Get RaahSathi Contact & Helpline Details
-CREATE OR ALTER PROCEDURE dbo.sp_GetSystemContactSettings
+-- 8. Get RaahSathi Contact & Helpline Details
+CREATE OR ALTER PROCEDURE dbo.rs_systemcontactsettings_get
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -375,8 +388,8 @@ BEGIN
 END;
 GO
 
--- 12. Save or Update RaahSathi Contact & Helpline Details
-CREATE OR ALTER PROCEDURE dbo.sp_SaveOrUpdateSystemContactSettings
+-- 9. Save or Update RaahSathi Contact & Helpline Details
+CREATE OR ALTER PROCEDURE dbo.rs_systemcontactsettings_save_or_update
     @HelplineNumber NVARCHAR(100) = '',
     @TollFreeNumber NVARCHAR(100) = '',
     @EmergencySupportNumber NVARCHAR(100) = '',

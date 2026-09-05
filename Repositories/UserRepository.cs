@@ -49,7 +49,7 @@ namespace RaahSathi.Repositories
                 if (_dbContext.Database.IsSqlServer())
                 {
                     await _dbContext.Database.ExecuteSqlRawAsync(
-                        "EXEC dbo.sp_UpdateUserProfile @UserId = {0}, @Name = {1}, @ShopName = {2}, @ShopAddress = {3}, @City = {4}, @VehicleExpertise = {5}, @Specialization = {6}, @BankName = {7}, @BankAccountNumber = {8}, @IfscCode = {9}, @UpiId = {10}, @AccountHolderName = {11}",
+                        "EXEC dbo.rs_users_update_profile @UserId = {0}, @Name = {1}, @ShopName = {2}, @ShopAddress = {3}, @City = {4}, @VehicleExpertise = {5}, @Specialization = {6}, @BankName = {7}, @BankAccountNumber = {8}, @IfscCode = {9}, @UpiId = {10}, @AccountHolderName = {11}",
                         dto.UserId,
                         dto.Name ?? string.Empty,
                         dto.ShopName ?? string.Empty,

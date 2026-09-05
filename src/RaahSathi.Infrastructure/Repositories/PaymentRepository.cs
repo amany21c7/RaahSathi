@@ -60,7 +60,7 @@ namespace RaahSathi.Repositories
                 if (_dbContext.Database.IsSqlServer())
                 {
                     await _dbContext.Database.ExecuteSqlRawAsync(
-                        "EXEC dbo.sp_ProcessJobPayment @JobId = {0}, @PaymentId = {1}, @Amount = {2}, @AdminCommission = {3}, @MechanicEarning = {4}, @CommissionRate = {5}, @PaymentStatus = {6}",
+                        "EXEC dbo.rs_payments_process_job @JobId = {0}, @PaymentId = {1}, @Amount = {2}, @AdminCommission = {3}, @MechanicEarning = {4}, @CommissionRate = {5}, @PaymentStatus = {6}",
                         jobId, paymentId, amount, adminCommission, mechanicEarning, commissionRate, "Released"
                     );
                     return true;
