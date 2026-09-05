@@ -207,6 +207,357 @@
             background: #eee !important;
         }
     }
+
+    /* =========================================================
+       PREMIUM FINTECH PAYMENT COLLECTION TERMINAL MODAL STYLES
+       ========================================================= */
+    .terminal-modal-content {
+        background: radial-gradient(130% 130% at 50% 0%, #15243b 0%, #0a111e 100%) !important;
+        border: 1px solid rgba(255, 126, 21, 0.28) !important;
+        border-radius: 24px !important;
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px rgba(255, 126, 21, 0.1) !important;
+        color: #f1f5f9;
+        overflow: hidden;
+    }
+
+    .terminal-header-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(255, 126, 21, 0.12);
+        border: 1px solid rgba(255, 126, 21, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    }
+
+    .terminal-job-pill {
+        background: linear-gradient(135deg, #ff7e15 0%, #e04f00 100%);
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(255, 126, 21, 0.35);
+    }
+
+    .terminal-close-btn {
+        opacity: 0.7;
+        transition: all 0.2s ease;
+    }
+    .terminal-close-btn:hover {
+        opacity: 1;
+        transform: rotate(90deg);
+    }
+
+    /* Total Bill Summary Card */
+    .terminal-bill-card {
+        background: linear-gradient(145deg, rgba(17, 27, 46, 0.95), rgba(11, 18, 32, 0.95));
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        position: relative;
+    }
+
+    .terminal-bill-accent-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #10b981 0%, #06b6d4 50%, #f59e0b 100%);
+    }
+
+    .terminal-bill-sublabel {
+        font-size: 0.74rem;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: #94a3b8;
+        font-weight: 700;
+    }
+
+    .terminal-bill-amount {
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 2.65rem;
+        font-weight: 800;
+        color: #10b981;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 14px rgba(16, 185, 129, 0.25);
+    }
+
+    .terminal-breakdown-row {
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .terminal-chip {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.76rem;
+        color: #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* Segmented Tabs Switcher */
+    .terminal-tabs-wrapper {
+        background: rgba(11, 18, 32, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 12px;
+        padding: 4px;
+    }
+
+    .terminal-nav-pills {
+        margin-bottom: 0 !important;
+    }
+
+    #pills-jobpay-tab .nav-link {
+        border: 1px solid transparent !important;
+        background: transparent !important;
+        color: #94a3b8 !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        padding: 9px 12px !important;
+        border-radius: 9px !important;
+        transition: all 0.22s ease !important;
+        text-align: center;
+    }
+
+    #pills-jobpay-tab .nav-link:hover {
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    #pills-jobpay-tab .nav-link.active {
+        background: linear-gradient(135deg, #ff7e15 0%, #e04f00 100%) !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 14px rgba(255, 126, 21, 0.35) !important;
+    }
+
+    /* Tab Pane Boxes */
+    .terminal-pane-box {
+        background: rgba(13, 22, 38, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+    }
+
+    /* Standee QR Card (Fintech Soundbox / Standee design) */
+    .qr-standee-container {
+        background: #ffffff;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+        overflow: hidden;
+        width: 250px;
+        margin: 0 auto;
+    }
+
+    .qr-standee-top {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-bottom: 2px solid #ff7e15;
+    }
+
+    .qr-standee-badge {
+        font-size: 0.74rem;
+        font-weight: 800;
+        color: #ffaa40;
+        letter-spacing: 0.8px;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .qr-standee-verified {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #10b981;
+    }
+
+    .qr-standee-body {
+        padding: 14px !important;
+        background: #ffffff !important;
+    }
+
+    .qr-standee-image {
+        width: 190px;
+        height: 190px;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .qr-standee-footer {
+        background: #f8fafc !important;
+        border-top: 1px solid #e2e8f0 !important;
+        padding: 6px 8px !important;
+    }
+
+    .qr-app-pills {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    /* Payee & Copy Pill */
+    .terminal-payee-badge {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.28);
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: 0.78rem;
+    }
+
+    .terminal-upi-copy-pill {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+    }
+
+    .terminal-btn-copy {
+        background: rgba(255, 126, 21, 0.15);
+        border: 1px solid rgba(255, 126, 21, 0.4);
+        color: #ffaa40;
+        font-weight: 600;
+        font-size: 0.78rem;
+        transition: all 0.2s ease;
+    }
+
+    .terminal-btn-copy:hover {
+        background: rgba(255, 126, 21, 0.3);
+        color: #ffffff;
+        border-color: #ff7e15;
+    }
+
+    /* 12-Digit UTR Verification Card */
+    .terminal-utr-card {
+        background: linear-gradient(145deg, rgba(16, 25, 43, 0.9), rgba(11, 18, 30, 0.95));
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .terminal-counter-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.25s ease;
+    }
+
+    .terminal-utr-input-group {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1.5px solid rgba(255, 126, 21, 0.35);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        transition: all 0.25s ease;
+    }
+
+    .terminal-utr-input-group:focus-within {
+        border-color: #ff7e15;
+        box-shadow: 0 0 0 3px rgba(255, 126, 21, 0.2);
+    }
+
+    .terminal-utr-prefix {
+        background: #0f172a !important;
+        border: none !important;
+        color: #ffaa40 !important;
+        font-weight: 800 !important;
+        font-size: 0.85rem !important;
+        padding: 0 14px !important;
+    }
+
+    .terminal-utr-input {
+        background: #080d17 !important;
+        border: none !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1.15rem !important;
+        letter-spacing: 2px !important;
+        text-align: center;
+    }
+
+    .terminal-utr-input::placeholder {
+        color: #475569 !important;
+        letter-spacing: 1px !important;
+        font-weight: 500 !important;
+        font-size: 0.88rem !important;
+    }
+
+    .terminal-utr-status {
+        background: #080d17 !important;
+        border: none !important;
+        padding: 0 12px !important;
+    }
+
+    .terminal-guide-box {
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+    }
+
+    .terminal-btn-verify {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        border: 1px solid rgba(52, 211, 153, 0.5) !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.3px;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35) !important;
+        transition: all 0.22s ease !important;
+    }
+
+    .terminal-btn-verify:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+        transform: translateY(-1.5px);
+        box-shadow: 0 8px 22px rgba(16, 185, 129, 0.45) !important;
+    }
+
+    .terminal-cash-circle {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1.5px solid rgba(16, 185, 129, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .terminal-btn-cash {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        border: 1px solid rgba(52, 211, 153, 0.4) !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        transition: all 0.22s ease !important;
+    }
+    .terminal-btn-cash:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
+    }
+
+    .terminal-btn-gateway {
+        background: linear-gradient(135deg, #ff7e15 0%, #e04f00 100%) !important;
+        border: 1px solid rgba(255, 126, 21, 0.4) !important;
+        color: #ffffff !important;
+        transition: all 0.22s ease !important;
+    }
+    .terminal-btn-gateway:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255, 126, 21, 0.4) !important;
+    }
+
+    .terminal-pay-icon {
+        font-size: 2rem;
+        color: #cbd5e1;
+        transition: all 0.2s ease;
+    }
+    .terminal-pay-icon:hover {
+        color: #ffaa40;
+        transform: scale(1.1);
+    }
 </style>
 
 <div class="container-fluid px-2 px-md-4 py-3 pb-5 mb-5">
@@ -3234,7 +3585,15 @@
         }
 
         $('#txtJobUpiUtr').val('');
-        $('#btnConfirmJobUpiPayment').prop('disabled', false).html('<i class="fa-solid fa-circle-check me-2"></i> Verify 12-Digit UTR &amp; Complete Job');
+        $('#utrCountBadge').removeClass('bg-success text-white text-warning').addClass('text-muted bg-dark').text('0 / 12 digits');
+        $('#utrStatusIcon').html('<i class="fa-solid fa-barcode text-muted"></i>');
+        $('#btnConfirmJobUpiPayment').prop('disabled', false).html('<i class="fa-solid fa-circle-check fs-5"></i> <span class="fw-bold fs-6">Verify 12-Digit UTR &amp; Complete Job</span>');
+
+        var firstTab = document.querySelector('#jobpay-upi-tab');
+        if (firstTab && typeof bootstrap !== 'undefined') {
+            var tabInst = bootstrap.Tab.getOrCreateInstance(firstTab);
+            tabInst.show();
+        }
 
         // Instantly pop open the modal
         var modalEl = document.getElementById('paymentQrModal');
@@ -3637,7 +3996,61 @@
                 }
             }, 1000);
         }
+
+        // Real-time 12-Digit UTR Validator & Formatter
+        $(document).on('input', '#txtJobUpiUtr', function() {
+            var raw = $(this).val().replace(/\D/g, '').slice(0, 12);
+            $(this).val(raw);
+            var len = raw.length;
+            var $badge = $('#utrCountBadge');
+            var $icon = $('#utrStatusIcon');
+            if (len === 12) {
+                $badge.removeClass('text-muted text-warning bg-dark').addClass('bg-success text-white').html('<i class="fa-solid fa-check me-1"></i> 12 / 12 Digits Ready');
+                $icon.html('<i class="fa-solid fa-circle-check text-success fs-6"></i>');
+            } else if (len > 0) {
+                $badge.removeClass('bg-success text-white text-muted').addClass('text-warning bg-dark').text(len + ' / 12 digits');
+                $icon.html('<i class="fa-solid fa-ellipsis text-warning"></i>');
+            } else {
+                $badge.removeClass('bg-success text-white text-warning').addClass('text-muted bg-dark').text('0 / 12 digits');
+                $icon.html('<i class="fa-solid fa-barcode text-muted"></i>');
+            }
+        });
     });
+
+    // Safe Clipboard Copy Helper with visual feedback
+    window.copyTextToClipboard = function(text, btnElement) {
+        if (!text) return;
+        var $btn = $(btnElement);
+        var origHtml = $btn.html();
+        
+        function showSuccess() {
+            $btn.html('<i class="fa-solid fa-check text-success me-1"></i> Copied!');
+            setTimeout(function() {
+                $btn.html(origHtml);
+            }, 2000);
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(showSuccess).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+
+        function fallbackCopy(val) {
+            var $temp = $('<textarea>');
+            $('body').append($temp);
+            $temp.val(val).select();
+            try {
+                document.execCommand('copy');
+                showSuccess();
+            } catch (e) {
+                alert('UPI ID: ' + val);
+            }
+            $temp.remove();
+        }
+    };
 
 </script>
 }
@@ -3645,93 +4058,149 @@
 <!-- DYNAMIC WALLET PAYMENT & SETTLEMENT MODAL FOR MECHANIC -->
 <div class="modal fade" id="paymentQrModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" style="z-index: 1060 !important;">
     <div class="modal-dialog modal-dialog-centered modal-lg" style="z-index: 1070 !important;">
-        <div class="modal-content bg-dark text-light border border-warning shadow-2xl" style="border-radius: 20px; overflow: hidden;">
-            <div class="modal-header border-secondary border-opacity-40 bg-black bg-opacity-50 p-3.5">
-                <div class="d-flex align-items-center gap-2.5">
-                    <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center shadow" style="width: 40px; height: 40px; font-size: 1.2rem;">
-                        💳
+        <div class="modal-content terminal-modal-content border-0 shadow-2xl">
+            <!-- Modal Header -->
+            <div class="modal-header border-0 pb-2 pt-4 px-4 position-relative">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="terminal-header-icon shadow">
+                        <i class="fa-solid fa-cash-register text-warning"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title text-white font-weight-bold mb-0" style="font-family: 'Outfit';">
-                            Collect Customer Payment
-                        </h5>
-                        <span class="badge bg-warning text-dark font-weight-bold" style="font-size: 0.72rem;" id="qrModalJobId">JOB #</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="modal-title text-white font-weight-bold mb-0" style="font-family: 'Outfit', sans-serif;">
+                                Collect Customer Payment
+                            </h5>
+                            <span class="badge terminal-job-pill" id="qrModalJobId">JOB #</span>
+                        </div>
+                        <span class="text-slate-400 extra-small">Instant Digital &amp; Cash Settlement Terminal</span>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white terminal-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             
-            <div class="modal-body p-4 pt-3">
+            <div class="modal-body p-4 pt-2">
                 <!-- Total Bill Amount & Itemized Overview Card -->
-                <div class="p-3 bg-black bg-opacity-60 rounded-3 border border-secondary border-opacity-40 text-center mb-3">
-                    <span class="text-muted extra-small d-block text-uppercase font-weight-bold mb-1">Total Bill Amount to Collect</span>
-                    <h2 class="text-success font-weight-extrabold mb-2" style="font-family: 'Outfit'; font-size: 2.5rem;" id="qrModalTotalAmount">₹0.00</h2>
+                <div class="terminal-bill-card p-3 p-md-4 mb-3 position-relative overflow-hidden text-center">
+                    <div class="terminal-bill-accent-bar"></div>
+                    <span class="terminal-bill-sublabel d-block mb-1">Total Bill Amount to Collect</span>
+                    <div class="d-flex align-items-center justify-content-center my-1">
+                        <h2 class="terminal-bill-amount mb-0" id="qrModalTotalAmount">₹0.00</h2>
+                    </div>
                     
-                    <div class="d-flex justify-content-center gap-3 text-muted extra-small flex-wrap border-top border-secondary border-opacity-30 pt-2 mt-1">
-                        <span>Visiting &amp; Distance: <strong class="text-light" id="qrModalVisiting">₹0.00</strong></span>
-                        <span>•</span>
-                        <span>Service Charge: <strong class="text-light" id="qrModalService">₹0.00</strong></span>
-                        <span id="qrModalExtraRow" style="display:none;">• Parts/Extra: <strong class="text-light" id="qrModalExtra">₹0.00</strong></span>
+                    <div class="terminal-breakdown-row d-flex justify-content-center gap-2 text-muted flex-wrap pt-2.5 mt-2">
+                        <span class="terminal-chip">
+                            <i class="fa-solid fa-route text-info me-1"></i> Visiting: <strong class="text-light ms-1" id="qrModalVisiting">₹0.00</strong>
+                        </span>
+                        <span class="terminal-chip">
+                            <i class="fa-solid fa-wrench text-warning me-1"></i> Service: <strong class="text-light ms-1" id="qrModalService">₹0.00</strong>
+                        </span>
+                        <span class="terminal-chip" id="qrModalExtraRow" style="display:none;">
+                            <i class="fa-solid fa-gears text-primary me-1"></i> Parts/Extra: <strong class="text-light ms-1" id="qrModalExtra">₹0.00</strong>
+                        </span>
                     </div>
                 </div>
 
-                <!-- Payment Method Tabs -->
-                <ul class="nav nav-pills nav-fill mb-3 gap-2" id="pills-jobpay-tab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active py-2 small font-weight-bold btn-outline-warning" id="jobpay-upi-tab" data-bs-toggle="pill" data-bs-target="#jobpay-upi-pane" type="button" role="tab">
-                            <i class="fa-solid fa-qrcode text-warning me-1"></i> Direct UPI QR (NPCI Standard)
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link py-2 small font-weight-bold btn-outline-warning" id="jobpay-gateway-tab" data-bs-toggle="pill" data-bs-target="#jobpay-gateway-pane" type="button" role="tab">
-                            <i class="fa-solid fa-bolt text-warning me-1"></i> Instant Online Pay (Gateway)
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link py-2 small font-weight-bold btn-outline-warning" id="jobpay-cash-tab" data-bs-toggle="pill" data-bs-target="#jobpay-cash-pane" type="button" role="tab">
-                            <i class="fa-solid fa-money-bill-wave text-success me-1"></i> Cash on Spot
-                        </button>
-                    </li>
-                </ul>
+                <!-- Payment Method Segmented Tabs -->
+                <div class="terminal-tabs-wrapper mb-3">
+                    <ul class="nav nav-pills terminal-nav-pills d-flex" id="pills-jobpay-tab" role="tablist">
+                        <li class="nav-item flex-fill" role="presentation">
+                            <button class="nav-link active w-100" id="jobpay-upi-tab" data-bs-toggle="pill" data-bs-target="#jobpay-upi-pane" type="button" role="tab">
+                                <i class="fa-solid fa-qrcode me-1.5"></i> Direct UPI QR
+                            </button>
+                        </li>
+                        <li class="nav-item flex-fill" role="presentation">
+                            <button class="nav-link w-100" id="jobpay-gateway-tab" data-bs-toggle="pill" data-bs-target="#jobpay-gateway-pane" type="button" role="tab">
+                                <i class="fa-solid fa-bolt me-1.5"></i> Instant Gateway
+                            </button>
+                        </li>
+                        <li class="nav-item flex-fill" role="presentation">
+                            <button class="nav-link w-100" id="jobpay-cash-tab" data-bs-toggle="pill" data-bs-target="#jobpay-cash-pane" type="button" role="tab">
+                                <i class="fa-solid fa-money-bill-wave me-1.5"></i> Cash on Spot
+                            </button>
+                        </li>
+                    </ul>
+                </div>
 
                 <div class="tab-content" id="pills-jobpay-tabContent">
                     <!-- Tab 1: Direct UPI QR with 12-Digit UTR Verification -->
                     <div class="tab-pane fade show active text-center" id="jobpay-upi-pane" role="tabpanel">
-                        <div class="d-flex flex-column align-items-center justify-content-center p-3.5 bg-dark rounded-3 border border-secondary border-opacity-40">
-                            <!-- NPCI Compliant Dynamic QR Container -->
-                            <div class="position-relative bg-white p-2.5 rounded-3 shadow-lg mb-2 border border-2 border-warning" style="display: inline-block;">
-                                <img id="qrCodeImg" src="" alt="NPCI Compliant UPI QR Code" style="width: 190px; height: 190px; display: block;" class="rounded-2">
-                                <div class="mt-1 text-dark font-weight-bold" style="font-size: 0.7rem;">
-                                    <i class="fa-solid fa-shield-halved text-success me-1"></i> Scan with GPay, PhonePe, Paytm or BHIM
+                        <div class="d-flex flex-column align-items-center justify-content-center p-3 p-md-4 terminal-pane-box">
+                            <!-- Official NPCI Compliant QR Standee Card -->
+                            <div class="qr-standee-container mb-3 shadow-lg">
+                                <div class="qr-standee-top">
+                                    <div class="d-flex align-items-center justify-content-between px-3 py-1.5">
+                                        <span class="qr-standee-badge"><i class="fa-solid fa-bolt me-1"></i> BHIM UPI</span>
+                                        <span class="qr-standee-verified"><i class="fa-solid fa-shield-halved me-1"></i> NPCI Verified</span>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div class="d-flex align-items-center justify-content-center gap-2 mb-2 flex-wrap">
-                                <div class="badge bg-secondary bg-opacity-40 text-light px-3 py-1.5 font-monospace" style="font-size: 0.82rem;">
-                                    UPI ID: <span class="text-warning font-weight-bold" id="qrModalUpiIdText">raahsathi@upi</span>
-                                </div>
-                                <button type="button" class="btn btn-outline-warning btn-xs py-1 px-2.5 rounded-pill" id="btnCopyJobUpiId" title="Copy UPI ID">
-                                    <i class="fa-solid fa-copy me-1"></i> Copy UPI ID
-                                </button>
-                            </div>
-                            <small class="text-muted extra-small d-block mb-3">Payee Name: <strong class="text-white" id="qrModalUpiHolderText">RaahSathi Services</strong></small>
-
-                            <!-- Mandatory 12-Digit UTR Verification Input -->
-                            <div class="w-100 p-3 bg-black bg-opacity-50 rounded-3 border border-secondary border-opacity-40" style="max-width: 440px;">
-                                <label class="form-label text-white small font-weight-bold mb-1 d-block text-start">
-                                    <i class="fa-solid fa-receipt text-warning me-1"></i> Enter 12-Digit UPI Transaction UTR / Ref No.
-                                </label>
-                                <div class="input-group mb-1">
-                                    <span class="input-group-text bg-dark border-secondary text-warning font-monospace">UTR:</span>
-                                    <input type="text" id="txtJobUpiUtr" maxlength="12" pattern="\d{12}" class="form-control form-control-lg bg-black text-warning border-secondary text-center font-monospace fw-bold" placeholder="e.g. 429182394812" autocomplete="off">
-                                </div>
-                                <small class="text-muted extra-small d-block text-start mb-3">
-                                    Customer ke Google Pay / PhonePe / Paytm payment receipt par 12 ank ka UTR / UPI Ref No. hota hai.
-                                </small>
                                 
-                                <button type="button" class="btn btn-warning text-dark font-weight-bold w-100 py-2.5 rounded-pill shadow-lg d-flex align-items-center justify-content-center gap-2" id="btnConfirmJobUpiPayment" onclick="confirmJobUpiPayment()">
-                                    <i class="fa-solid fa-circle-check"></i>
-                                    <span>Verify 12-Digit UTR &amp; Complete Job</span>
+                                <div class="qr-standee-body">
+                                    <img id="qrCodeImg" src="" alt="NPCI Compliant UPI QR Code" class="qr-standee-image rounded-2">
+                                </div>
+                                
+                                <div class="qr-standee-footer">
+                                    <div class="qr-app-pills">
+                                        <span class="badge bg-white text-dark border px-2 py-1"><i class="fa-brands fa-google text-primary me-1"></i>GPay</span>
+                                        <span class="badge bg-white text-dark border px-2 py-1"><span class="fw-bold me-1" style="color:#5f259f">पे</span>PhonePe</span>
+                                        <span class="badge bg-white text-dark border px-2 py-1"><span class="fw-bold me-1" style="color:#00b9f1">P</span>Paytm</span>
+                                        <span class="badge bg-white text-dark border px-2 py-1"><i class="fa-solid fa-building-columns text-success me-1"></i>BHIM</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Verified Payee & UPI ID Row -->
+                            <div class="d-flex flex-column align-items-center gap-2 mb-3 w-100" style="max-width: 440px;">
+                                <div class="terminal-payee-badge d-inline-flex align-items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check text-success"></i>
+                                    <span class="text-slate-300">Verified Payee:</span>
+                                    <strong class="text-white" id="qrModalUpiHolderText">RaahSathi Services</strong>
+                                </div>
+                                
+                                <div class="terminal-upi-copy-pill d-flex align-items-center justify-content-between w-100 px-3 py-2 shadow-sm">
+                                    <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                                        <span class="text-warning font-monospace extra-small fw-bold">UPI ID:</span>
+                                        <span class="text-white font-monospace fw-bold small text-truncate" id="qrModalUpiIdText">raahsathi@upi</span>
+                                    </div>
+                                    <button type="button" class="btn terminal-btn-copy py-1 px-3 rounded-pill btn-sm flex-shrink-0" id="btnCopyJobUpiId" title="Copy UPI ID">
+                                        <i class="fa-solid fa-copy me-1"></i> <span>Copy UPI ID</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Mandatory 12-Digit UTR Verification Card -->
+                            <div class="terminal-utr-card w-100 p-3 p-md-3.5" style="max-width: 460px;">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <label class="form-label text-white small font-weight-bold mb-0 d-flex align-items-center gap-1.5">
+                                        <i class="fa-solid fa-receipt text-warning"></i>
+                                        <span>Enter 12-Digit UPI Transaction UTR</span>
+                                    </label>
+                                    <span class="badge terminal-counter-badge text-muted bg-dark" id="utrCountBadge">0 / 12 digits</span>
+                                </div>
+
+                                <div class="position-relative mb-2">
+                                    <div class="input-group terminal-utr-input-group">
+                                        <span class="input-group-text terminal-utr-prefix">UTR</span>
+                                        <input type="text" id="txtJobUpiUtr" maxlength="12" pattern="\d{12}" class="form-control form-control-lg terminal-utr-input font-monospace" placeholder="e.g. 429182394812" autocomplete="off" inputmode="numeric">
+                                        <span class="input-group-text terminal-utr-status" id="utrStatusIcon">
+                                            <i class="fa-solid fa-barcode text-muted"></i>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Elegant Professional Helper Box -->
+                                <div class="terminal-guide-box d-flex align-items-start gap-2.5 p-2.5 mb-3 text-start">
+                                    <i class="fa-solid fa-circle-info text-info mt-0.5 flex-shrink-0"></i>
+                                    <div class="extra-small text-slate-300">
+                                        <div class="fw-semibold text-white">Where to find 12-Digit UTR / Ref Number?</div>
+                                        <div class="text-slate-400 mt-0.5" style="line-height: 1.35;">
+                                            Customer ke payment successful receipt (Google Pay, PhonePe, Paytm ya BHIM) par <strong>12-digit UTR / UPI Ref No.</strong> hota hai. Enter karke verify karein.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button type="button" class="btn terminal-btn-verify w-100 py-2.5 rounded-pill shadow-lg d-flex align-items-center justify-content-center gap-2" id="btnConfirmJobUpiPayment" onclick="confirmJobUpiPayment()">
+                                    <i class="fa-solid fa-circle-check fs-5"></i>
+                                    <span class="fw-bold fs-6">Verify 12-Digit UTR &amp; Complete Job</span>
                                 </button>
                             </div>
                         </div>
@@ -3739,32 +4208,33 @@
 
                     <!-- Tab 2: Razorpay Instant Online Pay -->
                     <div class="tab-pane fade text-center" id="jobpay-gateway-pane" role="tabpanel">
-                        <div class="p-4 bg-dark rounded-3 border border-secondary border-opacity-40">
-                            <div class="d-flex justify-content-center gap-3 fs-2 text-warning mb-2">
-                                <i class="fa-brands fa-cc-visa" title="Visa"></i>
-                                <i class="fa-brands fa-cc-mastercard" title="Mastercard"></i>
-                                <i class="fa-solid fa-credit-card" title="RuPay / Cards"></i>
-                                <i class="fa-solid fa-building-columns" title="NetBanking"></i>
-                                <i class="fa-brands fa-google-pay" title="Google Pay"></i>
+                        <div class="p-4 terminal-pane-box">
+                            <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
+                                <span class="terminal-pay-icon" title="Visa"><i class="fa-brands fa-cc-visa"></i></span>
+                                <span class="terminal-pay-icon" title="Mastercard"><i class="fa-brands fa-cc-mastercard"></i></span>
+                                <span class="terminal-pay-icon" title="RuPay / Cards"><i class="fa-solid fa-credit-card"></i></span>
+                                <span class="terminal-pay-icon" title="NetBanking"><i class="fa-solid fa-building-columns"></i></span>
+                                <span class="terminal-pay-icon" title="Google Pay"><i class="fa-brands fa-google-pay"></i></span>
                             </div>
-                            <p class="text-muted small mb-3">Customer can pay via Debit/Credit Card, NetBanking, or Wallet</p>
+                            <h6 class="text-white fw-bold mb-1">Instant Multi-Option Online Gateway</h6>
+                            <p class="text-slate-400 small mb-3">Customer can pay via Debit/Credit Card, NetBanking, UPI, or Wallet</p>
 
                             <div id="jobGatewayActiveBox" class="d-none">
                                 <div class="mb-3">
-                                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40 px-2.5 py-1">
-                                        <i class="fa-solid fa-shield-check me-1"></i> 256-Bit Encrypted Secure Gateway Vault
+                                    <span class="badge rounded-pill bg-success bg-opacity-15 text-success border border-success border-opacity-30 px-3 py-1.5 extra-small">
+                                        <i class="fa-solid fa-shield-check me-1.5"></i> 256-Bit Encrypted Secure Gateway Vault
                                     </span>
                                 </div>
-                                <button type="button" class="btn btn-warning text-dark font-weight-bold px-5 py-2.5 rounded-pill shadow-lg d-inline-flex align-items-center justify-content-center gap-2" id="btnJobRzpPay" onclick="payJobViaRazorpay()">
+                                <button type="button" class="btn terminal-btn-gateway px-5 py-2.5 rounded-pill shadow-lg d-inline-flex align-items-center justify-content-center gap-2" id="btnJobRzpPay" onclick="payJobViaRazorpay()">
                                     <i class="fa-solid fa-bolt"></i>
-                                    <span>Pay via Instant Gateway</span>
+                                    <span class="fw-bold">Pay via Instant Gateway</span>
                                 </button>
                             </div>
 
-                            <div id="jobGatewayInactiveBox" class="p-3 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-30 text-start d-flex align-items-center gap-2.5">
-                                <i class="fa-solid fa-circle-info text-warning fs-5 flex-shrink-0"></i>
-                                <span class="text-white extra-small">
-                                    Online Gateway API key is being finalized by administration. Please use the <b>Direct UPI QR</b> or <b>Cash on Spot</b> tab.
+                            <div id="jobGatewayInactiveBox" class="p-3 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 text-start d-flex align-items-center gap-3 mx-auto" style="max-width: 480px;">
+                                <i class="fa-solid fa-circle-info text-warning fs-4 flex-shrink-0"></i>
+                                <span class="text-slate-200 extra-small">
+                                    Online Payment Gateway is currently being configured by administration. Please collect via <strong>Direct UPI QR</strong> or <strong>Cash on Spot</strong>.
                                 </span>
                             </div>
                         </div>
@@ -3772,16 +4242,16 @@
 
                     <!-- Tab 3: Cash on Spot Settlement -->
                     <div class="tab-pane fade text-center" id="jobpay-cash-pane" role="tabpanel">
-                        <div class="p-4 bg-dark rounded-3 border border-secondary border-opacity-40">
-                            <div class="text-success fs-1 mb-2">
-                                <i class="fa-solid fa-hand-holding-dollar"></i>
+                        <div class="p-4 terminal-pane-box">
+                            <div class="terminal-cash-circle mx-auto mb-3">
+                                <i class="fa-solid fa-hand-holding-dollar text-success fs-1"></i>
                             </div>
-                            <h6 class="text-white font-weight-bold mb-1">Direct Cash Received from Customer</h6>
-                            <p class="text-muted small mb-3" style="max-width: 480px; margin: 0 auto;">
-                                If the customer paid you the full bill amount in physical cash, confirm below. Platform commission fee will be automatically adjusted from your wallet balance.
+                            <h5 class="text-white fw-bold mb-1">Direct Physical Cash Settlement</h5>
+                            <p class="text-slate-400 small mb-3 mx-auto" style="max-width: 460px;">
+                                If customer paid the total bill amount directly to you in physical cash, confirm below. Platform commission fee will be automatically settled from your wallet balance.
                             </p>
-                            <button type="button" class="btn btn-outline-warning font-weight-bold px-5 py-2.5 rounded-pill shadow d-inline-flex align-items-center justify-content-center gap-2" onclick="settleJobInCash(currentQrJobId, this)">
-                                <i class="fa-solid fa-money-bill-wave"></i>
+                            <button type="button" class="btn terminal-btn-cash font-weight-bold px-5 py-2.5 rounded-pill shadow d-inline-flex align-items-center justify-content-center gap-2" onclick="settleJobInCash(currentQrJobId, this)">
+                                <i class="fa-solid fa-money-bill-wave me-1"></i>
                                 <span>Confirm Cash Collected &amp; Settle Job</span>
                             </button>
                         </div>
@@ -3789,11 +4259,12 @@
                 </div>
             </div>
             
-            <div class="modal-footer border-secondary border-opacity-30 bg-black bg-opacity-40 py-2.5 px-4 d-flex justify-content-between">
-                <span class="text-muted extra-small">
-                    <i class="fa-solid fa-shield-halved text-success me-1"></i> RaahSathi Guaranteed Escrow &amp; Commission Vault
+            <div class="modal-footer border-0 bg-black bg-opacity-40 py-2.5 px-4 d-flex justify-content-between align-items-center">
+                <span class="text-slate-400 extra-small d-flex align-items-center gap-1.5">
+                    <i class="fa-solid fa-shield-check text-success"></i>
+                    <span>RaahSathi Escrow &amp; Instant Commission Settlement</span>
                 </span>
-                <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3.5" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
